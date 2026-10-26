@@ -1,0 +1,44 @@
+[Unit]
+Description=DiaLife daily SQLite backup
+After=dialife.service
+
+[Service]
+Type=oneshot
+User=dialife
+Group=dialife
+WorkingDirectory=/opt/dialife
+Environment=DIALIFE_DB=/opt/dialife/data/dialife.db
+ExecStart=/opt/dialife/bin/dialife backup -dir /opt/dialife/data/backups
+UMask=0027
+MemoryMax=100M
+Nice=10
+
+CapabilityBoundingSet=
+AmbientCapabilities=
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/dialife/data
+PrivateTmp=yes
+PrivateDevices=yes
+PrivateNetwork=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectKernelLogs=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+ProcSubset=pid
+PrivateUsers=yes
+RestrictSUIDSGID=yes
+RemoveIPC=yes
+RestrictAddressFamilies=AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+SystemCallErrorNumber=EPERM

@@ -1,0 +1,243 @@
+#!/usr/bin/env bash
+# dl — DiaLife admin from the laptop. Every command runs on the server over SSH.
+# Install: ln -s "$PWD/tools/dl" ~/.local/bin/dl     Help: dl help
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+CONF="$ROOT/deploy/dialife.conf"
+if [ ! -f "$CONF" ]; then
+	echo "missing $CONF: copy deploy/dialife.conf.example and fill it in" >&2
+	exit 1
+fi
+# shellcheck source=/dev/null
+. "$CONF"
+HOST="$DIALIFE_HOST"
+SSH=/usr/bin/ssh # the real ssh, not a shell alias or terminal wrapper
+
+# remote: run a command line on the server
+remote() { $SSH -o BatchMode=yes -o ConnectTimeout=10 "$HOST" "$@"; }
+
+# cli: run the dialife binary on the server as the dialife user, args quoted safely
+cli() {
+	local q
+	q=$(printf ' %q' "$@")
+	# the time zone comes from the server's env file; the secrets in it stay behind
+	remote "cd /opt/dialife && set -a && . /etc/dialife.env && set +a && sudo -u dialife --preserve-env=DIALIFE_TZ DIALIFE_DB=/opt/dialife/data/dialife.db bin/dialife$q"
+}
+
+# cli_env: same, with the secrets from /etc/dialife.env (ntfy)
+cli_env() {
+	local q
+	q=$(printf ' %q' "$@")
+	remote "cd /opt/dialife && set -a && . /etc/dialife.env && set +a && sudo -u dialife --preserve-env=DIALIFE_SECRET,DIALIFE_NTFY_URL,DIALIFE_NTFY_TOKEN,DIALIFE_NTFY_TARGETS DIALIFE_DB=/opt/dialife/data/dialife.db bin/dialife$q"
+}
+
+# push PRIORITY TITLE MESSAGE: raw ntfy message to both parents.
+# JSON is built locally and sent over stdin, so no shell quoting of user text.
+push() {
+	python3 -I -c '
+import json, sys
+prio, title, msg, topics = sys.argv[1:]
+for topic in topics.split():
+    print(json.dumps({"topic": topic, "title": title, "message": msg, "priority": int(prio), "tags": ["test_tube"]}, ensure_ascii=False))
+' "$1" "$2" "$3" "$DL_PUSH_TOPICS" | remote '. /etc/dialife.env; while IFS= read -r line; do
+		topic=$(printf "%s" "$line" | grep -o "\"topic\": *\"[^\"]*\"" | cut -d"\"" -f4)
+		printf "%s: " "$topic"
+		printf "%s" "$line" | curl -s -o /dev/null -w "%{http_code}\n" -H "Authorization: Bearer $DIALIFE_NTFY_TOKEN" \
+			-H "Content-Type: application/json" --data-binary @- http://127.0.0.1:2586/
+	done'
+}
+
+# show_qr TOKEN NAME: the dialife://connect link as a terminal QR code.
+# The app's scanner and the phone camera both open it.
+show_qr() {
+	local uri
+	uri=$(python3 -I -c 'import sys, urllib.parse as u; print("dialife://connect?" + u.urlencode({"server": sys.argv[1], "token": sys.argv[2], "name": sys.argv[3]}))' \
+		"https://$DIALIFE_DOMAIN" "$1" "$2")
+	echo
+	qrencode -t ansiutf8 -m 2 "$uri"
+	echo "Scan it in DiaLife (Connect → Scan QR) or with the phone camera."
+}
+
+usage() {
+	cat <<'EOF'
+dl — DiaLife admin (runs on the server over SSH)
+
+Overview
+  dl status                  services, versions, memory, data age, live alarms
+  dl last [N]                newest N readings (default 12)            = dl l
+  dl logs [N|-f]             DiaLife log, last N lines or follow       = dl log
+
+Alarms
+  dl alarms                  settings + live episodes (who handles it)  = dl a
+  dl set key=value ...       change settings (live within a minute)
+                             thresholds: urgent_low low high urgent_high high_for_min
+                                         predicted_low predicted_high (on/off)
+                             episodes:   repeat_min worse_by checkin_first_min
+                                         checkin_every_min checkin_timeout_min ceiling_min
+  dl preset titration        55/80/250/300, highs after 30 min, no predicted high
+  dl preset standard         55/70/180/250, immediate, predictions on
+
+Devices (API tokens)
+  dl devices                 list                                      = dl d
+  dl device-add NAME ROLE [--qr]
+                             roles: uploader | caregiver | reader (token shown once);
+                             --qr also prints a QR code the app scans to connect
+  dl device-qr ID            new token for an existing device + QR (old token stops working)
+  dl device-person ID [NAME] who holds the phone: one person's phones answer questions as one
+  dl revoke ID               revoke a device's token
+
+Push (ntfy)
+  dl test                    DiaLife test push (high) to both parents
+  dl push [min|low|default|high|max] [TEXT]   raw push with a given priority
+  dl ntfy-pass USER          change a parent's ntfy password (users: DL_NTFY_USERS)
+
+Backups & deploy
+  dl backup                  snapshot the database on the server now
+  dl backups                 list backups on the server and on this laptop
+  dl pull                    copy new backups to this laptop now
+  dl deploy                  test, build and ship the server binary
+  dl app [debug]             build the Android app (release; debug = with the adb test hooks)
+                             and install it on every phone connected by USB
+  dl ssh                     interactive shell on the server
+EOF
+}
+
+cmd=${1:-help}
+shift || true
+case "$cmd" in
+help | -h | --help) usage ;;
+
+status | s)
+	remote 'echo "services: $(systemctl is-active dialife ntfy '"${DL_STATUS_EXTRA:-}"' | paste -sd" ")"
+		echo "dialife:  $(/opt/dialife/bin/dialife version)   ntfy: $(ntfy --version 2>/dev/null | head -1 | cut -d" " -f3)"
+		echo "memory:   $(free -m | awk "/Mem:/{print \$7\" MB available of \"\$2}")   rss dialife $(ps -o rss= -C dialife | awk "{print int(\$1/1024)}") MB, ntfy $(ps -o rss= -C ntfy | awk "{print int(\$1/1024)}") MB"
+		echo "backup:   next $(systemctl list-timers dialife-backup.timer --no-pager | awk "NR==2{print \$1, \$2, \$3, \$4}")"'
+	cli readings -n 1 | head -1
+	cli alarms live
+	;;
+
+last | l) cli readings -n "${1:-12}" ;;
+
+logs | log)
+	if [ "${1:-}" = "-f" ]; then
+		$SSH -t "$HOST" 'journalctl -u dialife -f -o cat'
+	else
+		remote "journalctl -u dialife -n ${1:-40} --no-pager -o cat"
+	fi
+	;;
+
+alarms | a)
+	cli alarms show
+	echo
+	cli alarms live
+	;;
+set) cli alarms set "$@" ;;
+preset)
+	case "${1:-}" in
+	titration) cli alarms set urgent_low=55 low=80 high=250 urgent_high=300 high_for_min=30 predicted_low=on predicted_high=off ;;
+	standard) cli alarms set urgent_low=55 low=70 high=180 urgent_high=250 high_for_min=0 predicted_low=on predicted_high=on ;;
+	*)
+		echo "usage: dl preset titration|standard" >&2
+		exit 2
+		;;
+	esac
+	;;
+
+devices | d) cli device list ;;
+device-add)
+	qr=false
+	args=()
+	for a in "$@"; do
+		if [ "$a" = "--qr" ]; then qr=true; else args+=("$a"); fi
+	done
+	[ ${#args[@]} -eq 2 ] || {
+		echo "usage: dl device-add NAME uploader|caregiver|reader [--qr]" >&2
+		exit 2
+	}
+	out=$(cli device add -name "${args[0]}" -role "${args[1]}")
+	echo "$out"
+	if $qr; then show_qr "$(printf '%s\n' "$out" | tail -1)" "${args[0]}"; fi
+	;;
+device-qr)
+	[ $# -eq 1 ] || {
+		echo "usage: dl device-qr ID   (new token for an existing device, as a QR)" >&2
+		exit 2
+	}
+	out=$(cli device rotate -id "$1")
+	echo "$out"
+	name=$(printf '%s\n' "$out" | head -1 | sed -n 's/^device #[0-9]* "\(.*\)" (.*/\1/p')
+	show_qr "$(printf '%s\n' "$out" | tail -1)" "$name"
+	;;
+device-person)
+	[ $# -ge 1 ] || {
+		echo "usage: dl device-person ID [NAME]   (phones of one person answer as one; no NAME: the device name)" >&2
+		exit 2
+	}
+	cli device person -id "$1" -name "${2:-}"
+	;;
+revoke)
+	[ $# -eq 1 ] || {
+		echo "usage: dl revoke ID" >&2
+		exit 2
+	}
+	cli device revoke -id "$1"
+	;;
+
+test) cli_env ntfy-test ;;
+push)
+	level=${1:-default}
+	case "$level" in
+	min) prio=1 ;; low) prio=2 ;; default) prio=3 ;; high) prio=4 ;; max) prio=5 ;;
+	*)
+		echo "usage: dl push [min|low|default|high|max] [TEXT]" >&2
+		exit 2
+		;;
+	esac
+	push "$prio" "DiaLife: тест ($level)" "${2:-Тестове сповіщення з пріоритетом $prio. Це не справжня тривога.}"
+	;;
+ntfy-pass)
+	user="${1:-}"
+	if [ -z "$user" ] || ! printf ' %s ' "$DL_NTFY_USERS" | grep -qF " $user "; then
+		echo "usage: dl ntfy-pass USER   (one of: $DL_NTFY_USERS)" >&2
+		exit 2
+	fi
+	$SSH -t "$HOST" "ntfy user change-pass $user"
+	;;
+
+backup)
+	remote 'systemctl start dialife-backup.service && journalctl -u dialife-backup -n 20 --no-pager -o cat | grep "backup done" | tail -1'
+	;;
+backups)
+	echo "server:"
+	remote 'ls -lh /opt/dialife/data/backups | tail -n +2'
+	echo "laptop (~/dialife-backups):"
+	ls -lh ~/dialife-backups 2>/dev/null | tail -n +2 || echo "  none"
+	;;
+pull)
+	systemctl --user start dialife-pull.service
+	ls -lh ~/dialife-backups | tail -n +2
+	;;
+
+deploy) "$ROOT/deploy/deploy.sh" ;;
+app)
+	variant=Release
+	[ "${1:-}" = "debug" ] && variant=Debug
+	lower=$(printf '%s' "$variant" | tr 'A-Z' 'a-z')
+	(cd "$ROOT/android" && ./gradlew -q ":app:testDebugUnitTest" ":app:verifyRoborazziDebug" ":app:assemble$variant") || exit 1
+	apk="$ROOT/android/app/build/outputs/apk/$lower/app-$lower.apk"
+	serials=$(adb devices | awk 'NR>1 && $2=="device" {print $1}')
+	[ -n "$serials" ] || { echo "no phone connected (adb devices)" >&2; exit 1; }
+	for s in $serials; do
+		echo "==> $s ($(adb -s "$s" shell getprop ro.product.model | tr -d '\r'))"
+		adb -s "$s" install -r "$apk" 2>&1 | tail -1
+	done
+	;;
+ssh) exec $SSH "$HOST" ;;
+
+*)
+	echo "dl: unknown command '$cmd'" >&2
+	usage >&2
+	exit 2
+	;;
+esac

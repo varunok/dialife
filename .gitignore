@@ -1,0 +1,18 @@
+# server build output and the local database
+/bin/
+/data/
+
+# plans, notes and the app signing key stay on this laptop only
+/.local/
+
+# this installation's own settings (server address, domains, topics); see the *.example files
+/deploy/dialife.conf
+*.env
+!*.env.example
+
+# stray screenshots dropped into the project root
+/*.png
+
+# editors
+.idea/
+.vscode/

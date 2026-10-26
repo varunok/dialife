@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A calm instrument dial: a ring with a steady trend stroke. 108dp canvas, 66dp safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M54,30a24,24 0,1 1,0 48a24,24 0,1 1,0 -48"
+        android:strokeWidth="5"
+        android:strokeColor="@color/icon_foreground"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M40,60 L50,52 L58,56 L70,44"
+        android:strokeWidth="5"
+        android:strokeColor="@color/icon_foreground"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000" />
+</vector>

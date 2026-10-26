@@ -1,0 +1,48 @@
+[
+  {
+    "device": "xDrip-DexcomG5",
+    "date": 1792886400000,
+    "dateString": "2026-10-24T21:00:00.000-0300",
+    "sgv": 112,
+    "delta": -3.512,
+    "direction": "FortyFiveDown",
+    "type": "sgv",
+    "filtered": 118235.29,
+    "unfiltered": 118823.53,
+    "rssi": 100,
+    "noise": 1,
+    "sysTime": "2026-10-24T21:00:00.000-0300"
+  },
+  {
+    "device": "xDrip-DexcomG5",
+    "date": 1792886700000,
+    "dateString": "2026-10-24T21:05:00.000-0300",
+    "sgv": 108,
+    "delta": -4.001,
+    "direction": "FortyFiveDown",
+    "type": "sgv",
+    "filtered": 114117.65,
+    "unfiltered": 114705.88,
+    "rssi": 100,
+    "noise": 1,
+    "sysTime": "2026-10-24T21:05:00.000-0300"
+  },
+  {
+    "device": "xDrip-DexcomG5",
+    "type": "mbg",
+    "date": 1792886760000,
+    "dateString": "2026-10-24T21:06:00.000-0300",
+    "mbg": 104.0,
+    "sysTime": "2026-10-24T21:06:00.000-0300"
+  },
+  {
+    "device": "xDrip-DexcomG5",
+    "type": "cal",
+    "date": 1792886760000,
+    "dateString": "2026-10-24T21:06:00.000-0300",
+    "slope": 1000.0,
+    "intercept": 0.0,
+    "scale": 1,
+    "sysTime": "2026-10-24T21:06:00.000-0300"
+  }
+]

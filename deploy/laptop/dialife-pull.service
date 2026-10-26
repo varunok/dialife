@@ -1,0 +1,13 @@
+[Unit]
+Description=Pull DiaLife database backups from the server (read-only key)
+After=network-online.target
+
+[Service]
+Type=oneshot
+# DIALIFE_BACKUP_HOST=user@server (see pull.env.example)
+EnvironmentFile=%h/.config/dialife/pull.env
+# no --delete: a wiped server must never wipe the laptop copies
+ExecStart=/usr/bin/rsync -a --partial --chmod=D700,F600 -e "/usr/bin/ssh -i %h/.ssh/dialife_backup -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=20" ${DIALIFE_BACKUP_HOST}:./ %h/dialife-backups/
+# keep 60 days of dailies locally, first-of-month copies forever
+ExecStartPost=/usr/bin/find %h/dialife-backups -maxdepth 1 -name 'dialife-*.db' ! -name 'dialife-*-01.db' -mtime +60 -delete
+Nice=10

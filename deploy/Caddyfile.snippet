@@ -1,0 +1,10 @@
+
+__DOMAIN__ {
+	@api path /api/*
+	handle @api {
+		reverse_proxy localhost:8090
+	}
+	handle {
+		abort
+	}
+}

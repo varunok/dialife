@@ -1,0 +1,52 @@
+[Unit]
+Description=DiaLife API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=dialife
+Group=dialife
+WorkingDirectory=/opt/dialife
+Environment=DIALIFE_ADDR=127.0.0.1:8090
+Environment=DIALIFE_DB=/opt/dialife/data/dialife.db
+# secrets (DIALIFE_SECRET, DIALIFE_NTFY_*): root-only file, optional
+EnvironmentFile=-/etc/dialife.env
+ExecStart=/opt/dialife/bin/dialife serve
+Restart=always
+RestartSec=2
+
+# keep the two existing sites safe if DiaLife misbehaves
+MemoryMax=100M
+
+UMask=0027
+CapabilityBoundingSet=
+AmbientCapabilities=
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/dialife/data
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectKernelLogs=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+ProcSubset=pid
+PrivateUsers=yes
+RestrictSUIDSGID=yes
+RemoveIPC=yes
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+SystemCallErrorNumber=EPERM
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

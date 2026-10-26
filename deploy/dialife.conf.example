@@ -1,0 +1,18 @@
+# DiaLife operator settings, read by tools/dl and the deploy/ scripts.
+# Copy to deploy/dialife.conf (git-ignored) and fill in your own values.
+
+# SSH target of the server
+DIALIFE_HOST=root@203.0.113.10
+# public address of the API (Caddy site), and of ntfy if you run it
+DIALIFE_DOMAIN=dialife.example.com
+DIALIFE_NTFY_DOMAIN=ntfy.example.com
+
+# the Caddyfile that gets the DiaLife site block, and the Caddy service to reload
+CADDYFILE=/etc/caddy/Caddyfile
+CADDY_SERVICE=caddy
+# services "dl status" reports, besides dialife and ntfy
+DL_STATUS_EXTRA=caddy
+
+# ntfy topics "dl push" / "dl test" write to, and the ntfy users "dl ntfy-pass" may change
+DL_PUSH_TOPICS="dialife-dad dialife-mom"
+DL_NTFY_USERS="dad mom"
