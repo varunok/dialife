@@ -275,8 +275,8 @@
     <string name="data_wide">Full-screen table</string>
     <string name="data_chart">Show the chart</string>
     <string name="chart_table">Data as a table</string>
-    <string name="data_suspect_rise">\? rise, nothing logged</string>
-    <string name="data_suspect_fall">\? fall, nothing logged</string>
+    <string name="data_suspect_rise">\? rise %1$s–%2$s · %3$s → %4$s, nothing logged</string>
+    <string name="data_suspect_fall">\? fall %1$s–%2$s · %3$s → %4$s, nothing logged</string>
     <string name="data_suspects">suspect: %1$d</string>
     <string name="data_step_min">%1$d min</string>
     <string name="data_loading">Loading…</string>
@@ -435,4 +435,36 @@
     <string name="stats_day">Day</string>
     <string name="stats_avg">Average</string>
     <string name="stats_daily_hint">From the entries in the app. Entries made before the types existed count as rapid.</string>
+    <string name="web_title">Web login</string>
+    <string name="web_scan">Scan the code</string>
+    <string name="web_scan_hint">Open the DiaLife page in a browser on a computer and scan the code on its screen.</string>
+    <string name="web_not_code">This is not a DiaLife web login code.</string>
+    <string name="web_expired">The code is no longer valid. Reload the page in the browser and scan the new one.</string>
+    <string name="web_ask_title">Allow this login?</string>
+    <string name="web_ask_who">%1$s on %2$s · just scanned</string>
+    <string name="web_ask_body">This browser will see the chart and the table. It cannot take alarms, answer questions or add entries.</string>
+    <string name="web_duration">How long it lasts</string>
+    <string name="web_unit_min">minutes</string>
+    <string name="web_unit_hour">hours</string>
+    <string name="web_unit_day">days</string>
+    <string name="web_until">Valid until %1$s · 90 days at most</string>
+    <string name="web_too_long">90 days at most.</string>
+    <string name="web_allow">Allow</string>
+    <string name="web_deny">Decline</string>
+    <string name="web_allowed">Login allowed until %1$s</string>
+    <string name="web_denied">Login declined</string>
+    <string name="web_sessions">Web logins in use</string>
+    <string name="web_session_line">%1$s · until %2$s · last seen %3$s</string>
+    <string name="web_never">not yet</string>
+    <string name="web_none">Nobody is logged in on the web right now.</string>
+    <string name="web_logout">Log out</string>
+    <string name="web_any_parent">Any parent can close any login.</string>
+    <string name="web_quick_min">%1$d min</string>
+    <string name="web_quick_hour">%1$d h</string>
+    <string name="web_less">Less</string>
+    <string name="web_more">More</string>
+    <plurals name="web_quick_day">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
 </resources>

@@ -279,3 +279,25 @@ data class MeterModel(val a: Double, val b: Double, val offset: Double = 0.0, va
         return kotlin.math.round(sensor * (1 + b) + a + offset * sc).toInt() to kotlin.math.round(sd * sc).toInt()
     }
 }
+
+/** A browser asking to see the data, as the server describes it. */
+@Serializable
+data class WebLoginInfo(
+    val id: String,
+    val browser: String,
+    val os: String,
+    @SerialName("expires_at") val expiresAt: Long,
+    @SerialName("max_minutes") val maxMinutes: Int = 90 * 24 * 60,
+)
+
+/** A browser allowed in: who allowed it, until when, last seen. */
+@Serializable
+data class WebSession(
+    val id: Long,
+    val browser: String,
+    val os: String,
+    val by: String = "",
+    @SerialName("created_at") val createdAt: Long,
+    @SerialName("expires_at") val expiresAt: Long,
+    @SerialName("last_seen_at") val lastSeenAt: Long? = null,
+)

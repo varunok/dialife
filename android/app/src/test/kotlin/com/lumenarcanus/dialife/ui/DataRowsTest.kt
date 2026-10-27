@@ -11,7 +11,7 @@ import org.junit.Test
 
 class DataRowsTest {
     private val m = 60_000L
-    private val t0 = 1_761_400_000_000L
+    private val t0 = 1_761_399_900_000L // on a 15-minute boundary in UTC
     // readings every 5 min for an hour, an entry at +7 min (between readings) and a meal bolus at +31
     private val h = History(
         t0, t0 + 60 * m,
@@ -35,11 +35,18 @@ class DataRowsTest {
     }
 
     @Test
-    fun longerStepLosesNoEntry() {
+    fun longerStepIsIntervalsOnTheClock() {
         val es = entriesOf(h, emptyList(), t0, t0 + 60 * m)
-        val rows = rowsOf(h, es, t0, t0 + 60 * m, 15)
+        val rows = rowsOf(h, es, t0, t0 + 60 * m, 15, java.util.TimeZone.getTimeZone("UTC"))
         assertEquals(listOf(60, 45, 30, 15, 0).map { t0 + it * m }, rows.map { it.t })
+        val first = rows.last() // 00–15: readings 100, 105, 110 and the entry at +7
+        assertEquals(105, first.sgv)
+        assertEquals(100, first.min)
+        assertEquals(110, first.max)
+        assertEquals(10, first.delta)
+        assertEquals(t0 + 15 * m, first.end)
+        assertEquals(1, first.entries.size)
+        assertEquals(2, rows.single { it.t == t0 + 30 * m }.entries.size) // the meal bolus at +31
         assertEquals(3, rows.sumOf { it.entries.size })
-        assertEquals(2, rows.single { it.t == t0 + 45 * m }.entries.size)
     }
 }

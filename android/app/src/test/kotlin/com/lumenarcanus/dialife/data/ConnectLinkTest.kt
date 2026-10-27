@@ -45,4 +45,15 @@ class ConnectLinkTest {
         assertNull(normalizeServer("https://x.com/api"))
         assertTrue(isValidToken(" $token "))
     }
+
+    @Test
+    fun webLoginLink() {
+        val id = "0123456789abcdef0123456789abcdef"
+        val code = "a".repeat(40)
+        assertEquals(WebLoginLink(id, code), parseWebLoginLink("dialife://web-login?id=$id&code=$code"))
+        assertNull(parseWebLoginLink("dialife://connect?id=$id&code=$code"))
+        assertNull(parseWebLoginLink("dialife://web-login?id=$id"))
+        assertNull(parseWebLoginLink("dialife://web-login?id=x%27or&code=$code"))
+        assertNull(parseWebLoginLink("https://example.com"))
+    }
 }

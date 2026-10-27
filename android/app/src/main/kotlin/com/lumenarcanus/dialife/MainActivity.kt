@@ -58,7 +58,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lumenarcanus.dialife.ui.theme.DiaLifeTheme
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 
-private enum class Screen { Home, Stats, Log, Settings, Handling, Data }
+private enum class Screen { Home, Stats, Log, Settings, Handling, Data, WebLogin }
 
 // AppCompatActivity (not plain ComponentActivity) so the in-app language works on Android 12 too.
 class MainActivity : AppCompatActivity() {
@@ -162,6 +162,10 @@ class MainActivity : AppCompatActivity() {
                                     onBack = { screen = Screen.Home },
                                 )
                             }
+                            Screen.WebLogin -> com.lumenarcanus.dialife.ui.web.WebLoginScreen(
+                                creds = s.credentials,
+                                onBack = { screen = Screen.Home },
+                            )
                             Screen.Log -> AlarmLogScreen(
                                 creds = s.credentials,
                                 units = unitsOf(liveRepository.live.value.state?.displayUnits ?: s.credentials.displayUnits),
@@ -210,6 +214,7 @@ class MainActivity : AppCompatActivity() {
             onOpenStats = { onOpen(Screen.Stats) },
             onOpenLog = { onOpen(Screen.Log) },
             onOpenData = { onOpen(Screen.Data) },
+            onOpenWebLogin = { onOpen(Screen.WebLogin) },
             onOpenSettings = { onOpen(Screen.Settings) },
             onOpenHandling = { id -> openHandling = id },
             onRetry = liveRepository::reconnectNow,

@@ -42,6 +42,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -82,8 +83,21 @@ data class Entry(
     val question: Question? = null,
 )
 
-/** A row: the reading at t (if any) and every entry from the previous row's time up to it. */
-data class DataRow(val t: Long, val sgv: Int?, val delta: Int?, val entries: List<Entry>)
+/**
+ * A row: one reading (5 minutes), or a clock-aligned interval from [t] to [end]
+ * with the mean of its readings and their range. [span]: a suspect rise or
+ * fall that began earlier runs on through it.
+ */
+data class DataRow(
+    val t: Long,
+    val sgv: Int?,
+    val delta: Int?,
+    val entries: List<Entry>,
+    val end: Long? = null,
+    val min: Int? = null,
+    val max: Int? = null,
+    val span: Boolean = false,
+)
 
 private const val MIN = 60_000L
 private const val HOUR = 60 * MIN
@@ -109,31 +123,43 @@ fun entriesOf(h: History?, questions: List<Question>, from: Long, to: Long): Lis
 }
 
 /**
- * Rows newest first, one reading per `stepMin` (5: every reading). An entry
- * goes to the row whose time covers it, so a longer step loses none.
+ * Rows newest first. 5 minutes: every reading, each with the entries since the
+ * one before. Longer: intervals on the clock (10:00–10:15…), every reading in
+ * them averaged, every entry in the interval it falls in.
  */
-fun rowsOf(h: History?, entries: List<Entry>, from: Long, to: Long, stepMin: Int): List<DataRow> {
+fun rowsOf(h: History?, entries: List<Entry>, from: Long, to: Long, stepMin: Int, zone: java.util.TimeZone = java.util.TimeZone.getDefault()): List<DataRow> {
     val ts = h?.sgv?.t.orEmpty()
     val vs = h?.sgv?.v.orEmpty()
-    val idx = ts.indices.filter { ts[it] in from..to }.reversed()
-    val picked = mutableListOf<Int>()
-    for (i in idx) {
-        if (picked.isEmpty() || ts[picked.last()] - ts[i] >= stepMin * MIN - 2 * MIN) picked += i
+    val idx = ts.indices.filter { ts[it] in from..to }
+    val suspects = entries.filter { it.kind == EntryKind.Suspect }.mapNotNull { it.question }
+    if (stepMin <= 5) {
+        if (idx.isEmpty()) return entries.reversed().map { DataRow(it.t, null, null, listOf(it)) }
+        val rows = idx.reversed().map { i ->
+            val delta = if (i > 0 && ts[i] - ts[i - 1] <= 10 * MIN) vs[i] - vs[i - 1] else null
+            DataRow(ts[i], vs[i], delta, emptyList(), span = suspects.any { q -> q.from < ts[i] && q.to >= ts[i] })
+        }.toMutableList()
+        for (e in entries) {
+            // the oldest row at or after the entry; past the newest reading: the newest row
+            val k = rows.indexOfLast { it.t >= e.t }.takeIf { it >= 0 } ?: 0
+            rows[k] = rows[k].copy(entries = rows[k].entries + e)
+        }
+        return rows
     }
-    if (picked.isEmpty()) {
-        // no readings: the entries alone, one row each
-        return entries.reversed().map { DataRow(it.t, null, null, listOf(it)) }
+    val step = stepMin * MIN
+    fun bucket(t: Long): Long { val off = zone.getOffset(t); return Math.floorDiv(t + off, step) * step - off }
+    val values = idx.groupBy({ bucket(ts[it]) }, { vs[it] })
+    val logged = entries.groupBy { bucket(it.t) }
+    return (values.keys + logged.keys).distinct().sortedDescending().map { b ->
+        val v = values[b].orEmpty()
+        DataRow(
+            t = b, end = b + step,
+            sgv = if (v.isEmpty()) null else Math.round(v.average()).toInt(),
+            min = v.minOrNull(), max = v.maxOrNull(),
+            delta = if (v.size > 1) v.last() - v.first() else null,
+            entries = logged[b].orEmpty(),
+            span = suspects.any { q -> q.from < b && q.to >= b },
+        )
     }
-    val rows = picked.map { i ->
-        val delta = if (i > 0 && ts[i] - ts[i - 1] <= 10 * MIN) vs[i] - vs[i - 1] else null
-        DataRow(ts[i], vs[i], delta, emptyList())
-    }.toMutableList()
-    for (e in entries) {
-        // the oldest row at or after the entry; past the newest reading: the newest row
-        val k = rows.indexOfLast { it.t >= e.t }.takeIf { it >= 0 } ?: 0
-        rows[k] = rows[k].copy(entries = rows[k].entries + e)
-    }
-    return rows
 }
 
 enum class DataFilter { All, Entries, Out }
@@ -191,7 +217,7 @@ fun DataScreen(
         when (filter) {
             DataFilter.All -> true
             DataFilter.Entries -> r.entries.isNotEmpty()
-            DataFilter.Out -> r.sgv != null && (r.sgv < thresholds.low || r.sgv > thresholds.high)
+            DataFilter.Out -> (r.min ?: r.sgv)?.let { it < thresholds.low } == true || (r.max ?: r.sgv)?.let { it > thresholds.high } == true
         }
     }
     val ctx = LocalContext.current
@@ -334,21 +360,37 @@ private fun ListRow(r: DataRow, units: Units, th: Thresholds, onEdit: (Treatment
     val c = DiaTheme.colors
     val ctx = LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
+    // a suspect rise or fall: an orange edge on the rows it spans
+    val stripe = r.span || r.entries.any { it.kind == EntryKind.Suspect }
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 36.dp).padding(horizontal = 14.dp, vertical = 6.dp),
+        Modifier.fillMaxWidth().heightIn(min = 36.dp)
+            .drawBehind { if (stripe) drawRect(c.high, size = androidx.compose.ui.geometry.Size(3.dp.toPx(), size.height)) }
+            .padding(horizontal = 14.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(AlarmText.clock(ctx, r.t), color = c.textMuted, fontSize = 12.sp, fontFamily = PlexMono, modifier = Modifier.width(50.dp))
-        Row(Modifier.width(74.dp), verticalAlignment = Alignment.Bottom) {
-            r.sgv?.let { v ->
-                Text(formatGlucose(v, units, locale), color = valueColor(v, th, c.low, c.inRange, c.high), fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-                Text(" " + arrowOf(r.delta), color = c.textMuted, fontSize = 12.sp)
+        Text(
+            AlarmText.clock(ctx, r.t) + (r.end?.let { "\n" + AlarmText.clock(ctx, it) } ?: ""),
+            color = c.textMuted, fontSize = 12.sp, fontFamily = PlexMono, lineHeight = 14.sp, modifier = Modifier.width(50.dp),
+        )
+        Column(Modifier.width(74.dp)) {
+            Row(verticalAlignment = Alignment.Bottom) {
+                r.sgv?.let { v ->
+                    Text(formatGlucose(v, units, locale), color = valueColor(v, th, c.low, c.inRange, c.high), fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                    if (r.end == null) Text(" " + arrowOf(r.delta), color = c.textMuted, fontSize = 12.sp)
+                }
+            }
+            if (r.end != null && r.min != null && r.max != null) {
+                Row {
+                    Text(formatGlucose(r.min, units, locale), color = if (r.min < th.low) c.low else c.textMuted, fontSize = 10.5.sp, fontFamily = PlexMono)
+                    Text("–", color = c.textFaint, fontSize = 10.5.sp, fontFamily = PlexMono)
+                    Text(formatGlucose(r.max, units, locale), color = if (r.max > th.high) c.high else c.textMuted, fontSize = 10.5.sp, fontFamily = PlexMono)
+                }
             }
         }
         Text(r.delta?.let { formatDelta(it, units, locale) }.orEmpty(), color = c.textMuted, fontSize = 12.sp, fontFamily = PlexMono, modifier = Modifier.width(44.dp))
         FlowRow(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            r.entries.forEach { e -> EntryChip(e, units, onEdit) }
+            r.entries.forEach { e -> EntryChip(e, units, onEdit, showTime = r.end != null) }
         }
     }
 }
@@ -383,8 +425,20 @@ private fun entryText(e: Entry, units: Units): String {
         EntryKind.Meter -> "◆ " + formatGlucose(e.meter ?: 0, units, locale)
         EntryKind.Activity -> stringResource(R.string.tr_activity) + " " + stringResource(R.string.data_step_min, tr?.duration ?: 0)
         EntryKind.Note -> tr?.notes.orEmpty().take(32)
-        EntryKind.Suspect -> stringResource(if (e.question?.kind == "fall") R.string.data_suspect_fall else R.string.data_suspect_rise)
+        EntryKind.Suspect -> suspectText(e, units)
     }
+}
+
+/** "? підйом 13:50–14:20 · 129 → 171, нічого не записано": a suspect carries its own span. */
+@Composable
+private fun suspectText(e: Entry, units: Units): String {
+    val q = e.question ?: return "?"
+    val ctx = LocalContext.current
+    val locale = LocalConfiguration.current.locales[0]
+    return stringResource(
+        if (q.kind == "fall") R.string.data_suspect_fall else R.string.data_suspect_rise,
+        AlarmText.clock(ctx, q.from), AlarmText.clock(ctx, q.to), formatGlucose(q.sgvFrom, units, locale), formatGlucose(q.sgvTo, units, locale),
+    )
 }
 
 /** Who added it: a parent's name, "xDrip", or the meter that sent it; null when unknown. */
@@ -405,7 +459,8 @@ private fun whoOf(e: Entry): Pair<String, Boolean>? {
 }
 
 @Composable
-private fun EntryChip(e: Entry, units: Units, onEdit: (Treatment) -> Unit) {
+private fun EntryChip(e: Entry, units: Units, onEdit: (Treatment) -> Unit, showTime: Boolean = false) {
+    val ctx = LocalContext.current
     val (ink, bg) = inkOf(e.kind)
     val who = whoOf(e)
     Row(
@@ -415,7 +470,9 @@ private fun EntryChip(e: Entry, units: Units, onEdit: (Treatment) -> Unit) {
             .padding(horizontal = 8.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(entryText(e, units) + (who?.let { " · " + it.first } ?: ""), color = ink, fontSize = 11.5.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+        // in an interval, say when exactly; a suspect already carries its span
+        val at = if (showTime && e.kind != EntryKind.Suspect) " · " + AlarmText.clock(ctx, e.t) else ""
+        Text(entryText(e, units) + at + (who?.let { " · " + it.first } ?: ""), color = ink, fontSize = 11.5.sp, fontWeight = FontWeight.Medium, maxLines = 2)
         if (who?.second == true) {
             Spacer(Modifier.width(5.dp))
             Box(Modifier.size(5.dp).background(DiaTheme.colors.textMuted, CircleShape))
@@ -458,7 +515,7 @@ private fun WideTable(
     BackHandler(onBack = onClose)
     val u = stringResource(R.string.unit_insulin)
     val g = stringResource(R.string.unit_carbs)
-    val widths = listOf(54.dp, 70.dp, 52.dp, 64.dp, 110.dp, 104.dp, 70.dp, 90.dp, 200.dp)
+    val widths = listOf(96.dp, 110.dp, 52.dp, 64.dp, 110.dp, 104.dp, 70.dp, 90.dp, 200.dp)
     Column(Modifier.fillMaxSize().background(c.background).displayCutoutPadding().padding(start = 14.dp, end = 14.dp, top = 8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(window, color = c.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f), maxLines = 1)
@@ -501,17 +558,22 @@ private fun WideTable(
                     fun Cell(es: List<Entry>, ink: Color, text: @Composable (Entry) -> String) {
                         val tr = es.firstOrNull()?.treatment
                         Text(
-                            if (es.isEmpty()) "·" else es.map { text(it) }.joinToString(", "),
+                            if (es.isEmpty()) "·" else es.map { text(it) + if (r.end != null) " · " + AlarmText.clock(ctx, it.t) else "" }.joinToString(", "),
                             color = if (es.isEmpty()) c.textFaint else ink, fontSize = 12.5.sp, fontFamily = PlexMono, maxLines = 2,
                             modifier = if (tr != null) Modifier.clickable { onEdit(tr) } else Modifier,
                         )
                     }
                     Line(
                         listOf(
-                            { Text(AlarmText.clock(ctx, r.t), color = c.textMuted, fontSize = 12.sp, fontFamily = PlexMono) },
+                            { Text(AlarmText.clock(ctx, r.t) + (r.end?.let { "–" + AlarmText.clock(ctx, it) } ?: ""), color = c.textMuted, fontSize = 12.sp, fontFamily = PlexMono) },
                             {
                                 r.sgv?.let { v ->
-                                    Text(formatGlucose(v, units, locale) + " " + arrowOf(r.delta), color = valueColor(v, th, c.low, c.inRange, c.high), fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                                    Row(verticalAlignment = Alignment.Bottom) {
+                                        Text(formatGlucose(v, units, locale) + if (r.end == null) " " + arrowOf(r.delta) else "", color = valueColor(v, th, c.low, c.inRange, c.high), fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                                        if (r.end != null && r.min != null && r.max != null) {
+                                            Text(" " + formatGlucose(r.min, units, locale) + "–" + formatGlucose(r.max, units, locale), color = c.textMuted, fontSize = 10.5.sp, fontFamily = PlexMono)
+                                        }
+                                    }
                                 }
                             },
                             { Text(r.delta?.let { formatDelta(it, units, locale) }.orEmpty(), color = c.textMuted, fontSize = 12.sp, fontFamily = PlexMono) },
@@ -523,7 +585,7 @@ private fun WideTable(
                             {
                                 val notes = r.entries.mapNotNull { e ->
                                     when (e.kind) {
-                                        EntryKind.Suspect -> stringResource(if (e.question?.kind == "fall") R.string.data_suspect_fall else R.string.data_suspect_rise)
+                                        EntryKind.Suspect -> suspectText(e, units)
                                         EntryKind.Note -> e.treatment?.notes
                                         else -> e.treatment?.notes?.takeIf { it.isNotBlank() }
                                     }

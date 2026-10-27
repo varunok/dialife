@@ -214,6 +214,7 @@ fun HomeScreen(
     onAnswerQuestion: (id: Long, answer: String, treatmentId: String?) -> Unit = { _, _, _ -> },
     onDismissQuestion: (Long) -> Unit = {},
     onOpenData: () -> Unit = {},
+    onOpenWebLogin: () -> Unit = {},
 ) {
     val c = DiaTheme.colors
     val locale = LocalConfiguration.current.locales[0]
@@ -285,7 +286,7 @@ fun HomeScreen(
             state == null || state.ageMin >= STALE_MIN -> R.string.status_stale
             else -> R.string.status_live
         }
-        Header(deviceName, status, onOpenStats, onOpenLog, onOpenSettings)
+        Header(deviceName, status, onOpenStats, onOpenLog, onOpenSettings, onOpenWebLogin)
         if (state != null) {
             Hero(state, locale)
         } else {
@@ -430,7 +431,7 @@ private fun FullScreenChart(onClose: () -> Unit, content: @Composable () -> Unit
 }
 
 @Composable
-private fun Header(deviceName: String, status: Int, onOpenStats: () -> Unit, onOpenLog: () -> Unit, onOpenSettings: () -> Unit) {
+private fun Header(deviceName: String, status: Int, onOpenStats: () -> Unit, onOpenLog: () -> Unit, onOpenSettings: () -> Unit, onOpenWebLogin: () -> Unit) {
     val c = DiaTheme.colors
     val live = status == R.string.status_live
     val offline = status == R.string.status_offline
@@ -465,6 +466,7 @@ private fun Header(deviceName: String, status: Int, onOpenStats: () -> Unit, onO
                 }
                 DropdownMenuItem(text = { Text(stringResource(R.string.stats_title)) }, onClick = { menu = false; onOpenStats() })
                 DropdownMenuItem(text = { Text(stringResource(R.string.log_title)) }, onClick = { menu = false; onOpenLog() })
+                DropdownMenuItem(text = { Text(stringResource(R.string.web_title)) }, onClick = { menu = false; onOpenWebLogin() })
                 DropdownMenuItem(text = { Text(stringResource(R.string.action_settings)) }, onClick = { menu = false; onOpenSettings() })
             }
         }

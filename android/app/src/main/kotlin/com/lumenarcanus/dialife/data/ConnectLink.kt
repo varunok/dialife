@@ -41,3 +41,20 @@ fun isValidToken(token: String) = tokenPattern.matches(token.trim())
 class LinkException(val error: LinkError) : Exception(error.toString())
 
 private fun failure(e: LinkError) = Result.failure<ConnectLink>(LinkException(e))
+
+/** What a web viewer's QR code carries: `dialife://web-login?id=…&code=…`. */
+data class WebLoginLink(val id: String, val code: String)
+
+/** The web-login link in a scanned QR, or null when it is something else. */
+fun parseWebLoginLink(raw: String): WebLoginLink? {
+    val uri = runCatching { URI(raw.trim()) }.getOrNull() ?: return null
+    if (uri.scheme != "dialife" || uri.host != "web-login") return null
+    val params = uri.rawQuery.orEmpty().split('&').mapNotNull { pair ->
+        val (k, v) = pair.split('=', limit = 2).takeIf { it.size == 2 } ?: return@mapNotNull null
+        URLDecoder.decode(k, "UTF-8") to URLDecoder.decode(v, "UTF-8")
+    }.toMap()
+    val hex = Regex("^[0-9a-f]{20,64}$")
+    val id = params["id"]?.takeIf { hex.matches(it) } ?: return null
+    val code = params["code"]?.takeIf { hex.matches(it) } ?: return null
+    return WebLoginLink(id, code)
+}

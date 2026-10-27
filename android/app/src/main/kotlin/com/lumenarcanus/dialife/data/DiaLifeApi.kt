@@ -104,6 +104,38 @@ class DiaLifeApi(
         }
     }
 
+    /** Which browser a scanned web-login code belongs to; 404 or 410: no longer valid. */
+    suspend fun webInspect(c: Credentials, link: WebLoginLink): Result<WebLoginInfo> =
+        postFor(c, "/api/web/inspect", buildJsonObject { put("id", link.id); put("code", link.code) }.toString())
+
+    suspend fun webApprove(c: Credentials, link: WebLoginLink, minutes: Int): Result<Unit> =
+        postFor<Unit?>(c, "/api/web/approve", buildJsonObject { put("id", link.id); put("code", link.code); put("minutes", minutes) }.toString()).map { }
+
+    suspend fun webReject(c: Credentials, link: WebLoginLink): Result<Unit> =
+        postFor<Unit?>(c, "/api/web/reject", buildJsonObject { put("id", link.id); put("code", link.code) }.toString()).map { }
+
+    suspend fun webSessions(c: Credentials): Result<List<WebSession>> = get(c.server, c.token, "/api/web/sessions")
+
+    suspend fun webRevoke(c: Credentials, id: Long): Result<Unit> = post(c, "/api/web/sessions/$id/revoke", "{}")
+
+    /** A POST whose answer matters, every status as it is (unlike the alarm actions). */
+    private suspend inline fun <reified T> postFor(c: Credentials, path: String, body: String): Result<T> = withContext(Dispatchers.IO) {
+        val req = Request.Builder().url(c.server + path).header("Authorization", "Bearer ${c.token}")
+            .post(body.toRequestBody("application/json".toMediaType())).build()
+        try {
+            http.newCall(req).execute().use { resp ->
+                when {
+                    resp.code == 401 || resp.code == 403 -> Result.failure(ApiException(ApiError.Unauthorized))
+                    !resp.isSuccessful -> Result.failure(ApiException(ApiError.Server(resp.code)))
+                    resp.code == 204 -> Result.success(null as T)
+                    else -> Result.success(json.decodeFromString<T>(resp.body.string()))
+                }
+            }
+        } catch (e: IOException) {
+            Result.failure(ApiException(ApiError.Network))
+        }
+    }
+
     /** Alarm actions; 404 (episode already over) counts as done, 409 is a refused quiet. */
     private suspend fun post(c: Credentials, path: String, body: String): Result<Unit> = withContext(Dispatchers.IO) {
         val req = Request.Builder()
