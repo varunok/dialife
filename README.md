@@ -174,9 +174,9 @@ Or download a ready APK from [Releases](https://github.com/varunok/dialife/relea
 Install the APK, open it and scan the QR code from `dl device-add … --qr`.
 Then allow notifications, alarms over the lock screen and unrestricted battery
 use, as the app asks. An APK you build yourself is signed with your local debug
-key unless you put your own key in `.local/keys/release.properties` (see
-`android/app/build.gradle.kts`). The APKs on Releases are signed with the
-project's key, so yours will not install over them, nor theirs over yours.
+key. The APKs on Releases are signed with the project's key
+(`./gradlew assembleRelease -Ppublish`, see `android/app/build.gradle.kts`), so
+yours will not install over them, nor theirs over yours.
 
 ### 6. Optional: push through ntfy
 

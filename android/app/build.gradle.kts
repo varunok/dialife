@@ -19,12 +19,16 @@ android {
         versionName = "0.4.0"
     }
 
-    // The published release key lives outside git, in .local/keys/release.properties
-    // (storeFile, storePassword, keyAlias, keyPassword). Without it the release build
-    // falls back to the local debug key: fine for your own phones, not for publishing.
+    // Release builds for the family's own phones are signed with the local debug key,
+    // like the builds already on them. The APKs published on GitHub get the project's
+    // key instead, only when asked: ./gradlew assembleRelease -Ppublish. That key lives
+    // outside git, in .local/keys/release.properties (storeFile, storePassword,
+    // keyAlias, keyPassword).
+    val publish = project.hasProperty("publish")
     val releaseKey = rootDir.resolve("../.local/keys/release.properties")
+    if (publish) check(releaseKey.isFile) { "-Ppublish needs $releaseKey" }
     signingConfigs {
-        if (releaseKey.isFile) create("release") {
+        if (publish) create("release") {
             val p = Properties().apply { releaseKey.inputStream().use { load(it) } }
             storeFile = releaseKey.parentFile.resolve(p.getProperty("storeFile"))
             storePassword = p.getProperty("storePassword")
@@ -43,8 +47,8 @@ android {
 
     buildTypes {
         release {
-            // Installed by hand, not through Play. Every published release must be signed
-            // with the same key, or it will not install over the one before.
+            // Installed by hand, not through Play: an APK installs over another only when
+            // both are signed with the same key, so never mix the two.
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
             isMinifyEnabled = true
             isShrinkResources = true
