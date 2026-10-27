@@ -96,7 +96,7 @@ fun HandlingScreen(
     var lastCarbs by remember { mutableStateOf<Double?>(null) }
 
     if (sheet) {
-        TreatmentSheet(TreatmentKind.Food, null, onSave = { onSaveTreatment(it); sheet = false }, onDismiss = { sheet = false })
+        TreatmentSheet(TreatmentKind.Food, null, onSave = { onSaveTreatment(it); sheet = false }, onDismiss = { sheet = false }, recent = ui.history?.treatments.orEmpty())
     }
     if (confirmEnd) {
         AlertDialog(

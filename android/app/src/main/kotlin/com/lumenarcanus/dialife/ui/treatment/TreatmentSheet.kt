@@ -36,6 +36,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -143,6 +144,19 @@ fun TreatmentSheet(
     val now = remember { System.currentTimeMillis() }
     var time by rememberSaveable { mutableLongStateOf(editing?.t ?: initialTime ?: now) }
 
+    // "… is giving insulin" on the other phones while this form is on insulin
+    val repo = (ctx.applicationContext as? com.lumenarcanus.dialife.DiaLifeApp)?.live // null in previews and tests
+    val live = repo?.live?.collectAsState()?.value?.state
+    val announce = editing == null && kind == TreatmentKind.Insulin
+    var announced by remember { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(announce, insType) {
+        if (announce) repo?.insulinIntent(insType.wire) else if (announced) repo?.insulinIntentEnd()
+        announced = announce
+    }
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { if (announced) repo?.insulinIntentEnd() } }
+    val others = live?.intents.orEmpty().filter { it.deviceId != repo?.myId && it.until > System.currentTimeMillis() }
+    var confirming by remember { mutableStateOf<NearDose?>(null) }
+
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheet, containerColor = c.surface) {
         Column(
             Modifier
@@ -180,6 +194,7 @@ fun TreatmentSheet(
 
             when (kind) {
                 TreatmentKind.Insulin -> {
+                if (others.isNotEmpty()) IntentWarning(others, System.currentTimeMillis())
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                     InsulinType.entries.forEachIndexed { i, t ->
                         SegmentedButton(
@@ -201,6 +216,7 @@ fun TreatmentSheet(
                     accent = if (basal) basalColor(c.isDark) else c.insulin, container = if (basal) basalContainer(c.isDark) else c.insulinContainer, locale = locale,
                     label = stringResource(R.string.tr_insulin),
                 ) { insulin = it }
+                if (editing == null) nearDose(recent, insType, time, null)?.takeIf { it.level == DoseLevel.Recent }?.let { RecentDoseNote(it, live) }
                 }
                 TreatmentKind.Food -> Amount(
                     value = carbs, step = 1.0, max = 300.0, unit = stringResource(R.string.unit_carbs),
@@ -269,24 +285,34 @@ fun TreatmentSheet(
                 TreatmentKind.Activity -> minutes > 0
                 TreatmentKind.Note -> note.isNotBlank()
             }
+            fun build(confirmedNew: String?) = Treatment(
+                id = editing?.id ?: TreatmentQueue.newId(),
+                t = time,
+                // an edit keeps the other half of a meal bolus untouched
+                insulin = if (kind == TreatmentKind.Insulin) insulin else editing?.insulin?.takeIf { kind == TreatmentKind.Food },
+                carbs = if (kind == TreatmentKind.Food) carbs else editing?.carbs?.takeIf { kind == TreatmentKind.Insulin },
+                glucose = if (kind == TreatmentKind.Meter) parseMeter(meter, units) else null,
+                duration = if (kind == TreatmentKind.Activity) minutes.toInt() else null,
+                intensity = if (kind == TreatmentKind.Activity) intensity else null,
+                notes = note.trim().ifBlank { null },
+                insulinType = if (kind == TreatmentKind.Insulin) insType.wire else editing?.insulinType,
+                insulinName = if (kind == TreatmentKind.Insulin) {
+                    editing?.insulinName?.takeIf { InsulinType.of(editing.insulinType) == insType } ?: Prefs.nameOf(insType)
+                } else editing?.insulinName,
+                confirmedNew = confirmedNew,
+            )
+            confirming?.let { near ->
+                SameDoseDialog(
+                    near, insType, live,
+                    onSame = { confirming = null; onDismiss() }, // the same injection: nothing new to log
+                    onNew = { confirming = null; onSave(build(near.dose.id)) },
+                    onBack = { confirming = null },
+                )
+            }
             Button(
                 onClick = {
-                    val t = Treatment(
-                        id = editing?.id ?: TreatmentQueue.newId(),
-                        t = time,
-                        // an edit keeps the other half of a meal bolus untouched
-                        insulin = if (kind == TreatmentKind.Insulin) insulin else editing?.insulin?.takeIf { kind == TreatmentKind.Food },
-                        carbs = if (kind == TreatmentKind.Food) carbs else editing?.carbs?.takeIf { kind == TreatmentKind.Insulin },
-                        glucose = if (kind == TreatmentKind.Meter) parseMeter(meter, units) else null,
-                        duration = if (kind == TreatmentKind.Activity) minutes.toInt() else null,
-                        intensity = if (kind == TreatmentKind.Activity) intensity else null,
-                        notes = note.trim().ifBlank { null },
-                        insulinType = if (kind == TreatmentKind.Insulin) insType.wire else editing?.insulinType,
-                        insulinName = if (kind == TreatmentKind.Insulin) {
-                            editing?.insulinName?.takeIf { InsulinType.of(editing.insulinType) == insType } ?: Prefs.nameOf(insType)
-                        } else editing?.insulinName,
-                    )
-                    onSave(t)
+                    val near = if (editing == null && kind == TreatmentKind.Insulin) nearDose(recent, insType, time, null) else null
+                    if (near?.level == DoseLevel.Same) confirming = near else onSave(build(null))
                 },
                 enabled = amountOk,
                 modifier = Modifier.fillMaxWidth().height(56.dp),

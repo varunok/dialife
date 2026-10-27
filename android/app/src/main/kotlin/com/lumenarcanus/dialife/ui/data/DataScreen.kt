@@ -435,6 +435,7 @@ private fun suspectText(e: Entry, units: Units): String {
     val q = e.question ?: return "?"
     val ctx = LocalContext.current
     if (q.kind == "bolus") return stringResource(R.string.data_suspect_bolus, AlarmText.clock(ctx, q.from))
+    if (q.kind == "double") return stringResource(R.string.data_suspect_double, com.lumenarcanus.dialife.live.QuestionNotifier.doubleInsulin(ctx, q), AlarmText.clock(ctx, q.from), AlarmText.clock(ctx, q.to))
     val locale = LocalConfiguration.current.locales[0]
     return stringResource(
         if (q.kind == "fall") R.string.data_suspect_fall else R.string.data_suspect_rise,

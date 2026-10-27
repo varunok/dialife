@@ -66,6 +66,19 @@ class DiaLifeApi(
     private fun Result<Unit>.closedIsDone(): Result<Unit> =
         recoverCatching { e -> if ((e as? ApiException)?.error == ApiError.Server(409)) Unit else throw e }
 
+    /** The insulin form is open here: the other phones show "… is giving insulin". */
+    suspend fun insulinIntent(c: Credentials, insulin: String): Result<Unit> =
+        post(c, "/api/insulin/intent", buildJsonObject { put("insulin", insulin) }.toString())
+
+    suspend fun insulinIntentEnd(c: Credentials): Result<Unit> = withContext(Dispatchers.IO) {
+        val req = Request.Builder().url(c.server + "/api/insulin/intent").header("Authorization", "Bearer ${c.token}").delete().build()
+        try {
+            http.newCall(req).execute().use { Result.success(Unit) }
+        } catch (e: IOException) {
+            Result.failure(ApiException(ApiError.Network))
+        }
+    }
+
     suspend fun resolve(c: Credentials, id: Long): Result<Unit> = post(c, "/api/alarms/$id/resolve", "{}")
 
     /** Create or replace one treatment; the id is ours, so a retry after a lost answer changes nothing. */
@@ -84,6 +97,7 @@ class DiaLifeApi(
                 t.insulinName?.let { put("insulinName", it) }
             }
             t.notes?.takeIf { it.isNotBlank() }?.let { put("notes", it) }
+            t.confirmedNew?.let { put("confirmedNew", it) } // the server asks nobody about this pair
             put("enteredBy", enteredBy)
         }
         return post(c, "/api/v1/treatments", "[$doc]")

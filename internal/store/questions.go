@@ -9,7 +9,7 @@ import (
 
 type Question struct {
 	ID          int64
-	Kind        string // "rise" | "fall"
+	Kind        string // "rise" | "fall" | "bolus" | "double"
 	From, To    int64  // unix ms
 	SGVFrom     int
 	SGVTo       int
@@ -20,6 +20,7 @@ type Question struct {
 	ClosedAt    *int64
 	ClosedBy    string
 	RemindedAt  *int64
+	RefID       string // "double": the other dose (TreatmentID is the one that may be a duplicate)
 }
 
 type QuestionAnswer struct {
@@ -27,12 +28,12 @@ type QuestionAnswer struct {
 	Round       int
 	Person      string
 	DeviceID    int64
-	Answer      string // "food" | "food_unknown" | "insulin" | "nothing"
+	Answer      string // "food" | "food_unknown" | "insulin" | "nothing"; "double": "one" | "two"
 	TreatmentID string
 	At          int64
 }
 
-const questionCols = `id, kind, from_at, to_at, sgv_from, sgv_to, state, round, outcome, treatment_id, closed_at, closed_by, reminded_at`
+const questionCols = `id, kind, from_at, to_at, sgv_from, sgv_to, state, round, outcome, treatment_id, closed_at, closed_by, reminded_at, coalesce(ref_id, '')`
 
 func scanQuestion(sc scanner) (Question, error) {
 	var (
@@ -40,7 +41,7 @@ func scanQuestion(sc scanner) (Question, error) {
 		outcome, tr, closedBy sql.NullString
 		closedAt, remindedAt  sql.NullInt64
 	)
-	err := sc.Scan(&q.ID, &q.Kind, &q.From, &q.To, &q.SGVFrom, &q.SGVTo, &q.State, &q.Round, &outcome, &tr, &closedAt, &closedBy, &remindedAt)
+	err := sc.Scan(&q.ID, &q.Kind, &q.From, &q.To, &q.SGVFrom, &q.SGVTo, &q.State, &q.Round, &outcome, &tr, &closedAt, &closedBy, &remindedAt, &q.RefID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Question{}, ErrNotFound
 	}
@@ -59,9 +60,10 @@ func scanQuestion(sc scanner) (Question, error) {
 
 func (s *Store) InsertQuestion(ctx context.Context, q Question, now time.Time) (Question, error) {
 	row := s.w.QueryRowContext(ctx,
-		`INSERT INTO questions (kind, from_at, to_at, sgv_from, sgv_to, reminded_at) VALUES (?, ?, ?, ?, ?, ?)
+		`INSERT INTO questions (kind, from_at, to_at, sgv_from, sgv_to, reminded_at, treatment_id, ref_id)
+		 VALUES (?, ?, ?, ?, ?, ?, nullif(?, ''), nullif(?, ''))
 		 RETURNING `+questionCols,
-		q.Kind, q.From, q.To, q.SGVFrom, q.SGVTo, now.UnixMilli())
+		q.Kind, q.From, q.To, q.SGVFrom, q.SGVTo, now.UnixMilli(), q.TreatmentID, q.RefID)
 	return scanQuestion(row)
 }
 

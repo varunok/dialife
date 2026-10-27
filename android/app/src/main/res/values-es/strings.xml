@@ -486,4 +486,30 @@
         <item quantity="many">%d días</item>
         <item quantity="other">%d días</item>
     </plurals>
+    <!-- one injection, not two: the dose guard -->
+    <string name="gap_min">%1$d min</string>
+    <string name="gap_h">%1$d h</string>
+    <string name="gap_h_min">%1$d h %2$d min</string>
+    <string name="dose_by_me">este teléfono</string>
+    <string name="intent_giving">%1$s está poniendo %2$s · abierto hace %3$s</string>
+    <string name="intent_check">Hablad antes de inyectar, para no poner la dosis dos veces.</string>
+    <string name="dose_recent">Anterior: %1$s a las %2$s (%3$s), %4$s de diferencia</string>
+    <string name="dose_same_title">¿La misma inyección?</string>
+    <string name="dose_same_body">%1$s %2$s ya está registrada a las %3$s (%4$s), a %5$s de esta. ¿Es la misma inyección o una nueva?</string>
+    <string name="dose_same">La misma, no registrar</string>
+    <string name="dose_new">Dosis nueva</string>
+    <string name="dose_basal_title">La lenta ya está puesta</string>
+    <string name="dose_basal_body">%1$s %2$s ya está registrada a las %3$s (%4$s), a %5$s de esta. La insulina lenta se pone una vez al día. ¿Registrar otra dosis?</string>
+    <string name="dose_basal_skip">No registrar</string>
+    <string name="dose_basal_new">Registrar otra</string>
+    <string name="q_double_title">¿Una inyección o dos?</string>
+    <string name="q_double_body">%1$s: %2$s a las %3$s (%4$s) y %5$s a las %6$s (%7$s). ¿Una inyección registrada dos veces o dos dosis?</string>
+    <string name="q_btn_one">Una inyección</string>
+    <string name="q_btn_two">Dos dosis</string>
+    <string name="q_ans_one">una inyección</string>
+    <string name="q_ans_two">dos dosis</string>
+    <string name="watch_title">Posible dosis doble</string>
+    <string name="watch_body">%1$s: dos dosis, %2$s y %3$s. Vigilad una hipo hasta las %4$s.</string>
+    <string name="suspect_double">Sospecha: dos dosis de %1$s con %2$s de diferencia</string>
+    <string name="data_suspect_double">\? dos dosis de %1$s a las %2$s y %3$s</string>
 </resources>

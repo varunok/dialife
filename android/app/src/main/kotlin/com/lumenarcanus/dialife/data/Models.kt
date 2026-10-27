@@ -99,7 +99,21 @@ data class StateResponse(
     val questions: List<Question> = emptyList(), // open ones and the last day's suspect marks
     @SerialName("uploader_name") val uploaderName: String? = null, // what the family calls the xDrip+ phone (server config)
     @SerialName("forecast_quality") val forecastQuality: ForecastQuality? = null, // how often "in 30 min" came true lately
+    val intents: List<InsulinIntent> = emptyList(), // parents with the insulin form open right now
 )
+
+/** "Dad is giving insulin": someone opened the insulin form; it ends when the form closes. */
+@Serializable
+data class InsulinIntent(
+    @SerialName("device_id") val deviceId: Long,
+    val person: String,
+    val insulin: String = "rapid", // "rapid" | "basal"
+    val since: Long,
+    val until: Long,
+)
+
+@Serializable
+data class IntentEvent(val intents: List<InsulinIntent> = emptyList())
 
 /** The chart forecast's record on this child's recent readings, and what it cannot see now. */
 @Serializable
@@ -117,7 +131,7 @@ data class ForecastBlind(val kind: String, val t: Long) // "food" | "insulin"
 @Serializable
 data class Question(
     val id: Long,
-    val kind: String, // "rise" | "fall"
+    val kind: String, // "rise" | "fall" | "bolus" | "double" (two doses too close, one from xDrip+)
     val state: String, // "open" | "answered" | "unknown" (a suspect mark) | "dismissed"
     val from: Long,
     val to: Long,
@@ -131,11 +145,19 @@ data class Question(
     @SerialName("waiting_ids") val waitingIds: List<Long> = emptyList(),
     val remind: Boolean = false,
     val quiet: Boolean = false, // night: no sound
+    val doses: List<Dose> = emptyList(), // "double": the two, the one "one injection" removes first
+    val insulin: String? = null, // "double": "rapid" | "basal"
+    @SerialName("watch_until") val watchUntil: Long? = null, // "double" answered "two": watch for a low until then
 ) {
     fun asks(deviceId: Long) = state == "open" && deviceId in waitingIds
+    /** Two doses were given: everyone watches for a low until [watchUntil]. */
+    val watch get() = kind == "double" && state == "answered" && outcome == "two"
     /** What the others said last round, when they disagreed: shown with the repeated question. */
     fun previous(): List<QuestionAnswer> = if (round > 1) answers.filter { it.round == round - 1 } else emptyList()
 }
+
+@Serializable
+data class Dose(val id: String, val t: Long, val units: Double, val by: String = "")
 
 @Serializable
 data class QuestionAnswer(
@@ -179,6 +201,7 @@ data class Treatment(
     val duration: Int? = null, // minutes of activity ("Exercise")
     val intensity: String? = null, // "light" | "moderate" | "vigorous"
     val pending: Boolean = false, // made on this phone, not on the server yet (never sent by the server)
+    @SerialName("confirmed_new") val confirmedNew: String? = null, // saved after the warning about this other dose (sent as confirmedNew)
 )
 
 @Serializable

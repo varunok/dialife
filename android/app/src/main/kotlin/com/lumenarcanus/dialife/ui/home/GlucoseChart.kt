@@ -341,6 +341,7 @@ fun GlucoseChart(
     val suspectRise = stringResource(R.string.suspect_rise)
     val suspectFall = stringResource(R.string.suspect_fall)
     val suspectBolus = stringResource(R.string.suspect_bolus)
+    val suspectDouble = stringResource(R.string.suspect_double)
     val suspectHint = stringResource(R.string.suspect_hint)
     val suspectGlyph = stringResource(R.string.glyph_suspect)
     val activityGlyph = stringResource(R.string.glyph_activity)
@@ -673,7 +674,8 @@ fun GlucoseChart(
             is Pick.Suspect -> {
                 val q = p.question
                 val lines = listOf(
-                    if (q.kind == "bolus") suspectBolus.format(locale, clock(q.from))
+                    if (q.kind == "double") suspectDouble.format(locale, com.lumenarcanus.dialife.live.QuestionNotifier.doubleInsulin(context, q), com.lumenarcanus.dialife.ui.treatment.gapText(context, q.to - q.from))
+                    else if (q.kind == "bolus") suspectBolus.format(locale, clock(q.from))
                     else (if (q.kind == "rise") suspectRise else suspectFall).format(locale, formatGlucose(q.sgvFrom, units, locale), formatGlucose(q.sgvTo, units, locale)),
                     clock(q.from) + " · " + suspectHint,
                 )

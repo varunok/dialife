@@ -620,6 +620,7 @@ function describeMark(id, h, st, meters, idx, ts, vs) {
 // a suspect carries its span; a meal without insulin, its time
 function suspectText(q) {
   if (q.kind === 'bolus') return t('suspectBolus', clock(q.from));
+  if (q.kind === 'double') return t('suspectDouble', clock(q.from), clock(q.to));
   return t(q.kind === 'rise' ? 'suspectRise' : 'suspectFall', clock(q.from), clock(q.to), g(q.sgv_from), g(q.sgv_to));
 }
 

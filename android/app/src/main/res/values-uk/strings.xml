@@ -498,4 +498,30 @@
         <item quantity="many">%d днів</item>
         <item quantity="other">%d дня</item>
     </plurals>
+    <!-- one injection, not two: the dose guard -->
+    <string name="gap_min">%1$d хв</string>
+    <string name="gap_h">%1$d год</string>
+    <string name="gap_h_min">%1$d год %2$d хв</string>
+    <string name="dose_by_me">цей телефон</string>
+    <string name="intent_giving">%1$s вводить %2$s · відкрито %3$s тому</string>
+    <string name="intent_check">Узгодьте перед уколом, щоб доза не пішла двічі.</string>
+    <string name="dose_recent">Попередня: %1$s о %2$s (%3$s), за %4$s від цієї</string>
+    <string name="dose_same_title">Та сама ін’єкція?</string>
+    <string name="dose_same_body">%1$s %2$s уже записано о %3$s (%4$s), за %5$s від цієї. Це та сама ін’єкція чи нова?</string>
+    <string name="dose_same">Та сама — не записувати</string>
+    <string name="dose_new">Нова доза</string>
+    <string name="dose_basal_title">Довгий уже введено</string>
+    <string name="dose_basal_body">%1$s %2$s уже записано о %3$s (%4$s), за %5$s від цієї. Довгий колють раз на добу. Записати ще одну дозу?</string>
+    <string name="dose_basal_skip">Не записувати</string>
+    <string name="dose_basal_new">Записати ще одну</string>
+    <string name="q_double_title">Одна ін’єкція чи дві?</string>
+    <string name="q_double_body">%1$s: %2$s о %3$s (%4$s) і %5$s о %6$s (%7$s). Це одна ін’єкція, записана двічі, чи дві дози?</string>
+    <string name="q_btn_one">Одна ін’єкція</string>
+    <string name="q_btn_two">Дві дози</string>
+    <string name="q_ans_one">одна ін’єкція</string>
+    <string name="q_ans_two">дві дози</string>
+    <string name="watch_title">Можлива подвійна доза</string>
+    <string name="watch_body">%1$s: дві дози, %2$s і %3$s. Стежте за гіпо до %4$s.</string>
+    <string name="suspect_double">Підозра: дві дози %1$s з різницею %2$s</string>
+    <string name="data_suspect_double">\? дві дози %1$s о %2$s і %3$s</string>
 </resources>

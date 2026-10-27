@@ -29,6 +29,7 @@ class QuestionNotifier(private val app: Context) {
 
     /** A single change from the stream; a reminder re-shows it even when nothing changed. */
     fun onEvent(q: Question, myId: Long, units: Units) {
+        if (q.watch) showWatch(q)
         if (!q.asks(myId)) cancel(q.id)
         else if (q.remind || shown[q.id] != q.round) show(q, units)
     }
@@ -70,18 +71,62 @@ class QuestionNotifier(private val app: Context) {
             .setContentIntent(open)
             .setCategory(Notification.CATEGORY_REMINDER)
             .setOnlyAlertOnce(false)
-        if (rise) b.addAction(action("food_unknown", R.string.q_btn_food_unknown))
-        b.addAction(action("nothing", if (q.kind == "bolus") R.string.q_btn_no_insulin else R.string.q_btn_nothing))
-        b.addAction(Notification.Action.Builder(null, app.getString(R.string.q_btn_add), open).build())
+        if (q.kind == "double") {
+            b.addAction(action("one", R.string.q_btn_one))
+            b.addAction(action("two", R.string.q_btn_two))
+        } else {
+            if (rise) b.addAction(action("food_unknown", R.string.q_btn_food_unknown))
+            b.addAction(action("nothing", if (q.kind == "bolus") R.string.q_btn_no_insulin else R.string.q_btn_nothing))
+            b.addAction(Notification.Action.Builder(null, app.getString(R.string.q_btn_add), open).build())
+        }
         nm.notify(TAG, q.id.toInt(), b.build())
         shown[q.id] = q.round
     }
 
+    private val watched = mutableSetOf<Long>()
+
+    /** "Two doses": once, to everyone, sounding like a message even at night. */
+    private fun showWatch(q: Question) {
+        if (!watched.add(q.id)) return
+        val open = PendingIntent.getActivity(
+            app, q.id.toInt(), Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val body = watchBody(app, q)
+        val n = Notification.Builder(app, Notifications.CHANNEL_QUESTIONS)
+            .setSmallIcon(R.drawable.ic_stat_drop)
+            .setContentTitle(app.getString(R.string.watch_title))
+            .setContentText(body)
+            .setStyle(Notification.BigTextStyle().bigText(body))
+            .setContentIntent(open)
+            .setAutoCancel(true)
+            .build()
+        nm.notify(WATCH_TAG, q.id.toInt(), n)
+    }
+
     companion object {
         const val TAG = "question"
+        private const val WATCH_TAG = "watch"
+
+        /** "Rapilog One: two doses, 2 U and 2 U. Watch for a low until 15:10." */
+        fun watchBody(ctx: Context, q: Question): String {
+            val doses = q.doses.sortedBy { it.t }
+            return ctx.getString(
+                R.string.watch_body, doubleInsulin(ctx, q),
+                doses.getOrNull(0)?.let { units(ctx, it.units) }.orEmpty(), doses.getOrNull(1)?.let { units(ctx, it.units) }.orEmpty(),
+                AlarmText.clock(ctx, q.watchUntil ?: q.to),
+            )
+        }
+
+        fun doubleInsulin(ctx: Context, q: Question): String = com.lumenarcanus.dialife.ui.treatment.insulinLabel(
+            ctx, com.lumenarcanus.dialife.data.InsulinType.of(q.insulin),
+        )
+
+        private fun units(ctx: Context, u: Double) =
+            com.lumenarcanus.dialife.ui.treatment.formatAmount(u, ctx.resources.configuration.locales[0]) + " " + ctx.getString(R.string.unit_insulin)
 
         fun questionTitle(ctx: Context, q: Question): String = ctx.getString(
-            when (q.kind) { "rise" -> R.string.q_rise_title; "bolus" -> R.string.q_bolus_title; else -> R.string.q_fall_title },
+            when (q.kind) { "rise" -> R.string.q_rise_title; "bolus" -> R.string.q_bolus_title; "double" -> R.string.q_double_title; else -> R.string.q_fall_title },
         )
 
         /** "Glucose rose from 118 to 171 since 13:20", or for a meal without insulin "Food was logged at 19:10…". */
@@ -89,6 +134,13 @@ class QuestionNotifier(private val app: Context) {
             val locale = ctx.resources.configuration.locales[0]
             fun g(v: Int) = formatGlucose(v, units, locale)
             return when (q.kind) {
+                "double" -> {
+                    val (a, b) = q.doses.sortedBy { it.t }.let { (it.getOrNull(0) ?: return "") to (it.getOrNull(1) ?: it[0]) }
+                    ctx.getString(
+                        R.string.q_double_body, doubleInsulin(ctx, q),
+                        units(ctx, a.units), AlarmText.clock(ctx, a.t), a.by, units(ctx, b.units), AlarmText.clock(ctx, b.t), b.by,
+                    )
+                }
                 "bolus" -> ctx.getString(R.string.q_bolus_body, AlarmText.clock(ctx, q.from))
                 "rise" -> ctx.getString(R.string.q_rise_body, g(q.sgvFrom), g(q.sgvTo), AlarmText.clock(ctx, q.from))
                 else -> ctx.getString(R.string.q_fall_body, g(q.sgvFrom), g(q.sgvTo), AlarmText.clock(ctx, q.from))
@@ -100,6 +152,8 @@ class QuestionNotifier(private val app: Context) {
                 "food" -> R.string.q_ans_food
                 "food_unknown" -> R.string.q_ans_food_unknown
                 "insulin" -> R.string.q_ans_insulin
+                "one" -> R.string.q_ans_one
+                "two" -> R.string.q_ans_two
                 else -> R.string.q_ans_nothing
             },
         )

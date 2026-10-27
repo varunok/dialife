@@ -54,7 +54,7 @@ func New(d Deps) *App {
 		timing = alarms.DefaultTiming
 	}
 	api.Alarms = &alarms.Engine{Store: d.Store, Bus: d.Bus, Now: d.Now, Input: api.AlarmInput, Rules: alarms.DefaultRules, Timing: timing}
-	api.Questions = &questions.Engine{Store: d.Store, Bus: d.Bus, Now: d.Now, Loc: d.Loc}
+	api.Questions = &questions.Engine{Store: d.Store, Bus: d.Bus, Now: d.Now, Loc: d.Loc, Uploader: d.Uploader}
 	status := nsv1.Status(d.Version, func(ctx context.Context) config.Thresholds { return api.Alarms.CurrentRules(ctx).Thresholds }, d.Now)
 	ns := &nsv1.Handlers{Store: d.Store, Now: d.Now, Events: api}
 
@@ -99,6 +99,8 @@ func New(d Deps) *App {
 	mux.Handle("GET /api/web/sessions", caregiver(http.HandlerFunc(api.WebSessions)))
 	mux.Handle("POST /api/web/sessions/{id}/revoke", caregiver(http.HandlerFunc(api.WebSessionRevoke)))
 	mux.Handle("POST /api/web/logout", anyRole(http.HandlerFunc(api.WebLogout)))
+	mux.Handle("POST /api/insulin/intent", caregiver(http.HandlerFunc(api.InsulinIntent)))
+	mux.Handle("DELETE /api/insulin/intent", caregiver(http.HandlerFunc(api.InsulinIntentEnd)))
 	mux.Handle("POST /api/questions/{id}/answer", caregiver(http.HandlerFunc(api.AnswerQuestion)))
 	mux.Handle("POST /api/questions/{id}/dismiss", caregiver(http.HandlerFunc(api.DismissQuestion)))
 	// no token: the signed link is the credential (see acklink)

@@ -2,6 +2,7 @@ package questions
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"slices"
@@ -36,6 +37,8 @@ type Engine struct {
 	Bus   *bus.Bus
 	Now   func() time.Time
 	Loc   *time.Location // night hours; nil: UTC
+	// what the family calls the xDrip+ phone: who gave a dose that came from it
+	Uploader string
 
 	mu sync.Mutex
 }
@@ -64,7 +67,19 @@ type View struct {
 	Waiting     []string `json:"waiting"`     // people yet to answer this round
 	WaitingIDs  []int64  `json:"waiting_ids"` // their phones: a phone asks when its id is here
 	Remind      bool     `json:"remind,omitempty"`
-	Quiet       bool     `json:"quiet,omitempty"` // night: show it without sound
+	// "double": the two doses, the one "one injection" would remove first;
+	// Insulin is "rapid" or "basal"; WatchUntil, after "two", ends the watch for a low
+	Doses      []DoseView `json:"doses,omitempty"`
+	Insulin    string     `json:"insulin,omitempty"`
+	WatchUntil int64      `json:"watch_until,omitempty"`
+	Quiet      bool       `json:"quiet,omitempty"` // night: show it without sound
+}
+
+type DoseView struct {
+	ID    string  `json:"id"`
+	T     int64   `json:"t"`
+	Units float64 `json:"units"`
+	By    string  `json:"by"`
 }
 
 // Run checks once a minute: timeouts and reminders happen without new readings.
@@ -108,7 +123,84 @@ func (e *Engine) Evaluate(ctx context.Context) error {
 	if err := e.detect(ctx, qs, logged, now); err != nil {
 		return err
 	}
-	return e.detectBolus(ctx, qs, logged, now)
+	if err := e.detectBolus(ctx, qs, logged, now); err != nil {
+		return err
+	}
+	return e.detectDouble(ctx, qs, now)
+}
+
+// detectDouble asks about two doses too close together when xDrip+ sent one of them.
+func (e *Engine) detectDouble(ctx context.Context, qs []store.Question, now time.Time) error {
+	ds, err := e.doses(ctx, now.Add(-doubleRecent-DoubleBasal), now)
+	if err != nil {
+		return err
+	}
+	for _, p := range Doubles(ds, now) {
+		dup, other := p[0], p[1]
+		asked := false
+		for _, q := range qs {
+			if q.Kind == "double" && q.TreatmentID == dup.ID {
+				asked = true
+				break
+			}
+		}
+		if asked {
+			continue
+		}
+		q, err := e.Store.InsertQuestion(ctx, store.Question{
+			Kind: "double", From: min(dup.T, other.T), To: max(dup.T, other.T), TreatmentID: dup.ID, RefID: other.ID,
+		}, now)
+		if err != nil {
+			return err
+		}
+		qs = append(qs, q)
+		slog.Info("question", "id", q.ID, "kind", "double", "dose", dup.ID, "other", other.ID)
+		if err := e.publish(ctx, q, now, false); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// doses: the insulin entries between from and to, oldest first.
+func (e *Engine) doses(ctx context.Context, from, to time.Time) ([]Dose, error) {
+	f, t := from.UnixMilli(), to.UnixMilli()
+	ts, err := e.Store.ListTreatments(ctx, store.TreatmentQuery{Gte: &f, Lte: &t, Count: 1000})
+	if err != nil {
+		return nil, err
+	}
+	devs, err := e.Store.ListDevices(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var out []Dose
+	for i := len(ts) - 1; i >= 0; i-- {
+		if d, ok := doseOf(ts[i], devs); ok {
+			out = append(out, d)
+		}
+	}
+	return out, nil
+}
+
+func doseOf(tr store.Treatment, devs []store.Device) (Dose, bool) {
+	if tr.Insulin == nil || *tr.Insulin <= 0 {
+		return Dose{}, false
+	}
+	var raw struct {
+		Checked string `json:"confirmedNew"`
+	}
+	_ = json.Unmarshal(tr.Raw, &raw)
+	_, parent := caregiverByID(devs, tr.DeviceID)
+	return Dose{ID: tr.ID, T: tr.CreatedAt, Units: *tr.Insulin, Basal: isBasal(tr.Raw), XDrip: !parent, Checked: raw.Checked}, true
+}
+
+// treatment: a live entry by id; false once deleted.
+func (e *Engine) treatment(ctx context.Context, id string) (store.Treatment, bool, error) {
+	ts, err := e.Store.ListTreatments(ctx, store.TreatmentQuery{ID: id, Count: 1})
+	if err != nil || len(ts) == 0 {
+		return store.Treatment{}, false, err
+	}
+	return ts[0], true, nil
 }
 
 // detectBolus asks about a meal logged without rapid insulin.
@@ -156,6 +248,20 @@ func (e *Engine) step(ctx context.Context, q store.Question, logged []loggedEntr
 	devs, err := e.Store.ListDevices(ctx)
 	if err != nil {
 		return err
+	}
+	if q.Kind == "double" {
+		// someone deleted one of the two: nothing left to ask
+		for _, id := range []string{q.TreatmentID, q.RefID} {
+			_, ok, err := e.treatment(ctx, id)
+			if err != nil {
+				return err
+			}
+			if !ok {
+				q.State, q.Outcome = "answered", "one"
+				q.ClosedAt = ptr(now.UnixMilli())
+				return e.save(ctx, q, now, false)
+			}
+		}
 	}
 	// an entry that explains it: from xDrip+ it settles the question, from a parent it is their vote
 	for _, l := range logged {
@@ -238,12 +344,16 @@ func (e *Engine) detect(ctx context.Context, qs []store.Question, logged []logge
 func (e *Engine) Answer(ctx context.Context, id int64, by store.Device, answer, treatmentID string) (View, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	if !slices.Contains([]string{"food", "food_unknown", "insulin", "nothing"}, answer) {
-		return View{}, ErrAnswer
-	}
 	q, err := e.open(ctx, id)
 	if err != nil {
 		return View{}, err
+	}
+	valid := []string{"food", "food_unknown", "insulin", "nothing"}
+	if q.Kind == "double" {
+		valid = []string{"one", "two"}
+	}
+	if !slices.Contains(valid, answer) {
+		return View{}, ErrAnswer
 	}
 	now := e.Now()
 	if err := e.vote(ctx, q, by, answer, treatmentID, now); err != nil {
@@ -313,6 +423,11 @@ func (e *Engine) vote(ctx context.Context, q store.Question, by store.Device, an
 		q.State, q.Outcome = "answered", outcome
 		q.ClosedAt = ptr(now.UnixMilli())
 		slog.Info("question answered", "id", q.ID, "outcome", outcome)
+		if q.Kind == "double" && outcome == "one" {
+			if err := e.dropDuplicate(ctx, q.TreatmentID, now); err != nil {
+				return err
+			}
+		}
 		return e.save(ctx, q, now, false)
 	}
 	// they disagree: everyone answers again, seeing what the others said
@@ -346,6 +461,18 @@ func agreed(latest map[string]string, hasEntry bool) (string, bool) {
 		return a, true
 	}
 	return "", false
+}
+
+// dropDuplicate: "one injection" removes the second entry of it, from the chart and the stats.
+func (e *Engine) dropDuplicate(ctx context.Context, id string, now time.Time) error {
+	deleted, err := e.Store.DeleteTreatment(ctx, id, now)
+	if err != nil || !deleted {
+		return err
+	}
+	slog.Info("treatment delete", "id", id, "by", "double-dose answer")
+	// the same event the treatments API sends (app.EventTreatment)
+	e.Bus.Publish("treatment", map[string]any{"op": "delete", "ids": []string{id}}, now)
+	return nil
 }
 
 func (e *Engine) open(ctx context.Context, id int64) (store.Question, error) {
@@ -410,6 +537,11 @@ func (e *Engine) View(ctx context.Context, q store.Question, now time.Time) (Vie
 			}
 		}
 	}
+	if q.Kind == "double" {
+		if err := e.describeDoses(ctx, q, &v); err != nil {
+			return v, err
+		}
+	}
 	loc := e.Loc
 	if loc == nil {
 		loc = time.UTC
@@ -419,21 +551,59 @@ func (e *Engine) View(ctx context.Context, q store.Question, now time.Time) (Vie
 	return v, nil
 }
 
+// describeDoses fills in the two doses: how much, when, who; deleted ones are left out.
+func (e *Engine) describeDoses(ctx context.Context, q store.Question, v *View) error {
+	devs, err := e.Store.ListDevices(ctx)
+	if err != nil {
+		return err
+	}
+	v.Insulin = "rapid"
+	for _, id := range []string{q.TreatmentID, q.RefID} {
+		tr, ok, err := e.treatment(ctx, id)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			continue
+		}
+		d, _ := doseOf(tr, devs)
+		if d.Basal {
+			v.Insulin = "basal"
+		}
+		by := e.Uploader
+		if dev, parent := caregiverByID(devs, tr.DeviceID); parent {
+			by = dev.Person
+		} else if by == "" {
+			by = "xDrip+"
+		}
+		v.Doses = append(v.Doses, DoseView{ID: tr.ID, T: tr.CreatedAt, Units: d.Units, By: by})
+	}
+	if q.Outcome == "two" {
+		v.WatchUntil = q.To + watchFor(v.Insulin == "basal").Milliseconds()
+	}
+	return nil
+}
+
 // Recent: open questions and suspect marks of the last day, for the state snapshot.
 func (e *Engine) Recent(ctx context.Context) ([]View, error) {
 	now := e.Now()
-	qs, err := e.Store.QuestionsSince(ctx, now.Add(-24*time.Hour).UnixMilli())
+	// a long-acting pair may begin 16 hours before its day-long watch for a low
+	qs, err := e.Store.QuestionsSince(ctx, now.Add(-DoubleBasal-watchBasal).UnixMilli())
 	if err != nil {
 		return nil, err
 	}
 	out := []View{}
 	for _, q := range qs {
-		if q.State != "open" && q.State != "unknown" {
+		watch := q.Kind == "double" && q.State == "answered" && q.Outcome == "two"
+		if q.State != "open" && q.State != "unknown" && !watch || q.State == "unknown" && q.From < now.Add(-24*time.Hour).UnixMilli() {
 			continue
 		}
 		v, err := e.View(ctx, q, now)
 		if err != nil {
 			return nil, err
+		}
+		if watch && v.WatchUntil <= now.UnixMilli() {
+			continue // the watch for a low is over
 		}
 		out = append(out, v)
 	}

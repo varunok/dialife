@@ -217,6 +217,10 @@ class LiveRepository(context: Context, private val api: DiaLifeApi = DiaLifeApi(
                 _live.update { cur -> cur.copy(state = cur.state?.let { it.copy(questions = it.questions.upsertQuestion(q)) }) }
                 _questions.tryEmit(q)
             }
+            "intent" -> {
+                val ev = DiaLifeApi.json.decodeFromString<com.lumenarcanus.dialife.data.IntentEvent>(data)
+                _live.update { cur -> cur.copy(state = cur.state?.copy(intents = ev.intents)) }
+            }
             "uploader" -> {
                 val u = DiaLifeApi.json.decodeFromString<Uploader>(data)
                 _live.update { cur -> cur.copy(state = cur.state?.copy(uploader = u)) }
@@ -238,6 +242,17 @@ class LiveRepository(context: Context, private val api: DiaLifeApi = DiaLifeApi(
         return api.dismissQuestion(c, id).onSuccess {
             _live.update { cur -> cur.copy(state = cur.state?.let { s -> s.copy(questions = s.questions.filter { it.id != id }) }) }
         }
+    }
+
+    /** The insulin form opened (or its type changed) here; best effort, the server forgets it in 10 min anyway. */
+    fun insulinIntent(insulin: String) {
+        val c = creds ?: return
+        scope.launch { api.insulinIntent(c, insulin) }
+    }
+
+    fun insulinIntentEnd() {
+        val c = creds ?: return
+        scope.launch { api.insulinIntentEnd(c) }
     }
 
     fun saveTreatment(t: Treatment) {
@@ -350,8 +365,8 @@ internal fun History.withReading(st: StateResponse): History {
     )
 }
 
-/** Open questions and suspect marks stay; answered and cleared ones leave. */
+/** Open questions, suspect marks and a double dose's watch stay; answered and cleared ones leave. */
 fun List<Question>.upsertQuestion(q: Question): List<Question> {
     val rest = filter { it.id != q.id }
-    return if (q.state == "open" || q.state == "unknown") (rest + q).sortedBy { it.from } else rest
+    return if (q.state == "open" || q.state == "unknown" || q.watch) (rest + q).sortedBy { it.from } else rest
 }

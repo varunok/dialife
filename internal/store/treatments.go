@@ -54,6 +54,7 @@ func (s *Store) UpsertTreatments(ctx context.Context, ts []Treatment, deviceID i
 
 // TreatmentQuery filters on created_at (unix ms); nil bounds are open.
 type TreatmentQuery struct {
+	ID      string
 	UUID    string
 	Gte, Gt *int64
 	Lte, Lt *int64
@@ -67,6 +68,9 @@ func (s *Store) ListTreatments(ctx context.Context, q TreatmentQuery) ([]Treatme
 	add := func(cond string, v any) {
 		where = append(where, cond)
 		args = append(args, v)
+	}
+	if q.ID != "" {
+		add("id = ?", q.ID)
 	}
 	if q.UUID != "" {
 		add("uuid = ?", q.UUID)

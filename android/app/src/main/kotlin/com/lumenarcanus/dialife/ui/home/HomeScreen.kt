@@ -305,6 +305,13 @@ fun HomeScreen(
                 androidx.compose.runtime.key(a.id) { EpisodeBanner(a, ui, state?.units ?: fallbackUnits, onAlarmAction, onOpenHandling) }
             }
         }
+        // someone else has the insulin form open: talk before reaching for a pen too
+        ui.state?.intents.orEmpty().filter { it.deviceId != ui.myId && it.until > ui.now }.takeIf { it.isNotEmpty() }?.let {
+            com.lumenarcanus.dialife.ui.treatment.IntentWarning(it, ui.now)
+        }
+        ui.state?.questions.orEmpty().filter { it.watch && (it.watchUntil ?: 0) > ui.now }.forEach { q ->
+            androidx.compose.runtime.key("w", q.id) { WatchCard(q) }
+        }
         ui.state?.questions.orEmpty().filter { it.state == "open" }.forEach { q ->
             androidx.compose.runtime.key("q", q.id) {
                 QuestionCard(
@@ -379,8 +386,9 @@ private fun QuestionCard(
                 color = c.high, fontSize = 13.sp, fontWeight = FontWeight.Medium,
             )
         }
+        val double = q.kind == "double"
         // an entry someone made for it: the others only confirm it
-        val entry = q.treatmentId?.let { id -> treatments.firstOrNull { it.id == id } }
+        val entry = q.treatmentId?.takeIf { !double }?.let { id -> treatments.firstOrNull { it.id == id } }
         entry?.let { tr ->
             val what = listOfNotNull(
                 tr.carbs?.takeIf { it > 0 }?.let { com.lumenarcanus.dialife.ui.treatment.formatAmount(it, locale) + " " + stringResource(R.string.unit_carbs) },
@@ -390,6 +398,11 @@ private fun QuestionCard(
         }
         if (q.asks(myId)) {
             androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (double) {
+                    Button(onClick = { onAnswer("one", null) }) { Text(stringResource(R.string.q_btn_one)) }
+                    androidx.compose.material3.OutlinedButton(onClick = { onAnswer("two", null) }) { Text(stringResource(R.string.q_btn_two), color = c.text) }
+                    return@FlowRow
+                }
                 if (entry != null) {
                     Button(onClick = { onAnswer(if (rise) "food" else "insulin", entry.id) }) { Text(stringResource(R.string.q_btn_yes)) }
                 } else {
@@ -401,6 +414,20 @@ private fun QuestionCard(
         } else if (q.waiting.isNotEmpty()) {
             Text(stringResource(R.string.q_waiting, q.waiting.joinToString(", ")), color = c.textMuted, fontSize = 13.sp)
         }
+    }
+}
+
+/** Two doses were given: everyone watches for a low until the insulin wears off. */
+@Composable
+private fun WatchCard(q: Question) {
+    val c = DiaTheme.colors
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    Column(
+        Modifier.fillMaxWidth().background(c.lowContainer, RoundedCornerShape(22.dp)).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(stringResource(R.string.watch_title), color = c.low, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+        Text(com.lumenarcanus.dialife.live.QuestionNotifier.watchBody(ctx, q), color = c.text, fontSize = 14.sp)
     }
 }
 

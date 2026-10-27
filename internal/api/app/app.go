@@ -58,6 +58,7 @@ type Handlers struct {
 	Uploader   string            // what the family calls the xDrip+ phone; sent to the app as is
 
 	webCodes webCodes     // web login codes, in memory for their QR pictures
+	intents  intentBoard  // who has the insulin form open
 	quality  qualityCache // how the chart's forecast did lately
 }
 
@@ -74,6 +75,7 @@ type stateResponse struct {
 	Caregivers   []caregiver         `json:"caregivers"`              // who an alarm wakes, for "Notified: Dad, Mom"
 	Questions    []questions.View    `json:"questions,omitempty"`     // open ones and the last day's suspect marks; never to the web viewer
 	UploaderName string              `json:"uploader_name,omitempty"` // what the family calls the xDrip+ phone
+	Intents      []insulinIntent     `json:"intents"`                 // parents with the insulin form open now
 }
 
 type caregiver struct {
@@ -127,7 +129,7 @@ func (h *Handlers) thresholds(ctx context.Context) config.Thresholds {
 // snapshot is the device-independent state; callers add display_units.
 func (h *Handlers) snapshot(ctx context.Context, now time.Time) (stateResponse, error) {
 	th := h.thresholds(ctx)
-	resp := stateResponse{Now: now.UnixMilli(), Thresholds: th, UploaderName: h.Uploader}
+	resp := stateResponse{Now: now.UnixMilli(), Thresholds: th, UploaderName: h.Uploader, Intents: h.intents.list(now)}
 
 	st, ok, err := h.computeState(ctx, now)
 	if err != nil {
