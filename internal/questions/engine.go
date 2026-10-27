@@ -169,7 +169,11 @@ func (e *Engine) detect(ctx context.Context, qs []store.Question, logged []logge
 			starts = append(starts, l.T)
 		}
 	}
-	s, ok := Detect(sgv, entries, starts, now)
+	loc := e.Loc
+	if loc == nil {
+		loc = time.UTC
+	}
+	s, ok := Detect(sgv, entries, starts, now.In(loc))
 	if !ok {
 		return nil
 	}

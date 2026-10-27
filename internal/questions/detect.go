@@ -17,6 +17,10 @@ const (
 	// a gentler slope held longer, with the same rise from the low point
 	slowSpan = 30 * time.Minute
 	slowRate = 0.8
+	// at night she sleeps: a slow rise is the basal or the dawn, plain on the
+	// chart, and asking adds nothing; a fast one still asks (a snack, sweets after a low)
+	slowNightFrom = 0 // local hours, [from, to)
+	slowNightTo   = 6
 	compression = 4.0              // a steeper fall is the sensor pressed (lying on it), not insulin
 	minRise     = 40               // mg/dL from the low point
 	minFall     = 50               // mg/dL from the high point
@@ -48,7 +52,7 @@ type Suspect struct {
 }
 
 // Detect looks at the newest readings (sgv oldest first) for a rise or a fall
-// that nothing logged explains.
+// that nothing logged explains. now is in the family's time zone: it decides night.
 func Detect(sgv []Point, logged []Entry, starts []int64, now time.Time) (Suspect, bool) {
 	n := len(sgv)
 	if n < 4 {
@@ -87,7 +91,7 @@ func Detect(sgv []Point, logged []Entry, starts []int64, now time.Time) (Suspect
 		}
 	}
 	switch {
-	case (rate >= minRate || slow >= slowRate) && last.V-lo.V >= minRise && lo.T < last.T:
+	case (rate >= minRate || (slow >= slowRate && !slowNight(now))) && last.V-lo.V >= minRise && lo.T < last.T:
 		if explained(logged, lo.T-carbsBefore.Milliseconds(), now.UnixMilli(), func(e Entry) bool { return e.Carbs }) {
 			return Suspect{}, false
 		}
@@ -145,4 +149,9 @@ func slope(ps []Point, from int64) (float64, bool) {
 	}
 	r := (n*sxy - sx*sy) / d
 	return r, !math.IsNaN(r)
+}
+
+func slowNight(now time.Time) bool {
+	h := now.Hour()
+	return h >= slowNightFrom && h < slowNightTo
 }

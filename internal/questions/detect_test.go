@@ -66,3 +66,21 @@ func TestSlowRiseWithoutFood(t *testing.T) {
 		t.Fatalf("%+v %v", s, ok)
 	}
 }
+
+// the same slow rise at 03:00 is left to the chart; a fast one at night still asks
+func TestNightAsksOnlyAboutFastRises(t *testing.T) {
+	night := time.Date(2026, 10, 26, 3, 0, 0, 0, time.UTC)
+	at := func(vs ...int) []Point {
+		ps := make([]Point, len(vs))
+		for i, v := range vs {
+			ps[i] = Point{T: night.Add(-time.Duration(len(vs)-1-i) * 5 * time.Minute).UnixMilli(), V: v}
+		}
+		return ps
+	}
+	if s, ok := Detect(at(141, 137, 132, 132, 134, 135, 137, 138, 140, 140, 144, 146, 152, 157, 162, 169, 174), nil, nil, night); ok {
+		t.Fatalf("slow rise at night: %+v", s)
+	}
+	if _, ok := Detect(at(120, 118, 119, 125, 136, 148, 160, 171), nil, nil, night); !ok {
+		t.Fatal("a fast rise at night must still ask")
+	}
+}
