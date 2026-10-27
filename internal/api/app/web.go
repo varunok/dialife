@@ -49,6 +49,7 @@ func (h *Handlers) WebLoginStart(w http.ResponseWriter, r *http.Request) {
 	l := store.WebLogin{
 		ID:        randomHex(16),
 		UserAgent: truncate(r.UserAgent(), 300),
+		IP:        httpx.ClientIP(r),
 		CreatedAt: now.UnixMilli(),
 		ExpiresAt: now.Add(webCodeTTL).UnixMilli(),
 	}
@@ -152,6 +153,10 @@ type webLoginInfo struct {
 	OS        string `json:"os"`
 	ExpiresAt int64  `json:"expires_at"`
 	MaxMin    int    `json:"max_minutes"`
+	// whether the browser asked from the network the phone is on now: at home
+	// both leave through one address; a code shown by someone else will not
+	IP          string `json:"ip,omitempty"`
+	SameNetwork bool   `json:"same_network"`
 }
 
 // WebLoginInspect serves POST /api/web/inspect {id, code}: which browser asks, before a parent decides.
@@ -168,7 +173,8 @@ func (h *Handlers) WebLoginInspect(w http.ResponseWriter, r *http.Request) {
 	}
 	h.webCodes.extend(l.ID, time.UnixMilli(exp))
 	b, o := describeAgent(l.UserAgent)
-	httpx.WriteJSON(w, http.StatusOK, webLoginInfo{ID: l.ID, Browser: b, OS: o, ExpiresAt: max(l.ExpiresAt, exp), MaxMin: webMaxSessionMins})
+	httpx.WriteJSON(w, http.StatusOK, webLoginInfo{ID: l.ID, Browser: b, OS: o, ExpiresAt: max(l.ExpiresAt, exp), MaxMin: webMaxSessionMins,
+		IP: l.IP, SameNetwork: l.IP != "" && l.IP == httpx.ClientIP(r)})
 }
 
 // WebLoginApprove serves POST /api/web/approve {id, code, minutes}.

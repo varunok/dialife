@@ -151,6 +151,16 @@ internal fun Approve(info: WebLoginInfo, now: Long = System.currentTimeMillis(),
     ) {
         Text(stringResource(R.string.web_ask_title), color = c.text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
         Text(stringResource(R.string.web_ask_who, info.browser, info.os), color = c.textMuted, fontSize = 13.sp)
+        // a code someone else shows comes from their network: say so before anyone taps "Allow"
+        if (info.sameNetwork) {
+            Text(stringResource(R.string.web_same_network), color = c.inRange, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+        } else {
+            Text(
+                stringResource(R.string.web_other_network, info.ip ?: "?"),
+                color = c.high, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.fillMaxWidth().background(c.highContainer, RoundedCornerShape(12.dp)).padding(12.dp),
+            )
+        }
         Text(stringResource(R.string.web_ask_body), color = c.textMuted, fontSize = 14.sp)
         Text(stringResource(R.string.web_duration), color = c.textMuted, fontSize = 13.sp)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {

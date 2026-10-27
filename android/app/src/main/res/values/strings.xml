@@ -450,6 +450,8 @@
     <string name="web_expired">The code is no longer valid. Reload the page in the browser and scan the new one.</string>
     <string name="web_ask_title">Allow this login?</string>
     <string name="web_ask_who">%1$s on %2$s · just scanned</string>
+    <string name="web_same_network">✓ The same network as this phone</string>
+    <string name="web_other_network">Another network (%1$s). Allow only if this is surely your own computer.</string>
     <string name="web_ask_body">This browser will see the chart and the table. It cannot take alarms, answer questions or add entries.</string>
     <string name="web_duration">How long it lasts</string>
     <string name="web_unit_min">minutes</string>

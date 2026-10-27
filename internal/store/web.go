@@ -17,7 +17,8 @@ type WebLogin struct {
 	State      string // "pending" | "approved" | "rejected" | "used"
 	ApprovedBy int64
 	Minutes    int
-	ScannedAt  int64 // 0: not scanned yet
+	ScannedAt  int64  // 0: not scanned yet
+	IP         string // the browser's address when it asked
 }
 
 type WebSession struct {
@@ -30,11 +31,11 @@ type WebSession struct {
 	LastSeenAt   *int64
 }
 
-const webLoginCols = `id, code_sha, browser_sha, coalesce(user_agent, ''), created_at, expires_at, state, coalesce(approved_by, 0), coalesce(minutes, 0), coalesce(scanned_at, 0)`
+const webLoginCols = `id, code_sha, browser_sha, coalesce(user_agent, ''), created_at, expires_at, state, coalesce(approved_by, 0), coalesce(minutes, 0), coalesce(scanned_at, 0), coalesce(ip, '')`
 
 func scanWebLogin(sc scanner) (WebLogin, error) {
 	var l WebLogin
-	err := sc.Scan(&l.ID, &l.CodeSHA, &l.BrowserSHA, &l.UserAgent, &l.CreatedAt, &l.ExpiresAt, &l.State, &l.ApprovedBy, &l.Minutes, &l.ScannedAt)
+	err := sc.Scan(&l.ID, &l.CodeSHA, &l.BrowserSHA, &l.UserAgent, &l.CreatedAt, &l.ExpiresAt, &l.State, &l.ApprovedBy, &l.Minutes, &l.ScannedAt, &l.IP)
 	if errors.Is(err, sql.ErrNoRows) {
 		return WebLogin{}, ErrNotFound
 	}
@@ -47,8 +48,8 @@ func (s *Store) InsertWebLogin(ctx context.Context, l WebLogin, now time.Time) e
 		return err
 	}
 	_, err := s.w.ExecContext(ctx,
-		`INSERT INTO web_logins (id, code_sha, browser_sha, user_agent, created_at, expires_at) VALUES (?, ?, ?, nullif(?, ''), ?, ?)`,
-		l.ID, l.CodeSHA, l.BrowserSHA, l.UserAgent, l.CreatedAt, l.ExpiresAt)
+		`INSERT INTO web_logins (id, code_sha, browser_sha, user_agent, created_at, expires_at, ip) VALUES (?, ?, ?, nullif(?, ''), ?, ?, nullif(?, ''))`,
+		l.ID, l.CodeSHA, l.BrowserSHA, l.UserAgent, l.CreatedAt, l.ExpiresAt, l.IP)
 	return err
 }
 

@@ -469,6 +469,8 @@
     <string name="web_expired">Код уже не дійсний. Оновіть сторінку в браузері й відскануйте новий.</string>
     <string name="web_ask_title">Дозволити вхід?</string>
     <string name="web_ask_who">%1$s на %2$s · щойно відскановано</string>
+    <string name="web_same_network">✓ Та сама мережа, що й у цього телефона</string>
+    <string name="web_other_network">Інша мережа (%1$s). Дозволяйте, лише якщо це точно ваш комп\'ютер.</string>
     <string name="web_ask_body">Цей браузер бачитиме графік і таблицю. Брати тривоги, відповідати на питання й вносити записи з нього не можна.</string>
     <string name="web_duration">Скільки діє вхід</string>
     <string name="web_unit_min">хвилин</string>

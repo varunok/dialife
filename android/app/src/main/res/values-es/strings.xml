@@ -458,6 +458,8 @@
     <string name="web_expired">El código ya no es válido. Recarga la página en el navegador y escanea el nuevo.</string>
     <string name="web_ask_title">¿Permitir el acceso?</string>
     <string name="web_ask_who">%1$s en %2$s · recién escaneado</string>
+    <string name="web_same_network">✓ La misma red que este teléfono</string>
+    <string name="web_other_network">Otra red (%1$s). Permite el acceso solo si es seguro tu ordenador.</string>
     <string name="web_ask_body">Este navegador verá el gráfico y la tabla. No podrá tomar alarmas, responder preguntas ni añadir registros.</string>
     <string name="web_duration">Cuánto dura el acceso</string>
     <string name="web_unit_min">minutos</string>

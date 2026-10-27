@@ -301,6 +301,8 @@ data class WebLoginInfo(
     val os: String,
     @SerialName("expires_at") val expiresAt: Long,
     @SerialName("max_minutes") val maxMinutes: Int = 90 * 24 * 60,
+    val ip: String? = null, // where the browser asked from
+    @SerialName("same_network") val sameNetwork: Boolean = false, // the same address this phone has now: at home, the family's own computer
 )
 
 /** A browser allowed in: who allowed it, until when, last seen. */

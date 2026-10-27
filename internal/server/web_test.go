@@ -44,9 +44,12 @@ func TestWebLoginByQR(t *testing.T) {
 
 	dadHdr := map[string]string{"Authorization": "Bearer " + dad, "Content-Type": "application/json"}
 	body := `{"id":"` + start.ID + `","code":"` + code + `"}`
-	var info struct{ Browser, OS string }
+	var info struct {
+		Browser, OS string
+		Same        bool `json:"same_network"`
+	}
 	json.NewDecoder(f.do(t, "POST", "/api/web/inspect", strings.NewReader(body), dadHdr).Body).Decode(&info)
-	if info.Browser != "Firefox" || info.OS != "Linux" {
+	if info.Browser != "Firefox" || info.OS != "Linux" || !info.Same { // the test's browser and phone share 127.0.0.1
 		t.Fatalf("inspect %+v", info)
 	}
 	// scanned: the browser keeps the code and learns it now lives longer
@@ -200,5 +203,22 @@ func TestWebGetsNoQuestions(t *testing.T) {
 	momRaw, _ := io.ReadAll(f.get(t, "/api/state", map[string]string{"Authorization": "Bearer " + mom}).Body)
 	if !strings.Contains(string(momRaw), `"questions"`) {
 		t.Fatal("the parent's state lost its questions")
+	}
+}
+
+func TestWebLoginFromAnotherNetwork(t *testing.T) {
+	f := newFixture(t)
+	_, dad := f.addDevice(t, "Тато", auth.RoleCaregiver)
+	var start struct{ ID, Secret string }
+	json.NewDecoder(f.do(t, "POST", "/api/web/login", nil, map[string]string{"X-Forwarded-For": "198.51.100.9"}).Body).Decode(&start)
+	code := f.app.webCode(t, start.ID)
+	var info struct {
+		IP   string
+		Same bool `json:"same_network"`
+	}
+	json.NewDecoder(f.do(t, "POST", "/api/web/inspect", strings.NewReader(`{"id":"`+start.ID+`","code":"`+code+`"}`),
+		map[string]string{"Authorization": "Bearer " + dad, "Content-Type": "application/json", "X-Forwarded-For": "203.0.113.4"}).Body).Decode(&info)
+	if info.Same || info.IP != "198.51.100.9" {
+		t.Fatalf("a browser elsewhere: %+v", info)
 	}
 }
