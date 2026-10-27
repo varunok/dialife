@@ -32,6 +32,15 @@ const (
 	tokenDigits = 43 // 62^43 > 2^256, so every 32-byte value fits
 )
 
+// WebTokenPrefix marks a browser session token: read-only, given by a parent's approval.
+const WebTokenPrefix = "dlw_"
+
+// NewWebToken is a browser session token: "dlw_" + 32 random bytes.
+func NewWebToken() (string, error) {
+	t, err := NewToken()
+	return WebTokenPrefix + strings.TrimPrefix(t, tokenPrefix), err
+}
+
 // NewToken returns "dl_" + 32 random bytes in fixed-width base62.
 func NewToken() (string, error) {
 	b := make([]byte, tokenBytes)

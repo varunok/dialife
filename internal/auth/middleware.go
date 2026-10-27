@@ -56,9 +56,13 @@ func (a *Authenticator) Require(roles ...Role) func(http.Handler) http.Handler {
 				httpx.Error(w, http.StatusTooManyRequests)
 				return
 			}
-			hash, ok := credentialHash(r)
+			hash, web, ok := credentialHash(r)
 			if !ok {
 				a.reject(w, r, "missing credentials")
+				return
+			}
+			if web {
+				a.serveWeb(w, r, next, hash, roles)
 				return
 			}
 			dev, err := a.store.ActiveDeviceByTokenSHA1(r.Context(), hash)
@@ -82,24 +86,59 @@ func (a *Authenticator) Require(roles ...Role) func(http.Handler) http.Handler {
 	}
 }
 
-// credentialHash accepts "Authorization: Bearer <token>" (our apps) or
-// "api-secret: <sha1 hex>" (xDrip+ and other Nightscout clients). A plain
-// api-secret is hashed too, for clients that send the secret as-is.
-func credentialHash(r *http.Request) (string, bool) {
+// credentialHash accepts "Authorization: Bearer <token>" (our apps and the
+// web viewer, whose tokens start with dlw_) or "api-secret: <sha1 hex>"
+// (xDrip+ and other Nightscout clients). A plain api-secret is hashed too,
+// for clients that send the secret as-is.
+func credentialHash(r *http.Request) (hash string, web, ok bool) {
 	if h := r.Header.Get("Authorization"); h != "" {
 		tok, ok := strings.CutPrefix(h, "Bearer ")
 		if !ok || tok == "" {
-			return "", false
+			return "", false, false
 		}
-		return Hash(tok), true
+		return Hash(tok), strings.HasPrefix(tok, WebTokenPrefix), true
 	}
 	if s := strings.TrimSpace(r.Header.Get("api-secret")); s != "" {
 		if isSHA1Hex(s) {
-			return strings.ToLower(s), true
+			return strings.ToLower(s), false, true
 		}
-		return Hash(s), true
+		return Hash(s), false, true
 	}
-	return "", false
+	return "", false, false
+}
+
+// serveWeb admits a browser session as a reader: it sees what a reader sees,
+// and is refused wherever a role is required.
+func (a *Authenticator) serveWeb(w http.ResponseWriter, r *http.Request, next http.Handler, hash string, roles []Role) {
+	now := a.now()
+	ws, err := a.store.ActiveWebSession(r.Context(), hash, now)
+	if errors.Is(err, store.ErrNotFound) {
+		a.reject(w, r, "unknown or expired web session")
+		return
+	}
+	if err != nil {
+		slog.Error("auth web lookup", "err", err)
+		httpx.Error(w, http.StatusInternalServerError)
+		return
+	}
+	if !allowed(RoleReader, roles) {
+		httpx.Error(w, http.StatusForbidden)
+		return
+	}
+	a.mu.Lock()
+	key := -ws.ID // web sessions share the touch throttle, on their own keys
+	fresh := now.Sub(a.touched[key]) >= touchEvery
+	if fresh {
+		a.touched[key] = now
+	}
+	a.mu.Unlock()
+	if fresh {
+		if err := a.store.TouchWebSession(r.Context(), ws.ID, now); err != nil {
+			slog.Warn("touch web session", "id", ws.ID, "err", err)
+		}
+	}
+	dev := store.Device{Name: "web", Person: ws.ApproverName, Role: string(RoleReader), WebSessionID: ws.ID}
+	next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ctxKey{}, dev)))
 }
 
 func isSHA1Hex(s string) bool {

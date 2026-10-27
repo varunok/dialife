@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"math"
 	"net/http"
@@ -38,8 +39,8 @@ const (
 	alarmHistory = 250 * time.Minute
 
 	defaultHistory = 6 * time.Hour
-	maxHistory     = 31 * 24 * time.Hour
-	maxHistoryRows = 20000 // 31 days at 5 min is ~9000; leaves room for a second uploader
+	maxHistory     = 20 * 365 * 24 * time.Hour // no practical limit: long spans come aggregated
+	maxHistoryRows = 20000                     // 31 days at 5 min is ~9000; leaves room for a second uploader
 )
 
 type Handlers struct {
@@ -53,6 +54,8 @@ type Handlers struct {
 	Links      *acklink.Signer   // nil: ack links disabled
 	Loc        *time.Location    // the family's time zone, for the AGP day; nil: UTC
 	Uploader   string            // what the family calls the xDrip+ phone; sent to the app as is
+
+	webCodes webCodes // web login codes, in memory for their QR pictures
 }
 
 type stateResponse struct {
@@ -249,9 +252,11 @@ func (h *Handlers) describe(st glucose.State, now time.Time, th config.Threshold
 }
 
 type series struct {
-	T []int64  `json:"t"`
-	V []int    `json:"v"`
-	D []string `json:"d,omitempty"` // mbg only: where each check came from, see meter.Source
+	T  []int64  `json:"t"`
+	V  []int    `json:"v"`
+	Lo []int    `json:"lo,omitempty"` // aggregated: the lowest reading in each interval (V is its mean)
+	Hi []int    `json:"hi,omitempty"`
+	D  []string `json:"d,omitempty"` // mbg only: where each check came from, see meter.Source
 }
 
 type series1 struct {
@@ -330,8 +335,9 @@ const sameMeterReading = 15 * time.Minute
 type historyResponse struct {
 	From       int64              `json:"from"`
 	To         int64              `json:"to"`
-	SGV        series             `json:"sgv"` // sensor error codes are left out
-	MBG        series             `json:"mbg"` // glucometer readings uploaded by xDrip+, repeats of a BG check left out
+	SGV        series             `json:"sgv"`            // sensor error codes are left out
+	Step       int                `json:"step,omitempty"` // minutes per sgv point when aggregated; absent: every reading
+	MBG        series             `json:"mbg"`            // glucometer readings uploaded by xDrip+, repeats of a BG check left out
 	Treatments []historyTreatment `json:"treatments"`
 }
 
@@ -368,7 +374,30 @@ func (h *Handlers) History(w http.ResponseWriter, r *http.Request) {
 		resp.Treatments = append(resp.Treatments, ht)
 	}
 
-	for typ, dst := range map[string]*series{"sgv": &resp.SGV, "mbg": &resp.MBG} {
+	step, ok := historyStep(r, to-from)
+	if !ok {
+		httpx.Error(w, http.StatusBadRequest)
+		return
+	}
+	types := map[string]*series{"sgv": &resp.SGV, "mbg": &resp.MBG}
+	if step > 0 {
+		// a long span: intervals with their mean and range, not a point per reading
+		resp.Step = int(step / time.Minute)
+		_, offSec := time.UnixMilli(from).In(h.loc()).Zone()
+		bs, err := h.Store.AggregateSGV(ctx, from, to, step, time.Duration(offSec)*time.Second, glucose.MaxErrorCode)
+		if err != nil {
+			fail(w, "history aggregate", err)
+			return
+		}
+		for _, b := range bs {
+			resp.SGV.T = append(resp.SGV.T, b.Start)
+			resp.SGV.V = append(resp.SGV.V, b.Avg)
+			resp.SGV.Lo = append(resp.SGV.Lo, b.Min)
+			resp.SGV.Hi = append(resp.SGV.Hi, b.Max)
+		}
+		delete(types, "sgv")
+	}
+	for typ, dst := range types {
 		es, err := h.Store.QueryEntries(ctx, store.EntryQuery{Type: typ, Gte: &from, Lte: &to, Count: maxHistoryRows, Asc: true})
 		if err != nil {
 			fail(w, "history entries", err)
@@ -397,6 +426,45 @@ func (h *Handlers) History(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	httpx.WriteJSON(w, http.StatusOK, resp)
+}
+
+// Spans up to these lengths come as every reading, then as 15-minute, then hourly intervals.
+const (
+	rawUpTo     = 2 * 24 * time.Hour
+	quarterUpTo = 14 * 24 * time.Hour
+)
+
+// historyStep picks the interval for a span, or takes ?step=minutes (0: every
+// reading) when it is not finer than the span allows.
+func historyStep(r *http.Request, spanMs int64) (time.Duration, bool) {
+	span := time.Duration(spanMs) * time.Millisecond
+	auto := time.Duration(0)
+	switch {
+	case span > quarterUpTo:
+		auto = time.Hour
+	case span > rawUpTo:
+		auto = 15 * time.Minute
+	}
+	v := r.URL.Query().Get("step")
+	if v == "" {
+		return auto, true
+	}
+	var m int
+	if _, err := fmt.Sscan(v, &m); err != nil || m < 0 || m > 24*60 {
+		return 0, false
+	}
+	step := time.Duration(m) * time.Minute
+	if step < auto {
+		step = auto // finer than this would be too many points; narrow the span instead
+	}
+	return step, true
+}
+
+func (h *Handlers) loc() *time.Location {
+	if h.Loc != nil {
+		return h.Loc
+	}
+	return time.UTC
 }
 
 func (h *Handlers) historyRange(r *http.Request) (from, to int64, ok bool) {

@@ -17,6 +17,7 @@ import (
 	"dialife/internal/httpx"
 	"dialife/internal/questions"
 	"dialife/internal/store"
+	"dialife/internal/web"
 )
 
 type Deps struct {
@@ -35,6 +36,7 @@ type Deps struct {
 // App is the wired server: the HTTP handler plus the alarm engine, whose
 // watchdog (Alarms.Run) the caller must start.
 type App struct {
+	api       *app.Handlers
 	Handler   http.Handler
 	Alarms    *alarms.Engine
 	Questions *questions.Engine // its Run (timeouts, reminders) the caller starts too
@@ -87,16 +89,30 @@ func New(d Deps) *App {
 	mux.Handle("POST /api/alarms/{id}/checkin", caregiver(http.HandlerFunc(api.Checkin)))
 	mux.Handle("POST /api/alarms/{id}/coming", caregiver(http.HandlerFunc(api.Coming)))
 	mux.Handle("POST /api/alarms/{id}/resolve", caregiver(http.HandlerFunc(api.Resolve)))
+	// the web viewer: logging in by a QR code a parent scans, then read-only like a reader
+	mux.Handle("POST /api/web/login", http.HandlerFunc(api.WebLoginStart))
+	mux.Handle("GET /api/web/login/{id}/qr.svg", http.HandlerFunc(api.WebLoginQR))
+	mux.Handle("POST /api/web/login/{id}/poll", http.HandlerFunc(api.WebLoginPoll))
+	mux.Handle("POST /api/web/inspect", caregiver(http.HandlerFunc(api.WebLoginInspect)))
+	mux.Handle("POST /api/web/approve", caregiver(http.HandlerFunc(api.WebLoginApprove)))
+	mux.Handle("POST /api/web/reject", caregiver(http.HandlerFunc(api.WebLoginReject)))
+	mux.Handle("GET /api/web/sessions", caregiver(http.HandlerFunc(api.WebSessions)))
+	mux.Handle("POST /api/web/sessions/{id}/revoke", caregiver(http.HandlerFunc(api.WebSessionRevoke)))
+	mux.Handle("POST /api/web/logout", anyRole(http.HandlerFunc(api.WebLogout)))
 	mux.Handle("POST /api/questions/{id}/answer", caregiver(http.HandlerFunc(api.AnswerQuestion)))
 	mux.Handle("POST /api/questions/{id}/dismiss", caregiver(http.HandlerFunc(api.DismissQuestion)))
 	// no token: the signed link is the credential (see acklink)
 	mux.Handle("POST /api/alarms/{id}/ack-link", http.HandlerFunc(api.AckLink))
 	mux.Handle("GET /api/healthz", anyRole(healthz(d.Store)))
+	// the read-only web viewer
+	viewer := web.Handler()
+	mux.Handle("GET /web/", viewer)
+	mux.Handle("GET /{$}", viewer)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusNotFound)
 	})
 
-	return &App{Handler: httpx.Recover(httpx.Log(httpx.Body(mux))), Alarms: api.Alarms, Questions: api.Questions}
+	return &App{Handler: httpx.Recover(httpx.Log(httpx.Body(mux))), Alarms: api.Alarms, Questions: api.Questions, api: api}
 }
 
 func healthz(s *store.Store) http.HandlerFunc {

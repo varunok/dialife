@@ -162,3 +162,39 @@ func (s *Store) EntriesReceivedSince(ctx context.Context, ms int64) (from, to in
 	}
 	return lo.Int64, hi.Int64, lo.Valid, nil
 }
+
+// Bucket is the sensor over one interval: its readings averaged, and their range.
+type Bucket struct {
+	Start    int64 // unix ms, interval start
+	Avg      int
+	Min, Max int
+	N        int
+}
+
+// AggregateSGV averages sensor readings (error codes left out) in [from, to]
+// over intervals of step, aligned so that start+offset is a multiple of step:
+// with offset the zone's UTC offset, intervals start on the local clock.
+func (s *Store) AggregateSGV(ctx context.Context, from, to int64, step, offset time.Duration, minValid int) ([]Bucket, error) {
+	st, off := step.Milliseconds(), offset.Milliseconds()
+	rows, err := s.r.QueryContext(ctx,
+		`SELECT ((date + ?) / ?) * ? - ? AS b, avg(sgv), min(sgv), max(sgv), count(*)
+		 FROM entries WHERE type = 'sgv' AND sgv > ? AND date >= ? AND date <= ?
+		 GROUP BY b ORDER BY b`, off, st, st, off, minValid, from, to)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Bucket
+	for rows.Next() {
+		var (
+			b   Bucket
+			avg float64
+		)
+		if err := rows.Scan(&b.Start, &avg, &b.Min, &b.Max, &b.N); err != nil {
+			return nil, err
+		}
+		b.Avg = int(avg + 0.5)
+		out = append(out, b)
+	}
+	return out, rows.Err()
+}

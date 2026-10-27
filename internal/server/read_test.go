@@ -182,7 +182,7 @@ func TestHistory(t *testing.T) {
 		t.Fatalf("explicit from: %d sgv", len(h.SGV.V))
 	}
 
-	for _, bad := range []string{"?from=yesterday", "?from=2026-10-25T00:00:00Z&to=2026-10-24T00:00:00Z", "?from=2026-01-01T00:00:00Z"} {
+	for _, bad := range []string{"?from=yesterday", "?from=2026-10-25T00:00:00Z&to=2026-10-24T00:00:00Z", "?step=-5", "?step=abc"} {
 		if resp := f.get(t, "/api/history"+bad, bearer); resp.StatusCode != 400 {
 			t.Errorf("%s: status %d, want 400", bad, resp.StatusCode)
 		}
@@ -330,5 +330,43 @@ func TestXDripInsulinAndMeterReadings(t *testing.T) {
 	}
 	if len(h.MBG.V) != 1 || h.MBG.V[0] != 120 {
 		t.Fatalf("mbg %v: repeats of the 144 check must be left out", h.MBG.V)
+	}
+}
+
+func TestHistoryLongSpanIsAggregated(t *testing.T) {
+	f := newFixture(t)
+	_, xd := f.addDevice(t, "xDrip", auth.RoleUploader)
+	bearer := map[string]string{"Authorization": "Bearer " + xd}
+	// 12 readings ending at 00:55 UTC: 00:00..00:55, values 100..155
+	vals := make([]int, 12)
+	for i := range vals {
+		vals[i] = 100 + i*5
+	}
+	upload(t, f, xd, testNow.Add(-5*time.Minute), "Flat", vals...)
+
+	var h struct {
+		Step int
+		SGV  struct {
+			T         []int64
+			V, Lo, Hi []int
+		}
+	}
+	// three days: 15-minute intervals with mean and range, aligned on the clock
+	from := testNow.Add(-3 * 24 * time.Hour).UnixMilli()
+	json.NewDecoder(f.get(t, fmt.Sprintf("/api/history?from=%d", from), bearer).Body).Decode(&h)
+	if h.Step != 15 || len(h.SGV.V) != 4 {
+		t.Fatalf("step %d, %d intervals: %+v", h.Step, len(h.SGV.V), h.SGV)
+	}
+	if h.SGV.T[0] != testNow.Add(-time.Hour).UnixMilli() || h.SGV.V[0] != 105 || h.SGV.Lo[0] != 100 || h.SGV.Hi[0] != 110 {
+		t.Fatalf("first interval %d %d %d..%d", h.SGV.T[0], h.SGV.V[0], h.SGV.Lo[0], h.SGV.Hi[0])
+	}
+	// asking finer than the span allows still gets 15 minutes; coarser is honoured
+	json.NewDecoder(f.get(t, fmt.Sprintf("/api/history?from=%d&step=0", from), bearer).Body).Decode(&h)
+	if h.Step != 15 {
+		t.Fatalf("step 0 on 3 days: %d", h.Step)
+	}
+	json.NewDecoder(f.get(t, fmt.Sprintf("/api/history?from=%d&step=60", from), bearer).Body).Decode(&h)
+	if h.Step != 60 || len(h.SGV.V) != 1 || h.SGV.V[0] != 128 || h.SGV.Lo[0] != 100 || h.SGV.Hi[0] != 155 {
+		t.Fatalf("hourly: %+v", h)
 	}
 }

@@ -16,6 +16,9 @@ type Device struct {
 	CreatedAt    time.Time
 	LastSeenAt   *time.Time
 	RevokedAt    *time.Time
+
+	// a browser session, admitted as a reader; not a row in devices (ID 0)
+	WebSessionID int64
 }
 
 const deviceCols = `id, name, coalesce(person, name), role, display_units, created_at, last_seen_at, revoked_at`
