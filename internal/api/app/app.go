@@ -72,7 +72,7 @@ type stateResponse struct {
 	Alarms       []alarms.View       `json:"alarms"`                  // live alarms, oldest first
 	Episode      *alarms.EpisodeView `json:"episode,omitempty"`       // rules behind "we wake everyone if…"
 	Caregivers   []caregiver         `json:"caregivers"`              // who an alarm wakes, for "Notified: Dad, Mom"
-	Questions    []questions.View    `json:"questions"`               // open ones and the last day's suspect marks
+	Questions    []questions.View    `json:"questions,omitempty"`     // open ones and the last day's suspect marks; never to the web viewer
 	UploaderName string              `json:"uploader_name,omitempty"` // what the family calls the xDrip+ phone
 }
 
@@ -110,6 +110,9 @@ func (h *Handlers) State(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resp.DisplayUnits = dev.DisplayUnits
+	if dev.WebSessionID != 0 {
+		resp.Questions = nil // questions are for the parents' phones only
+	}
 	httpx.WriteJSON(w, http.StatusOK, resp)
 }
 

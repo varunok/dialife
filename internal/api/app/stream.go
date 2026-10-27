@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -12,6 +13,7 @@ import (
 	"dialife/internal/auth"
 	"dialife/internal/bus"
 	"dialife/internal/httpx"
+	"dialife/internal/questions"
 )
 
 const retryMs = 5000
@@ -50,6 +52,10 @@ func (h *Handlers) Stream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	snap.DisplayUnits = dev.DisplayUnits
+	web := dev.WebSessionID != 0 // the web viewer gets no questions, in any form
+	if web {
+		snap.Questions = nil
+	}
 
 	fmt.Fprintf(w, "retry: %d\n\n", retryMs)
 	if !h.send(w, bus.Event{ID: h.Bus.NextID(now), Type: EventState, Data: mustJSON(snap)}) {
@@ -72,6 +78,14 @@ func (h *Handlers) Stream(w http.ResponseWriter, r *http.Request) {
 		case ev, ok := <-events:
 			if !ok { // too slow or server shutting down: client reconnects and resyncs
 				return
+			}
+			if web {
+				if ev.Type == questions.EventQuestion {
+					continue
+				}
+				if ev.Type == EventBG || ev.Type == EventState {
+					ev.Data = withoutQuestions(ev.Data)
+				}
 			}
 			if !h.send(w, ev) || rc.Flush() != nil {
 				return
@@ -124,4 +138,18 @@ func lastEventID(r *http.Request) int64 {
 		return 0
 	}
 	return id
+}
+
+// withoutQuestions drops the questions from a shared snapshot event.
+func withoutQuestions(data []byte) []byte {
+	var m map[string]json.RawMessage
+	if json.Unmarshal(data, &m) != nil {
+		return data
+	}
+	delete(m, "questions")
+	out, err := json.Marshal(m)
+	if err != nil {
+		return data
+	}
+	return out
 }

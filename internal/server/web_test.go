@@ -122,3 +122,77 @@ func (a *App) webCode(t *testing.T, id string) string {
 	}
 	return c
 }
+
+// webToken logs a browser in the way the page does, approved by a parent's token.
+func webToken(t *testing.T, f *fixture, parent string) string {
+	t.Helper()
+	var start struct{ ID, Secret string }
+	json.NewDecoder(f.do(t, "POST", "/api/web/login", nil, nil).Body).Decode(&start)
+	code := f.app.webCode(t, start.ID)
+	hdr := map[string]string{"Authorization": "Bearer " + parent, "Content-Type": "application/json"}
+	f.do(t, "POST", "/api/web/approve", strings.NewReader(`{"id":"`+start.ID+`","code":"`+code+`","minutes":60}`), hdr)
+	var m map[string]any
+	json.NewDecoder(f.do(t, "POST", "/api/web/login/"+start.ID+"/poll", strings.NewReader(`{"secret":"`+start.Secret+`"}`), nil).Body).Decode(&m)
+	return m["token"].(string)
+}
+
+// collect gathers the stream's events for a moment, pings left out.
+func collect(c *sseClient, d time.Duration) []sseEvent {
+	var out []sseEvent
+	timeout := time.After(d)
+	for {
+		select {
+		case ev, ok := <-c.events:
+			if !ok {
+				return out
+			}
+			if ev.Type != "ping" {
+				out = append(out, ev)
+			}
+		case <-timeout:
+			return out
+		}
+	}
+}
+
+func TestWebGetsNoQuestions(t *testing.T) {
+	f := newFixture(t)
+	_, xd := f.addDevice(t, "xDrip", auth.RoleUploader)
+	_, mom := f.addDevice(t, "Мама", auth.RoleCaregiver)
+	web := webToken(t, f, mom)
+
+	webStream, momStream := openStream(t, f, web, nil), openStream(t, f, mom, nil)
+	webStream.next(t, "state")
+	momStream.next(t, "state")
+	// a rise with no food: the parents are asked
+	upload(t, f, xd, testNow.Add(-time.Minute), "SingleUp", 120, 118, 119, 125, 136, 148, 160, 171)
+
+	has := func(evs []sseEvent, typ string) bool {
+		for _, e := range evs {
+			if e.Type == typ {
+				return true
+			}
+		}
+		return false
+	}
+	momEvs, webEvs := collect(momStream, 500*time.Millisecond), collect(webStream, 500*time.Millisecond)
+	if !has(momEvs, "question") {
+		t.Fatalf("the parent must be asked: %v", momEvs)
+	}
+	if has(webEvs, "question") || !has(webEvs, "bg") {
+		t.Fatalf("web events %v", webEvs)
+	}
+	for _, e := range webEvs {
+		if strings.Contains(e.Data, `"questions"`) {
+			t.Fatalf("questions leak to the web in %s: %s", e.Type, e.Data)
+		}
+	}
+	raw, _ := io.ReadAll(f.get(t, "/api/state", map[string]string{"Authorization": "Bearer " + web}).Body)
+	if strings.Contains(string(raw), `"questions"`) {
+		t.Fatalf("web state has questions: %s", raw)
+	}
+	momRaw, _ := io.ReadAll(f.get(t, "/api/state", map[string]string{"Authorization": "Bearer " + mom}).Body)
+	if !strings.Contains(string(momRaw), `"questions"`) {
+		t.Fatal("the parent's state lost its questions")
+	}
+}
