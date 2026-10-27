@@ -226,7 +226,7 @@ function onEvent(type, data) {
   } else if (type === 'history' || type === 'treatment') {
     loadHistory(); loadMeter();
   } else if (['alarm', 'handled', 'checkin', 'checkin_ok', 'help', 'coming', 'clear'].includes(type)) {
-    loadState();
+    loadState(); loadHistory(); // the episode shows on the chart and in the table
   } else if (type === 'uploader' && V.state) {
     V.state = Object.assign({}, V.state, { uploader: d });
   }
@@ -455,6 +455,14 @@ const Chart = {
       out.push(m('rect', { x: x0, y: 4, width: x1 - x0, height: 12, rx: 6, fill: 'var(--in)', 'fill-opacity': a, 'data-tip': 'act:' + tr.id }));
     });
 
+    // alarm episodes: a coloured strip along the top, as long as they lasted
+    (h.alarms || []).forEach((al, n) => {
+      const end = al.cleared_at || win.to;
+      const x0 = Math.max(0, x(al.started_at)), x1 = Math.max(x0 + 4, Math.min(plotW, x(end)));
+      if (x1 <= 0 || x0 >= plotW) return;
+      out.push(m('rect', { x: x0, y: 20, width: x1 - x0, height: 6, rx: 3, fill: alarmInk(al), 'fill-opacity': al.level === 'urgent' ? 0.9 : 0.55, 'data-tip': 'al:' + n }));
+    });
+
     // the forecast cone from the newest reading
     if (win.live && !agg && st && st.ar2 && st.ar2.cone && st.ar2.cone.length && idx.length) {
       const li = idx[idx.length - 1];
@@ -497,6 +505,9 @@ const Chart = {
       const row = bas ? ROW_BASAL : ins ? ROW_RAPID : ROW_CARBS;
       const [ink, bg, glyph] = bas ? ['var(--basal)', 'var(--basal-bg)', t('glyphBasal')] : ins ? ['var(--insulin)', 'var(--insulin-bg)', t('glyphRapid')] : (tr.carbs || 0) > 0 ? ['var(--carbs)', 'var(--carbs-bg)', t('glyphCarbs')] : ['var(--muted)', 'var(--raised)', t('glyphNote')];
       marks.push({ x: x(tr.t), y: plotH - row, ink, bg, glyph, tip: 'tr:' + tr.id });
+    });
+    (h.suspects || []).filter((q) => q.from >= from && q.from <= win.to).forEach((q, n) => {
+      marks.push({ x: x(q.from), y: plotH - (q.kind === 'rise' ? ROW_CARBS : ROW_RAPID), ink: 'var(--high)', bg: 'var(--high-bg)', glyph: '?', tip: 's:' + n, dashed: true });
     });
     marks.forEach((k) => {
       out.push(m('circle', { cx: k.x, cy: k.y, r: 10, fill: k.bg, stroke: k.dashed ? k.ink : 'none', 'stroke-dasharray': k.dashed ? '3 3' : null, 'data-tip': k.tip }));
@@ -589,9 +600,37 @@ function describeMark(id, h, st, meters, idx, ts, vs) {
     const near = idx.filter((i) => Math.abs(ts[i] - p.t) <= 6 * MIN).sort((a, b) => Math.abs(ts[a] - p.t) - Math.abs(ts[b] - p.t))[0];
     return { lines: [t('meterTip', g(p.v) + ' ' + unit()), [clock(p.t), near != null ? t('sensorAt', g(vs[near])) : null, origin(p.tr, p.src)].filter(Boolean).join(' · ')] };
   }
+  if (kind === 's') {
+    const w = window_(), q = (h.suspects || []).filter((x) => x.from >= w.from && x.from <= w.to)[+key];
+    return { lines: [q ? suspectText(q) : '?'] };
+  }
+  if (kind === 'al') {
+    const al = (h.alarms || [])[+key];
+    return al ? { lines: alarmLines(al) } : { lines: ['—'] };
+  }
   const tr = (h.treatments || []).find((x) => x.id === key);
   if (!tr) return { lines: ['—'] };
   return { lines: [entryText(tr), [clock(tr.t), origin(tr)].join(' · ')].concat(tr.notes && (tr.insulin || tr.carbs) ? [tr.notes.slice(0, 60)] : []) };
+}
+
+// a suspect carries its span; a meal without insulin, its time
+function suspectText(q) {
+  if (q.kind === 'bolus') return t('suspectBolus', clock(q.from));
+  return t(q.kind === 'rise' ? 'suspectRise' : 'suspectFall', clock(q.from), clock(q.to), g(q.sgv_from), g(q.sgv_to));
+}
+
+function alarmInk(al) {
+  if (al.kind === 'low' || al.kind === 'predicted_low') return 'var(--low)';
+  if (al.kind === 'stale') return 'var(--muted)';
+  return 'var(--high)';
+}
+function alarmName(al) { return (DL_TEXTS[lang()]['kind_' + al.kind] ? t('kind_' + al.kind) : t('kind_other')); }
+function alarmText(al) {
+  return al.cleared_at ? t('alarmSpan', alarmName(al), clock(al.started_at), clock(al.cleared_at)) : t('alarmOn', alarmName(al), clock(al.started_at));
+}
+function alarmLines(al) {
+  const more = [al.handled_by && t('alarmBy', al.handled_by), al.manual && t('alarmManual')].filter(Boolean).join(' · ');
+  return more ? [alarmText(al), more] : [alarmText(al)];
 }
 
 function entryText(tr) {
@@ -613,7 +652,7 @@ function tableRows() {
   const tz = new Date(w.from).getTimezoneOffset() * MIN;
   const bucket = (tt) => step <= 5 * MIN && !h.step ? tt : Math.floor((tt - tz) / step) * step + tz;
   const rows = new Map();
-  const row = (b) => { if (!rows.has(b)) rows.set(b, { t: b, vals: [], los: [], his: [], entries: [], meters: [] }); return rows.get(b); };
+  const row = (b) => { if (!rows.has(b)) rows.set(b, { t: b, vals: [], los: [], his: [], entries: [], meters: [], suspects: [], alarms: [] }); return rows.get(b); };
   ts.forEach((tt, i) => {
     if (tt < w.from || tt > w.to) return;
     const r = row(bucket(tt));
@@ -621,6 +660,10 @@ function tableRows() {
   });
   (h.treatments || []).filter((tr) => tr.t >= w.from && tr.t <= w.to).forEach((tr) => row(bucket(tr.t)).entries.push(tr));
   meterPoints(h).filter((p) => p.t >= w.from && p.t <= w.to && !p.tr).forEach((p) => row(bucket(p.t)).meters.push(p));
+  const qs = (h.suspects || []).filter((q) => q.from >= w.from && q.from <= w.to);
+  qs.forEach((q) => row(bucket(q.from)).suspects.push(q));
+  const als = h.alarms || [];
+  als.filter((al) => al.started_at >= w.from && al.started_at <= w.to).forEach((al) => row(bucket(al.started_at)).alarms.push(al));
   const th = (V.state && V.state.thresholds) || { bgTargetBottom: 80, bgTargetTop: 250 };
   let list = Array.from(rows.values()).sort((a, b) => b.t - a.t);
   list.forEach((r) => {
@@ -628,7 +671,11 @@ function tableRows() {
     r.min = r.los.length ? Math.min(...r.los) : null;
     r.max = r.his.length ? Math.max(...r.his) : null;
     r.out = r.min != null && (r.min < th.bgTargetBottom || r.max > th.bgTargetTop);
-    r.has = r.entries.length + r.meters.length > 0;
+    r.has = r.entries.length + r.meters.length + r.suspects.length + r.alarms.length > 0;
+    // a suspect or an alarm runs on through the rows it covers
+    r.span = qs.some((q) => q.from <= r.t + step && q.to >= r.t);
+    const al = als.find((a) => a.started_at <= r.t + step && (a.cleared_at || w.to) >= r.t);
+    r.alarm = al ? (al.kind === 'low' || al.kind === 'predicted_low' ? 'alarm-low' : al.kind === 'stale' ? 'alarm-stale' : 'alarm-high') : '';
   });
   for (let i = 0; i < list.length; i++) {
     const r = list[i], older = list.slice(i + 1).find((o) => o.vals.length); // a meter-only row has no sensor value
@@ -681,10 +728,12 @@ const Table = {
           const ins = r.entries.filter((tr) => (tr.insulin || 0) > 0 && !isBasal(tr)), bas = r.entries.filter((tr) => (tr.insulin || 0) > 0 && isBasal(tr));
           const carbs = r.entries.filter((tr) => (tr.carbs || 0) > 0), act = r.entries.filter((tr) => tr.duration);
           const meters = r.entries.filter((tr) => tr.glucose != null).map((tr) => ({ v: tr.glucose, t: tr.t, tr })).concat(r.meters);
-          const notes = r.entries.filter((tr) => tr.notes).map((tr) => tr.notes.slice(0, 50))
+          const notes = r.alarms.map((al) => m('span', { style: 'color:' + alarmInk(al) }, alarmLines(al).join(' · ')))
+            .concat(r.suspects.map((q) => m('span.c-sus', suspectText(q))))
+            .concat(r.entries.filter((tr) => tr.notes).map((tr) => tr.notes.slice(0, 50)))
             .concat([...new Set(r.entries.map((tr) => origin(tr)).concat(r.meters.map((p) => origin(null, p.src))))]);
           const list_ = (items) => items.length ? items.join(', ') : '·';
-          return m('tr', { key: r.t, class: r.has ? 'has' : '' }, [
+          return m('tr', { key: r.t, class: [r.has ? 'has' : '', r.span ? 'span' : '', r.alarm].join(' ') }, [
             m('td.t', intervals ? clock(r.t) + '–' + clock(r.t + step) : clock(r.t)),
             m('td.v', r.avg == null ? '' : [m('b.' + col(r.avg), g(r.avg)), intervals && m('small', [m('span.' + (r.min < th.bgTargetBottom ? 'lo' : ''), g(r.min)), '–', m('span.' + (r.max > th.bgTargetTop ? 'hi' : ''), g(r.max))])]),
             m('td.d', r.delta == null ? '' : signed(r.delta)),

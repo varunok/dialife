@@ -347,6 +347,9 @@ type historyResponse struct {
 	Step       int                `json:"step,omitempty"` // minutes per sgv point when aggregated; absent: every reading
 	MBG        series             `json:"mbg"`            // glucometer readings uploaded by xDrip+, repeats of a BG check left out
 	Treatments []historyTreatment `json:"treatments"`
+	// what happened, to show on the chart and in the table (no actions here)
+	Alarms   []historyAlarm   `json:"alarms"`
+	Suspects []historySuspect `json:"suspects"`
 }
 
 // History serves GET /api/history?from=&to= (unix ms or ISO; default last 6 h),
@@ -433,7 +436,58 @@ func (h *Handlers) History(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	if err := h.historyMarks(ctx, &resp, from, to); err != nil {
+		fail(w, "history marks", err)
+		return
+	}
 	httpx.WriteJSON(w, http.StatusOK, resp)
+}
+
+type historyAlarm struct {
+	Kind       string `json:"kind"`
+	Level      string `json:"level"`
+	StartedAt  int64  `json:"started_at"`
+	ClearedAt  *int64 `json:"cleared_at,omitempty"` // absent: still on
+	HandledBy  string `json:"handled_by,omitempty"`
+	ResolvedBy string `json:"resolved_by,omitempty"`
+	Manual     bool   `json:"manual,omitempty"`
+}
+
+// historySuspect is a rise, fall or meal nobody explained in time.
+type historySuspect struct {
+	Kind    string `json:"kind"` // "rise" | "fall" | "bolus"
+	From    int64  `json:"from"`
+	To      int64  `json:"to"`
+	SGVFrom int    `json:"sgv_from"`
+	SGVTo   int    `json:"sgv_to"`
+}
+
+// historyMarks adds the alarm episodes overlapping the span and the suspect marks in it.
+func (h *Handlers) historyMarks(ctx context.Context, resp *historyResponse, from, to int64) error {
+	resp.Alarms, resp.Suspects = []historyAlarm{}, []historySuspect{}
+	// an episode may have begun before the span and still run into it
+	as, err := h.Store.AlarmsSince(ctx, from-24*time.Hour.Milliseconds(), 1000)
+	if err != nil {
+		return err
+	}
+	for i := len(as) - 1; i >= 0; i-- { // oldest first
+		a := as[i]
+		if a.StartedAt > to || (a.ClearedAt != nil && *a.ClearedAt < from) {
+			continue
+		}
+		resp.Alarms = append(resp.Alarms, historyAlarm{Kind: a.Kind, Level: a.Level, StartedAt: a.StartedAt, ClearedAt: a.ClearedAt,
+			HandledBy: a.HandledByName, ResolvedBy: a.ResolvedByName, Manual: a.ResolvedManually})
+	}
+	qs, err := h.Store.QuestionsSince(ctx, from)
+	if err != nil {
+		return err
+	}
+	for _, q := range qs {
+		if q.State == "unknown" && q.From >= from && q.From <= to {
+			resp.Suspects = append(resp.Suspects, historySuspect{Kind: q.Kind, From: q.From, To: q.To, SGVFrom: q.SGVFrom, SGVTo: q.SGVTo})
+		}
+	}
+	return nil
 }
 
 // Spans up to these lengths come as every reading, then as 15-minute, then hourly intervals.
