@@ -505,7 +505,7 @@
     <string name="dose_by_me">цей телефон</string>
     <string name="intent_giving">%1$s вводить %2$s · відкрито %3$s тому</string>
     <string name="intent_check">Узгодьте перед уколом, щоб доза не пішла двічі.</string>
-    <string name="dose_recent">Попередня: %1$s о %2$s (%3$s), за %4$s від цієї</string>
+    <string name="dose_recent">%1$s о %2$s (%3$s). Він ще діє.</string>
     <string name="dose_same_title">Та сама ін’єкція?</string>
     <string name="dose_same_body">%1$s %2$s уже записано о %3$s (%4$s), за %5$s від цієї. Це та сама ін’єкція чи нова?</string>
     <string name="dose_same">Та сама — не записувати</string>
@@ -524,4 +524,9 @@
     <string name="watch_body">%1$s: дві дози, %2$s і %3$s. Стежте за гіпо до %4$s.</string>
     <string name="suspect_double">Підозра: дві дози %1$s з різницею %2$s</string>
     <string name="data_suspect_double">\? дві дози %1$s о %2$s і %3$s</string>
+    <string name="dose_recent_head">Короткий уже вводили, за %1$s від цієї дози</string>
+    <string name="dose_recent_title">Ще одна доза короткого?</string>
+    <string name="dose_recent_body">Короткий уже записано: %1$s о %2$s (%3$s), за %4$s від цієї, і він ще діє. Це корекція?</string>
+    <string name="dose_recent_yes">Так, це корекція</string>
+    <string name="dose_recent_back">Назад</string>
 </resources>

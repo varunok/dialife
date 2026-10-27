@@ -484,7 +484,7 @@
     <string name="dose_by_me">this phone</string>
     <string name="intent_giving">%1$s is giving %2$s · opened %3$s ago</string>
     <string name="intent_check">Check with them before injecting, so the dose is not given twice.</string>
-    <string name="dose_recent">Previous: %1$s at %2$s (%3$s), %4$s apart</string>
+    <string name="dose_recent">%1$s at %2$s (%3$s). It is still working.</string>
     <string name="dose_same_title">The same injection?</string>
     <string name="dose_same_body">%1$s %2$s is already logged at %3$s (%4$s), %5$s from this one. Is this the same injection or a new one?</string>
     <string name="dose_same">Same, don’t log</string>
@@ -503,4 +503,9 @@
     <string name="watch_body">%1$s: two doses, %2$s and %3$s. Watch for a low until %4$s.</string>
     <string name="suspect_double">Suspect: two doses of %1$s %2$s apart</string>
     <string name="data_suspect_double">\? two doses of %1$s at %2$s and %3$s</string>
+    <string name="dose_recent_head">Rapid was already given %1$s from this one</string>
+    <string name="dose_recent_title">Another rapid dose?</string>
+    <string name="dose_recent_body">Rapid is already logged: %1$s at %2$s (%3$s), %4$s from this one, and it is still working. Is this a correction?</string>
+    <string name="dose_recent_yes">Yes, a correction</string>
+    <string name="dose_recent_back">Back</string>
 </resources>

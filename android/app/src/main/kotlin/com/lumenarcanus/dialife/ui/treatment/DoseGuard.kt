@@ -106,15 +106,20 @@ fun intentText(ctx: Context, o: InsulinIntent, now: Long): String {
     return ctx.getString(R.string.intent_giving, o.person, insulinLabel(ctx, InsulinType.of(o.insulin)), gapText(ctx, min * 60_000L))
 }
 
-/** The previous rapid dose, 20 min to 3 h away: a fact next to the amount, nothing to confirm. */
+/** The previous rapid dose, 20 min to 3 h away: in plain sight above the amount, before anyone injects. */
 @Composable
 fun RecentDoseNote(near: NearDose, st: StateResponse?) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
-    Text(
-        stringResource(R.string.dose_recent, doseText(ctx, near.dose), AlarmText.clock(ctx, near.dose.t), whoLogged(ctx, near.dose, st), gapText(ctx, near.gapMs)),
-        color = c.textMuted, fontSize = 13.sp,
-    )
+    Column(
+        Modifier.fillMaxWidth().background(c.highContainer, RoundedCornerShape(16.dp)).padding(12.dp),
+    ) {
+        Text(stringResource(R.string.dose_recent_head, gapText(ctx, near.gapMs)), color = c.high, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+        Text(
+            stringResource(R.string.dose_recent, doseText(ctx, near.dose), AlarmText.clock(ctx, near.dose.t), whoLogged(ctx, near.dose, st)),
+            color = c.text, fontSize = 14.sp,
+        )
+    }
 }
 
 /** Saving a dose next to one already logged: the same injection, or really another one? */
@@ -123,6 +128,19 @@ fun SameDoseDialog(near: NearDose, type: InsulinType, st: StateResponse?, onSame
     val ctx = LocalContext.current
     val d = near.dose
     val basal = type == InsulinType.Basal
+    if (near.level == DoseLevel.Recent) {
+        // a correction is normal: one tap says so, the other goes back to the form
+        AlertDialog(
+            onDismissRequest = onBack,
+            title = { Text(stringResource(R.string.dose_recent_title)) },
+            text = {
+                Text(stringResource(R.string.dose_recent_body, doseText(ctx, d), AlarmText.clock(ctx, d.t), whoLogged(ctx, d, st), gapText(ctx, near.gapMs)))
+            },
+            confirmButton = { TextButton(onClick = onNew) { Text(stringResource(R.string.dose_recent_yes)) } },
+            dismissButton = { TextButton(onClick = onBack) { Text(stringResource(R.string.dose_recent_back)) } },
+        )
+        return
+    }
     AlertDialog(
         onDismissRequest = onBack,
         title = { Text(stringResource(if (basal) R.string.dose_basal_title else R.string.dose_same_title)) },

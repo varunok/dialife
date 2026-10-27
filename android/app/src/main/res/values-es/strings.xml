@@ -493,7 +493,7 @@
     <string name="dose_by_me">este teléfono</string>
     <string name="intent_giving">%1$s está poniendo %2$s · abierto hace %3$s</string>
     <string name="intent_check">Hablad antes de inyectar, para no poner la dosis dos veces.</string>
-    <string name="dose_recent">Anterior: %1$s a las %2$s (%3$s), %4$s de diferencia</string>
+    <string name="dose_recent">%1$s a las %2$s (%3$s). Todavía actúa.</string>
     <string name="dose_same_title">¿La misma inyección?</string>
     <string name="dose_same_body">%1$s %2$s ya está registrada a las %3$s (%4$s), a %5$s de esta. ¿Es la misma inyección o una nueva?</string>
     <string name="dose_same">La misma, no registrar</string>
@@ -512,4 +512,9 @@
     <string name="watch_body">%1$s: dos dosis, %2$s y %3$s. Vigilad una hipo hasta las %4$s.</string>
     <string name="suspect_double">Sospecha: dos dosis de %1$s con %2$s de diferencia</string>
     <string name="data_suspect_double">\? dos dosis de %1$s a las %2$s y %3$s</string>
+    <string name="dose_recent_head">Ya se puso rápida, a %1$s de esta dosis</string>
+    <string name="dose_recent_title">¿Otra dosis de rápida?</string>
+    <string name="dose_recent_body">Ya hay rápida registrada: %1$s a las %2$s (%3$s), a %4$s de esta, y todavía actúa. ¿Es una corrección?</string>
+    <string name="dose_recent_yes">Sí, es una corrección</string>
+    <string name="dose_recent_back">Volver</string>
 </resources>

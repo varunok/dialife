@@ -195,6 +195,7 @@ fun TreatmentSheet(
             when (kind) {
                 TreatmentKind.Insulin -> {
                 if (others.isNotEmpty()) IntentWarning(others, System.currentTimeMillis())
+                if (editing == null) nearDose(recent, insType, time, null)?.takeIf { it.level == DoseLevel.Recent }?.let { RecentDoseNote(it, live) }
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                     InsulinType.entries.forEachIndexed { i, t ->
                         SegmentedButton(
@@ -216,7 +217,6 @@ fun TreatmentSheet(
                     accent = if (basal) basalColor(c.isDark) else c.insulin, container = if (basal) basalContainer(c.isDark) else c.insulinContainer, locale = locale,
                     label = stringResource(R.string.tr_insulin),
                 ) { insulin = it }
-                if (editing == null) nearDose(recent, insType, time, null)?.takeIf { it.level == DoseLevel.Recent }?.let { RecentDoseNote(it, live) }
                 }
                 TreatmentKind.Food -> Amount(
                     value = carbs, step = 1.0, max = 300.0, unit = stringResource(R.string.unit_carbs),
@@ -312,7 +312,7 @@ fun TreatmentSheet(
             Button(
                 onClick = {
                     val near = if (editing == null && kind == TreatmentKind.Insulin) nearDose(recent, insType, time, null) else null
-                    if (near?.level == DoseLevel.Same) confirming = near else onSave(build(null))
+                    if (near != null) confirming = near else onSave(build(null))
                 },
                 enabled = amountOk,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
