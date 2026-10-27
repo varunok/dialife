@@ -1,7 +1,8 @@
 
 __DOMAIN__ {
-	@api path /api/*
-	handle @api {
+	# the API for the apps and xDrip+, and the read-only web viewer; nothing else
+	@dialife path /api/* /web/* /
+	handle @dialife {
 		reverse_proxy localhost:8090
 	}
 	handle {
