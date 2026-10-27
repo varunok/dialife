@@ -105,9 +105,10 @@ class ScreenshotTest {
             androidx.compose.ui.Modifier.padding(20.dp),
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
         ) {
-            com.lumenarcanus.dialife.ui.web.Approve(com.lumenarcanus.dialife.data.WebLoginInfo("x", "Firefox", "Linux", now + 120_000)) {}
+            com.lumenarcanus.dialife.ui.web.Approve(com.lumenarcanus.dialife.data.WebLoginInfo("x", "Firefox", "Linux", now + 120_000), now = now) {}
             com.lumenarcanus.dialife.ui.web.Sessions(
                 listOf(com.lumenarcanus.dialife.data.WebSession(1, "Chrome", "Windows", "Тато", now - 86_400_000, now + 6 * 86_400_000, now - 600_000)),
+                now = now,
             ) {}
         }
     }

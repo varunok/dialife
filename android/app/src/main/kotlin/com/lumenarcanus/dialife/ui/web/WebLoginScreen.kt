@@ -136,7 +136,7 @@ private fun untilText(ctx: android.content.Context, ms: Long): String =
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun Approve(info: WebLoginInfo, onDecide: (Int?) -> Unit) {
+internal fun Approve(info: WebLoginInfo, now: Long = System.currentTimeMillis(), onDecide: (Int?) -> Unit) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
     var count by remember { mutableIntStateOf(7) }
@@ -189,7 +189,7 @@ internal fun Approve(info: WebLoginInfo, onDecide: (Int?) -> Unit) {
             }
         }
         Text(
-            if (tooLong) stringResource(R.string.web_too_long) else stringResource(R.string.web_until, untilText(ctx, System.currentTimeMillis() + minutes * 60_000L)),
+            if (tooLong) stringResource(R.string.web_too_long) else stringResource(R.string.web_until, untilText(ctx, now + minutes * 60_000L)),
             color = if (tooLong) c.high else c.text, fontSize = 13.sp,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -200,7 +200,7 @@ internal fun Approve(info: WebLoginInfo, onDecide: (Int?) -> Unit) {
 }
 
 @Composable
-internal fun Sessions(sessions: List<WebSession>, onRevoke: (Long) -> Unit) {
+internal fun Sessions(sessions: List<WebSession>, now: Long = System.currentTimeMillis(), onRevoke: (Long) -> Unit) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
     Column(
@@ -214,7 +214,7 @@ internal fun Sessions(sessions: List<WebSession>, onRevoke: (Long) -> Unit) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(Modifier.weight(1f)) {
                     Text("${s.browser} · ${s.os}", color = c.text, fontSize = 14.sp)
-                    val seen = s.lastSeenAt?.let { android.text.format.DateUtils.getRelativeTimeSpanString(it).toString() } ?: never
+                    val seen = s.lastSeenAt?.let { android.text.format.DateUtils.getRelativeTimeSpanString(it, now, android.text.format.DateUtils.MINUTE_IN_MILLIS).toString() } ?: never
                     Text(stringResource(R.string.web_session_line, s.by, untilText(ctx, s.expiresAt), seen), color = c.textMuted, fontSize = 12.sp)
                 }
                 OutlinedButton(onClick = { onRevoke(s.id) }) { Text(stringResource(R.string.web_logout), color = c.low) }

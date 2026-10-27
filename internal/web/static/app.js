@@ -225,12 +225,6 @@ function onEvent(type, data) {
     if (window_().live) loadHistory();
   } else if (type === 'history' || type === 'treatment') {
     loadHistory(); loadMeter();
-  } else if (type === 'question') {
-    if (V.state) {
-      const qs = (V.state.questions || []).filter((q) => q.id !== d.id);
-      if (d.state === 'open' || d.state === 'unknown') qs.push(d);
-      V.state = Object.assign({}, V.state, { questions: qs });
-    }
   } else if (['alarm', 'handled', 'checkin', 'checkin_ok', 'help', 'coming', 'clear'].includes(type)) {
     loadState();
   } else if (type === 'uploader' && V.state) {
@@ -504,9 +498,6 @@ const Chart = {
       const [ink, bg, glyph] = bas ? ['var(--basal)', 'var(--basal-bg)', t('glyphBasal')] : ins ? ['var(--insulin)', 'var(--insulin-bg)', t('glyphRapid')] : (tr.carbs || 0) > 0 ? ['var(--carbs)', 'var(--carbs-bg)', t('glyphCarbs')] : ['var(--muted)', 'var(--raised)', t('glyphNote')];
       marks.push({ x: x(tr.t), y: plotH - row, ink, bg, glyph, tip: 'tr:' + tr.id });
     });
-    ((st && st.questions) || []).filter((q) => q.state === 'unknown' && q.from >= from && q.from <= win.to).forEach((q) => {
-      marks.push({ x: x(q.from), y: plotH - (q.kind === 'rise' ? ROW_CARBS : ROW_RAPID), ink: 'var(--high)', bg: 'var(--high-bg)', glyph: '?', tip: 'q:' + q.id, dashed: true });
-    });
     marks.forEach((k) => {
       out.push(m('circle', { cx: k.x, cy: k.y, r: 10, fill: k.bg, stroke: k.dashed ? k.ink : 'none', 'stroke-dasharray': k.dashed ? '3 3' : null, 'data-tip': k.tip }));
       out.push(m('text', { x: k.x, y: k.y + 4, 'text-anchor': 'middle', fill: k.ink, style: 'font-family:var(--ui);font-weight:700;pointer-events:none' }, k.glyph));
@@ -598,20 +589,9 @@ function describeMark(id, h, st, meters, idx, ts, vs) {
     const near = idx.filter((i) => Math.abs(ts[i] - p.t) <= 6 * MIN).sort((a, b) => Math.abs(ts[a] - p.t) - Math.abs(ts[b] - p.t))[0];
     return { lines: [t('meterTip', g(p.v) + ' ' + unit()), [clock(p.t), near != null ? t('sensorAt', g(vs[near])) : null, origin(p.tr, p.src)].filter(Boolean).join(' · ')] };
   }
-  if (kind === 'q') {
-    const q = ((st && st.questions) || []).find((x) => String(x.id) === key);
-    if (!q) return { lines: ['?'] };
-    return { lines: [suspectText(q)] };
-  }
   const tr = (h.treatments || []).find((x) => x.id === key);
   if (!tr) return { lines: ['—'] };
   return { lines: [entryText(tr), [clock(tr.t), origin(tr)].join(' · ')].concat(tr.notes && (tr.insulin || tr.carbs) ? [tr.notes.slice(0, 60)] : []) };
-}
-
-// a suspect carries its span; a meal without insulin, its time
-function suspectText(q) {
-  if (q.kind === 'bolus') return t('suspectBolus', clock(q.from));
-  return t(q.kind === 'rise' ? 'suspectRise' : 'suspectFall', clock(q.from), clock(q.to), g(q.sgv_from), g(q.sgv_to));
 }
 
 function entryText(tr) {
@@ -633,7 +613,7 @@ function tableRows() {
   const tz = new Date(w.from).getTimezoneOffset() * MIN;
   const bucket = (tt) => step <= 5 * MIN && !h.step ? tt : Math.floor((tt - tz) / step) * step + tz;
   const rows = new Map();
-  const row = (b) => { if (!rows.has(b)) rows.set(b, { t: b, vals: [], los: [], his: [], entries: [], meters: [], suspects: [] }); return rows.get(b); };
+  const row = (b) => { if (!rows.has(b)) rows.set(b, { t: b, vals: [], los: [], his: [], entries: [], meters: [] }); return rows.get(b); };
   ts.forEach((tt, i) => {
     if (tt < w.from || tt > w.to) return;
     const r = row(bucket(tt));
@@ -641,8 +621,6 @@ function tableRows() {
   });
   (h.treatments || []).filter((tr) => tr.t >= w.from && tr.t <= w.to).forEach((tr) => row(bucket(tr.t)).entries.push(tr));
   meterPoints(h).filter((p) => p.t >= w.from && p.t <= w.to && !p.tr).forEach((p) => row(bucket(p.t)).meters.push(p));
-  const qs = ((V.state && V.state.questions) || []).filter((q) => q.from >= w.from && q.from <= w.to);
-  qs.forEach((q) => row(bucket(q.from)).suspects.push(q));
   const th = (V.state && V.state.thresholds) || { bgTargetBottom: 80, bgTargetTop: 250 };
   let list = Array.from(rows.values()).sort((a, b) => b.t - a.t);
   list.forEach((r) => {
@@ -650,9 +628,7 @@ function tableRows() {
     r.min = r.los.length ? Math.min(...r.los) : null;
     r.max = r.his.length ? Math.max(...r.his) : null;
     r.out = r.min != null && (r.min < th.bgTargetBottom || r.max > th.bgTargetTop);
-    r.has = r.entries.length + r.meters.length + r.suspects.length > 0;
-    // a suspect rise or fall runs on through the rows it covers
-    r.span = qs.some((q) => q.from <= r.t + step && q.to >= r.t);
+    r.has = r.entries.length + r.meters.length > 0;
   });
   for (let i = 0; i < list.length; i++) {
     const r = list[i], older = list.slice(i + 1).find((o) => o.vals.length); // a meter-only row has no sensor value
@@ -705,11 +681,10 @@ const Table = {
           const ins = r.entries.filter((tr) => (tr.insulin || 0) > 0 && !isBasal(tr)), bas = r.entries.filter((tr) => (tr.insulin || 0) > 0 && isBasal(tr));
           const carbs = r.entries.filter((tr) => (tr.carbs || 0) > 0), act = r.entries.filter((tr) => tr.duration);
           const meters = r.entries.filter((tr) => tr.glucose != null).map((tr) => ({ v: tr.glucose, t: tr.t, tr })).concat(r.meters);
-          const notes = r.suspects.map((q) => m('span.c-sus', suspectText(q)))
-            .concat(r.entries.filter((tr) => tr.notes).map((tr) => tr.notes.slice(0, 50)))
+          const notes = r.entries.filter((tr) => tr.notes).map((tr) => tr.notes.slice(0, 50))
             .concat([...new Set(r.entries.map((tr) => origin(tr)).concat(r.meters.map((p) => origin(null, p.src))))]);
           const list_ = (items) => items.length ? items.join(', ') : '·';
-          return m('tr', { key: r.t, class: [r.has ? 'has' : '', r.span ? 'span' : ''].join(' ') }, [
+          return m('tr', { key: r.t, class: r.has ? 'has' : '' }, [
             m('td.t', intervals ? clock(r.t) + '–' + clock(r.t + step) : clock(r.t)),
             m('td.v', r.avg == null ? '' : [m('b.' + col(r.avg), g(r.avg)), intervals && m('small', [m('span.' + (r.min < th.bgTargetBottom ? 'lo' : ''), g(r.min)), '–', m('span.' + (r.max > th.bgTargetTop ? 'hi' : ''), g(r.max))])]),
             m('td.d', r.delta == null ? '' : signed(r.delta)),
@@ -730,7 +705,7 @@ const Table = {
           m('td.c-bas', amount(sum((tr) => (tr.insulin || 0) > 0 && isBasal(tr) ? tr.insulin : 0)) + ' ' + t('insulinU')),
           m('td.c-carb', amount(sum((tr) => tr.carbs)) + ' ' + t('carbsG')),
           m('td.c-act', sum((tr) => tr.duration) + ' ' + t('minutes')),
-          m('td.c-sus', list.reduce((a, r) => a + r.suspects.length, 0) ? t('suspects', list.reduce((a, r) => a + r.suspects.length, 0)) : '')
+          m('td', '')
         ]))
       ])),
       list.length > V.shown && m('button.ghost.more', { onclick: () => { V.shown += 300; } }, t('showMore', Math.min(300, list.length - V.shown)))
