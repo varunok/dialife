@@ -517,4 +517,26 @@
     <string name="dose_recent_body">Ya hay rápida registrada: %1$s a las %2$s (%3$s), a %4$s de esta, y todavía actúa. ¿Es una corrección?</string>
     <string name="dose_recent_yes">Sí, es una corrección</string>
     <string name="dose_recent_back">Volver</string>
+    <!-- the food form as a list, with carb suggestions -->
+    <string name="food_disclaimer">Los números con «≈» son solo sugerencias, no un cálculo: no conocen ni el peso ni la receta. Comprobad con la báscula o el envase. Cada número lo elegís o escribís vosotros.</string>
+    <string name="food_name">Comida o plato</string>
+    <string name="food_portion">Ración (opcional)</string>
+    <string name="food_portion_hint">150 g, 2 rebanadas, un plato</string>
+    <string name="food_remove">Quitar esta línea</string>
+    <string name="food_add">+ Añadir línea</string>
+    <string name="food_looking">Buscando una sugerencia…</string>
+    <string name="food_mine">Como en vuestros registros</string>
+    <string name="food_mine_note">por «%1$s» · registrado %2$d veces</string>
+    <string name="food_estimate">Estimación, %1$d–%2$d g</string>
+    <string name="food_unknown">Sin sugerencia. Escribid los hidratos, y la próxima vez DiaLife sugerirá vuestro número.</string>
+    <string name="food_no_models">Solo se sugieren vuestros registros (no hay estimaciones en el servidor). Escribid los hidratos, y la próxima vez DiaLife sugerirá vuestro número.</string>
+    <string name="food_src_none">Aún sin hidratos</string>
+    <string name="food_src_mine">Elegido: vuestro registro anterior</string>
+    <string name="food_src_estimate">Elegido: estimación. Comprobadla si tenéis peso o envase</string>
+    <string name="food_src_manual">Escrito a mano</string>
+    <string name="food_total">Total</string>
+    <plurals name="food_models"><item quantity="one">un modelo</item><item quantity="other">%d modelos</item></plurals>
+    <plurals name="food_hinted"><item quantity="one">%d de sugerencia</item><item quantity="other">%d de sugerencias</item></plurals>
+    <plurals name="food_manual"><item quantity="one">%d a mano</item><item quantity="other">%d a mano</item></plurals>
+    <plurals name="food_empty"><item quantity="one">Una línea sin hidratos: no se cuenta.</item><item quantity="other">%d líneas sin hidratos: no se cuentan.</item></plurals>
 </resources>

@@ -696,6 +696,7 @@ fun GlucoseChart(
                 val who = originText(originOf(tr))
                 val lines = listOfNotNull(
                     what,
+                    tr.foodText()?.take(60), // what she ate, line by line
                     tr.notes?.takeIf { amounts.isNotBlank() && it.isNotBlank() }?.take(40),
                     listOfNotNull(clock(tr.t), who, pendingLabel.takeIf { tr.pending }).joinToString(" · "),
                 )

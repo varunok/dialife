@@ -529,4 +529,26 @@
     <string name="dose_recent_body">Короткий уже записано: %1$s о %2$s (%3$s), за %4$s від цієї, і він ще діє. Це корекція?</string>
     <string name="dose_recent_yes">Так, це корекція</string>
     <string name="dose_recent_back">Назад</string>
+    <!-- the food form as a list, with carb suggestions -->
+    <string name="food_disclaimer">Вуглеводи з «≈» — лише підказка, не розрахунок. Підказка не знає ні ваги, ні рецепта, тож звіряйте з вагою чи упаковкою. Кожне число ви обираєте або вводите самі.</string>
+    <string name="food_name">Страва або продукт</string>
+    <string name="food_portion">Порція (необов’язково)</string>
+    <string name="food_portion_hint">150 г, 2 скибки, тарілка</string>
+    <string name="food_remove">Прибрати позицію</string>
+    <string name="food_add">+ Додати позицію</string>
+    <string name="food_looking">Шукаю підказку…</string>
+    <string name="food_mine">Як у ваших записах</string>
+    <string name="food_mine_note">за «%1$s» · записано %2$d раз(ів)</string>
+    <string name="food_estimate">Оцінка, %1$d–%2$d г</string>
+    <string name="food_unknown">Підказки немає. Введіть вуглеводи самі, і наступного разу DiaLife запропонує ваше число.</string>
+    <string name="food_no_models">Підказки лише з ваших записів (оцінок на сервері немає). Введіть вуглеводи самі, і наступного разу DiaLife запропонує ваше число.</string>
+    <string name="food_src_none">Вуглеводи ще не вказано</string>
+    <string name="food_src_mine">Обрано: ваш попередній запис</string>
+    <string name="food_src_estimate">Обрано: оцінка. Перевірте, якщо є вага чи упаковка</string>
+    <string name="food_src_manual">Введено вручну</string>
+    <string name="food_total">Разом</string>
+    <plurals name="food_models"><item quantity="one">%d модель</item><item quantity="few">%d моделі</item><item quantity="many">%d моделей</item><item quantity="other">%d моделі</item></plurals>
+    <plurals name="food_hinted"><item quantity="one">%d з підказки</item><item quantity="few">%d з підказки</item><item quantity="many">%d з підказки</item><item quantity="other">%d з підказки</item></plurals>
+    <plurals name="food_manual"><item quantity="one">%d вручну</item><item quantity="few">%d вручну</item><item quantity="many">%d вручну</item><item quantity="other">%d вручну</item></plurals>
+    <plurals name="food_empty"><item quantity="one">%d позиція без вуглеводів: її не пораховано.</item><item quantity="few">%d позиції без вуглеводів: їх не пораховано.</item><item quantity="many">%d позицій без вуглеводів: їх не пораховано.</item><item quantity="other">%d позиції без вуглеводів: їх не пораховано.</item></plurals>
 </resources>

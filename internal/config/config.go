@@ -19,6 +19,16 @@ type Config struct {
 	NtfyURL     string // ntfy server; empty disables push
 	NtfyToken   string // ntfy access token allowed to publish to the topics
 	NtfyTargets string // "topic:deviceID,topic:deviceID"
+
+	// Carb estimates from language models; no key (or URL) set: none, and
+	// nothing about food leaves the server. Models are comma-separated: each
+	// one is asked, at the same time, and their answers combined.
+	GeminiKey    string
+	GeminiModels string // default "gemini-3.5-flash-lite"
+	OpenAIURL    string // any OpenAI-compatible API: OpenAI, OpenRouter, a local Ollama
+	OpenAIKey    string
+	OpenAIModels string
+	LLMTimeout   string // per model, a Go duration; default 10s
 }
 
 func FromEnv() Config {
@@ -32,6 +42,12 @@ func FromEnv() Config {
 		NtfyURL:       os.Getenv("DIALIFE_NTFY_URL"),
 		NtfyToken:     os.Getenv("DIALIFE_NTFY_TOKEN"),
 		NtfyTargets:   os.Getenv("DIALIFE_NTFY_TARGETS"),
+		GeminiKey:     os.Getenv("DIALIFE_GEMINI_KEY"),
+		GeminiModels:  getenv("DIALIFE_GEMINI_MODEL", "gemini-3.5-flash-lite"),
+		OpenAIURL:     os.Getenv("DIALIFE_OPENAI_URL"),
+		OpenAIKey:     os.Getenv("DIALIFE_OPENAI_KEY"),
+		OpenAIModels:  os.Getenv("DIALIFE_OPENAI_MODEL"),
+		LLMTimeout:    os.Getenv("DIALIFE_LLM_TIMEOUT"),
 	}
 }
 

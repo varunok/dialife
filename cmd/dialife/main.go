@@ -32,6 +32,7 @@ import (
 	"dialife/internal/alarms"
 	"dialife/internal/auth"
 	"dialife/internal/bus"
+	"dialife/internal/carbs"
 	"dialife/internal/config"
 	"dialife/internal/glucose"
 	"dialife/internal/notify"
@@ -119,8 +120,22 @@ func serve(cfg config.Config) error {
 		}
 	}
 
+	llmTimeout := time.Duration(0)
+	if cfg.LLMTimeout != "" {
+		if llmTimeout, err = time.ParseDuration(cfg.LLMTimeout); err != nil {
+			return fmt.Errorf("DIALIFE_LLM_TIMEOUT: %w", err)
+		}
+	}
+	models := carbs.FromConfig(cfg.GeminiKey, cfg.GeminiModels, cfg.OpenAIURL, cfg.OpenAIKey, cfg.OpenAIModels)
+	names := make([]string, len(models))
+	for i, m := range models {
+		names[i] = m.Name()
+	}
+	slog.Info("carb estimates", "models", names) // none: only the family's own numbers
+
 	events := bus.New(maxStreams)
 	wired := server.New(server.Deps{
+		Carbs:     &carbs.Service{Store: s, Models: models, Timeout: llmTimeout, Now: time.Now},
 		Links:     links,
 		Store:     s,
 		Auth:      auth.NewAuthenticator(s, time.Now),

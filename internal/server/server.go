@@ -13,6 +13,7 @@ import (
 	"dialife/internal/api/nsv1"
 	"dialife/internal/auth"
 	"dialife/internal/bus"
+	"dialife/internal/carbs"
 	"dialife/internal/config"
 	"dialife/internal/httpx"
 	"dialife/internal/questions"
@@ -31,6 +32,7 @@ type Deps struct {
 	Links     *acklink.Signer // nil disables notification ack links
 	Loc       *time.Location  // the family's time zone (stats day); nil: UTC
 	Uploader  string          // what the family calls the xDrip+ phone (DIALIFE_UPLOADER_LABEL)
+	Carbs     *carbs.Service  // nil: the family's own numbers only, no models
 }
 
 // App is the wired server: the HTTP handler plus the alarm engine, whose
@@ -48,7 +50,10 @@ func New(d Deps) *App {
 		upload    = d.Auth.Require(auth.RoleUploader)
 		careWrite = d.Auth.Require(auth.RoleUploader, auth.RoleCaregiver)
 	)
-	api := &app.Handlers{Store: d.Store, Now: d.Now, Thresholds: config.DefaultThresholds, Bus: d.Bus, PingEvery: d.PingEvery, Links: d.Links, Loc: d.Loc, Uploader: d.Uploader}
+	api := &app.Handlers{Store: d.Store, Now: d.Now, Thresholds: config.DefaultThresholds, Bus: d.Bus, PingEvery: d.PingEvery, Links: d.Links, Loc: d.Loc, Uploader: d.Uploader, Carbs: d.Carbs}
+	if api.Carbs == nil {
+		api.Carbs = &carbs.Service{Store: d.Store, Now: d.Now}
+	}
 	timing := d.Timing
 	if timing == (alarms.Timing{}) {
 		timing = alarms.DefaultTiming
@@ -99,6 +104,7 @@ func New(d Deps) *App {
 	mux.Handle("GET /api/web/sessions", caregiver(http.HandlerFunc(api.WebSessions)))
 	mux.Handle("POST /api/web/sessions/{id}/revoke", caregiver(http.HandlerFunc(api.WebSessionRevoke)))
 	mux.Handle("POST /api/web/logout", anyRole(http.HandlerFunc(api.WebLogout)))
+	mux.Handle("POST /api/carbs/suggest", caregiver(http.HandlerFunc(api.SuggestCarbs)))
 	mux.Handle("POST /api/insulin/intent", caregiver(http.HandlerFunc(api.InsulinIntent)))
 	mux.Handle("DELETE /api/insulin/intent", caregiver(http.HandlerFunc(api.InsulinIntentEnd)))
 	mux.Handle("POST /api/questions/{id}/answer", caregiver(http.HandlerFunc(api.AnswerQuestion)))

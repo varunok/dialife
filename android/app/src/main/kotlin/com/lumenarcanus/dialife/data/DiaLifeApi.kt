@@ -7,6 +7,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.encodeToJsonElement
 import okhttp3.OkHttpClient
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
@@ -66,6 +68,16 @@ class DiaLifeApi(
     private fun Result<Unit>.closedIsDone(): Result<Unit> =
         recoverCatching { e -> if ((e as? ApiException)?.error == ApiError.Server(409)) Unit else throw e }
 
+    /** Carb suggestions for the foods typed in the form; only ever suggestions. */
+    suspend fun suggestCarbs(c: Credentials, items: List<Pair<String, String>>): Result<CarbSuggestions> = postFor(
+        c, "/api/carbs/suggest",
+        buildJsonObject {
+            put("items", kotlinx.serialization.json.buildJsonArray {
+                items.forEach { (name, portion) -> add(buildJsonObject { put("name", name); put("portion", portion) }) }
+            })
+        }.toString(),
+    )
+
     /** The insulin form is open here: the other phones show "… is giving insulin". */
     suspend fun insulinIntent(c: Credentials, insulin: String): Result<Unit> =
         post(c, "/api/insulin/intent", buildJsonObject { put("insulin", insulin) }.toString())
@@ -98,6 +110,7 @@ class DiaLifeApi(
             }
             t.notes?.takeIf { it.isNotBlank() }?.let { put("notes", it) }
             t.confirmedNew?.let { put("confirmedNew", it) } // the server asks nobody about this pair
+            t.foodItems?.takeIf { it.isNotEmpty() }?.let { put("foodItems", json.encodeToJsonElement(it)) }
             put("enteredBy", enteredBy)
         }
         return post(c, "/api/v1/treatments", "[$doc]")

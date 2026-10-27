@@ -19,6 +19,7 @@ import (
 	"dialife/internal/alarms"
 	"dialife/internal/auth"
 	"dialife/internal/bus"
+	"dialife/internal/carbs"
 	"dialife/internal/config"
 	"dialife/internal/forecast"
 	"dialife/internal/glucose"
@@ -56,6 +57,7 @@ type Handlers struct {
 	Links      *acklink.Signer   // nil: ack links disabled
 	Loc        *time.Location    // the family's time zone, for the AGP day; nil: UTC
 	Uploader   string            // what the family calls the xDrip+ phone; sent to the app as is
+	Carbs      *carbs.Service    // carb suggestions for the food form
 
 	webCodes webCodes     // web login codes, in memory for their QR pictures
 	intents  intentBoard  // who has the insulin form open
@@ -300,8 +302,26 @@ type historyTreatment struct {
 	Duration  *int     `json:"duration,omitempty"`  // minutes ("Exercise")
 	Intensity string   `json:"intensity,omitempty"` // "light" | "moderate" | "vigorous"
 	// from the app's own fields in the stored document: "rapid" | "basal" and the brand
-	InsulinType string `json:"insulin_type,omitempty"`
-	InsulinName string `json:"insulin_name,omitempty"`
+	InsulinType string     `json:"insulin_type,omitempty"`
+	InsulinName string     `json:"insulin_name,omitempty"`
+	FoodItems   []foodItem `json:"food_items,omitempty"` // a meal logged as a list in the app
+}
+
+type foodItem struct {
+	Name    string   `json:"name"`
+	Portion string   `json:"portion,omitempty"`
+	Carbs   *float64 `json:"carbs,omitempty"`
+	Source  string   `json:"source,omitempty"` // "mine" | "estimate" | "manual": where the number came from
+}
+
+func foodItems(raw []byte) []foodItem {
+	var d struct {
+		Items []foodItem `json:"foodItems"`
+	}
+	if json.Unmarshal(raw, &d) != nil {
+		return nil
+	}
+	return d.Items
 }
 
 // exercise reads an activity entry: Nightscout's duration (minutes) and the app's intensity.
@@ -380,6 +400,9 @@ func (h *Handlers) History(w http.ResponseWriter, r *http.Request) {
 		}
 		if t.EventType == "Exercise" {
 			ht.Duration, ht.Intensity = exercise(t.Raw)
+		}
+		if t.Carbs != nil {
+			ht.FoodItems = foodItems(t.Raw)
 		}
 		if ht.Glucose = bgCheck(t.Raw); ht.Glucose != nil {
 			checks = append(checks, series1{t.CreatedAt, *ht.Glucose})

@@ -255,6 +255,11 @@ class LiveRepository(context: Context, private val api: DiaLifeApi = DiaLifeApi(
         scope.launch { api.insulinIntentEnd(c) }
     }
 
+    suspend fun suggestCarbs(name: String, portion: String): Result<com.lumenarcanus.dialife.data.CarbSuggestions> {
+        val c = creds ?: return Result.failure(ApiException(ApiError.Unauthorized))
+        return api.suggestCarbs(c, listOf(name to portion))
+    }
+
     fun saveTreatment(t: Treatment) {
         _pending.value = queue.put(PendingOp(t.id, treatment = t.copy(pending = false)))
         flush()

@@ -421,7 +421,7 @@ private fun entryText(e: Entry, units: Units): String {
             val type = if (e.kind == EntryKind.Basal) InsulinType.Basal else InsulinType.Rapid
             (tr?.insulinName ?: Prefs.nameOf(type) ?: stringResource(if (type == InsulinType.Basal) R.string.ins_basal else R.string.ins_rapid)) + " " + formatAmount(tr?.insulin ?: 0.0, locale) + " " + u
         }
-        EntryKind.Carbs -> formatAmount(tr?.carbs ?: 0.0, locale) + " " + stringResource(R.string.unit_carbs) + (tr?.notes?.takeIf { it.isNotBlank() }?.let { " · " + it.take(24) } ?: "")
+        EntryKind.Carbs -> formatAmount(tr?.carbs ?: 0.0, locale) + " " + stringResource(R.string.unit_carbs) + ((tr?.foodText() ?: tr?.notes?.takeIf { it.isNotBlank() })?.let { " · " + it.take(40) } ?: "")
         EntryKind.Meter -> "◆ " + formatGlucose(e.meter ?: 0, units, locale)
         EntryKind.Activity -> stringResource(R.string.tr_activity) + " " + stringResource(R.string.data_step_min, tr?.duration ?: 0)
         EntryKind.Note -> tr?.notes.orEmpty().take(32)
@@ -589,7 +589,7 @@ private fun WideTable(
                                     when (e.kind) {
                                         EntryKind.Suspect -> suspectText(e, units)
                                         EntryKind.Note -> e.treatment?.notes
-                                        else -> e.treatment?.notes?.takeIf { it.isNotBlank() }
+                                        else -> listOfNotNull(e.treatment?.foodText(), e.treatment?.notes?.takeIf { it.isNotBlank() }).joinToString(" · ").ifBlank { null }
                                     }
                                 } + r.entries.mapNotNull { whoOf(it)?.first }.distinct()
                                 Text(notes.joinToString(" · "), color = c.textMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)

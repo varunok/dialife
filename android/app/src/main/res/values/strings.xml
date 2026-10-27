@@ -508,4 +508,26 @@
     <string name="dose_recent_body">Rapid is already logged: %1$s at %2$s (%3$s), %4$s from this one, and it is still working. Is this a correction?</string>
     <string name="dose_recent_yes">Yes, a correction</string>
     <string name="dose_recent_back">Back</string>
+    <!-- the food form as a list, with carb suggestions -->
+    <string name="food_disclaimer">Numbers marked “≈” are only suggestions, not a calculation: they know neither the weight nor the recipe. Check against the scale or the package. You pick or type every number yourself.</string>
+    <string name="food_name">Food or dish</string>
+    <string name="food_portion">Portion (optional)</string>
+    <string name="food_portion_hint">150 g, 2 slices, a plate</string>
+    <string name="food_remove">Remove this line</string>
+    <string name="food_add">+ Add a line</string>
+    <string name="food_looking">Looking for a suggestion…</string>
+    <string name="food_mine">As in your entries</string>
+    <string name="food_mine_note">for “%1$s” · logged %2$d times</string>
+    <string name="food_estimate">Estimate, %1$d–%2$d g</string>
+    <string name="food_unknown">No suggestion. Type the carbs yourself, and next time DiaLife suggests your number.</string>
+    <string name="food_no_models">Only your own entries are suggested (no estimates on the server). Type the carbs yourself, and next time DiaLife suggests your number.</string>
+    <string name="food_src_none">No carbs yet</string>
+    <string name="food_src_mine">Picked: your earlier entry</string>
+    <string name="food_src_estimate">Picked: estimate. Check it if you have a weight or package</string>
+    <string name="food_src_manual">Typed by hand</string>
+    <string name="food_total">Total</string>
+    <plurals name="food_models"><item quantity="one">one model</item><item quantity="other">%d models</item></plurals>
+    <plurals name="food_hinted"><item quantity="one">%d from a suggestion</item><item quantity="other">%d from suggestions</item></plurals>
+    <plurals name="food_manual"><item quantity="one">%d typed</item><item quantity="other">%d typed</item></plurals>
+    <plurals name="food_empty"><item quantity="one">One line has no carbs: it is not counted.</item><item quantity="other">%d lines have no carbs: they are not counted.</item></plurals>
 </resources>

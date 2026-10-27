@@ -83,7 +83,6 @@ fun guessInsulinType(now: Long, recent: List<Treatment>): InsulinType {
     val givenLately = recent.any { InsulinType.of(it.insulinType) == InsulinType.Basal && (it.insulin ?: 0.0) > 0 && now - it.t < 4 * 3_600_000L }
     return if (near && !givenLately) InsulinType.Basal else InsulinType.Rapid
 }
-private val CarbsQuick = listOf(10.0, 15.0, 20.0, 30.0, 45.0, 60.0)
 private val MinutesQuick = listOf(15.0, 30.0, 45.0, 60.0, 90.0, 120.0)
 private val Intensities = listOf("light" to R.string.act_light, "moderate" to R.string.act_moderate, "vigorous" to R.string.act_vigorous)
 private val TimeShifts = listOf(0, 15, 30, 60) // minutes ago
@@ -136,7 +135,8 @@ fun TreatmentSheet(
     androidx.compose.runtime.LaunchedEffect(insType) {
         if (editing == null && insType == InsulinType.Basal && insulin == 0.0 && lastBasal != null) insulin = lastBasal
     }
-    var carbs by rememberSaveable { mutableDoubleStateOf(editing?.carbs ?: 0.0) }
+    val foodRows = remember { androidx.compose.runtime.mutableStateListOf<FoodRow>().apply { addAll(foodRowsOf(editing?.foodItems, editing?.carbs)) } }
+    val carbs = foodRows.sumOf { it.grams ?: 0 }.toDouble()
     var meter by rememberSaveable { mutableStateOf(editing?.glucose?.let { formatGlucose(it, units, locale) }.orEmpty()) }
     var minutes by rememberSaveable { mutableDoubleStateOf(editing?.duration?.toDouble() ?: 30.0) }
     var intensity by rememberSaveable { mutableStateOf(editing?.intensity ?: "moderate") }
@@ -218,11 +218,7 @@ fun TreatmentSheet(
                     label = stringResource(R.string.tr_insulin),
                 ) { insulin = it }
                 }
-                TreatmentKind.Food -> Amount(
-                    value = carbs, step = 1.0, max = 300.0, unit = stringResource(R.string.unit_carbs),
-                    quick = CarbsQuick, accent = c.carbs, container = c.carbsContainer, locale = locale,
-                    label = stringResource(R.string.tr_carbs),
-                ) { carbs = it }
+                TreatmentKind.Food -> FoodList(foodRows, repo)
                 TreatmentKind.Meter -> MeterField(meter, units) { meter = it }
                 TreatmentKind.Activity -> {
                     Text(stringResource(R.string.act_intensity), color = c.textMuted, fontSize = 13.sp)
@@ -300,6 +296,7 @@ fun TreatmentSheet(
                     editing?.insulinName?.takeIf { InsulinType.of(editing.insulinType) == insType } ?: Prefs.nameOf(insType)
                 } else editing?.insulinName,
                 confirmedNew = confirmedNew,
+                foodItems = if (kind == TreatmentKind.Food) foodItemsOf(foodRows) else editing?.foodItems?.takeIf { kind == TreatmentKind.Insulin },
             )
             confirming?.let { near ->
                 SameDoseDialog(
@@ -309,6 +306,7 @@ fun TreatmentSheet(
                     onBack = { confirming = null },
                 )
             }
+            if (kind == TreatmentKind.Food) FoodTotal(foodRows)
             Button(
                 onClick = {
                     val near = if (editing == null && kind == TreatmentKind.Insulin) nearDose(recent, insType, time, null) else null

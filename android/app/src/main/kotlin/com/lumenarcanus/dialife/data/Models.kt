@@ -202,7 +202,37 @@ data class Treatment(
     val intensity: String? = null, // "light" | "moderate" | "vigorous"
     val pending: Boolean = false, // made on this phone, not on the server yet (never sent by the server)
     @SerialName("confirmed_new") val confirmedNew: String? = null, // saved after the warning about this other dose (sent as confirmedNew)
-)
+    @SerialName("food_items") val foodItems: List<FoodItem>? = null, // a meal logged as a list; carbs is their sum
+) {
+    /** "борщ 18 ≈ · хліб 22": the meal's lines, "≈" on numbers taken from a suggestion. */
+    fun foodText(): String? = foodItems?.takeIf { it.isNotEmpty() }?.joinToString(" · ") { f ->
+        listOfNotNull(f.name.ifBlank { null }, f.carbs?.let { kotlin.math.round(it).toInt().toString() + if (f.suggested) " ≈" else "" }).joinToString(" ")
+    }
+}
+
+/** One line of a meal: the food, its portion, its carbs and where the number came from. */
+@Serializable
+data class FoodItem(
+    val name: String,
+    val portion: String? = null,
+    val carbs: Double? = null,
+    val source: String? = null, // "mine" (the family's earlier entry) | "estimate" (models) | "manual"
+) {
+    val suggested get() = source == "mine" || source == "estimate"
+}
+
+/** POST /api/carbs/suggest: per item, the family's own number and the models' estimate. */
+@Serializable
+data class CarbSuggestions(val models: Boolean = false, val items: List<CarbSuggestion> = emptyList())
+
+@Serializable
+data class CarbSuggestion(val mine: CarbMine? = null, val estimate: CarbEstimate? = null)
+
+@Serializable
+data class CarbMine(val carbs: Int, val portion: String = "", val times: Int = 1)
+
+@Serializable
+data class CarbEstimate(val carbs: Int, val lo: Int, val hi: Int, val models: Int = 1)
 
 @Serializable
 data class Zones(
