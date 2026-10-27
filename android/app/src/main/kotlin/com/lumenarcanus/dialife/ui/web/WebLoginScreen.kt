@@ -84,7 +84,24 @@ fun WebLoginScreen(creds: Credentials, onBack: () -> Unit, api: DiaLifeApi = Dia
     val notCode = stringResource(R.string.web_not_code)
     val expired = stringResource(R.string.web_expired)
     val failed = stringResource(R.string.err_network)
-    LaunchedEffect(reload) { api.webSessions(creds).onSuccess { sessions = it } }
+    var awaitNew by remember { mutableStateOf(false) } // just allowed: the browser picks it up within seconds
+    LaunchedEffect(reload) {
+        val before = sessions.map { it.id }.toSet()
+        // the session exists once the browser fetches the approval, a second or two later
+        val waiting = awaitNew
+        awaitNew = false // only this once, not on later reloads (a logout)
+        repeat(if (waiting) 10 else 1) {
+            api.webSessions(creds).onSuccess { sessions = it }
+            if (!waiting || sessions.any { it.id !in before }) return@LaunchedEffect
+            kotlinx.coroutines.delay(1500)
+        }
+    }
+    LaunchedEffect(Unit) { // while the screen is open: last seen, closed elsewhere
+        while (true) {
+            kotlinx.coroutines.delay(30_000)
+            api.webSessions(creds).onSuccess { sessions = it }
+        }
+    }
     BackHandler(onBack = onBack)
 
     fun scan() {
@@ -118,7 +135,7 @@ fun WebLoginScreen(creds: Credentials, onBack: () -> Unit, api: DiaLifeApi = Dia
                     r.onSuccess {
                         note = if (minutes == null) ctx.getString(R.string.web_denied)
                         else ctx.getString(R.string.web_allowed, untilText(ctx, System.currentTimeMillis() + minutes * 60_000L))
-                        link = null; info = null; reload++
+                        link = null; info = null; awaitNew = minutes != null; reload++
                     }.onFailure { e -> note = if ((e as? ApiException)?.error is ApiError.Server) expired else failed }
                 }
             })
