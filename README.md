@@ -17,13 +17,21 @@ binary with SQLite behind your own HTTPS reverse proxy, an Android app for
 each parent and a read-only web page. The interface is in Ukrainian, English
 and Spanish.
 
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/screenshots/app_alarm.png" alt="Dad is handling a low: the others are quiet, and he is asked to check in or everyone is woken"><br><b>One parent takes the alarm</b><br>the others go quiet; nobody answering wakes everyone</td>
+    <td align="center" width="33%"><img src="docs/screenshots/app_dose_guard.png" alt="Mom is giving rapid insulin; a dose from xDrip+ next to Dad's asks one injection or two"><br><b>No double insulin</b><br>who is injecting now, and "one injection or two?"</td>
+    <td align="center" width="33%"><img src="docs/screenshots/app_question.png" alt="A rise with no food logged: both parents are asked and their answers differ"><br><b>"Did you forget to log?"</b><br>asked until the parents' answers agree</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/app_home.png" alt="Home screen: the current reading, trend, forecast with its accuracy, and the chart with insulin, food and a glucometer check"><br><b>Live on every parent's phone</b><br>trend, forecast and how often it comes true</td>
+    <td align="center"><img src="docs/screenshots/app_food.png" alt="A meal as a list, with the family's own earlier number and a model estimate"><br><b>Carb suggestions</b><br>the family's own numbers first</td>
+    <td align="center"><img src="docs/screenshots/app_table.png" alt="Every reading and entry as a table, by the hour"><br><b>Everything as a table</b><br>every reading and entry, by the hour</td>
+  </tr>
+</table>
+
 <p align="center">
-  <img src="docs/screenshots/app_home.png" width="270" alt="Home screen: the current reading, trend, forecast and a question about an unlogged rise">
-  <img src="docs/screenshots/app_food.png" width="270" alt="Logging a meal as a list, with carb suggestions">
-  <img src="docs/screenshots/app_dose_guard.png" width="270" alt="Warnings that another parent is giving insulin and that rapid was given an hour ago">
-</p>
-<p align="center">
-  <img src="docs/screenshots/app_chart.png" width="820" alt="The full-screen chart: readings, glucometer checks, insulin, food, activity and a suspect mark">
+  <img src="docs/screenshots/app_chart.png" width="820" alt="The full-screen chart: readings, glucometer checks, insulin, food and activity">
 </p>
 <p align="center">
   <img src="docs/screenshots/web_viewer.png" width="820" alt="The web viewer: current reading, chart and the entries as a table">
@@ -161,10 +169,14 @@ cd android
 ./gradlew assembleRelease        # or: dl app  (tests, builds, installs on every phone on USB)
 ```
 
+Or download a ready APK from [Releases](https://github.com/varunok/dialife/releases).
+
 Install the APK, open it and scan the QR code from `dl device-add … --qr`.
 Then allow notifications, alarms over the lock screen and unrestricted battery
-use, as the app asks. The release build is signed with your local debug key;
-use your own signing key if you distribute it.
+use, as the app asks. An APK you build yourself is signed with your local debug
+key unless you put your own key in `.local/keys/release.properties` (see
+`android/app/build.gradle.kts`). The APKs on Releases are signed with the
+project's key, so yours will not install over them, nor theirs over yours.
 
 ### 6. Optional: push through ntfy
 
