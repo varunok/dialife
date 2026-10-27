@@ -17,6 +17,7 @@ type WebLogin struct {
 	State      string // "pending" | "approved" | "rejected" | "used"
 	ApprovedBy int64
 	Minutes    int
+	ScannedAt  int64 // 0: not scanned yet
 }
 
 type WebSession struct {
@@ -29,11 +30,11 @@ type WebSession struct {
 	LastSeenAt   *int64
 }
 
-const webLoginCols = `id, code_sha, browser_sha, coalesce(user_agent, ''), created_at, expires_at, state, coalesce(approved_by, 0), coalesce(minutes, 0)`
+const webLoginCols = `id, code_sha, browser_sha, coalesce(user_agent, ''), created_at, expires_at, state, coalesce(approved_by, 0), coalesce(minutes, 0), coalesce(scanned_at, 0)`
 
 func scanWebLogin(sc scanner) (WebLogin, error) {
 	var l WebLogin
-	err := sc.Scan(&l.ID, &l.CodeSHA, &l.BrowserSHA, &l.UserAgent, &l.CreatedAt, &l.ExpiresAt, &l.State, &l.ApprovedBy, &l.Minutes)
+	err := sc.Scan(&l.ID, &l.CodeSHA, &l.BrowserSHA, &l.UserAgent, &l.CreatedAt, &l.ExpiresAt, &l.State, &l.ApprovedBy, &l.Minutes, &l.ScannedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return WebLogin{}, ErrNotFound
 	}
@@ -64,6 +65,15 @@ func (s *Store) WebLoginByID(ctx context.Context, id string) (WebLogin, error) {
 
 func (s *Store) WebLoginByCode(ctx context.Context, codeSHA string) (WebLogin, error) {
 	return scanWebLogin(s.r.QueryRowContext(ctx, `SELECT `+webLoginCols+` FROM web_logins WHERE code_sha = ?`, codeSHA))
+}
+
+// ScanWebLogin marks a pending code as scanned and gives the parent until
+// expires to answer (never shortening it).
+func (s *Store) ScanWebLogin(ctx context.Context, id string, now time.Time, expires int64) error {
+	_, err := s.w.ExecContext(ctx,
+		`UPDATE web_logins SET scanned_at = coalesce(scanned_at, ?), expires_at = max(expires_at, ?) WHERE id = ? AND state = 'pending'`,
+		now.UnixMilli(), expires, id)
+	return err
 }
 
 // DecideWebLogin approves or rejects a pending code; false when it was no longer pending.

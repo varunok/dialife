@@ -24,7 +24,8 @@ import (
 // session token. Nothing is ever stored in the browser by the server.
 const (
 	webCodeTTL        = 2 * time.Minute
-	webMaxPending     = 50 // unanswered codes at once: a cap on floods
+	webScannedTTL     = 5 * time.Minute // once scanned, the parent has this long to choose and allow
+	webMaxPending     = 50              // unanswered codes at once: a cap on floods
 	webMaxSessionMins = 90 * 24 * 60
 )
 
@@ -85,7 +86,7 @@ type webPollRequest struct {
 }
 
 type webPollResponse struct {
-	State     string `json:"state"` // "pending" | "approved" | "rejected" | "expired"
+	State     string `json:"state"` // "pending" | "scanned" | "approved" | "rejected" | "expired"
 	Token     string `json:"token,omitempty"`
 	ExpiresAt int64  `json:"expires_at,omitempty"`
 	By        string `json:"by,omitempty"` // who allowed it
@@ -131,8 +132,11 @@ func (h *Handlers) WebLoginPoll(w http.ResponseWriter, r *http.Request) {
 			ExpiresAt: now.Add(time.Duration(l.Minutes) * time.Minute).UnixMilli()})
 	case l.State == "used" || now.UnixMilli() > l.ExpiresAt:
 		httpx.WriteJSON(w, http.StatusOK, webPollResponse{State: "expired"})
+	case l.ScannedAt > 0:
+		// a parent has it on the phone: keep this code, it lives until they answer
+		httpx.WriteJSON(w, http.StatusOK, webPollResponse{State: "scanned", ExpiresAt: l.ExpiresAt})
 	default:
-		httpx.WriteJSON(w, http.StatusOK, webPollResponse{State: "pending"})
+		httpx.WriteJSON(w, http.StatusOK, webPollResponse{State: "pending", ExpiresAt: l.ExpiresAt})
 	}
 }
 
@@ -156,8 +160,15 @@ func (h *Handlers) WebLoginInspect(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	// scanned: the parent now needs time to choose, and the browser must not swap the code
+	exp := h.Now().Add(webScannedTTL).UnixMilli()
+	if err := h.Store.ScanWebLogin(r.Context(), l.ID, h.Now(), exp); err != nil {
+		fail(w, "web login scan", err)
+		return
+	}
+	h.webCodes.extend(l.ID, time.UnixMilli(exp))
 	b, o := describeAgent(l.UserAgent)
-	httpx.WriteJSON(w, http.StatusOK, webLoginInfo{ID: l.ID, Browser: b, OS: o, ExpiresAt: l.ExpiresAt, MaxMin: webMaxSessionMins})
+	httpx.WriteJSON(w, http.StatusOK, webLoginInfo{ID: l.ID, Browser: b, OS: o, ExpiresAt: max(l.ExpiresAt, exp), MaxMin: webMaxSessionMins})
 }
 
 // WebLoginApprove serves POST /api/web/approve {id, code, minutes}.
@@ -376,6 +387,15 @@ func (c *webCodes) get(id string, now time.Time) (string, bool) {
 		return "", false
 	}
 	return v.code, true
+}
+
+func (c *webCodes) extend(id string, expires time.Time) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if v, ok := c.m[id]; ok && expires.After(v.expires) {
+		v.expires = expires
+		c.m[id] = v
+	}
 }
 
 func (c *webCodes) drop(id string) {

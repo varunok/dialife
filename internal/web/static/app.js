@@ -100,6 +100,9 @@ const Login = {
       return;
     }
     if (r.state === 'rejected') { Login.note = t('codeRejected'); return Login.start(); }
+    // scanned: a parent has it on the phone; keep this code as long as the server keeps it
+    if (r.expires_at) c.expires_at = r.expires_at;
+    c.scanned = r.state === 'scanned';
     if (r.state === 'expired' || Date.now() > c.expires_at) { Login.note = null; return Login.start(); }
     Login.timer = setTimeout(Login.poll, 2000);
     m.redraw();
@@ -118,7 +121,7 @@ const Login = {
         ]),
         m('.qrbox', [
           m('.qr', c ? m('img', { src: '/api/web/login/' + c.id + '/qr.svg', alt: 'QR' }) : m('.wait', t('codeLoading'))),
-          c && m('span', t('codeLeft', Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0')))
+          c && m('span', c.scanned ? t('codeScanned') : t('codeLeft', Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0')))
         ])
       ])
     ]);

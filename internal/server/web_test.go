@@ -49,6 +49,12 @@ func TestWebLoginByQR(t *testing.T) {
 	if info.Browser != "Firefox" || info.OS != "Linux" {
 		t.Fatalf("inspect %+v", info)
 	}
+	// scanned: the browser keeps the code and learns it now lives longer
+	if st, m := poll(start.Secret); st != 200 || m["state"] != "scanned" {
+		t.Fatalf("after inspect: %d %v", st, m)
+	}
+	// the parent takes their time: past the first two minutes, still valid
+	f.advance(3 * time.Minute)
 	approve := `{"id":"` + start.ID + `","code":"` + code + `","minutes":90}`
 	if st := f.do(t, "POST", "/api/web/approve", strings.NewReader(approve), dadHdr).StatusCode; st != 204 {
 		t.Fatalf("approve %d", st)
