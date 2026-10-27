@@ -270,3 +270,21 @@ func TestStreamPingAndLimits(t *testing.T) {
 		t.Fatalf("5th stream: status %d, want 503", c.resp.StatusCode)
 	}
 }
+
+// a glucometer check on its own (Bluetooth meter → xDrip+) must reach the chart
+func TestStreamMeterCheckIsHistoryEvent(t *testing.T) {
+	f := newFixture(t)
+	_, xd := f.addDevice(t, "xDrip", auth.RoleUploader)
+	upload(t, f, xd, testNow.Add(-time.Minute), "Flat", 150)
+	c := openStream(t, f, xd, nil)
+	c.next(t, "state")
+
+	at := testNow.Add(-30 * time.Second).UnixMilli()
+	f.do(t, "POST", "/api/v1/entries", strings.NewReader(fmt.Sprintf(`{"type":"mbg","mbg":107,"date":%d,"device":"Bluetooth Glucose Meter"}`, at)), xdrip(xd))
+	var h struct{ From, To int64 }
+	decodeInto(t, c.next(t, "history").Data, &h)
+	if h.From != at || h.To != at {
+		t.Fatalf("history range %d..%d, want the check at %d", h.From, h.To, at)
+	}
+	c.expectQuiet(t)
+}

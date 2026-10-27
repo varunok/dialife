@@ -27,16 +27,20 @@ type treatmentEvent struct {
 }
 
 // EntriesSaved publishes after an upload. A batch whose newest reading is now
-// the latest overall produces a bg event; anything else new in the batch is
-// backfill and produces a single history event instead of one per reading.
+// the latest overall produces a bg event; anything else new in the batch (older
+// readings, glucometer checks) produces a single history event instead of one each.
 func (h *Handlers) EntriesSaved(ctx context.Context, es []store.Entry) {
 	var (
 		newest           *store.Entry
+		meters           bool // a new glucometer check: the chart has to refetch to show it
 		older            int
 		backFrom, backTo int64
 	)
 	for i := range es {
 		e := &es[i]
+		if e.New && e.Type == "mbg" {
+			meters = true
+		}
 		if !e.New || e.Type != "sgv" {
 			continue
 		}
@@ -44,20 +48,24 @@ func (h *Handlers) EntriesSaved(ctx context.Context, es []store.Entry) {
 			newest = e
 		}
 	}
-	if newest == nil {
+	if newest == nil && !meters {
 		return
 	}
 
 	now := h.Now()
-	snap, err := h.snapshot(ctx, now)
-	if err != nil {
-		slog.Error("event snapshot", "err", err)
-		return
+	var snap stateResponse
+	isLatest := false
+	if newest != nil {
+		var err error
+		if snap, err = h.snapshot(ctx, now); err != nil {
+			slog.Error("event snapshot", "err", err)
+			return
+		}
+		isLatest = snap.BG != nil && snap.BG.Mills == newest.Date
 	}
-	isLatest := snap.BG != nil && snap.BG.Mills == newest.Date
 
 	for _, e := range es {
-		if !e.New || e.Type != "sgv" || (isLatest && e.Date == newest.Date) {
+		if !e.New || (e.Type != "sgv" && e.Type != "mbg") || (isLatest && e.Type == "sgv" && e.Date == newest.Date) {
 			continue
 		}
 		if older == 0 || e.Date < backFrom {
