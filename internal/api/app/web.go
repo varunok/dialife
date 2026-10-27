@@ -241,6 +241,10 @@ func (h *Handlers) pendingLogin(w http.ResponseWriter, r *http.Request, into *we
 	return l, true
 }
 
+type logoutEvent struct {
+	Session int64 `json:"session"`
+}
+
 type webSessionView struct {
 	ID         int64  `json:"id"`
 	Browser    string `json:"browser"`
@@ -277,6 +281,9 @@ func (h *Handlers) WebSessionRevoke(w http.ResponseWriter, r *http.Request) {
 		fail(w, "web session revoke", err)
 		return
 	}
+	// the browser's open stream ends at once, not at its next request
+	h.Bus.Publish(EventLogout, logoutEvent{Session: id}, h.Now())
+	slog.Info("web session revoked", "id", id, "by", dev.Person)
 	w.WriteHeader(http.StatusNoContent)
 }
 

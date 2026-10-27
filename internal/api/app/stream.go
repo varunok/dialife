@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -79,6 +80,15 @@ func (h *Handlers) Stream(w http.ResponseWriter, r *http.Request) {
 			if !ok { // too slow or server shutting down: client reconnects and resyncs
 				return
 			}
+			if ev.Type == EventLogout {
+				var lo logoutEvent
+				if json.Unmarshal(ev.Data, &lo) == nil && web && lo.Session == dev.WebSessionID {
+					h.send(w, bus.Event{ID: ev.ID, Type: EventLogout, Data: []byte("{}")})
+					rc.Flush()
+					return
+				}
+				continue // about another browser: nothing for this stream
+			}
 			if web {
 				if ev.Type == questions.EventQuestion {
 					continue
@@ -91,6 +101,12 @@ func (h *Handlers) Stream(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		case <-ping.C:
+			// a browser whose session expired or was closed elsewhere stops here
+			if web && !h.webSessionActive(ctx, dev.WebSessionID) {
+				h.send(w, bus.Event{ID: h.Bus.NextID(h.Now()), Type: EventLogout, Data: []byte("{}")})
+				rc.Flush()
+				return
+			}
 			if _, err := fmt.Fprint(w, ": ping\n\n"); err != nil || rc.Flush() != nil {
 				return
 			}
@@ -152,4 +168,17 @@ func withoutQuestions(data []byte) []byte {
 		return data
 	}
 	return out
+}
+
+func (h *Handlers) webSessionActive(ctx context.Context, id int64) bool {
+	ss, err := h.Store.ActiveWebSessions(ctx, h.Now())
+	if err != nil {
+		return true // a database hiccup must not log anyone out
+	}
+	for _, s := range ss {
+		if s.ID == id {
+			return true
+		}
+	}
+	return false
 }

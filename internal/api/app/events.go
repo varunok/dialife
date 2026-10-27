@@ -14,6 +14,7 @@ const (
 	EventHistory   = "history"   // older readings arrived (backfill): refetch /api/history for {from,to}
 	EventTreatment = "treatment" // treatments changed: {op, ids}
 	EventUploader  = "uploader"  // the collector phone reported battery
+	EventLogout    = "logout"    // a web session was closed: {session}; its own stream ends with it
 )
 
 type historyEvent struct {

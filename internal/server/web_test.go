@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/url"
 	"strings"
@@ -220,5 +221,25 @@ func TestWebLoginFromAnotherNetwork(t *testing.T) {
 		map[string]string{"Authorization": "Bearer " + dad, "Content-Type": "application/json", "X-Forwarded-For": "203.0.113.4"}).Body).Decode(&info)
 	if info.Same || info.IP != "198.51.100.9" {
 		t.Fatalf("a browser elsewhere: %+v", info)
+	}
+}
+
+func TestRevokeEndsTheBrowsersStream(t *testing.T) {
+	f := newFixture(t)
+	_, dad := f.addDevice(t, "Тато", auth.RoleCaregiver)
+	web := webToken(t, f, dad)
+	s := openStream(t, f, web, nil)
+	s.next(t, "state")
+	var ss []struct{ ID int64 }
+	json.NewDecoder(f.get(t, "/api/web/sessions", map[string]string{"Authorization": "Bearer " + dad}).Body).Decode(&ss)
+	f.do(t, "POST", fmt.Sprintf("/api/web/sessions/%d/revoke", ss[0].ID), nil, map[string]string{"Authorization": "Bearer " + dad})
+	s.next(t, "logout")
+	select {
+	case _, open := <-s.events:
+		if open {
+			t.Fatal("the stream must end after logout")
+		}
+	case <-time.After(time.Second):
+		t.Fatal("the stream stayed open")
 	}
 }

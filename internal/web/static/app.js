@@ -223,6 +223,7 @@ async function runStream() {
 function onEvent(type, data) {
   let d;
   try { d = JSON.parse(data); } catch (e) { return; }
+  if (type === 'logout') { logout(false); return; } // closed from a parent's phone, or expired
   if (type === 'state' || type === 'bg') {
     V.state = Object.assign({}, d, { display_units: (V.state || {}).display_units });
     if (window_().live) loadHistory();
