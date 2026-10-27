@@ -22,7 +22,7 @@ android {
         generateLocaleConfig = true
         // keep only languages we translate ourselves, so libraries do not leave screens half-translated;
         // add a language here together with its values-xx folder
-        localeFilters += listOf("en", "uk")
+        localeFilters += listOf("en", "uk", "es")
     }
 
     buildTypes {

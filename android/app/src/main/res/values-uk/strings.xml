@@ -326,7 +326,7 @@
     <string name="stats_tir70_hint">стандартний діапазон, для лікаря</string>
     <string name="stats_coverage">Дані сенсора</string>
     <string name="stats_agp">Типовий день (AGP)</string>
-    <string name="stats_agp_hint">Усі дні складено в один: лінія — медіана, смуги — 50% і 90% значень.</string>
+    <string name="stats_agp_hint" formatted="false">Усі дні складено в один: лінія — медіана, смуги — 50% і 90% значень.</string>
     <string name="stats_since">з %1$s</string>
 
     <string name="log_title">Журнал тривог</string>

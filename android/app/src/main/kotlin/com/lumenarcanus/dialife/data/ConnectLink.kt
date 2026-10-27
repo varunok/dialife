@@ -20,7 +20,7 @@ fun parseConnectLink(raw: String): Result<ConnectLink> {
     if (uri == null || uri.scheme != "dialife" || uri.host != "connect") return failure(LinkError.NotDiaLife)
     val params = uri.rawQuery.orEmpty().split('&').mapNotNull { pair ->
         val (k, v) = pair.split('=', limit = 2).takeIf { it.size == 2 } ?: return@mapNotNull null
-        URLDecoder.decode(k, Charsets.UTF_8) to URLDecoder.decode(v, Charsets.UTF_8)
+        URLDecoder.decode(k, "UTF-8") to URLDecoder.decode(v, "UTF-8") // the Charset overload is API 33
     }.toMap()
     val server = normalizeServer(params["server"].orEmpty()) ?: return failure(LinkError.BadServer)
     val token = params["token"].orEmpty()

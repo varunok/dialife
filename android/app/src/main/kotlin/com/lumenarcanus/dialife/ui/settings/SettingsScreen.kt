@@ -122,7 +122,7 @@ fun SettingsScreen(
             Label(stringResource(R.string.set_language))
             val current = AppCompatDelegate.getApplicationLocales().toLanguageTags().substringBefore('-').ifBlank { "" }
             Choice(
-                listOf("" to stringResource(R.string.set_system), "uk" to "Українська", "en" to "English"),
+                listOf("" to stringResource(R.string.set_system), "uk" to "Українська", "en" to "English", "es" to "Español"),
                 current,
             ) { tag -> AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag)) }
             Row(verticalAlignment = Alignment.CenterVertically) {

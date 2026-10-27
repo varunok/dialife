@@ -66,10 +66,14 @@ class Ringer(context: Context) {
                 Log.e("DiaLifeAlarm", "cannot play alarm sound", e)
                 null
             }
-            vibrator.vibrate(
-                VibrationEffect.createWaveform(longArrayOf(0, 800, 400, 800, 1200), 0),
-                android.os.VibrationAttributes.createForUsage(android.os.VibrationAttributes.USAGE_ALARM),
-            )
+            val pattern = VibrationEffect.createWaveform(longArrayOf(0, 800, 400, 800, 1200), 0)
+            if (android.os.Build.VERSION.SDK_INT >= 33) {
+                vibrator.vibrate(pattern, android.os.VibrationAttributes.createForUsage(android.os.VibrationAttributes.USAGE_ALARM))
+            } else {
+                // Android 12: alarm usage through the audio attributes, so Do Not Disturb lets it through
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(pattern, android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_ALARM).build())
+            }
             main.postDelayed(timeout, MAX_RING_MS)
         }
     }

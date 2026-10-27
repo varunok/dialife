@@ -95,6 +95,10 @@ class ScreenshotTest {
     }
 
     @Test
+    @Config(qualifiers = "+es")
+    fun homeDarkEs() = shot("home_dark_es", dark = true) { HomeScreen(sampleHomeUi(now), deviceName = "Papá") }
+
+    @Test
     @Config(qualifiers = "+en")
     fun homeLightEnMmol() = shot("home_light_en_mmol", dark = false) {
         val ui = sampleHomeUi(now)

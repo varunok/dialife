@@ -315,7 +315,7 @@
     <string name="stats_tir70_hint">standard range, for the doctor</string>
     <string name="stats_coverage">Sensor data</string>
     <string name="stats_agp">Typical day (AGP)</string>
-    <string name="stats_agp_hint">All days folded onto one: the line is the median, bands cover 50% and 90% of readings.</string>
+    <string name="stats_agp_hint" formatted="false">All days folded onto one: the line is the median, bands cover 50% and 90% of readings.</string>
     <string name="stats_since">since %1$s</string>
 
     <string name="log_title">Alarm log</string>
