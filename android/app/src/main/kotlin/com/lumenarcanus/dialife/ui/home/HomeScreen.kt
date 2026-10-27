@@ -368,9 +368,9 @@ private fun QuestionCard(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(stringResource(if (rise) R.string.q_rise_title else R.string.q_fall_title), color = c.text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+        Text(com.lumenarcanus.dialife.live.QuestionNotifier.questionTitle(ctx, q), color = c.text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
         Text(
-            stringResource(if (rise) R.string.q_rise_body else R.string.q_fall_body, g(q.sgvFrom), g(q.sgvTo), com.lumenarcanus.dialife.live.AlarmText.clock(ctx, q.from)),
+            com.lumenarcanus.dialife.live.QuestionNotifier.questionBody(ctx, q, units),
             color = c.text, fontSize = 14.sp,
         )
         q.previous().takeIf { it.isNotEmpty() }?.let { prev ->
@@ -396,7 +396,7 @@ private fun QuestionCard(
                     Button(onClick = onLog) { Text(stringResource(if (rise) R.string.q_btn_food else R.string.q_btn_insulin)) }
                 }
                 if (rise) androidx.compose.material3.OutlinedButton(onClick = { onAnswer("food_unknown", null) }) { Text(stringResource(R.string.q_btn_food_unknown), color = c.text) }
-                androidx.compose.material3.OutlinedButton(onClick = { onAnswer("nothing", null) }) { Text(stringResource(R.string.q_btn_nothing), color = c.text) }
+                androidx.compose.material3.OutlinedButton(onClick = { onAnswer("nothing", null) }) { Text(stringResource(if (q.kind == "bolus") R.string.q_btn_no_insulin else R.string.q_btn_nothing), color = c.text) }
             }
         } else if (q.waiting.isNotEmpty()) {
             Text(stringResource(R.string.q_waiting, q.waiting.joinToString(", ")), color = c.textMuted, fontSize = 13.sp)

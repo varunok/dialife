@@ -42,7 +42,7 @@ class QuestionNotifier(private val app: Context) {
         val locale = app.resources.configuration.locales[0]
         fun g(v: Int) = formatGlucose(v, units, locale)
         val rise = q.kind == "rise"
-        var body = app.getString(if (rise) R.string.q_rise_body else R.string.q_fall_body, g(q.sgvFrom), g(q.sgvTo), AlarmText.clock(app, q.from))
+        var body = questionBody(app, q, units)
         q.previous().takeIf { it.isNotEmpty() }?.let { prev ->
             body += " " + app.getString(R.string.q_again, prev.joinToString(", ") { app.getString(R.string.q_said, it.person, answerText(app, it.answer)) })
         }
@@ -64,14 +64,14 @@ class QuestionNotifier(private val app: Context) {
         // at night it waits quietly in the shade; by day it sounds like any message
         val b = Notification.Builder(app, if (q.quiet) Notifications.CHANNEL_QUESTIONS_NIGHT else Notifications.CHANNEL_QUESTIONS)
             .setSmallIcon(R.drawable.ic_stat_drop)
-            .setContentTitle(app.getString(if (rise) R.string.q_rise_title else R.string.q_fall_title))
+            .setContentTitle(questionTitle(app, q))
             .setContentText(body)
             .setStyle(Notification.BigTextStyle().bigText(body))
             .setContentIntent(open)
             .setCategory(Notification.CATEGORY_REMINDER)
             .setOnlyAlertOnce(false)
         if (rise) b.addAction(action("food_unknown", R.string.q_btn_food_unknown))
-        b.addAction(action("nothing", R.string.q_btn_nothing))
+        b.addAction(action("nothing", if (q.kind == "bolus") R.string.q_btn_no_insulin else R.string.q_btn_nothing))
         b.addAction(Notification.Action.Builder(null, app.getString(R.string.q_btn_add), open).build())
         nm.notify(TAG, q.id.toInt(), b.build())
         shown[q.id] = q.round
@@ -79,6 +79,21 @@ class QuestionNotifier(private val app: Context) {
 
     companion object {
         const val TAG = "question"
+
+        fun questionTitle(ctx: Context, q: Question): String = ctx.getString(
+            when (q.kind) { "rise" -> R.string.q_rise_title; "bolus" -> R.string.q_bolus_title; else -> R.string.q_fall_title },
+        )
+
+        /** "Glucose rose from 118 to 171 since 13:20", or for a meal without insulin "Food was logged at 19:10…". */
+        fun questionBody(ctx: Context, q: Question, units: Units): String {
+            val locale = ctx.resources.configuration.locales[0]
+            fun g(v: Int) = formatGlucose(v, units, locale)
+            return when (q.kind) {
+                "bolus" -> ctx.getString(R.string.q_bolus_body, AlarmText.clock(ctx, q.from))
+                "rise" -> ctx.getString(R.string.q_rise_body, g(q.sgvFrom), g(q.sgvTo), AlarmText.clock(ctx, q.from))
+                else -> ctx.getString(R.string.q_fall_body, g(q.sgvFrom), g(q.sgvTo), AlarmText.clock(ctx, q.from))
+            }
+        }
 
         fun answerText(ctx: Context, answer: String): String = ctx.getString(
             when (answer) {

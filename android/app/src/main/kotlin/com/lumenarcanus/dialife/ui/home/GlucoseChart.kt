@@ -340,6 +340,7 @@ fun GlucoseChart(
     val meterEstimate = stringResource(R.string.meter_estimate)
     val suspectRise = stringResource(R.string.suspect_rise)
     val suspectFall = stringResource(R.string.suspect_fall)
+    val suspectBolus = stringResource(R.string.suspect_bolus)
     val suspectHint = stringResource(R.string.suspect_hint)
     val suspectGlyph = stringResource(R.string.glyph_suspect)
     val activityGlyph = stringResource(R.string.glyph_activity)
@@ -672,7 +673,8 @@ fun GlucoseChart(
             is Pick.Suspect -> {
                 val q = p.question
                 val lines = listOf(
-                    (if (q.kind == "rise") suspectRise else suspectFall).format(locale, formatGlucose(q.sgvFrom, units, locale), formatGlucose(q.sgvTo, units, locale)),
+                    if (q.kind == "bolus") suspectBolus.format(locale, clock(q.from))
+                    else (if (q.kind == "rise") suspectRise else suspectFall).format(locale, formatGlucose(q.sgvFrom, units, locale), formatGlucose(q.sgvTo, units, locale)),
                     clock(q.from) + " · " + suspectHint,
                 )
                 tooltip(measurer, lines, x(q.from), plotH - 40.dp.toPx(), plotW, plotH, c.background, c.high, c.text, c.textMuted)

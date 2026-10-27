@@ -230,6 +230,11 @@
     <string name="q_fall_title">¿Insulina sin registrar?</string>
     <string name="q_rise_body">La glucosa subió de %1$s a %2$s desde las %3$s. ¿Qué pasó?</string>
     <string name="q_fall_body">La glucosa bajó de %1$s a %2$s desde las %3$s. ¿Qué pasó?</string>
+    <string name="q_bolus_title">¿Comida sin insulina?</string>
+    <string name="q_bolus_body">Se registró comida a las %1$s, pero no hay insulina rápida cerca. ¿Qué pasó?</string>
+    <string name="q_btn_no_insulin">No se puso insulina</string>
+    <string name="suspect_bolus">Sospecha: comida a las %1$s sin insulina</string>
+    <string name="data_suspect_bolus">\? comida a las %1$s sin insulina</string>
     <string name="q_again">Las respuestas no coinciden: %1$s. ¿Qué pasó en realidad?</string>
     <string name="q_said">%1$s — “%2$s”</string>
     <string name="q_ans_food">hubo comida</string>

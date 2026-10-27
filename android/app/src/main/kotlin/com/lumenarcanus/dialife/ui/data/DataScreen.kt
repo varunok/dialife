@@ -434,6 +434,7 @@ private fun entryText(e: Entry, units: Units): String {
 private fun suspectText(e: Entry, units: Units): String {
     val q = e.question ?: return "?"
     val ctx = LocalContext.current
+    if (q.kind == "bolus") return stringResource(R.string.data_suspect_bolus, AlarmText.clock(ctx, q.from))
     val locale = LocalConfiguration.current.locales[0]
     return stringResource(
         if (q.kind == "fall") R.string.data_suspect_fall else R.string.data_suspect_rise,

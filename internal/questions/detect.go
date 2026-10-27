@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	trendSpan   = 20 * time.Minute // the slope is fitted over this much
-	lookBack    = 90 * time.Minute // where a rise or fall may have begun
-	minRate     = 1.5              // mg/dL per minute, sustained over trendSpan
+	trendSpan = 20 * time.Minute // the slope is fitted over this much
+	lookBack  = 90 * time.Minute // where a rise or fall may have begun
+	minRate   = 1.5              // mg/dL per minute, sustained over trendSpan
 	// a slow meal (a dinner rising +73 in two hours never reached 1.5/min):
 	// a gentler slope held longer, with the same rise from the low point
 	slowSpan = 30 * time.Minute
@@ -21,14 +21,14 @@ const (
 	// chart, and asking adds nothing; a fast one still asks (a snack, sweets after a low)
 	slowNightFrom = 0 // local hours, [from, to)
 	slowNightTo   = 6
-	compression = 4.0              // a steeper fall is the sensor pressed (lying on it), not insulin
-	minRise     = 40               // mg/dL from the low point
-	minFall     = 50               // mg/dL from the high point
-	maxGap      = 15 * time.Minute // missing readings: no conclusion
-	carbsBefore = 90 * time.Minute // food this long before the rise still explains it
-	insulinAct  = 4 * time.Hour    // rapid insulin this long before the fall explains it
-	exerciseAct = 3 * time.Hour
-	warmUp      = 12 * time.Hour // a new sensor is noisy
+	compression   = 4.0              // a steeper fall is the sensor pressed (lying on it), not insulin
+	minRise       = 40               // mg/dL from the low point
+	minFall       = 50               // mg/dL from the high point
+	maxGap        = 15 * time.Minute // missing readings: no conclusion
+	carbsBefore   = 90 * time.Minute // food this long before the rise still explains it
+	insulinAct    = 4 * time.Hour    // rapid insulin this long before the fall explains it
+	exerciseAct   = 3 * time.Hour
+	warmUp        = 12 * time.Hour // a new sensor is noisy
 )
 
 type Point struct {
@@ -114,8 +114,44 @@ func Explains(kind string, from int64, e Entry) bool {
 		return e.Carbs && e.T >= from-carbsBefore.Milliseconds()
 	case "fall":
 		return (e.Rapid && e.T >= from-insulinAct.Milliseconds()) || (e.Exercise && e.T >= from-exerciseAct.Milliseconds())
+	case "bolus":
+		return e.Rapid && e.T >= from-bolusBefore.Milliseconds() && e.T <= from+bolusAfter.Milliseconds()
 	}
 	return false
+}
+
+// A meal and its bolus: insulin up to half an hour before or an hour after
+// counts as given for it. Asked once the hour has passed.
+const (
+	bolusBefore = 30 * time.Minute
+	bolusAfter  = time.Hour
+	bolusLookUp = 3 * time.Hour // meals this recent are checked
+	// carbs at a low treat the low: no insulin is right then
+	bolusLowBelow = 100
+)
+
+// MissingBolus finds the newest meal with carbs but no rapid insulin near it,
+// old enough that the insulin would have been logged by now. sgvAt gives the
+// sensor at the meal's time (0: unknown).
+func MissingBolus(logged []Entry, now time.Time, sgvAt func(int64) int) (Entry, bool) {
+	var found Entry
+	ok := false
+	for _, m := range logged {
+		age := now.UnixMilli() - m.T
+		if !m.Carbs || age < bolusAfter.Milliseconds() || age > bolusLookUp.Milliseconds() {
+			continue
+		}
+		if explained(logged, m.T-bolusBefore.Milliseconds(), m.T+bolusAfter.Milliseconds(), func(e Entry) bool { return e.Rapid }) {
+			continue
+		}
+		if v := sgvAt(m.T); v > 0 && v < bolusLowBelow {
+			continue // treating a low
+		}
+		if !ok || m.T > found.T {
+			found, ok = m, true
+		}
+	}
+	return found, ok
 }
 
 func explained(logged []Entry, from, to int64, what func(Entry) bool) bool {

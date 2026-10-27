@@ -112,3 +112,49 @@ func TestEntryFromXDripSettlesQuestion(t *testing.T) {
 		t.Fatalf("logged food must settle it: %+v", qs)
 	}
 }
+
+func TestMealWithoutInsulinAsks(t *testing.T) {
+	f := newFixture(t)
+	_, xd := f.addDevice(t, "xDrip", auth.RoleUploader)
+	_, mom := f.addDevice(t, "Мама", auth.RoleCaregiver)
+	steady := make([]int, 20)
+	for i := range steady {
+		steady[i] = 150
+	}
+	upload(t, f, xd, testNow.Add(-time.Minute), "Flat", steady...)
+	meal := func(ago time.Duration, carbs int) {
+		f.do(t, "POST", "/api/v1/treatments", strings.NewReader(fmt.Sprintf(`{"eventType":"Carb Correction","carbs":%d,"created_at":"%s"}`,
+			carbs, testNow.Add(-ago).UTC().Format(time.RFC3339))), xdrip(xd))
+	}
+	meal(70*time.Minute, 40)
+	if err := f.app.Questions.Evaluate(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	qs := questionsOf(t, f, mom)
+	if len(qs) != 1 || qs[0].Kind != "bolus" {
+		t.Fatalf("a meal an hour ago without insulin: %+v", qs)
+	}
+	// the bolus logged late (40 min after the meal) settles it
+	f.do(t, "POST", "/api/v1/treatments", strings.NewReader(`{"eventType":"Correction Bolus","insulin":2,"created_at":"`+
+		testNow.Add(-30*time.Minute).UTC().Format(time.RFC3339)+`"}`), xdrip(xd))
+	if qs := questionsOf(t, f, mom); len(qs) != 0 {
+		t.Fatalf("insulin logged: %+v", qs)
+	}
+}
+
+func TestCarbsForALowAskNothing(t *testing.T) {
+	f := newFixture(t)
+	_, xd := f.addDevice(t, "xDrip", auth.RoleUploader)
+	_, mom := f.addDevice(t, "Мама", auth.RoleCaregiver)
+	low := make([]int, 20)
+	for i := range low {
+		low[i] = 75
+	}
+	upload(t, f, xd, testNow.Add(-time.Minute), "Flat", low...)
+	f.do(t, "POST", "/api/v1/treatments", strings.NewReader(`{"eventType":"Carb Correction","carbs":15,"created_at":"`+
+		testNow.Add(-70*time.Minute).UTC().Format(time.RFC3339)+`"}`), xdrip(xd))
+	f.app.Questions.Evaluate(context.Background())
+	if qs := questionsOf(t, f, mom); len(qs) != 0 {
+		t.Fatalf("15 g at 75 mg/dL treat a low: %+v", qs)
+	}
+}

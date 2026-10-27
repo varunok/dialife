@@ -601,11 +601,17 @@ function describeMark(id, h, st, meters, idx, ts, vs) {
   if (kind === 'q') {
     const q = ((st && st.questions) || []).find((x) => String(x.id) === key);
     if (!q) return { lines: ['?'] };
-    return { lines: [t(q.kind === 'rise' ? 'suspectRise' : 'suspectFall', clock(q.from), clock(q.to), g(q.sgv_from), g(q.sgv_to))] };
+    return { lines: [suspectText(q)] };
   }
   const tr = (h.treatments || []).find((x) => x.id === key);
   if (!tr) return { lines: ['—'] };
   return { lines: [entryText(tr), [clock(tr.t), origin(tr)].join(' · ')].concat(tr.notes && (tr.insulin || tr.carbs) ? [tr.notes.slice(0, 60)] : []) };
+}
+
+// a suspect carries its span; a meal without insulin, its time
+function suspectText(q) {
+  if (q.kind === 'bolus') return t('suspectBolus', clock(q.from));
+  return t(q.kind === 'rise' ? 'suspectRise' : 'suspectFall', clock(q.from), clock(q.to), g(q.sgv_from), g(q.sgv_to));
 }
 
 function entryText(tr) {
@@ -699,7 +705,7 @@ const Table = {
           const ins = r.entries.filter((tr) => (tr.insulin || 0) > 0 && !isBasal(tr)), bas = r.entries.filter((tr) => (tr.insulin || 0) > 0 && isBasal(tr));
           const carbs = r.entries.filter((tr) => (tr.carbs || 0) > 0), act = r.entries.filter((tr) => tr.duration);
           const meters = r.entries.filter((tr) => tr.glucose != null).map((tr) => ({ v: tr.glucose, t: tr.t, tr })).concat(r.meters);
-          const notes = r.suspects.map((q) => m('span.c-sus', t(q.kind === 'rise' ? 'suspectRise' : 'suspectFall', clock(q.from), clock(q.to), g(q.sgv_from), g(q.sgv_to))))
+          const notes = r.suspects.map((q) => m('span.c-sus', suspectText(q)))
             .concat(r.entries.filter((tr) => tr.notes).map((tr) => tr.notes.slice(0, 50)))
             .concat([...new Set(r.entries.map((tr) => origin(tr)).concat(r.meters.map((p) => origin(null, p.src))))]);
           const list_ = (items) => items.length ? items.join(', ') : '·';

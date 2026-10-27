@@ -105,7 +105,51 @@ func (e *Engine) Evaluate(ctx context.Context) error {
 			return err
 		}
 	}
-	return e.detect(ctx, qs, logged, now)
+	if err := e.detect(ctx, qs, logged, now); err != nil {
+		return err
+	}
+	return e.detectBolus(ctx, qs, logged, now)
+}
+
+// detectBolus asks about a meal logged without rapid insulin.
+func (e *Engine) detectBolus(ctx context.Context, qs []store.Question, logged []loggedEntry, now time.Time) error {
+	entries := make([]Entry, len(logged))
+	for i, l := range logged {
+		entries[i] = l.Entry
+	}
+	sgvAt := func(t int64) int {
+		from, to := t-10*time.Minute.Milliseconds(), t+10*time.Minute.Milliseconds()
+		es, err := e.Store.QueryEntries(ctx, store.EntryQuery{Type: "sgv", Gte: &from, Lte: &to, Count: 5, Asc: true})
+		if err != nil {
+			return 0
+		}
+		best, gap := 0, int64(-1)
+		for _, x := range es {
+			if x.SGV == nil || *x.SGV <= glucose.MaxErrorCode {
+				continue
+			}
+			if d := max(x.Date-t, t-x.Date); gap < 0 || d < gap {
+				best, gap = *x.SGV, d
+			}
+		}
+		return best
+	}
+	meal, ok := MissingBolus(entries, now, sgvAt)
+	if !ok {
+		return nil
+	}
+	for _, q := range qs {
+		if q.Kind == "bolus" && q.From == meal.T {
+			return nil // asked already
+		}
+	}
+	nowSGV := sgvAt(now.UnixMilli())
+	q, err := e.Store.InsertQuestion(ctx, store.Question{Kind: "bolus", From: meal.T, To: now.UnixMilli(), SGVFrom: sgvAt(meal.T), SGVTo: nowSGV}, now)
+	if err != nil {
+		return err
+	}
+	slog.Info("question", "id", q.ID, "kind", "bolus", "meal", meal.T)
+	return e.publish(ctx, q, now, false)
 }
 
 func (e *Engine) step(ctx context.Context, q store.Question, logged []loggedEntry, now time.Time) error {
@@ -119,7 +163,7 @@ func (e *Engine) step(ctx context.Context, q store.Question, logged []loggedEntr
 			continue
 		}
 		answer := "food"
-		if q.Kind == "fall" {
+		if q.Kind == "fall" || q.Kind == "bolus" {
 			answer = "insulin"
 		}
 		dev, voter := caregiverByID(devs, l.DeviceID)

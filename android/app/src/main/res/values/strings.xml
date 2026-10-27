@@ -228,6 +228,11 @@
     <string name="q_fall_title">Insulin not logged?</string>
     <string name="q_rise_body">Glucose rose from %1$s to %2$s since %3$s. What happened?</string>
     <string name="q_fall_body">Glucose fell from %1$s to %2$s since %3$s. What happened?</string>
+    <string name="q_bolus_title">Food without insulin?</string>
+    <string name="q_bolus_body">Food was logged at %1$s, but no rapid insulin near it. What happened?</string>
+    <string name="q_btn_no_insulin">No insulin given</string>
+    <string name="suspect_bolus">Suspect: food at %1$s without insulin</string>
+    <string name="data_suspect_bolus">\? food at %1$s without insulin</string>
     <string name="q_again">The answers differ: %1$s. What really happened?</string>
     <string name="q_said">%1$s — “%2$s”</string>
     <string name="q_ans_food">there was food</string>
