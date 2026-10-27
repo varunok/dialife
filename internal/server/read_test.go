@@ -188,6 +188,34 @@ func TestHistory(t *testing.T) {
 	}
 }
 
+func TestHistoryEntriesAheadOfNow(t *testing.T) {
+	f := newFixture(t)
+	_, dad := f.addDevice(t, "Тато", auth.RoleCaregiver)
+	hdr := map[string]string{"Authorization": "Bearer " + dad, "Content-Type": "application/json"}
+	// a phone whose clock runs 20 min ahead logs a meal at its "now"
+	at := testNow.Add(20 * time.Minute).UTC().Format(time.RFC3339)
+	body := `[{"_id":"dddddddddddddddddddddddd","eventType":"Meal Bolus","created_at":"` + at + `","carbs":30}]`
+	if resp := f.do(t, "POST", "/api/v1/treatments", strings.NewReader(body), hdr); resp.StatusCode != 200 {
+		t.Fatalf("post %d", resp.StatusCode)
+	}
+	count := func(q string) int {
+		var h struct{ Treatments []struct{ ID string } }
+		json.NewDecoder(f.get(t, "/api/history"+q, hdr).Body).Decode(&h)
+		return len(h.Treatments)
+	}
+	// a view up to now gets it, so it shows once its time comes
+	if n := count(""); n != 1 {
+		t.Fatalf("default view: %d treatments, want the one 20 min ahead", n)
+	}
+	if n := count(fmt.Sprintf("?from=%d&to=%d", testNow.Add(-time.Hour).UnixMilli(), testNow.Add(-2*time.Minute).UnixMilli())); n != 1 {
+		t.Fatalf("view up to a phone's slow now: %d treatments", n)
+	}
+	// a view of the past keeps to its bounds
+	if n := count(fmt.Sprintf("?from=%d&to=%d", testNow.Add(-5*time.Hour).UnixMilli(), testNow.Add(-2*time.Hour).UnixMilli())); n != 0 {
+		t.Fatalf("past view: %d treatments, want none", n)
+	}
+}
+
 func TestNightscoutEntriesRead(t *testing.T) {
 	f := newFixture(t)
 	_, xd := f.addDevice(t, "xDrip", auth.RoleUploader)

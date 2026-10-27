@@ -41,6 +41,9 @@ const (
 	// readings handed to the alarm rules: the 240 min max high_for_min plus slack
 	alarmHistory = 250 * time.Minute
 
+	// how far ahead an entry may be (nsv1 accepts treatments up to an hour ahead)
+	entryAhead = time.Hour
+
 	defaultHistory = 6 * time.Hour
 	maxHistory     = 20 * 365 * 24 * time.Hour // no practical limit: long spans come aggregated
 	maxHistoryRows = 20000                     // 31 days at 5 min is ~9000; leaves room for a second uploader
@@ -385,7 +388,13 @@ func (h *Handlers) History(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	resp := historyResponse{From: from, To: to, SGV: series{T: []int64{}, V: []int{}}, MBG: series{T: []int64{}, V: []int{}}, Treatments: []historyTreatment{}}
 
-	ts, err := h.Store.ListTreatments(ctx, store.TreatmentQuery{Gte: &from, Lte: &to, Count: 1000})
+	// A view up to now also gets entries a little ahead of it (another phone's
+	// clock, xDrip+): the apps show them once their time comes, with no refetch.
+	upTo := to
+	if now := h.Now(); to > now.Add(-entryAhead).UnixMilli() {
+		upTo = max(to, now.Add(entryAhead).UnixMilli())
+	}
+	ts, err := h.Store.ListTreatments(ctx, store.TreatmentQuery{Gte: &from, Lte: &upTo, Count: 1000})
 	if err != nil {
 		fail(w, "history treatments", err)
 		return
