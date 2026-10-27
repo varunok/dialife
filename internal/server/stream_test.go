@@ -135,7 +135,7 @@ func TestStreamLiveReading(t *testing.T) {
 	}
 	var bg stateBody
 	decodeInto(t, ev.Data, &bg)
-	if bg.BG == nil || bg.BG.SGV != 112 || *bg.BG.Delta != -8 || bg.BG.Arrow != "↘" || bg.AR2 == nil {
+	if bg.BG == nil || bg.BG.SGV != 112 || *bg.BG.Delta != -8 || bg.BG.Arrow != "↘" {
 		t.Fatalf("bg event %+v", bg.BG)
 	}
 	if strings.Contains(ev.Data, "display_units") {

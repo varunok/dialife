@@ -13,6 +13,9 @@
     <string name="state_low">Low · below %1$s</string>
     <string name="state_high">High · above %1$s</string>
     <string name="forecast_30">In 30 min ≈ %1$s</string>
+    <string name="forecast_30_q">In 30 min ≈ %1$s · ±%2$s · comes true %3$d%%</string>
+    <string name="forecast_blind_food">The forecast does not see the food at %1$s</string>
+    <string name="forecast_blind_insulin">The forecast does not see the insulin at %1$s</string>
     <string name="delta_per_5">%1$s in 5 min</string>
 
     <plurals name="minutes_ago">

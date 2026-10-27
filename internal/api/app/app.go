@@ -12,6 +12,7 @@ import (
 	"math"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"dialife/internal/acklink"
@@ -19,6 +20,7 @@ import (
 	"dialife/internal/auth"
 	"dialife/internal/bus"
 	"dialife/internal/config"
+	"dialife/internal/forecast"
 	"dialife/internal/glucose"
 	"dialife/internal/httpx"
 	"dialife/internal/insulin"
@@ -55,7 +57,8 @@ type Handlers struct {
 	Loc        *time.Location    // the family's time zone, for the AGP day; nil: UTC
 	Uploader   string            // what the family calls the xDrip+ phone; sent to the app as is
 
-	webCodes webCodes // web login codes, in memory for their QR pictures
+	webCodes webCodes     // web login codes, in memory for their QR pictures
+	quality  qualityCache // how the chart's forecast did lately
 }
 
 type stateResponse struct {
@@ -63,7 +66,8 @@ type stateResponse struct {
 	DisplayUnits string              `json:"display_units,omitempty"` // absent in SSE bg events
 	Thresholds   config.Thresholds   `json:"thresholds"`
 	BG           *bgState            `json:"bg"`
-	AR2          *glucose.Forecast   `json:"ar2"`
+	AR2          *glucose.Forecast   `json:"ar2"`                        // the chart's forecast: a damped trend (the name is historic; alarms use AR2 itself)
+	ForecastInfo *forecastInfo       `json:"forecast_quality,omitempty"` // how often that forecast came true, and what it cannot see
 	Uploader     *uploaderState      `json:"uploader"`
 	Alarms       []alarms.View       `json:"alarms"`                  // live alarms, oldest first
 	Episode      *alarms.EpisodeView `json:"episode,omitempty"`       // rules behind "we wake everyone if…"
@@ -127,7 +131,8 @@ func (h *Handlers) snapshot(ctx context.Context, now time.Time) (stateResponse, 
 		return resp, err
 	}
 	if ok {
-		resp.BG, resp.AR2 = h.describe(st, now, th)
+		resp.BG, _ = h.describe(st, now, th)
+		resp.AR2, resp.ForecastInfo = h.chartForecast(ctx, st, now)
 	}
 
 	ds, err := h.Store.LatestDeviceStatus(ctx)
@@ -513,4 +518,87 @@ type meResponse struct {
 func (h *Handlers) Me(w http.ResponseWriter, r *http.Request) {
 	dev, _ := auth.DeviceFrom(r.Context())
 	httpx.WriteJSON(w, http.StatusOK, meResponse{ID: dev.ID, Name: dev.Name, Role: dev.Role, DisplayUnits: dev.DisplayUnits})
+}
+
+type forecastInfo struct {
+	forecast.Quality
+	Ignores []ignored `json:"ignores,omitempty"` // food or rapid insulin of the last 2 hours: the trend does not see them
+}
+
+type ignored struct {
+	Kind string `json:"kind"` // "food" | "insulin"
+	T    int64  `json:"t"`
+}
+
+// quality is measured on the last week once an hour, not on every reading.
+type qualityCache struct {
+	mu   sync.Mutex
+	at   time.Time
+	last forecast.Quality
+}
+
+const (
+	qualityEvery = time.Hour
+	qualityOver  = 7 * 24 * time.Hour
+	blindAfter   = 2 * time.Hour
+)
+
+// chartForecast is the "in 30 min ≈" with its measured accuracy, from the readings of the last half hour.
+func (h *Handlers) chartForecast(ctx context.Context, st glucose.State, now time.Time) (*glucose.Forecast, *forecastInfo) {
+	if st.Error || now.UnixMilli()-st.Last.Date > forecastMaxAge.Milliseconds() {
+		return nil, nil
+	}
+	q := h.forecastQuality(ctx, now)
+	from := st.Last.Date - 35*time.Minute.Milliseconds()
+	es, err := h.Store.QueryEntries(ctx, store.EntryQuery{Type: "sgv", Gte: &from, Lte: &st.Last.Date, Count: 50, Asc: true})
+	if err != nil {
+		slog.Error("forecast readings", "err", err)
+		return nil, nil
+	}
+	f, ok := forecast.Trend(points(es), q)
+	if !ok {
+		return nil, nil
+	}
+	info := &forecastInfo{Quality: q}
+	since := now.Add(-blindAfter).UnixMilli()
+	nowMs := now.UnixMilli()
+	if ts, err := h.Store.ListTreatments(ctx, store.TreatmentQuery{Gte: &since, Lte: &nowMs, Count: 50}); err == nil {
+		for _, t := range ts {
+			typ, _ := insulin.Kind(t.Raw)
+			switch {
+			case t.Carbs != nil && *t.Carbs > 0:
+				info.Ignores = append(info.Ignores, ignored{Kind: "food", T: t.CreatedAt})
+			case t.Insulin != nil && *t.Insulin > 0 && typ != "basal":
+				info.Ignores = append(info.Ignores, ignored{Kind: "insulin", T: t.CreatedAt})
+			}
+		}
+	}
+	return &f, info
+}
+
+func (h *Handlers) forecastQuality(ctx context.Context, now time.Time) forecast.Quality {
+	c := &h.quality
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if !c.at.IsZero() && now.Sub(c.at) < qualityEvery {
+		return c.last
+	}
+	from, to := now.Add(-qualityOver).UnixMilli(), now.UnixMilli()
+	es, err := h.Store.QueryEntries(ctx, store.EntryQuery{Type: "sgv", Gte: &from, Lte: &to, Count: maxHistoryRows, Asc: true})
+	if err != nil {
+		slog.Error("forecast quality", "err", err)
+		return c.last
+	}
+	c.last, c.at = forecast.Backtest(points(es)), now
+	return c.last
+}
+
+func points(es []store.Entry) []forecast.Point {
+	out := make([]forecast.Point, 0, len(es))
+	for _, e := range es {
+		if e.SGV != nil && *e.SGV > glucose.MaxErrorCode {
+			out = append(out, forecast.Point{T: e.Date, V: *e.SGV})
+		}
+	}
+	return out
 }

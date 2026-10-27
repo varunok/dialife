@@ -57,3 +57,12 @@ func TestNoQuestion(t *testing.T) {
 		t.Error("new sensor warming up")
 	}
 }
+
+// the dinner of 26.10: +73 in two hours, never 1.5/min; asked by the slow rule
+func TestSlowRiseWithoutFood(t *testing.T) {
+	sgv := series(141, 137, 132, 132, 134, 135, 137, 138, 140, 140, 144, 146, 152, 157, 162, 169, 174)
+	s, ok := Detect(sgv, nil, nil, now)
+	if !ok || s.Kind != "rise" || s.SGVFrom != 132 || s.SGVTo != 174 {
+		t.Fatalf("%+v %v", s, ok)
+	}
+}

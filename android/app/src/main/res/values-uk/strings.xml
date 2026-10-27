@@ -9,6 +9,9 @@
     <string name="state_low">Низький · нижче %1$s</string>
     <string name="state_high">Високий · вище %1$s</string>
     <string name="forecast_30">За 30 хв ≈ %1$s</string>
+    <string name="forecast_30_q">За 30 хв ≈ %1$s · ±%2$s · збувається в %3$d%%</string>
+    <string name="forecast_blind_food">Прогноз не враховує їжу о %1$s</string>
+    <string name="forecast_blind_insulin">Прогноз не враховує інсулін о %1$s</string>
     <string name="delta_per_5">%1$s за 5 хв</string>
 
     <!-- Ukrainian has three plural forms: 1 хвилину, 2 хвилини, 5 хвилин -->

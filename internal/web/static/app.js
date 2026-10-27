@@ -290,13 +290,16 @@ const Now = {
       : ['in', t('inRange', g(th.bgTargetBottom) + '–' + g(th.bgTargetTop))];
     const f30 = st.ar2 && st.ar2.predicted && st.ar2.predicted[st.ar2.predicted.length - 1];
     const a = (st.alarms || []).find((x) => x.state !== 'cleared');
+    const fq = st.forecast_quality; // how often "in 30 min" came true lately, and what it cannot see
+    const blind = fq && fq.ignores && fq.ignores.slice().sort((x, y) => y.t - x.t)[0];
     return m('section.card.now', [
       m('.hero', [
         m('div', [m('span.v' + (stale ? '.stale' : ''), g(bg.sgv)), m('span.u', unit())]),
         !stale && m('span.arrow', { 'aria-label': bg.direction || '' }, arrowIcon(bg.delta_exact != null ? bg.delta_exact : bg.delta))
       ]),
       m('.sub', [bg.delta != null && m('b', signed(bg.delta) + ' ' + t('in5')), m('span', ' · ' + (ageMin < 1 ? t('justNow') : t('ago', ageMin)))]),
-      !stale && m('.chips', [m('span.tag.' + range[0], range[1]), f30 && m('span.tag', t('forecast', g(f30.sgv)))]),
+      !stale && m('.chips', [m('span.tag.' + range[0], range[1]), f30 && m('span.tag', fq && fq.n >= 50 ? t('forecastQ', g(f30.sgv), g(fq.err80), fq.hit_pct) : t('forecast', g(f30.sgv)))]),
+      !stale && blind && m('.hint', t(blind.kind === 'food' ? 'blindFood' : 'blindInsulin', clock(blind.t))),
       m('.tiles', [
         m('.tile', [m('span.k', st.uploader_name || t('uploader')), m('span.n', st.uploader && st.uploader.battery != null ? st.uploader.battery + '%' : '—')]),
         m('.tile', [m('span.k', t('tir')), m('span.n', V.tir != null ? Math.round(V.tir) + '%' : '—')])

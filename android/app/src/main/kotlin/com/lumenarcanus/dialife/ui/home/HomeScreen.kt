@@ -99,6 +99,7 @@ data class HomeState(
     val low: Int,
     val high: Int,
     val forecast30: Int?,
+    val forecastQuality: com.lumenarcanus.dialife.data.ForecastQuality? = null,
     val phoneBattery: Int?,
     val uploaderName: String? = null, // the family's name for the xDrip+ phone, from the server
     val alarms: Int = 0,
@@ -141,7 +142,8 @@ fun sampleHomeUi(now: Long = 1_761_400_000_000L): HomeUi {
         ),
     )
     return HomeUi(
-        state = StateResponse(now, "mg/dl", Thresholds(55, 80, 250, 300), bg, ar2, Uploader(battery = 69), questions = questions),
+        state = StateResponse(now, "mg/dl", Thresholds(55, 80, 250, 300), bg, ar2, Uploader(battery = 69), questions = questions,
+            forecastQuality = com.lumenarcanus.dialife.data.ForecastQuality(19, 74, 560, listOf(com.lumenarcanus.dialife.data.ForecastBlind("food", t[270])))),
         myId = 8,
         history = History(t.first(), now, Series(t, v), mbg = Series(listOf(t[270]), listOf(v[270] - 9)), treatments = treatments),
         now = now,
@@ -167,6 +169,7 @@ fun HomeUi.toHomeState(fallbackUnits: Units): HomeState? {
         low = th.low,
         high = th.high,
         forecast30 = st.ar2?.predicted?.lastOrNull()?.sgv,
+        forecastQuality = st.forecastQuality,
         phoneBattery = st.uploader?.battery,
         uploaderName = st.uploaderName,
         alarms = st.alarms.count { it.state != "cleared" },
@@ -542,8 +545,19 @@ private fun Hero(state: HomeState, locale: Locale) {
             // an old reading says nothing about the range now
             if (state.ageMin < STALE_MIN) Chip(label, background = if (state.range == Range.InRange) c.inRangeContainer else if (state.range == Range.Low) c.lowContainer else c.highContainer, color = stateColor)
             state.forecast30?.let {
-                Chip(stringResource(R.string.forecast_30, formatGlucose(it, state.units, locale)), background = c.surface, color = c.textMuted)
+                val q = state.forecastQuality?.takeIf { it.n >= 50 } // a record of fewer forecasts says little
+                val text = if (q != null) stringResource(R.string.forecast_30_q, formatGlucose(it, state.units, locale), formatGlucose(q.err80, state.units, locale), q.hitPct)
+                else stringResource(R.string.forecast_30, formatGlucose(it, state.units, locale))
+                Chip(text, background = c.surface, color = c.textMuted)
             }
+        }
+        // what the trend cannot see: food or rapid insulin in the last two hours
+        state.forecastQuality?.ignores?.maxByOrNull { it.t }?.let { b ->
+            val ctx = androidx.compose.ui.platform.LocalContext.current
+            Text(
+                stringResource(if (b.kind == "food") R.string.forecast_blind_food else R.string.forecast_blind_insulin, com.lumenarcanus.dialife.live.AlarmText.clock(ctx, b.t)),
+                color = c.textFaint, fontSize = 13.sp,
+            )
         }
     }
 }

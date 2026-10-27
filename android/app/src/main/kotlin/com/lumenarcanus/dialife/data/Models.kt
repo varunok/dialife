@@ -98,7 +98,20 @@ data class StateResponse(
     val caregivers: List<Caregiver> = emptyList(),
     val questions: List<Question> = emptyList(), // open ones and the last day's suspect marks
     @SerialName("uploader_name") val uploaderName: String? = null, // what the family calls the xDrip+ phone (server config)
+    @SerialName("forecast_quality") val forecastQuality: ForecastQuality? = null, // how often "in 30 min" came true lately
 )
+
+/** The chart forecast's record on this child's recent readings, and what it cannot see now. */
+@Serializable
+data class ForecastQuality(
+    val err80: Int = 0, // 80% of forecasts were within this many mg/dL
+    @SerialName("hit_pct") val hitPct: Int = 0,
+    val n: Int = 0,
+    val ignores: List<ForecastBlind> = emptyList(),
+)
+
+@Serializable
+data class ForecastBlind(val kind: String, val t: Long) // "food" | "insulin"
 
 /** "Did you forget to log?": a rise without food or a fall without insulin. */
 @Serializable

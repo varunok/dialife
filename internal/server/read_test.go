@@ -94,11 +94,10 @@ func TestStateFallingTowardsLow(t *testing.T) {
 		bg.Direction != "FortyFiveDown" || bg.Arrow != "↘" || *bg.Delta != -10 || bg.Interpolated { // −30 in 15 min = −2/min; the uploader's "SingleDown" is ignored
 		t.Fatalf("bg %+v", bg)
 	}
-	// golden: AR2(70, 80) → 64 60 58 57 56 56, urgent low
-	if s.AR2 == nil || len(s.AR2.Predicted) != 6 || s.AR2.Predicted[0].SGV != 64 || s.AR2.Predicted[5].SGV != 56 ||
-		s.AR2.Predicted[0].T != last.Add(5*time.Minute).UnixMilli() || s.AR2.Level != "urgent" || s.AR2.Event != "low" ||
-		len(s.AR2.Cone) != 13 {
-		t.Fatalf("ar2 %+v", s.AR2)
+	// the chart's forecast: −2/min damped to 40% → 66 … 46 in 30 min (the alarms keep AR2, tested in glucose)
+	if s.AR2 == nil || len(s.AR2.Predicted) != 6 || s.AR2.Predicted[0].SGV != 66 || s.AR2.Predicted[5].SGV != 46 ||
+		s.AR2.Predicted[0].T != last.Add(5*time.Minute).UnixMilli() || len(s.AR2.Cone) != 6 {
+		t.Fatalf("forecast %+v", s.AR2)
 	}
 	if s.Uploader == nil || *s.Uploader.Battery != 63 || s.Uploader.Device != "SM-A525F" {
 		t.Fatalf("uploader %+v", s.Uploader)
@@ -368,5 +367,34 @@ func TestHistoryLongSpanIsAggregated(t *testing.T) {
 	json.NewDecoder(f.get(t, fmt.Sprintf("/api/history?from=%d&step=60", from), bearer).Body).Decode(&h)
 	if h.Step != 60 || len(h.SGV.V) != 1 || h.SGV.V[0] != 128 || h.SGV.Lo[0] != 100 || h.SGV.Hi[0] != 155 {
 		t.Fatalf("hourly: %+v", h)
+	}
+}
+
+func TestForecastQualityAndBlindSpots(t *testing.T) {
+	f := newFixture(t)
+	_, xd := f.addDevice(t, "xDrip", auth.RoleUploader)
+	_, dad := f.addDevice(t, "Тато", auth.RoleCaregiver)
+	// two steady hours: every replayed forecast comes true
+	vals := make([]int, 24)
+	for i := range vals {
+		vals[i] = 130
+	}
+	upload(t, f, xd, testNow.Add(-time.Minute), "Flat", vals...)
+	f.do(t, "POST", "/api/v1/treatments", strings.NewReader(`{"eventType":"Meal Bolus","carbs":30,"insulin":2,"created_at":"`+
+		testNow.Add(-40*time.Minute).UTC().Format(time.RFC3339)+`"}`), xdrip(xd))
+	var s struct {
+		Q struct {
+			Err80   int `json:"err80"`
+			HitPct  int `json:"hit_pct"`
+			N       int
+			Ignores []struct{ Kind string } `json:"ignores"`
+		} `json:"forecast_quality"`
+	}
+	json.NewDecoder(f.get(t, "/api/state", map[string]string{"Authorization": "Bearer " + dad}).Body).Decode(&s)
+	if s.Q.N == 0 || s.Q.HitPct != 100 || s.Q.Err80 != 0 {
+		t.Fatalf("quality %+v", s.Q)
+	}
+	if len(s.Q.Ignores) != 1 || s.Q.Ignores[0].Kind != "food" {
+		t.Fatalf("the meal 40 min ago is what the trend cannot see: %+v", s.Q.Ignores)
 	}
 }

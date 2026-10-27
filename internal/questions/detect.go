@@ -11,8 +11,12 @@ import (
 
 const (
 	trendSpan   = 20 * time.Minute // the slope is fitted over this much
-	lookBack    = 75 * time.Minute // where a rise or fall may have begun
+	lookBack    = 90 * time.Minute // where a rise or fall may have begun
 	minRate     = 1.5              // mg/dL per minute, sustained over trendSpan
+	// a slow meal (a dinner rising +73 in two hours never reached 1.5/min):
+	// a gentler slope held longer, with the same rise from the low point
+	slowSpan = 30 * time.Minute
+	slowRate = 0.8
 	compression = 4.0              // a steeper fall is the sensor pressed (lying on it), not insulin
 	minRise     = 40               // mg/dL from the low point
 	minFall     = 50               // mg/dL from the high point
@@ -72,6 +76,7 @@ func Detect(sgv []Point, logged []Entry, starts []int64, now time.Time) (Suspect
 	if !ok {
 		return Suspect{}, false
 	}
+	slow, _ := slope(win, last.T-slowSpan.Milliseconds())
 	lo, hi := win[0], win[0]
 	for _, p := range win {
 		if p.V < lo.V {
@@ -82,7 +87,7 @@ func Detect(sgv []Point, logged []Entry, starts []int64, now time.Time) (Suspect
 		}
 	}
 	switch {
-	case rate >= minRate && last.V-lo.V >= minRise && lo.T < last.T:
+	case (rate >= minRate || slow >= slowRate) && last.V-lo.V >= minRise && lo.T < last.T:
 		if explained(logged, lo.T-carbsBefore.Milliseconds(), now.UnixMilli(), func(e Entry) bool { return e.Carbs }) {
 			return Suspect{}, false
 		}

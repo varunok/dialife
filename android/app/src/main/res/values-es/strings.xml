@@ -10,6 +10,9 @@
     <string name="state_low">Baja · por debajo de %1$s</string>
     <string name="state_high">Alta · por encima de %1$s</string>
     <string name="forecast_30">En 30 min ≈ %1$s</string>
+    <string name="forecast_30_q">En 30 min ≈ %1$s · ±%2$s · acierta el %3$d%%</string>
+    <string name="forecast_blind_food">La previsión no tiene en cuenta la comida de las %1$s</string>
+    <string name="forecast_blind_insulin">La previsión no tiene en cuenta la insulina de las %1$s</string>
     <string name="delta_per_5">%1$s en 5 min</string>
 
     <plurals name="minutes_ago">
