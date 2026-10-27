@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -13,8 +15,22 @@ android {
         applicationId = "com.lumenarcanus.dialife"
         minSdk = 31
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.3.0"
+        versionCode = 4
+        versionName = "0.4.0"
+    }
+
+    // The published release key lives outside git, in .local/keys/release.properties
+    // (storeFile, storePassword, keyAlias, keyPassword). Without it the release build
+    // falls back to the local debug key: fine for your own phones, not for publishing.
+    val releaseKey = rootDir.resolve("../.local/keys/release.properties")
+    signingConfigs {
+        if (releaseKey.isFile) create("release") {
+            val p = Properties().apply { releaseKey.inputStream().use { load(it) } }
+            storeFile = releaseKey.parentFile.resolve(p.getProperty("storeFile"))
+            storePassword = p.getProperty("storePassword")
+            keyAlias = p.getProperty("keyAlias")
+            keyPassword = p.getProperty("keyPassword")
+        }
     }
 
     androidResources {
@@ -27,10 +43,9 @@ android {
 
     buildTypes {
         release {
-            // Family app installed by hand, not through Play: signed with the same key as the
-            // debug builds already on the phones, so it installs over them and keeps the
-            // connection. A copy of the key is in .local/keys; without it no update installs.
-            signingConfig = signingConfigs.getByName("debug")
+            // Installed by hand, not through Play. Every published release must be signed
+            // with the same key, or it will not install over the one before.
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
