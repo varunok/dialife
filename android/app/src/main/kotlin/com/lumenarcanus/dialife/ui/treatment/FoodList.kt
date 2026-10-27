@@ -99,7 +99,8 @@ fun FoodList(rows: SnapshotStateList<FoodRow>, repo: LiveRepository?) {
             // look the food up once the typing stops; a picked suggestion follows a new portion
             LaunchedEffect(row.name, row.portion) {
                 val name = row.name.trim()
-                if (name.length < 2 || repo == null) {
+                if (repo == null) return@LaunchedEffect // a preview: keep what it was given
+                if (name.length < 2) {
                     update(row.id) { it.copy(loading = false, asked = false, suggestion = null) }
                     return@LaunchedEffect
                 }
@@ -142,6 +143,7 @@ private fun FoodRowCard(row: FoodRow, canRemove: Boolean, onChange: ((FoodRow) -
                 onValueChange = { v -> onChange { it.copy(name = v.take(80)) } },
                 label = { Text(stringResource(R.string.food_name)) },
                 singleLine = true,
+                colors = fieldColors(),
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 modifier = Modifier.weight(1f),
             )
@@ -159,16 +161,18 @@ private fun FoodRowCard(row: FoodRow, canRemove: Boolean, onChange: ((FoodRow) -
                 label = { Text(stringResource(R.string.food_portion)) },
                 placeholder = { Text(stringResource(R.string.food_portion_hint), color = c.textFaint) },
                 singleLine = true,
+                colors = fieldColors(),
                 modifier = Modifier.weight(1f),
             )
             OutlinedTextField(
                 value = row.carbs,
                 onValueChange = { v -> onChange { it.copy(carbs = v.filter(Char::isDigit).take(3), source = "manual") } },
-                label = { Text(stringResource(R.string.unit_carbs)) },
+                label = { Text(stringResource(R.string.food_carbs)) },
                 singleLine = true,
+                colors = fieldColors(),
                 textStyle = GlucoseHero.copy(fontSize = 20.sp, lineHeight = 24.sp, color = c.carbs),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.width(96.dp),
+                modifier = Modifier.width(120.dp),
             )
         }
         when {
@@ -220,6 +224,14 @@ private fun FoodRowCard(row: FoodRow, canRemove: Boolean, onChange: ((FoodRow) -
     }
 }
 
+/** Fields that stand out on the card: the default outline is lost on the raised surface. */
+@Composable
+private fun fieldColors() = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+    unfocusedBorderColor = DiaTheme.colors.textFaint,
+    focusedBorderColor = DiaTheme.colors.carbs,
+    focusedLabelColor = DiaTheme.colors.carbs,
+)
+
 @Composable
 private fun SuggestionButton(value: String, label: String, note: String, on: Boolean, onClick: () -> Unit) {
     val c = DiaTheme.colors
@@ -227,7 +239,7 @@ private fun SuggestionButton(value: String, label: String, note: String, on: Boo
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
         shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, if (on) c.carbs else c.line),
+        border = BorderStroke(1.dp, if (on) c.carbs else c.textFaint),
         colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(containerColor = if (on) c.carbsContainer else androidx.compose.ui.graphics.Color.Transparent),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 6.dp),
     ) {

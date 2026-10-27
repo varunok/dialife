@@ -531,6 +531,7 @@
     <string name="dose_recent_back">Назад</string>
     <!-- the food form as a list, with carb suggestions -->
     <string name="food_disclaimer">Вуглеводи з «≈» — лише підказка, не розрахунок. Підказка не знає ні ваги, ні рецепта, тож звіряйте з вагою чи упаковкою. Кожне число ви обираєте або вводите самі.</string>
+    <string name="food_carbs">Вуглеводи, г</string>
     <string name="food_name">Страва або продукт</string>
     <string name="food_portion">Порція (необов’язково)</string>
     <string name="food_portion_hint">150 г, 2 скибки, тарілка</string>

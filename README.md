@@ -8,12 +8,29 @@ and makes sure somebody actually reacts to an alarm.
 
 ```
 Dexcom sensor → xDrip+ (the child's phone) → DiaLife server → parents' Android app
+                                                           ↘ read-only web viewer
                                                            ↘ ntfy (optional push)
 ```
 
 It is a small, self-hosted alternative to running a full Nightscout: one Go
-binary with SQLite behind your own HTTPS reverse proxy, and an Android app
-for each parent. The interface is in Ukrainian and English.
+binary with SQLite behind your own HTTPS reverse proxy, an Android app for
+each parent and a read-only web page. The interface is in Ukrainian, English
+and Spanish.
+
+<p align="center">
+  <img src="docs/screenshots/app_home.png" width="270" alt="Home screen: the current reading, trend, forecast and a question about an unlogged rise">
+  <img src="docs/screenshots/app_food.png" width="270" alt="Logging a meal as a list, with carb suggestions">
+  <img src="docs/screenshots/app_dose_guard.png" width="270" alt="Warnings that another parent is giving insulin and that rapid was given an hour ago">
+</p>
+<p align="center">
+  <img src="docs/screenshots/app_chart.png" width="820" alt="The full-screen chart: readings, glucometer checks, insulin, food, activity and a suspect mark">
+</p>
+<p align="center">
+  <img src="docs/screenshots/web_viewer.png" width="820" alt="The web viewer: current reading, chart and the entries as a table">
+</p>
+
+The pictures are rendered from made-up data (`android/…/ReadmeShots.kt` for
+the app; a demo server with a generated day for the web).
 
 ## What it does
 
@@ -27,6 +44,18 @@ for each parent. The interface is in Ukrainian and English.
 - **Treatments.** Rapid and long-acting insulin, food, glucometer checks,
   activity and notes, entered from any phone (also offline) or synced from
   xDrip+. A reminder an hour before a scheduled long-acting dose.
+- **No double insulin.** When a parent opens the insulin form, the other
+  phones show "Mom is giving insulin". Saving a dose close to another one asks
+  first: the same injection or a new one (rapid within 20 minutes), a
+  correction (rapid within 3 hours), a second long-acting dose (within 16
+  hours). A dose from xDrip+ that lands next to another asks every parent
+  "one injection or two?", and "two" keeps a watch for a low.
+- **Meals as a list, with carb suggestions.** Each food gets its own carbs.
+  Suggestions come from the family's own earlier entries first and, if you
+  configure one or more language models (Gemini, or any OpenAI-compatible API:
+  OpenAI, OpenRouter, a local Ollama), from their estimate with a range. A
+  suggestion is only ever a tap away, never filled in by itself. Without a
+  model configured nothing about food leaves the server.
 - **"Did you forget to log?"** A rise with no food or a fall with no insulin
   asks every parent what happened, and asks again until their answers agree.
   Unanswered questions become marks on the chart.
@@ -34,7 +63,12 @@ for each parent. The interface is in Ukrainian and English.
   that moment and estimates, sensor by sensor, how far apart the two usually
   are. With enough checks an optional "≈ meter" line appears on the chart.
 - **Statistics.** Time in range, mean, GMI, CV, the typical day (AGP), daily
-  insulin and carbs, and an alarm log.
+  insulin and carbs, and an alarm log. The 30-minute forecast shows how often
+  it came true on the child's own recent readings.
+- **Read-only web viewer** for a computer: the chart, any period, and every
+  reading and entry as a table. A browser gets in only when a parent scans its
+  QR code in the app and chooses how long it may stay; the parent can end the
+  session from the phone at any time.
 - **Nightscout-compatible upload API**, so xDrip+ uploads to it as it would to
   Nightscout.
 
@@ -85,7 +119,8 @@ deploy/caddy-add.sh       # one time: adds the site block to your Caddyfile, val
 ```
 
 `deploy/caddy-add.sh` backs up the Caddyfile first and puts it back if the
-result does not validate. Only `/api/*` is exposed; everything else is refused.
+result does not validate. Only `/api/*` and the web viewer (`/`, `/web/*`)
+are exposed; everything else is refused.
 
 ### 3. Devices
 
@@ -139,7 +174,32 @@ push notifications with action buttons. Set `DIALIFE_NTFY_URL`,
 `deploy/ntfy.Caddyfile.snippet` exposes ntfy on its own domain:
 `deploy/caddy-add.sh deploy/ntfy.Caddyfile.snippet ntfy`.
 
-### 7. Backups
+### 7. Optional: carb estimates
+
+Add one or more models to `/etc/dialife.env` and redeploy; each comma-separated
+model is asked at the same time, each with its own timeout, and their answers
+are combined (the middle number, the widest range). An answer is cached per
+food and portion. With none set, the app only suggests the family's own
+earlier numbers.
+
+```sh
+DIALIFE_GEMINI_KEY=…                       # from aistudio.google.com (not the Gemini app subscription)
+DIALIFE_GEMINI_MODEL=gemini-3.5-flash-lite
+DIALIFE_OPENAI_URL=https://openrouter.ai/api/v1   # or OpenAI, or http://127.0.0.1:11434/v1 for Ollama
+DIALIFE_OPENAI_KEY=…
+DIALIFE_OPENAI_MODEL=…
+DIALIFE_LLM_TIMEOUT=10s
+```
+
+Only the food names and portions are sent, never glucose or names. They are
+estimates of a language model: check them against the package or the scale.
+
+### 8. The web viewer
+
+Nothing to set up beyond the Caddy block above: open your domain in a
+browser, then in the app **⋮ → Web login** and scan the code.
+
+### 9. Backups
 
 The server makes a daily SQLite backup (`dialife-backup.timer`). The user
 units in `deploy/laptop/` pull those backups to your computer every hour over
@@ -164,12 +224,14 @@ make test                                   # server: go vet + tests
 cd android && ./gradlew testDebugUnitTest   # app: unit tests
 ./gradlew verifyRoborazziDebug              # app: screenshots against src/test/screenshots
 ./gradlew recordRoborazziDebug              # accept changed screenshots
+./gradlew recordRoborazziDebug --tests '*ReadmeShots*'   # re-render the README pictures (docs/screenshots)
 ```
 
 ## License
 
 [MIT](LICENSE). The bundled fonts (Onest, IBM Plex Mono) are under the SIL Open
-Font License; see `android/licenses/`.
+Font License; see `android/licenses/`. The web viewer bundles
+[Mithril](https://mithril.js.org) (MIT, `internal/web/static/mithril.LICENSE.txt`).
 
 xDrip+, Dexcom, Nightscout and ntfy belong to their respective owners. DiaLife
 is not affiliated with or endorsed by any of them.

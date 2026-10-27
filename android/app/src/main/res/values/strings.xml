@@ -510,6 +510,7 @@
     <string name="dose_recent_back">Back</string>
     <!-- the food form as a list, with carb suggestions -->
     <string name="food_disclaimer">Numbers marked “≈” are only suggestions, not a calculation: they know neither the weight nor the recipe. Check against the scale or the package. You pick or type every number yourself.</string>
+    <string name="food_carbs">Carbs, g</string>
     <string name="food_name">Food or dish</string>
     <string name="food_portion">Portion (optional)</string>
     <string name="food_portion_hint">150 g, 2 slices, a plate</string>

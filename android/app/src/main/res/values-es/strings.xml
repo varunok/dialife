@@ -519,6 +519,7 @@
     <string name="dose_recent_back">Volver</string>
     <!-- the food form as a list, with carb suggestions -->
     <string name="food_disclaimer">Los números con «≈» son solo sugerencias, no un cálculo: no conocen ni el peso ni la receta. Comprobad con la báscula o el envase. Cada número lo elegís o escribís vosotros.</string>
+    <string name="food_carbs">Hidratos, g</string>
     <string name="food_name">Comida o plato</string>
     <string name="food_portion">Ración (opcional)</string>
     <string name="food_portion_hint">150 g, 2 rebanadas, un plato</string>

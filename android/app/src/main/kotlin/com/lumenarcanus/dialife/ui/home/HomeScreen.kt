@@ -113,7 +113,7 @@ data class HomeState(
 }
 
 // An evening like the mockups, for previews.
-fun sampleHomeUi(now: Long = 1_761_400_000_000L): HomeUi {
+fun sampleHomeUi(now: Long = 1_761_400_000_000L, dad: String = "Тато", mom: String = "Мама"): HomeUi {
     val t = (0 until 288).map { now - (287 - it) * 300_000L }
     val v = t.indices.map { i -> (150 + 70 * kotlin.math.sin(i / 22.0) + 20 * kotlin.math.sin(i / 5.0)).toInt() }
     val bg = Bg(sgv = v.last(), mills = t.last(), direction = "Flat", delta = v.last() - v[v.size - 2])
@@ -125,8 +125,8 @@ fun sampleHomeUi(now: Long = 1_761_400_000_000L): HomeUi {
         Treatment("d", now - 3 * 3_600_000L - 300_000L, insulin = 18.0, insulinType = "basal", insulinName = "Lantus"),
         Treatment("a", now - 3 * 3_600_000L, insulin = 2.5, insulinType = "rapid", insulinName = "NovoRapid"),
         Treatment("b", now - 3 * 3_600_000L + 600_000L, carbs = 45.0),
-        Treatment("m", t[235], glucose = v[235] + 14, eventType = "BG Check", enteredBy = "Мама"),
-        Treatment("x", t[262], duration = 40, intensity = "moderate", eventType = "Exercise", enteredBy = "Тато"),
+        Treatment("m", t[235], glucose = v[235] + 14, eventType = "BG Check", enteredBy = mom),
+        Treatment("x", t[262], duration = 40, intensity = "moderate", eventType = "Exercise", enteredBy = dad),
     )
     val questions = listOf(
         com.lumenarcanus.dialife.data.Question(
@@ -135,10 +135,10 @@ fun sampleHomeUi(now: Long = 1_761_400_000_000L): HomeUi {
         com.lumenarcanus.dialife.data.Question(
             2, "rise", "open", t[276], t[283], v[276], v[283], round = 2,
             answers = listOf(
-                com.lumenarcanus.dialife.data.QuestionAnswer("Тато", "nothing", 1, t[284]),
-                com.lumenarcanus.dialife.data.QuestionAnswer("Мама", "food_unknown", 1, t[285]),
+                com.lumenarcanus.dialife.data.QuestionAnswer(dad, "nothing", 1, t[284]),
+                com.lumenarcanus.dialife.data.QuestionAnswer(mom, "food_unknown", 1, t[285]),
             ),
-            waiting = listOf("Тато", "Мама"), waitingIds = listOf(8, 9),
+            waiting = listOf(dad, mom), waitingIds = listOf(8, 9),
         ),
     )
     return HomeUi(
