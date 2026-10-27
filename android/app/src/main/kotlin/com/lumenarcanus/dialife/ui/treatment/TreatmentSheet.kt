@@ -257,7 +257,7 @@ fun TreatmentSheet(
                     selected = custom,
                     onClick = { picking = true },
                     label = {
-                        Text(if (custom) stringResource(R.string.tr_at, AlarmText.clock(ctx, time)) else stringResource(R.string.tr_other_time))
+                        Text(if (custom) atLabel(time) else stringResource(R.string.tr_other_time))
                     },
                 )
             }
@@ -321,9 +321,41 @@ fun TreatmentSheet(
 }
 
 /**
- * The clock dial. A time later than now means yesterday: at 00:20 the dinner
- * at 23:40 is still entered as "23:40".
+ * The moment a time on the clock dial means. Yesterday only when today's would
+ * be more than 12 h ahead: at 00:20 the dinner at 23:40 is still entered as
+ * "23:40". Null for a time still to come, which no entry can have.
  */
+fun pickedTime(now: Long, hour: Int, minute: Int): Long? {
+    val cal = java.util.Calendar.getInstance().apply {
+        timeInMillis = now
+        set(java.util.Calendar.HOUR_OF_DAY, hour)
+        set(java.util.Calendar.MINUTE, minute)
+        set(java.util.Calendar.SECOND, 0)
+        set(java.util.Calendar.MILLISECOND, 0)
+        if (timeInMillis - now > 12 * 3_600_000L) add(java.util.Calendar.DAY_OF_YEAR, -1)
+    }
+    return cal.timeInMillis.takeIf { it <= now + 60_000L }
+}
+
+/** Days from [t]'s calendar day to [now]'s: 0 today, 1 yesterday. */
+fun daysAgo(t: Long, now: Long): Int {
+    fun day(ms: Long) = java.time.Instant.ofEpochMilli(ms).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+    return java.time.temporal.ChronoUnit.DAYS.between(day(t), day(now)).toInt()
+}
+
+/** "At 14:30", "Yesterday at 14:30", or with the date when older. */
+@Composable
+private fun atLabel(t: Long): String {
+    val ctx = LocalContext.current
+    val clock = AlarmText.clock(ctx, t)
+    return when (daysAgo(t, System.currentTimeMillis())) {
+        0 -> stringResource(R.string.tr_at, clock)
+        1 -> stringResource(R.string.tr_yesterday_at, clock)
+        else -> stringResource(R.string.tr_at, android.text.format.DateFormat.getDateFormat(ctx).format(java.util.Date(t)) + " " + clock)
+    }
+}
+
+/** The clock dial; a time still to come cannot be confirmed. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TimeDialog(initial: Long, onPick: (Long) -> Unit, onDismiss: () -> Unit) {
@@ -334,25 +366,23 @@ private fun TimeDialog(initial: Long, onPick: (Long) -> Unit, onDismiss: () -> U
         initialMinute = start.get(java.util.Calendar.MINUTE),
         is24Hour = android.text.format.DateFormat.is24HourFormat(ctx),
     )
+    val picked = pickedTime(System.currentTimeMillis(), state.hour, state.minute)
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            TextButton(onClick = {
-                val now = System.currentTimeMillis()
-                val cal = java.util.Calendar.getInstance().apply {
-                    timeInMillis = now
-                    set(java.util.Calendar.HOUR_OF_DAY, state.hour)
-                    set(java.util.Calendar.MINUTE, state.minute)
-                    set(java.util.Calendar.SECOND, 0)
-                    set(java.util.Calendar.MILLISECOND, 0)
-                    if (timeInMillis > now + 60_000L) add(java.util.Calendar.DAY_OF_YEAR, -1)
-                }
-                onPick(cal.timeInMillis)
-            }) { Text(stringResource(R.string.tr_ok)) }
+            TextButton(
+                onClick = { pickedTime(System.currentTimeMillis(), state.hour, state.minute)?.let(onPick) },
+                enabled = picked != null,
+            ) { Text(stringResource(R.string.tr_ok)) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.tr_cancel)) } },
         title = { Text(stringResource(R.string.tr_pick_time)) },
-        text = { TimePicker(state = state) },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                TimePicker(state = state)
+                if (picked == null) Text(stringResource(R.string.tr_time_ahead), color = DiaTheme.colors.textMuted, fontSize = 13.sp)
+            }
+        },
     )
 }
 

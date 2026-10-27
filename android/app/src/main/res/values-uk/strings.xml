@@ -186,6 +186,7 @@
     <string name="tr_now">Зараз</string>
     <string name="tr_minutes_ago">%1$d хв тому</string>
     <string name="tr_at">О %1$s</string>
+    <string name="tr_yesterday_at">Вчора о %1$s</string>
     <string name="tr_note_hint">Нотатка (необов\'язково)</string>
     <string name="tr_save">Зберегти</string>
     <string name="tr_edit">Редагувати</string>
@@ -298,6 +299,7 @@
 
     <string name="tr_other_time">Інший час…</string>
     <string name="tr_pick_time">Коли це було?</string>
+    <string name="tr_time_ahead">Цей час ще не настав</string>
     <string name="tr_ok">Готово</string>
 
     <string name="nav_back">Назад</string>

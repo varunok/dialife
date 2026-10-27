@@ -181,6 +181,7 @@
     <string name="tr_now">Ahora</string>
     <string name="tr_minutes_ago">hace %1$d min</string>
     <string name="tr_at">A las %1$s</string>
+    <string name="tr_yesterday_at">Ayer a las %1$s</string>
     <string name="tr_note_hint">Nota (opcional)</string>
     <string name="tr_save">Guardar</string>
     <string name="tr_edit">Editar</string>
@@ -293,6 +294,7 @@
 
     <string name="tr_other_time">Otra hora…</string>
     <string name="tr_pick_time">¿Cuándo fue?</string>
+    <string name="tr_time_ahead">Esa hora todavía no llegó</string>
     <string name="tr_ok">Aceptar</string>
 
     <string name="nav_back">Atrás</string>
