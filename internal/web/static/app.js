@@ -592,7 +592,7 @@ const Chart = {
 };
 
 function tipPos(b, plotW, plotH) {
-  const left = Math.max(0, Math.min(plotW - 190, b.x - 95));
+  const left = Math.max(0, Math.min(plotW - 320, b.x - 160));
   const top = b.y > plotH / 2 ? Math.max(0, b.y - 96) : Math.min(plotH - 70, b.y + 18);
   return 'left:' + left + 'px;top:' + top + 'px';
 }
@@ -614,12 +614,12 @@ function describeMark(id, h, st, meters, idx, ts, vs) {
   }
   const tr = (h.treatments || []).find((x) => x.id === key);
   if (!tr) return { lines: ['—'] };
-  return { lines: [entryText(tr)].concat(foodText(tr) ? [foodText(tr).slice(0, 70)] : [], [[clock(tr.t), origin(tr)].join(' · ')], tr.notes && (tr.insulin || tr.carbs) ? [tr.notes.slice(0, 60)] : []) };
+  return { lines: [entryText(tr)].concat(foodText(tr) ? [foodText(tr)] : [], [[clock(tr.t), origin(tr)].join(' · ')], tr.notes && (tr.insulin || tr.carbs) ? [tr.notes] : []) };
 }
 
 // a meal logged as a list: "борщ 18 ≈ · хліб 22", "≈" on numbers from a suggestion
 function foodText(tr) {
-  return (tr.food_items || []).map((f) => [f.name, f.carbs == null ? '' : Math.round(f.carbs) + (f.source === 'mine' || f.source === 'estimate' ? ' ≈' : '')].filter(Boolean).join(' ')).join(' · ');
+  return (tr.food_items || []).map((f) => [f.name, f.carbs == null ? '' : Math.round(f.carbs) + (f.source === 'mine' || f.source === 'table' || f.source === 'estimate' ? ' ≈' : '')].filter(Boolean).join(' ')).join(' · ');
 }
 
 // a suspect carries its span; a meal without insulin, its time
@@ -648,7 +648,7 @@ function entryText(tr) {
   const parts = [];
   if ((tr.insulin || 0) > 0) parts.push((tr.insulin_name || t(isBasal(tr) ? 'basal' : 'rapid')) + ' ' + amount(tr.insulin) + ' ' + t('insulinU'));
   if ((tr.carbs || 0) > 0) parts.push(amount(tr.carbs) + ' ' + t('carbsG'));
-  if (!parts.length) return (tr.notes || t('note')).slice(0, 60);
+  if (!parts.length) return tr.notes || t('note');
   return parts.join(' · ');
 }
 
@@ -740,8 +740,8 @@ const Table = {
           const meters = r.entries.filter((tr) => tr.glucose != null).map((tr) => ({ v: tr.glucose, t: tr.t, tr })).concat(r.meters);
           const notes = r.alarms.map((al) => m('span', { style: 'color:' + alarmInk(al) }, alarmLines(al).join(' · ')))
             .concat(r.suspects.map((q) => m('span.c-sus', suspectText(q))))
-            .concat(r.entries.filter((tr) => foodText(tr)).map((tr) => foodText(tr).slice(0, 70)))
-            .concat(r.entries.filter((tr) => tr.notes).map((tr) => tr.notes.slice(0, 50)))
+            .concat(r.entries.filter((tr) => foodText(tr)).map((tr) => foodText(tr)))
+            .concat(r.entries.filter((tr) => tr.notes).map((tr) => tr.notes))
             .concat([...new Set(r.entries.map((tr) => origin(tr)).concat(r.meters.map((p) => origin(null, p.src))))]);
           const list_ = (items) => items.length ? items.join(', ') : '·';
           return m('tr', { key: r.t, class: [r.has ? 'has' : '', r.span ? 'span' : '', r.alarm].join(' ') }, [
