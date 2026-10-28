@@ -110,6 +110,9 @@ class MainActivity : AppCompatActivity() {
                         var mealEdit by rememberSaveable { mutableStateOf<String?>(null) }
                         var mealQuestion by rememberSaveable { mutableStateOf(0L) }
                         var mealFrom by rememberSaveable { mutableStateOf(0L) }
+                        var mealLow by rememberSaveable { mutableStateOf(false) } // carbs for a low: no dose
+                        var mealBack by rememberSaveable { mutableStateOf(Screen.Home) } // where the food screen returns
+                        var mealEntry by remember { mutableStateOf<com.lumenarcanus.dialife.data.Treatment?>(null) } // an older entry, from "Data"
                         // "I'm on it" from the alarm screen or a notification lands here
                         LaunchedEffect(openHandling) {
                             if (openHandling != 0L) { handling = openHandling; screen = Screen.Handling; openHandling = 0L }
@@ -117,7 +120,7 @@ class MainActivity : AppCompatActivity() {
                         BackHandler(enabled = screen != Screen.Home) { screen = Screen.Home }
                         when (screen) {
                             Screen.Home -> Home(s.credentials, onMeal = { tr, q ->
-                                mealEdit = tr?.id; mealQuestion = q?.id ?: 0L; mealFrom = q?.from ?: 0L; screen = Screen.Meal
+                                mealEdit = tr?.id; mealEntry = tr; mealQuestion = q?.id ?: 0L; mealFrom = q?.from ?: 0L; mealLow = false; mealBack = Screen.Home; screen = Screen.Meal
                             }) { screen = it }
                             Screen.Meal -> {
                                 val home = viewModel { HomeViewModel(liveRepository) }
@@ -129,15 +132,16 @@ class MainActivity : AppCompatActivity() {
                                     dose = ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
                                     planned = ui.state?.planned.orEmpty(),
                                     units = unitsOf(ui.state?.displayUnits ?: s.credentials.displayUnits),
-                                    editing = mealEdit?.let { id -> all.firstOrNull { it.id == id } },
+                                    editing = mealEdit?.let { id -> all.firstOrNull { it.id == id } ?: mealEntry?.takeIf { it.id == id } },
+                                    forLow = mealLow,
                                     initialTime = mealFrom.takeIf { it > 0 },
                                     onSave = liveRepository::saveTreatment,
                                     onSaved = { food ->
                                         val q = mealQuestion
                                         if (q != 0L) lifecycleScope.launch { liveRepository.answerQuestion(q, "food", food.id).onSuccess { questionNotifier.cancel(q) } }
-                                        mealEdit = null; mealQuestion = 0L; mealFrom = 0L; screen = Screen.Home
+                                        mealEdit = null; mealEntry = null; mealQuestion = 0L; mealFrom = 0L; screen = mealBack
                                     },
-                                    onClose = { mealEdit = null; mealQuestion = 0L; mealFrom = 0L; screen = Screen.Home },
+                                    onClose = { mealEdit = null; mealEntry = null; mealQuestion = 0L; mealFrom = 0L; screen = mealBack },
                                 )
                             }
                             Screen.DoseSettings -> {
@@ -182,6 +186,7 @@ class MainActivity : AppCompatActivity() {
                                     onAct = ::act,
                                     onSaveTreatment = liveRepository::saveTreatment,
                                     onBack = { screen = Screen.Home },
+                                    onOpenMeal = { mealEdit = null; mealEntry = null; mealQuestion = 0L; mealFrom = 0L; mealLow = true; mealBack = Screen.Handling; screen = Screen.Meal },
                                 )
                             }
                             Screen.Data -> {
@@ -197,6 +202,7 @@ class MainActivity : AppCompatActivity() {
                                     loadHistory = { from, to -> DiaLifeApi().history(s.credentials, from, to).getOrNull() },
                                     onSaveTreatment = liveRepository::saveTreatment,
                                     onBack = { screen = Screen.Home },
+                                    onOpenMeal = { tr -> mealEdit = tr.id; mealEntry = tr; mealQuestion = 0L; mealFrom = 0L; mealLow = false; mealBack = Screen.Data; screen = Screen.Meal },
                                 )
                             }
                             Screen.WebLogin -> com.lumenarcanus.dialife.ui.web.WebLoginScreen(

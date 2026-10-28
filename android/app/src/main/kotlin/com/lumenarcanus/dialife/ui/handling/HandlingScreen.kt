@@ -78,6 +78,7 @@ fun HandlingScreen(
     onAct: (action: String, alarmId: Long) -> Unit,
     onSaveTreatment: (Treatment) -> Unit,
     onBack: () -> Unit,
+    onOpenMeal: () -> Unit = {}, // "another amount": the food screen, without a dose
 ) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
@@ -96,7 +97,7 @@ fun HandlingScreen(
     var lastCarbs by remember { mutableStateOf<Double?>(null) }
 
     if (sheet) {
-        TreatmentSheet(TreatmentKind.Food, null, onSave = { onSaveTreatment(it); sheet = false }, onDismiss = { sheet = false }, recent = ui.history?.treatments.orEmpty())
+        LaunchedEffect(Unit) { sheet = false; onOpenMeal() }
     }
     if (confirmEnd) {
         AlertDialog(

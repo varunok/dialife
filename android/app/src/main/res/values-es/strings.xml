@@ -748,4 +748,6 @@
     <string name="ins_for_auto_corr">Elegido «corrección»: no hay comida cerca. Tocad para cambiar.</string>
     <string name="ins_for_meal_none">No hay comida cerca. Si se anota dentro de la hora, se une a ella.</string>
     <string name="planned_yes">Sí</string>
+    <string name="meal_low_title">Hidratos para la bajada</string>
+    <string name="meal_low_note">Hidratos para subir una bajada: no se calcula insulina para ellos.</string>
 </resources>

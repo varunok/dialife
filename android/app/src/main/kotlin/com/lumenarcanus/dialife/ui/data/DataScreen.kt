@@ -180,11 +180,15 @@ fun DataScreen(
     loadHistory: suspend (from: Long, to: Long) -> History?, // for windows older than the live day
     onSaveTreatment: (Treatment) -> Unit,
     onBack: () -> Unit,
+    onOpenMeal: (Treatment) -> Unit = {}, // food has a screen of its own
 ) {
     val c = DiaTheme.colors
-    // a tapped entry opens the same sheet as on the chart
+    // a tapped entry opens the same sheet as on the chart; food its own screen
     var editing by remember { mutableStateOf<Treatment?>(null) }
-    editing?.let { tr ->
+    editing?.takeIf { (it.carbs ?: 0.0) > 0 && (it.insulin ?: 0.0) <= 0 && it.glucose == null && it.duration == null }?.let { tr ->
+        LaunchedEffect(tr.id) { editing = null; onOpenMeal(tr) }
+    }
+    editing?.takeIf { !((it.carbs ?: 0.0) > 0 && (it.insulin ?: 0.0) <= 0 && it.glucose == null && it.duration == null) }?.let { tr ->
         com.lumenarcanus.dialife.ui.treatment.TreatmentSheet(
             com.lumenarcanus.dialife.ui.treatment.TreatmentKind.Insulin, tr,
             onSave = { onSaveTreatment(it); editing = null },

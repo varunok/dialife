@@ -739,4 +739,6 @@
     <string name="ins_for_auto_corr">“Correction” is chosen: no food near. Tap to change.</string>
     <string name="ins_for_meal_none">No food near this injection. If food is logged within the hour, it joins it.</string>
     <string name="planned_yes">Yes</string>
+    <string name="meal_low_title">Carbs for the low</string>
+    <string name="meal_low_note">Carbs given to raise a low: no insulin is worked out for them.</string>
 </resources>

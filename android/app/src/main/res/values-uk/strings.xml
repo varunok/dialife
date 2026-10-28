@@ -760,4 +760,6 @@
     <string name="ins_for_auto_corr">Вибрано «корекція»: їжі поруч нема. Можна змінити.</string>
     <string name="ins_for_meal_none">Поруч нема їжі. Якщо їжу внесуть протягом години, укол приєднається до неї.</string>
     <string name="planned_yes">Так</string>
+    <string name="meal_low_title">Вуглеводи від гіпо</string>
+    <string name="meal_low_note">Вуглеводи, щоб підняти низький цукор: інсулін на них не рахується.</string>
 </resources>

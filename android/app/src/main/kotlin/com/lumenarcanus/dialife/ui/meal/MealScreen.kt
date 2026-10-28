@@ -138,6 +138,7 @@ fun MealScreen(
     onSave: (Treatment) -> Unit,
     onSaved: (food: Treatment) -> Unit,
     onClose: () -> Unit,
+    forLow: Boolean = false, // carbs given for a low: no insulin is worked out, no planned dose, no meal draft
 ) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
@@ -145,7 +146,8 @@ fun MealScreen(
     val lang = locale.language
     val scope = rememberCoroutineScope()
 
-    val draft = remember { if (editing == null) MealDrafts.load(ctx) else null }
+    val keepsDraft = editing == null && !forLow
+    val draft = remember { if (keepsDraft) MealDrafts.load(ctx) else null }
     val rows = remember {
         mutableStateListOf<FoodRow>().apply {
             when {
@@ -171,7 +173,7 @@ fun MealScreen(
     var failed by remember { mutableStateOf(false) }
 
     // the draft follows every change
-    if (editing == null) LaunchedEffect(Unit) {
+    if (keepsDraft) LaunchedEffect(Unit) {
         snapshotFlow {
             MealDraft(rows.map { MealDraft.Row(it.name, it.portion, it.carbs, it.source, it.tableId) }, whenIdx, pickedAt, plan, join, meterText, startedAt)
         }.collect { if (it.isEmpty) MealDrafts.clear(ctx) else MealDrafts.save(ctx, it) }
@@ -242,7 +244,7 @@ fun MealScreen(
         // a fresh glucometer value typed here is a reading of its own
         if (typed != null) onSave(Treatment(id = TreatmentQueue.newId(), t = now, glucose = typed))
         val p = openPlan
-        if ((withPlan || p != null) && m.toGive > 0 && repo != null) {
+        if (!forLow && (withPlan || p != null) && m.toGive > 0 && repo != null) {
             val pd = PlannedDose(
                 id = p?.id ?: java.util.UUID.randomUUID().toString(),
                 mealId = p?.mealId ?: food.id,
@@ -252,11 +254,12 @@ fun MealScreen(
             )
             scope.launch { repo.planDose(pd).onFailure { failed = true } }
         }
-        if (editing == null) MealDrafts.clear(ctx)
+        if (keepsDraft) MealDrafts.clear(ctx)
         onSaved(food)
     }
     fun save() {
         if (current <= 0) return
+        if (forLow) return finish(false)
         when {
             planOn && !m.asks -> finish(true)
             !m.canPlan && !m.asks -> finish(false)
@@ -274,10 +277,10 @@ fun MealScreen(
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) { Text("‹", fontSize = 22.sp, color = c.textMuted) }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(stringResource(if (editing != null) R.string.meal_edit_title else R.string.meal_title), color = c.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-                if (editing == null) Text(stringResource(R.string.meal_draft_note), color = c.textFaint, fontSize = 11.5.sp)
+                Text(stringResource(if (forLow) R.string.meal_low_title else if (editing != null) R.string.meal_edit_title else R.string.meal_title), color = c.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                if (keepsDraft) Text(stringResource(R.string.meal_draft_note), color = c.textFaint, fontSize = 11.5.sp)
             }
-            if (editing == null) TextButton(onClick = { if (rows.any { it.name.isNotBlank() }) closing = true else { MealDrafts.clear(ctx); onClose() } }) {
+            if (keepsDraft) TextButton(onClick = { if (rows.any { it.name.isNotBlank() }) closing = true else { MealDrafts.clear(ctx); onClose() } }) {
                 Text(stringResource(R.string.meal_discard), color = c.textMuted)
             }
         }
@@ -286,7 +289,7 @@ fun MealScreen(
             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (meal != null && editing == null) {
+            if (meal != null && editing == null && !forLow) {
                 Column(
                     Modifier.fillMaxWidth().background(c.surfaceRaised, RoundedCornerShape(16.dp)).padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -355,7 +358,10 @@ fun MealScreen(
 
             QuickFoods(repo, lang, onAdd = { name, portion -> place(newFoodRow(name = name, portion = portion)) }, onAll = { picking = true })
 
-            DoseCard(m, dose, units, locale, earlier, given, typedMeter = meterText, onMeter = { meterText = it.filter { ch -> ch.isDigit() || ch == ',' || ch == '.' }.take(5) },
+            if (forLow) Text(
+                stringResource(R.string.meal_low_note), color = c.text, fontSize = 13.5.sp,
+                modifier = Modifier.fillMaxWidth().background(c.inRangeContainer, RoundedCornerShape(14.dp)).padding(12.dp),
+            ) else DoseCard(m, dose, units, locale, earlier, given, typedMeter = meterText, onMeter = { meterText = it.filter { ch -> ch.isDigit() || ch == ',' || ch == '.' }.take(5) },
                 plan = planOn, onPlan = { plan = it }, openPlan = openPlan)
 
             Text(stringResource(R.string.meal_when), color = c.textMuted, fontSize = 13.sp)
