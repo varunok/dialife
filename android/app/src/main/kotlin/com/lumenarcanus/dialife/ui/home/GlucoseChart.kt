@@ -736,11 +736,13 @@ private fun DrawScope.tooltip(
 ) {
     val first = TextStyle(fontFamily = Onest, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = text)
     val rest = TextStyle(fontFamily = PlexMono, fontSize = 11.sp, color = muted)
-    val ms = lines.mapIndexed { i, s -> measurer.measure(s, if (i == 0) first else rest) }
     val pad = 10.dp.toPx()
+    // a long line (a meal typed as one long name) wraps instead of growing past the plot
+    val fit = androidx.compose.ui.unit.Constraints(maxWidth = (plotW - pad * 2).toInt().coerceAtLeast(1))
+    val ms = lines.mapIndexed { i, s -> measurer.measure(s, if (i == 0) first else rest, constraints = fit) }
     val w = ms.maxOf { it.size.width } + pad * 2
     val h = ms.sumOf { it.size.height } + pad * 2 + 2.dp.toPx() * (ms.size - 1)
-    val left = (ax - w / 2).coerceIn(0f, plotW - w)
+    val left = (ax - w / 2).coerceIn(0f, max(0f, plotW - w))
     val top = if (ay > plotH / 2) max(0f, ay - h - 14.dp.toPx()) else min(plotH - h, ay + 14.dp.toPx())
     drawRoundRect(bg, Offset(left, top), Size(w, h), CornerRadius(12.dp.toPx()))
     drawRoundRect(border, Offset(left, top), Size(w, h), CornerRadius(12.dp.toPx()), style = Stroke(1.dp.toPx()))
