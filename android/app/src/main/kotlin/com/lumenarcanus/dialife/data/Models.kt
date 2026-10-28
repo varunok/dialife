@@ -100,6 +100,44 @@ data class StateResponse(
     @SerialName("uploader_name") val uploaderName: String? = null, // what the family calls the xDrip+ phone (server config)
     @SerialName("forecast_quality") val forecastQuality: ForecastQuality? = null, // how often "in 30 min" came true lately
     val intents: List<InsulinIntent> = emptyList(), // parents with the insulin form open right now
+    val dose: DoseSettings = DoseSettings(), // the family's dose calculation, the same on every phone
+    val planned: List<PlannedDose> = emptyList(), // doses worked out for a meal, not given yet
+)
+
+/** How the food form works out a rapid dose: shared by the family, set in settings. */
+@Serializable
+data class DoseSettings(
+    val ratio: Int = 20, // 1 unit per this many grams of carbs
+    val rule: String = "halfDown", // "nearest" | "halfDown" | "down" | "up"
+    val step: Double = 1.0, // the pen's step: 1 or 0.5
+    @SerialName("fresh_min") val freshMin: Int = 15, // a glucometer reading older than this: no correction
+    @SerialName("max_rapid") val maxRapid: Double = 10.0,
+    @SerialName("max_basal") val maxBasal: Double = 20.0,
+    @SerialName("max_carbs") val maxCarbs: Int = 150,
+    val table: List<CorrectionRow> = listOf(CorrectionRow(140, 1.0), CorrectionRow(180, 2.0), CorrectionRow(220, 3.0), CorrectionRow(260, 4.0), CorrectionRow(300, 5.0)),
+    @SerialName("updated_at") val updatedAt: Long = 0,
+    @SerialName("updated_by") val updatedBy: String = "",
+)
+
+/** From [mg] mg/dL on the glucometer, add [u] units. */
+@Serializable
+data class CorrectionRow(val mg: Int, val u: Double)
+
+/** A dose worked out for a meal and not given yet: nothing counts it as insulin. */
+@Serializable
+data class PlannedDose(
+    val id: String,
+    @SerialName("meal_id") val mealId: String,
+    val dose: Double,
+    val food: Double = 0.0, // the meal's part, before rounding
+    val corr: Double = 0.0,
+    val carbs: Int = 0,
+    val meter: Int? = null,
+    @SerialName("meter_at") val meterAt: Long? = null,
+    @SerialName("created_at") val createdAt: Long,
+    val by: String = "",
+    @SerialName("device_id") val deviceId: Long = 0,
+    val state: String = "planned",
 )
 
 /** "Dad is giving insulin": someone opened the insulin form; it ends when the form closes. */
@@ -141,6 +179,8 @@ data class Question(
     val outcome: String? = null,
     @SerialName("treatment_id") val treatmentId: String? = null,
     val answers: List<QuestionAnswer> = emptyList(),
+    @SerialName("planned_id") val plannedId: String? = null, // "planned": the dose nobody confirmed
+    val dose: Double? = null, // "planned": its units
     val waiting: List<String> = emptyList(), // people yet to answer this round
     @SerialName("waiting_ids") val waitingIds: List<Long> = emptyList(),
     val remind: Boolean = false,
@@ -203,6 +243,8 @@ data class Treatment(
     val pending: Boolean = false, // made on this phone, not on the server yet (never sent by the server)
     @SerialName("confirmed_new") val confirmedNew: String? = null, // saved after the warning about this other dose (sent as confirmedNew)
     @SerialName("food_items") val foodItems: List<FoodItem>? = null, // a meal logged as a list; carbs is their sum
+    @SerialName("meal_id") val mealId: String? = null, // insulin: the meal it was given for
+    @SerialName("insulin_role") val insulinRole: String? = null, // insulin: "meal" | "corr"
 ) {
     /** "борщ 18 ≈ · хліб 22": the meal's lines, "≈" on numbers taken from a suggestion. */
     fun foodText(): String? = foodItems?.takeIf { it.isNotEmpty() }?.joinToString(" · ") { f ->
@@ -216,9 +258,9 @@ data class FoodItem(
     val name: String,
     val portion: String? = null,
     val carbs: Double? = null,
-    val source: String? = null, // "mine" (the family's earlier entry) | "estimate" (models) | "manual"
+    val source: String? = null, // "mine" (the family's earlier entry) | "table" (a carb table) | "estimate" (models) | "manual"
 ) {
-    val suggested get() = source == "mine" || source == "estimate"
+    val suggested get() = source == "mine" || source == "table" || source == "estimate"
 }
 
 /** POST /api/carbs/suggest: per item, the family's own number and the models' estimate. */
@@ -226,10 +268,66 @@ data class FoodItem(
 data class CarbSuggestions(val models: Boolean = false, val items: List<CarbSuggestion> = emptyList())
 
 @Serializable
-data class CarbSuggestion(val mine: CarbMine? = null, val estimate: CarbEstimate? = null)
+data class CarbSuggestion(
+    val mine: CarbMine? = null,
+    val estimate: CarbEstimate? = null,
+    val table: List<CarbTableHit> = emptyList(),
+    val similar: List<CarbTableHit> = emptyList(), // table foods that mean the same in other words
+)
+
+/** A portion from an imported carb table: carbs for it, or for the typed portion when scaled. */
+@Serializable
+data class CarbTableHit(
+    val id: String,
+    val carbs: Int,
+    val base: Int = carbs,
+    val scaled: Boolean = false,
+    val names: Map<String, String> = emptyMap(),
+    val portions: Map<String, String> = emptyMap(),
+    val source: String = "",
+    val score: Float = 0f, // a look-alike: how close the names are
+)
+
+/** GET /api/foods: the carb tables to pick from and the family's most logged foods. */
+@Serializable
+data class FoodCatalog(val tables: List<FoodTable> = emptyList(), val frequent: List<FrequentFood> = emptyList())
 
 @Serializable
-data class CarbMine(val carbs: Int, val portion: String = "", val times: Int = 1)
+data class FoodTable(
+    val source: String,
+    val title: String = "",
+    val note: Map<String, String> = emptyMap(),
+    val categories: List<FoodCategory> = emptyList(),
+    val items: List<TableFood> = emptyList(),
+)
+
+@Serializable
+data class FoodCategory(val id: String, val names: Map<String, String> = emptyMap())
+
+@Serializable
+data class TableFood(
+    val id: String,
+    val cat: String,
+    val carbs: Int,
+    val names: Map<String, String> = emptyMap(),
+    val portions: Map<String, String> = emptyMap(),
+)
+
+@Serializable
+data class FrequentFood(val name: String, val portion: String = "", val carbs: Int = 0, val times: Int = 1)
+
+/** A table's text in the app's language: Ukrainian, Spanish, otherwise English. */
+fun Map<String, String>.inLang(lang: String): String =
+    (this[if (lang == "uk" || lang == "es") lang else "en"] ?: this["en"] ?: values.firstOrNull()).orEmpty()
+
+@Serializable
+data class CarbMine(
+    val carbs: Int,
+    val portion: String = "",
+    val times: Int = 1,
+    val like: String? = null, // found by meaning: the family's food it came from
+    val score: Float = 0f,
+)
 
 @Serializable
 data class CarbEstimate(val carbs: Int, val lo: Int, val hi: Int, val models: Int = 1)

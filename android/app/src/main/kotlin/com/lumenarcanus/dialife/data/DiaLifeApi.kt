@@ -78,6 +78,31 @@ class DiaLifeApi(
         }.toString(),
     )
 
+    suspend fun putDose(c: Credentials, d: DoseSettings): Result<DoseSettings> = sendFor(
+        c, "PUT", "/api/dose",
+        buildJsonObject {
+            put("ratio", d.ratio); put("rule", d.rule); put("step", d.step); put("fresh_min", d.freshMin)
+            put("max_rapid", d.maxRapid); put("max_basal", d.maxBasal); put("max_carbs", d.maxCarbs)
+            put("table", kotlinx.serialization.json.buildJsonArray { d.table.forEach { r -> add(buildJsonObject { put("mg", r.mg); put("u", r.u) }) } })
+        }.toString(),
+    )
+
+    suspend fun planDose(c: Credentials, p: PlannedDose): Result<Unit> = post(
+        c, "/api/planned",
+        buildJsonObject {
+            put("id", p.id); put("meal_id", p.mealId); put("dose", p.dose); put("food", p.food); put("corr", p.corr)
+            put("carbs", p.carbs); p.meter?.let { put("meter", it) }; p.meterAt?.let { put("meter_at", it) }; put("created_at", p.createdAt)
+        }.toString(),
+    )
+
+    suspend fun plannedGiven(c: Credentials, id: String, insulinId: String): Result<Unit> =
+        post(c, "/api/planned/$id/given", buildJsonObject { put("insulin_id", insulinId) }.toString())
+
+    suspend fun plannedSkip(c: Credentials, id: String): Result<Unit> = post(c, "/api/planned/$id/skip", "{}")
+
+    /** The carb tables and the family's most logged foods, for the food form. */
+    suspend fun foods(c: Credentials): Result<FoodCatalog> = get(c.server, c.token, "/api/foods")
+
     /** The insulin form is open here: the other phones show "… is giving insulin". */
     suspend fun insulinIntent(c: Credentials, insulin: String): Result<Unit> =
         post(c, "/api/insulin/intent", buildJsonObject { put("insulin", insulin) }.toString())
@@ -111,6 +136,8 @@ class DiaLifeApi(
             t.notes?.takeIf { it.isNotBlank() }?.let { put("notes", it) }
             t.confirmedNew?.let { put("confirmedNew", it) } // the server asks nobody about this pair
             t.foodItems?.takeIf { it.isNotEmpty() }?.let { put("foodItems", json.encodeToJsonElement(it)) }
+            t.mealId?.let { put("mealId", it) }
+            t.insulinRole?.let { put("insulinRole", it) }
             put("enteredBy", enteredBy)
         }
         return post(c, "/api/v1/treatments", "[$doc]")
@@ -146,9 +173,11 @@ class DiaLifeApi(
     suspend fun webRevoke(c: Credentials, id: Long): Result<Unit> = post(c, "/api/web/sessions/$id/revoke", "{}")
 
     /** A POST whose answer matters, every status as it is (unlike the alarm actions). */
-    private suspend inline fun <reified T> postFor(c: Credentials, path: String, body: String): Result<T> = withContext(Dispatchers.IO) {
+    private suspend inline fun <reified T> postFor(c: Credentials, path: String, body: String): Result<T> = sendFor(c, "POST", path, body)
+
+    private suspend inline fun <reified T> sendFor(c: Credentials, method: String, path: String, body: String): Result<T> = withContext(Dispatchers.IO) {
         val req = Request.Builder().url(c.server + path).header("Authorization", "Bearer ${c.token}")
-            .post(body.toRequestBody("application/json".toMediaType())).build()
+            .method(method, body.toRequestBody("application/json".toMediaType())).build()
         try {
             http.newCall(req).execute().use { resp ->
                 when {

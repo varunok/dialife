@@ -71,7 +71,10 @@ class QuestionNotifier(private val app: Context) {
             .setContentIntent(open)
             .setCategory(Notification.CATEGORY_REMINDER)
             .setOnlyAlertOnce(false)
-        if (q.kind == "double") {
+        if (q.kind == "planned") {
+            // answered on the dose's card: "Given" asks how much and when
+            b.addAction(Notification.Action.Builder(null, app.getString(R.string.q_btn_open), open).build())
+        } else if (q.kind == "double") {
             b.addAction(action("one", R.string.q_btn_one))
             b.addAction(action("two", R.string.q_btn_two))
         } else {
@@ -125,7 +128,7 @@ class QuestionNotifier(private val app: Context) {
         private fun units(ctx: Context, u: Double) =
             com.lumenarcanus.dialife.ui.treatment.formatAmount(u, ctx.resources.configuration.locales[0]) + " " + ctx.getString(R.string.unit_insulin)
 
-        fun questionTitle(ctx: Context, q: Question): String = ctx.getString(
+        fun questionTitle(ctx: Context, q: Question): String = if (q.kind == "planned") ctx.getString(R.string.q_planned_title, AlarmText.clock(ctx, q.from)) else ctx.getString(
             when (q.kind) { "rise" -> R.string.q_rise_title; "bolus" -> R.string.q_bolus_title; "double" -> R.string.q_double_title; else -> R.string.q_fall_title },
         )
 
@@ -142,6 +145,7 @@ class QuestionNotifier(private val app: Context) {
                     )
                 }
                 "bolus" -> ctx.getString(R.string.q_bolus_body, AlarmText.clock(ctx, q.from))
+                "planned" -> ctx.getString(R.string.q_planned_body, units(ctx, q.dose ?: 0.0))
                 "rise" -> ctx.getString(R.string.q_rise_body, g(q.sgvFrom), g(q.sgvTo), AlarmText.clock(ctx, q.from))
                 else -> ctx.getString(R.string.q_fall_body, g(q.sgvFrom), g(q.sgvTo), AlarmText.clock(ctx, q.from))
             }
@@ -151,6 +155,7 @@ class QuestionNotifier(private val app: Context) {
             when (answer) {
                 "food" -> R.string.q_ans_food
                 "food_unknown" -> R.string.q_ans_food_unknown
+                "asleep" -> R.string.q_ans_asleep
                 "insulin" -> R.string.q_ans_insulin
                 "one" -> R.string.q_ans_one
                 "two" -> R.string.q_ans_two

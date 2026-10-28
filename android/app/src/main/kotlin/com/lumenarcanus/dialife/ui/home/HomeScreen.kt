@@ -218,6 +218,8 @@ fun HomeScreen(
     onDismissQuestion: (Long) -> Unit = {},
     onOpenData: () -> Unit = {},
     onOpenWebLogin: () -> Unit = {},
+    onOpenMeal: (editing: Treatment?, question: Question?) -> Unit = { _, _ -> }, // the food screen
+    onPlanned: (com.lumenarcanus.dialife.ui.meal.PlannedAction) -> Unit = {}, // given, changed or not given
 ) {
     val c = DiaTheme.colors
     val locale = LocalConfiguration.current.locales[0]
@@ -229,7 +231,17 @@ fun HomeScreen(
     var confirmDelete by remember { mutableStateOf<Treatment?>(null) }
     var fullChart by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     var sheetFor by remember { mutableStateOf<Question?>(null) } // the sheet answers this question
-    sheet?.let { (kind, editing) ->
+    // food has a screen of its own
+    val food = sheet?.let { (kind, editing) ->
+        editing?.let { (it.carbs ?: 0.0) > 0 && (it.insulin ?: 0.0) <= 0 && it.glucose == null && it.duration == null } ?: (kind == TreatmentKind.Food)
+    } == true
+    androidx.compose.runtime.LaunchedEffect(food) {
+        if (food) {
+            onOpenMeal(sheet?.second, sheetFor)
+            sheet = null; sheetFor = null
+        }
+    }
+    sheet?.takeIf { !food }?.let { (kind, editing) ->
         TreatmentSheet(
             kind, editing,
             onSave = {
@@ -242,6 +254,8 @@ fun HomeScreen(
             initialTime = sheetFor?.from,
             recent = ui.history?.treatments.orEmpty(),
             units = state?.units ?: fallbackUnits,
+            onFood = { onOpenMeal(null, sheetFor); sheet = null; sheetFor = null },
+            dose = ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
         )
     }
     confirmDelete?.let { tr ->
@@ -271,6 +285,8 @@ fun HomeScreen(
                 meter = ui.meter,
                 suspects = ui.state?.questions.orEmpty(),
                 onDismissSuspect = onDismissQuestion,
+                dose = ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
+                planned = ui.state?.planned.orEmpty(),
             )
         }
         return
@@ -312,7 +328,19 @@ fun HomeScreen(
         ui.state?.questions.orEmpty().filter { it.watch && (it.watchUntil ?: 0) > ui.now }.forEach { q ->
             androidx.compose.runtime.key("w", q.id) { WatchCard(q) }
         }
-        ui.state?.questions.orEmpty().filter { it.state == "open" }.forEach { q ->
+        // doses worked out for a meal: given, changed or not given, on every phone
+        ui.state?.planned.orEmpty().filter { it.state == "planned" }.forEach { p ->
+            androidx.compose.runtime.key("p", p.id) {
+                com.lumenarcanus.dialife.ui.meal.PlannedCard(
+                    p, ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(), ui.now, ui.history?.treatments.orEmpty(),
+                    question = ui.state?.questions.orEmpty().firstOrNull { it.kind == "planned" && it.plannedId == p.id && it.state == "open" },
+                    units = state?.units ?: fallbackUnits,
+                    onPlanned = onPlanned,
+                    onSaveTreatment = onSaveTreatment,
+                )
+            }
+        }
+        ui.state?.questions.orEmpty().filter { it.state == "open" && it.kind != "planned" }.forEach { q ->
             androidx.compose.runtime.key("q", q.id) {
                 QuestionCard(
                     q, ui.myId, ui.history?.treatments.orEmpty(), state?.units ?: fallbackUnits,
@@ -338,6 +366,8 @@ fun HomeScreen(
             meter = ui.meter,
             suspects = ui.state?.questions.orEmpty(),
             onDismissSuspect = onDismissQuestion,
+            dose = ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
+            planned = ui.state?.planned.orEmpty(),
             onOpenTable = onOpenData,
         )
         state?.let { Tiles(it, onOpenStats, onOpenLog) }
@@ -409,6 +439,8 @@ private fun QuestionCard(
                     Button(onClick = onLog) { Text(stringResource(if (rise) R.string.q_btn_food else R.string.q_btn_insulin)) }
                 }
                 if (rise) androidx.compose.material3.OutlinedButton(onClick = { onAnswer("food_unknown", null) }) { Text(stringResource(R.string.q_btn_food_unknown), color = c.text) }
+                // asleep she eats nothing: the rise is not food, and no more questions about it for a while
+                if (rise) androidx.compose.material3.OutlinedButton(onClick = { onAnswer("asleep", null) }) { Text(stringResource(R.string.q_btn_asleep), color = c.text) }
                 androidx.compose.material3.OutlinedButton(onClick = { onAnswer("nothing", null) }) { Text(stringResource(if (q.kind == "bolus") R.string.q_btn_no_insulin else R.string.q_btn_nothing), color = c.text) }
             }
         } else if (q.waiting.isNotEmpty()) {

@@ -112,6 +112,8 @@ fun TreatmentSheet(
     recent: List<Treatment> = emptyList(), // the day's entries: last basal dose, what is due now
     units: Units = Units.MgDl, // a glucometer value is typed in these
     initialTime: Long? = null, // a question's "log it": when the rise or fall began
+    onFood: (() -> Unit)? = null, // food has a screen of its own: the tab opens it
+    dose: com.lumenarcanus.dialife.data.DoseSettings = com.lumenarcanus.dialife.data.DoseSettings(), // the dose limits
 ) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
@@ -156,6 +158,8 @@ fun TreatmentSheet(
     androidx.compose.runtime.DisposableEffect(Unit) { onDispose { if (announced) repo?.insulinIntentEnd() } }
     val others = live?.intents.orEmpty().filter { it.deviceId != repo?.myId && it.until > System.currentTimeMillis() }
     var confirming by remember { mutableStateOf<NearDose?>(null) }
+    var insRole by rememberSaveable { mutableStateOf(editing?.insulinRole) } // null: chosen by the meal near it
+    var okBig by remember { mutableStateOf(false) } // a dose over the limit, confirmed
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheet, containerColor = c.surface) {
         Column(
@@ -177,7 +181,7 @@ fun TreatmentSheet(
                     TreatmentKind.entries.forEach { k ->
                         FilterChip(
                             selected = kind == k,
-                            onClick = { kind = k },
+                            onClick = { if (k == TreatmentKind.Food && onFood != null) onFood() else kind = k },
                             label = {
                                 Text(stringResource(when (k) {
                                     TreatmentKind.Insulin -> R.string.tr_insulin
@@ -211,12 +215,35 @@ fun TreatmentSheet(
                     }
                 }
                 val basal = insType == InsulinType.Basal
+                // rapid: for a meal or a correction; the meal near it chooses, a tap changes it
+                val nearMeal = remember(recent, time) {
+                    com.lumenarcanus.dialife.data.Meals.group(recent).lastOrNull { time in (it.from - 90 * 60_000L)..(it.to + 60 * 60_000L) }
+                }
+                if (!basal) {
+                    val role = insRole ?: if (nearMeal != null) "meal" else "corr"
+                    Text(stringResource(R.string.ins_for), color = c.textMuted, fontSize = 13.sp)
+                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                        listOf("meal" to R.string.ins_for_meal, "corr" to R.string.ins_for_corr).forEachIndexed { i, (r, label) ->
+                            SegmentedButton(selected = role == r, onClick = { insRole = r }, shape = SegmentedButtonDefaults.itemShape(i, 2)) { Text(stringResource(label)) }
+                        }
+                    }
+                    if (insRole == null) Text(
+                        if (nearMeal != null) stringResource(R.string.ins_for_auto_meal, AlarmText.clock(ctx, nearMeal.from)) else stringResource(R.string.ins_for_auto_corr),
+                        color = c.textFaint, fontSize = 12.sp,
+                    )
+                    if (role == "meal" && nearMeal == null) Text(stringResource(R.string.ins_for_meal_none), color = c.high, fontSize = 12.5.sp)
+                }
                 Amount(
                     value = insulin, step = if (basal) 1.0 else 0.5, max = 80.0, unit = stringResource(R.string.unit_insulin),
                     quick = if (basal) BasalQuick else InsulinQuick,
                     accent = if (basal) basalColor(c.isDark) else c.insulin, container = if (basal) basalContainer(c.isDark) else c.insulinContainer, locale = locale,
                     label = stringResource(R.string.tr_insulin),
-                ) { insulin = it }
+                ) { insulin = it; okBig = false }
+                val lv = com.lumenarcanus.dialife.data.DoseCalc.level(insulin, if (basal) dose.maxBasal else dose.maxRapid, null)
+                com.lumenarcanus.dialife.ui.meal.LimitAlert(lv, insulin, if (basal) dose.maxBasal else dose.maxRapid, units, locale)
+                if (lv == com.lumenarcanus.dialife.data.DoseCalc.Level.High || lv == com.lumenarcanus.dialife.data.DoseCalc.Level.Absurd) {
+                    com.lumenarcanus.dialife.ui.meal.Confirm(okBig, stringResource(R.string.planned_ok_given, formatAmount(insulin, locale))) { okBig = it }
+                }
                 }
                 TreatmentKind.Food -> FoodList(foodRows, repo)
                 TreatmentKind.Meter -> MeterField(meter, units) { meter = it }
@@ -275,7 +302,10 @@ fun TreatmentSheet(
             )
 
             val amountOk = when (kind) {
-                TreatmentKind.Insulin -> insulin > 0
+                TreatmentKind.Insulin -> insulin > 0 && run {
+                    val lv = com.lumenarcanus.dialife.data.DoseCalc.level(insulin, if (insType == InsulinType.Basal) dose.maxBasal else dose.maxRapid, null)
+                    lv == com.lumenarcanus.dialife.data.DoseCalc.Level.Ok || lv == com.lumenarcanus.dialife.data.DoseCalc.Level.Unusual || okBig
+                }
                 TreatmentKind.Food -> carbs > 0
                 TreatmentKind.Meter -> parseMeter(meter, units) != null
                 TreatmentKind.Activity -> minutes > 0
@@ -297,6 +327,10 @@ fun TreatmentSheet(
                 } else editing?.insulinName,
                 confirmedNew = confirmedNew,
                 foodItems = if (kind == TreatmentKind.Food) foodItemsOf(foodRows) else editing?.foodItems?.takeIf { kind == TreatmentKind.Insulin },
+                insulinRole = if (kind == TreatmentKind.Insulin && insType == InsulinType.Rapid) {
+                    insRole ?: if (com.lumenarcanus.dialife.data.Meals.group(recent).any { time in (it.from - 90 * 60_000L)..(it.to + 60 * 60_000L) }) "meal" else "corr"
+                } else editing?.insulinRole,
+                mealId = editing?.mealId,
             )
             confirming?.let { near ->
                 SameDoseDialog(
@@ -345,7 +379,7 @@ fun daysAgo(t: Long, now: Long): Int {
 
 /** "At 14:30", "Yesterday at 14:30", or with the date when older. */
 @Composable
-private fun atLabel(t: Long): String {
+fun atLabel(t: Long): String {
     val ctx = LocalContext.current
     val clock = AlarmText.clock(ctx, t)
     return when (daysAgo(t, System.currentTimeMillis())) {
@@ -358,7 +392,7 @@ private fun atLabel(t: Long): String {
 /** The clock dial; a time still to come cannot be confirmed. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TimeDialog(initial: Long, onPick: (Long) -> Unit, onDismiss: () -> Unit) {
+fun TimeDialog(initial: Long, onPick: (Long) -> Unit, onDismiss: () -> Unit) {
     val ctx = LocalContext.current
     val start = java.util.Calendar.getInstance().apply { timeInMillis = initial }
     val state = rememberTimePickerState(

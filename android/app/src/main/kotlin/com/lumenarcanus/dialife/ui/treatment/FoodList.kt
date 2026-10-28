@@ -22,6 +22,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
@@ -38,6 +42,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.data.CarbSuggestion
+import com.lumenarcanus.dialife.data.FoodCatalog
+import com.lumenarcanus.dialife.data.inLang
 import com.lumenarcanus.dialife.data.FoodItem
 import com.lumenarcanus.dialife.live.LiveRepository
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
@@ -49,18 +55,50 @@ data class FoodRow(
     val name: String = "",
     val portion: String = "",
     val carbs: String = "",
-    val source: String? = null, // "mine" | "estimate" | "manual"
+    val source: String? = null, // "mine" | "table" | "estimate" | "manual"
     val loading: Boolean = false,
     val asked: Boolean = false, // a suggestion was looked for (and maybe none came)
     val suggestion: CarbSuggestion? = null,
     val models: Boolean = false, // the server has models: no estimate means they did not know
+    val tableId: String? = null, // the table portion picked, so a new portion follows it
 ) {
     val grams get() = carbs.toIntOrNull()
     fun toItem() = FoodItem(name.trim(), portion.trim().ifBlank { null }, grams?.toDouble(), source)
 }
 
 private var nextRowId = 1L
-fun newFoodRow(name: String = "", carbs: String = "", source: String? = null, portion: String = "") = FoodRow(nextRowId++, name, portion, carbs, source)
+fun newFoodRow(name: String = "", carbs: String = "", source: String? = null, portion: String = "", tableId: String? = null) =
+    FoodRow(nextRowId++, name, portion, carbs, source, tableId = tableId)
+
+/** Looks the food up once the typing stops; a picked suggestion follows a new portion. */
+@Composable
+fun FoodLookup(row: FoodRow, repo: LiveRepository?, update: ((FoodRow) -> FoodRow) -> Unit) {
+    LaunchedEffect(row.name, row.portion) {
+        val name = row.name.trim()
+        if (repo == null) return@LaunchedEffect // a preview: keep what it was given
+        if (name.length < 2) {
+            update { it.copy(loading = false, asked = false, suggestion = null) }
+            return@LaunchedEffect
+        }
+        kotlinx.coroutines.delay(700)
+        update { it.copy(loading = true) }
+        val r = repo.suggestCarbs(name, row.portion.trim())
+        update { cur ->
+            val res = r.getOrNull()
+            val s = res?.items?.firstOrNull()
+            val follow = when (cur.source) {
+                "mine" -> s?.mine?.carbs
+                "table" -> (s?.table.orEmpty() + s?.similar.orEmpty()).firstOrNull { it.id == cur.tableId }?.carbs
+                "estimate" -> s?.estimate?.carbs
+                else -> null
+            }
+            cur.copy(
+                loading = false, asked = r.isSuccess, suggestion = s, models = res?.models ?: false,
+                carbs = follow?.toString() ?: cur.carbs,
+            )
+        }
+    }
+}
 
 /** The rows of a saved meal, or one row for an entry logged with only a total. */
 fun foodRowsOf(items: List<FoodItem>?, carbs: Double?): List<FoodRow> = when {
@@ -86,6 +124,7 @@ private val QuickCarbs = listOf(10, 15, 20, 30)
 @Composable
 fun FoodList(rows: SnapshotStateList<FoodRow>, repo: LiveRepository?) {
     val c = DiaTheme.colors
+    val lang = androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language
     fun update(id: Long, f: (FoodRow) -> FoodRow) {
         val i = rows.indexOfFirst { it.id == id }
         if (i >= 0) rows[i] = f(rows[i])
@@ -97,42 +136,61 @@ fun FoodList(rows: SnapshotStateList<FoodRow>, repo: LiveRepository?) {
     }
     rows.forEach { row ->
         key(row.id) {
-            // look the food up once the typing stops; a picked suggestion follows a new portion
-            LaunchedEffect(row.name, row.portion) {
-                val name = row.name.trim()
-                if (repo == null) return@LaunchedEffect // a preview: keep what it was given
-                if (name.length < 2) {
-                    update(row.id) { it.copy(loading = false, asked = false, suggestion = null) }
-                    return@LaunchedEffect
-                }
-                kotlinx.coroutines.delay(700)
-                update(row.id) { it.copy(loading = true) }
-                val r = repo.suggestCarbs(name, row.portion.trim())
-                update(row.id) { cur ->
-                    val res = r.getOrNull()
-                    val s = res?.items?.firstOrNull()
-                    val follow = when (cur.source) {
-                        "mine" -> s?.mine?.carbs
-                        "estimate" -> s?.estimate?.carbs
-                        else -> null
-                    }
-                    cur.copy(
-                        loading = false, asked = r.isSuccess, suggestion = s, models = res?.models ?: false,
-                        carbs = follow?.toString() ?: cur.carbs,
-                    )
-                }
-            }
-            FoodRowCard(row, canRemove = rows.size > 1, onChange = { f -> update(row.id, f) }, onRemove = { rows.removeAll { it.id == row.id } })
+            FoodLookup(row, repo) { f -> update(row.id, f) }
+            FoodRowCard(row, canRemove = rows.size > 1, lang = lang, onChange = { f -> update(row.id, f) }, onRemove = { rows.removeAll { it.id == row.id } })
         }
     }
     OutlinedButton(onClick = { rows.add(newFoodRow()) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
         Text(stringResource(R.string.food_add), color = c.carbs, fontWeight = FontWeight.SemiBold)
     }
+
+    // a new line, or the empty one at the end when there is one
+    fun place(row: FoodRow) {
+        val last = rows.lastOrNull()
+        if (last != null && last.name.isBlank() && last.carbs.isBlank()) rows[rows.lastIndex] = row else rows.add(row)
+    }
+    var catalog by remember { mutableStateOf<FoodCatalog?>(null) }
+    LaunchedEffect(repo) { catalog = repo?.foods()?.getOrNull() }
+    var picking by remember { mutableStateOf(false) }
+    val tables = catalog?.tables.orEmpty()
+    val often = catalog?.frequent.orEmpty()
+    if (often.isNotEmpty() || tables.isNotEmpty()) {
+        Text(stringResource(R.string.food_often), color = c.textMuted, fontSize = 12.sp)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            // only the name and portion: the carbs come as a suggestion to pick
+            often.forEach { f ->
+                OutlinedButton(
+                    onClick = { place(newFoodRow(name = f.name, portion = f.portion)) },
+                    shape = CircleShape,
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp),
+                    modifier = Modifier.heightIn(min = 40.dp),
+                ) { Text("+ " + f.name, color = c.text, fontSize = 13.sp) }
+            }
+            if (tables.isNotEmpty()) {
+                androidx.compose.material3.FilledTonalButton(
+                    onClick = { picking = true },
+                    shape = CircleShape,
+                    modifier = Modifier.heightIn(min = 40.dp),
+                ) { Text(stringResource(R.string.food_all), fontSize = 13.sp, fontWeight = FontWeight.SemiBold) }
+            }
+        }
+    }
+    if (picking) {
+        FoodPicker(
+            tables = tables,
+            lang = lang,
+            onPick = { f, source ->
+                picking = false
+                place(newFoodRow(name = f.names.inLang(lang), carbs = f.carbs.toString(), source = "table", portion = f.portions.inLang(lang), tableId = f.id))
+            },
+            onDismiss = { picking = false },
+        )
+    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun FoodRowCard(row: FoodRow, canRemove: Boolean, onChange: ((FoodRow) -> FoodRow) -> Unit, onRemove: () -> Unit) {
+private fun FoodRowCard(row: FoodRow, canRemove: Boolean, lang: String, onChange: ((FoodRow) -> FoodRow) -> Unit, onRemove: () -> Unit) {
     val c = DiaTheme.colors
     Column(
         Modifier.fillMaxWidth().background(c.surfaceRaised, RoundedCornerShape(18.dp)).padding(12.dp),
@@ -179,29 +237,7 @@ private fun FoodRowCard(row: FoodRow, canRemove: Boolean, onChange: ((FoodRow) -
                 modifier = Modifier.width(120.dp),
             )
         }
-        when {
-            row.loading -> Text(stringResource(R.string.food_looking), color = c.textMuted, fontSize = 12.5.sp)
-            row.suggestion?.mine != null || row.suggestion?.estimate != null -> {
-                row.suggestion.mine?.let { m ->
-                    SuggestionButton(
-                        "≈ ${m.carbs}", stringResource(R.string.food_mine),
-                        stringResource(R.string.food_mine_note, m.portion.ifBlank { "—" }, m.times),
-                        on = row.source == "mine" && row.grams == m.carbs,
-                    ) { onChange { it.copy(carbs = m.carbs.toString(), source = "mine") } }
-                }
-                row.suggestion.estimate?.let { e ->
-                    SuggestionButton(
-                        "≈ ${e.carbs}", stringResource(R.string.food_estimate, e.lo, e.hi),
-                        pluralStringResource(R.plurals.food_models, e.models, e.models),
-                        on = row.source == "estimate" && row.grams == e.carbs,
-                    ) { onChange { it.copy(carbs = e.carbs.toString(), source = "estimate") } }
-                }
-            }
-            row.asked && row.name.isNotBlank() -> Text(
-                stringResource(if (row.models) R.string.food_unknown else R.string.food_no_models),
-                color = c.textMuted, fontSize = 12.5.sp,
-            )
-        }
+        FoodSuggestions(row, lang, onChange)
         // a low needs 15 g now, not a recipe: the usual amounts in one tap
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             QuickCarbs.forEach { q ->
@@ -219,11 +255,61 @@ private fun FoodRowCard(row: FoodRow, canRemove: Boolean, onChange: ((FoodRow) -
                 when {
                     row.grams == null -> R.string.food_src_none
                     row.source == "mine" -> R.string.food_src_mine
+                    row.source == "table" -> R.string.food_src_table
                     row.source == "estimate" -> R.string.food_src_estimate
                     else -> R.string.food_src_manual
                 },
             ),
             color = if (row.grams == null) c.high else c.textMuted, fontSize = 11.5.sp,
+        )
+    }
+}
+
+/** What the family, the carb table and the models suggest for one line; a tap picks one. */
+@Composable
+fun FoodSuggestions(row: FoodRow, lang: String, onChange: ((FoodRow) -> FoodRow) -> Unit) {
+    val c = DiaTheme.colors
+    when {
+        row.loading -> Text(stringResource(R.string.food_looking), color = c.textMuted, fontSize = 12.5.sp)
+        row.suggestion?.mine != null || row.suggestion?.table?.isNotEmpty() == true || row.suggestion?.similar?.isNotEmpty() == true || row.suggestion?.estimate != null -> {
+            row.suggestion.mine?.let { m ->
+                SuggestionButton(
+                    "≈ ${m.carbs}", m.like?.let { stringResource(R.string.food_mine_like, it) } ?: stringResource(R.string.food_mine),
+                    stringResource(R.string.food_mine_note, m.portion.ifBlank { "—" }, m.times),
+                    on = row.source == "mine" && row.grams == m.carbs,
+                ) { onChange { it.copy(carbs = m.carbs.toString(), source = "mine") } }
+            }
+            row.suggestion.table.forEach { h ->
+                val portion = h.portions.inLang(lang)
+                SuggestionButton(
+                    "≈ ${h.carbs}", stringResource(R.string.food_table),
+                    when {
+                        h.carbs == 0 && h.base == 0 -> stringResource(R.string.food_table_free)
+                        h.scaled -> stringResource(R.string.food_table_scaled, h.base, portion)
+                        else -> h.names.inLang(lang) + if (portion.isBlank()) "" else " · $portion"
+                    },
+                    on = row.source == "table" && row.tableId == h.id && row.grams == h.carbs,
+                ) { onChange { it.copy(carbs = h.carbs.toString(), source = "table", tableId = h.id) } }
+            }
+            row.suggestion.similar.forEach { h ->
+                val portion = h.portions.inLang(lang)
+                SuggestionButton(
+                    "≈ ${h.carbs}", stringResource(R.string.food_similar, h.names.inLang(lang)),
+                    if (h.scaled) stringResource(R.string.food_table_scaled, h.base, portion) else portion.ifBlank { stringResource(R.string.food_table_free) },
+                    on = row.source == "table" && row.tableId == h.id && row.grams == h.carbs,
+                ) { onChange { it.copy(carbs = h.carbs.toString(), source = "table", tableId = h.id) } }
+            }
+            row.suggestion.estimate?.let { e ->
+                SuggestionButton(
+                    "≈ ${e.carbs}", stringResource(R.string.food_estimate, e.lo, e.hi),
+                    pluralStringResource(R.plurals.food_models, e.models, e.models),
+                    on = row.source == "estimate" && row.grams == e.carbs,
+                ) { onChange { it.copy(carbs = e.carbs.toString(), source = "estimate") } }
+            }
+        }
+        row.asked && row.name.isNotBlank() -> Text(
+            stringResource(if (row.models) R.string.food_unknown else R.string.food_no_models),
+            color = c.textMuted, fontSize = 12.5.sp,
         )
     }
 }
@@ -237,7 +323,7 @@ private fun fieldColors() = androidx.compose.material3.OutlinedTextFieldDefaults
 )
 
 @Composable
-private fun SuggestionButton(value: String, label: String, note: String, on: Boolean, onClick: () -> Unit) {
+fun SuggestionButton(value: String, label: String, note: String, on: Boolean, onClick: () -> Unit) {
     val c = DiaTheme.colors
     OutlinedButton(
         onClick = onClick,
@@ -263,7 +349,7 @@ fun FoodTotal(rows: List<FoodRow>) {
     val c = DiaTheme.colors
     val filled = rows.filter { it.grams != null }
     val total = filled.sumOf { it.grams ?: 0 }
-    val hinted = filled.count { it.source == "mine" || it.source == "estimate" }
+    val hinted = filled.count { it.source == "mine" || it.source == "table" || it.source == "estimate" }
     val manual = filled.size - hinted
     val empty = rows.count { it.grams == null && it.name.isNotBlank() }
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {

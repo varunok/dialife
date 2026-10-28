@@ -58,7 +58,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lumenarcanus.dialife.ui.theme.DiaLifeTheme
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 
-private enum class Screen { Home, Stats, Log, Settings, Handling, Data, WebLogin }
+private enum class Screen { Home, Stats, Log, Settings, Handling, Data, WebLogin, Meal, DoseSettings }
 
 // AppCompatActivity (not plain ComponentActivity) so the in-app language works on Android 12 too.
 class MainActivity : AppCompatActivity() {
@@ -106,13 +106,49 @@ class MainActivity : AppCompatActivity() {
                     is Session.Connected -> {
                         var screen by rememberSaveable { mutableStateOf(Screen.Home) }
                         var handling by rememberSaveable { mutableStateOf(0L) }
+                        // the food screen: what it edits, and the question it answers
+                        var mealEdit by rememberSaveable { mutableStateOf<String?>(null) }
+                        var mealQuestion by rememberSaveable { mutableStateOf(0L) }
+                        var mealFrom by rememberSaveable { mutableStateOf(0L) }
                         // "I'm on it" from the alarm screen or a notification lands here
                         LaunchedEffect(openHandling) {
                             if (openHandling != 0L) { handling = openHandling; screen = Screen.Handling; openHandling = 0L }
                         }
                         BackHandler(enabled = screen != Screen.Home) { screen = Screen.Home }
                         when (screen) {
-                            Screen.Home -> Home(s.credentials) { screen = it }
+                            Screen.Home -> Home(s.credentials, onMeal = { tr, q ->
+                                mealEdit = tr?.id; mealQuestion = q?.id ?: 0L; mealFrom = q?.from ?: 0L; screen = Screen.Meal
+                            }) { screen = it }
+                            Screen.Meal -> {
+                                val home = viewModel { HomeViewModel(liveRepository) }
+                                val ui by home.ui.collectAsStateWithLifecycle()
+                                val all = ui.history?.treatments.orEmpty()
+                                com.lumenarcanus.dialife.ui.meal.MealScreen(
+                                    repo = liveRepository,
+                                    treatments = all,
+                                    dose = ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
+                                    planned = ui.state?.planned.orEmpty(),
+                                    units = unitsOf(ui.state?.displayUnits ?: s.credentials.displayUnits),
+                                    editing = mealEdit?.let { id -> all.firstOrNull { it.id == id } },
+                                    initialTime = mealFrom.takeIf { it > 0 },
+                                    onSave = liveRepository::saveTreatment,
+                                    onSaved = { food ->
+                                        val q = mealQuestion
+                                        if (q != 0L) lifecycleScope.launch { liveRepository.answerQuestion(q, "food", food.id).onSuccess { questionNotifier.cancel(q) } }
+                                        mealEdit = null; mealQuestion = 0L; mealFrom = 0L; screen = Screen.Home
+                                    },
+                                    onClose = { mealEdit = null; mealQuestion = 0L; mealFrom = 0L; screen = Screen.Home },
+                                )
+                            }
+                            Screen.DoseSettings -> {
+                                val live by liveRepository.live.collectAsStateWithLifecycle()
+                                com.lumenarcanus.dialife.ui.settings.DoseSettingsScreen(
+                                    dose = live.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
+                                    units = unitsOf(live.state?.displayUnits ?: s.credentials.displayUnits),
+                                    onSave = { d -> liveRepository.putDose(d) },
+                                    onBack = { screen = Screen.Settings },
+                                )
+                            }
                             Screen.Stats -> StatsScreen(
                                 creds = s.credentials,
                                 units = unitsOf(liveRepository.live.value.state?.displayUnits ?: s.credentials.displayUnits),
@@ -132,6 +168,7 @@ class MainActivity : AppCompatActivity() {
                                     onFixFullScreen = ::askFullScreen,
                                     onTestSound = { on -> if (on) alarmController.ringer.start(-1) else alarmController.ringer.stop(-1) },
                                     onDisconnect = { screen = Screen.Home; vm.disconnect() },
+                                    onOpenDose = { screen = Screen.DoseSettings },
                                     onBack = { screen = Screen.Home },
                                 )
                             }
@@ -179,7 +216,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     @Composable
-    private fun Home(creds: Credentials, onOpen: (Screen) -> Unit) {
+    private fun Home(creds: Credentials, onMeal: (com.lumenarcanus.dialife.data.Treatment?, com.lumenarcanus.dialife.data.Question?) -> Unit, onOpen: (Screen) -> Unit) {
         val home = viewModel { HomeViewModel(liveRepository) }
         LaunchedEffect(creds) {
             liveRepository.start(creds) // the screen works even if the service cannot start
@@ -215,6 +252,8 @@ class MainActivity : AppCompatActivity() {
             onOpenLog = { onOpen(Screen.Log) },
             onOpenData = { onOpen(Screen.Data) },
             onOpenWebLogin = { onOpen(Screen.WebLogin) },
+            onOpenMeal = onMeal,
+            onPlanned = { act -> planned(act) },
             onOpenSettings = { onOpen(Screen.Settings) },
             onOpenHandling = { id -> openHandling = id },
             onRetry = liveRepository::reconnectNow,
@@ -234,6 +273,23 @@ class MainActivity : AppCompatActivity() {
             },
             onDisconnect = vm::disconnect,
         )
+    }
+
+    /** Given, changed or not given: the insulin entry first, then the dose closed on the server. */
+    private fun planned(act: com.lumenarcanus.dialife.ui.meal.PlannedAction) {
+        lifecycleScope.launch {
+            val r = when (act) {
+                is com.lumenarcanus.dialife.ui.meal.PlannedAction.Given -> {
+                    if (act.isNew) liveRepository.saveTreatment(act.insulin)
+                    else if (act.insulin.mealId == null) liveRepository.saveTreatment(act.insulin.copy(mealId = act.planned.mealId, insulinRole = "meal"))
+                    liveRepository.plannedGiven(act.planned.id, act.insulin.id)
+                }
+                is com.lumenarcanus.dialife.ui.meal.PlannedAction.Change -> liveRepository.planDose(act.planned.copy(dose = act.dose))
+                is com.lumenarcanus.dialife.ui.meal.PlannedAction.Skip -> liveRepository.plannedSkip(act.planned.id)
+            }
+            // the server sends every phone the new state itself
+            r.onFailure { Toast.makeText(this@MainActivity, R.string.planned_failed, Toast.LENGTH_LONG).show() }
+        }
     }
 
     private fun backgroundSetup() = BackgroundSetup(

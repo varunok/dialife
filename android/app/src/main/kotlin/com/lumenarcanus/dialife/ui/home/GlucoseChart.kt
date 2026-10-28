@@ -139,6 +139,8 @@ fun ChartCard(
     suspects: List<com.lumenarcanus.dialife.data.Question> = emptyList(), // unanswered questions: "?" marks
     onDismissSuspect: (Long) -> Unit = {},
     onOpenTable: (() -> Unit)? = null, // the same data as a table
+    dose: com.lumenarcanus.dialife.data.DoseSettings = com.lumenarcanus.dialife.data.DoseSettings(), // for a meal's worked-out dose
+    planned: List<com.lumenarcanus.dialife.data.PlannedDose> = emptyList(),
 ) {
     val c = DiaTheme.colors
     val context = LocalContext.current
@@ -199,6 +201,7 @@ fun ChartCard(
             onSuspectPicked = { suspect = it },
             highlightFrom = highlightFrom,
             estimate = estimate,
+            planned = planned,
             modifier = if (expanded) Modifier.fillMaxWidth().weight(1f) else Modifier.fillMaxWidth().height(230.dp),
         )
         // the tapped marker's actions: the canvas tooltip says what it is, these say what to do
@@ -209,6 +212,7 @@ fun ChartCard(
             }
         }
         selected?.let { tr ->
+            com.lumenarcanus.dialife.ui.meal.EntryDetail(tr, history?.treatments.orEmpty(), dose, units)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 androidx.compose.material3.OutlinedButton(onClick = { onEdit(tr) }, modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.tr_edit), color = c.text)
@@ -290,6 +294,7 @@ fun GlucoseChart(
     onSuspectPicked: (com.lumenarcanus.dialife.data.Question?) -> Unit = {},
     highlightFrom: Long? = null,
     estimate: com.lumenarcanus.dialife.data.MeterModel? = null, // draw "≈ meter" from it; null: off
+    planned: List<com.lumenarcanus.dialife.data.PlannedDose> = emptyList(), // not given yet: a dashed mark
     modifier: Modifier = Modifier,
 ) {
     val c = DiaTheme.colors
@@ -589,6 +594,16 @@ fun GlucoseChart(
             if (originOf(tr) !is Origin.Here) syncedDot(Offset(x(tr.t) + 8.dp.toPx(), cy - 8.dp.toPx()), c.textMuted, c.surface)
         }
 
+        // a planned dose: a dashed ring in the rapid row, at the meal it is for; it is not insulin yet
+        planned.filter { it.state == "planned" }.forEach { p ->
+            val at = treatments.firstOrNull { it.id == p.mealId }?.t ?: p.createdAt
+            val cy = plotH - 30.dp.toPx()
+            drawCircle(c.surface, 10.dp.toPx(), Offset(x(at), cy))
+            drawCircle(c.insulin, 9.dp.toPx(), Offset(x(at), cy), style = Stroke(1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx()))))
+            val m = measurer.measure(insulinGlyph, glyph.copy(color = c.insulin.copy(alpha = 0.7f)))
+            drawText(m, topLeft = Offset(x(at) - m.size.width / 2f, cy - m.size.height / 2f))
+        }
+
         // activity: a bar along the top, as long as it lasted, darker the harder it was
         activities.forEach { a ->
             val x0 = x(a.t).coerceAtLeast(0f)
@@ -681,28 +696,8 @@ fun GlucoseChart(
                 )
                 tooltip(measurer, lines, x(q.from), plotH - 40.dp.toPx(), plotW, plotH, c.background, c.high, c.text, c.textMuted)
             }
-            is Pick.Event -> {
-                val tr = p.treatment
-                val amounts = listOfNotNull(
-                    tr.insulin?.takeIf { it > 0 }?.let { u ->
-                        // "Lantus 10 од" when the brand is known, else "Інсулін 10 од"
-                        tr.insulinName?.let { "$it " + String.format(locale, "%s %s", com.lumenarcanus.dialife.ui.treatment.formatAmount(u, locale), unitInsulin) }
-                            ?: insulinLabel.format(locale, u)
-                    },
-                    tr.carbs?.takeIf { it > 0 }?.let { carbsLabel.format(locale, it.toInt()) },
-                ).joinToString(" · ")
-                val what = tr.duration?.let { d -> activityLabel.format(locale, intensityLabel(tr.intensity), d) }
-                    ?: amounts.ifBlank { tr.notes?.take(40) ?: noteLabel }
-                val who = originText(originOf(tr))
-                val lines = listOfNotNull(
-                    what,
-                    tr.foodText()?.take(60), // what she ate, line by line
-                    tr.notes?.takeIf { amounts.isNotBlank() && it.isNotBlank() }?.take(40),
-                    listOfNotNull(clock(tr.t), who, pendingLabel.takeIf { tr.pending }).joinToString(" · "),
-                )
-                val ty = if (tr.duration != null) ACT_TOP.toPx() + ACT_H.toPx() else plotH - 40.dp.toPx()
-                tooltip(measurer, lines, x(tr.t), ty, plotW, plotH, c.background, c.line, c.text, c.textMuted)
-            }
+            // the entry's details are under the chart, not over it
+            is Pick.Event -> {}
             null -> {}
         }
     }

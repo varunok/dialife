@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.os.LocaleListCompat
 import com.lumenarcanus.dialife.BuildConfig
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.ui.treatment.formatAmount
 import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.data.Prefs
 import com.lumenarcanus.dialife.data.StateResponse
@@ -63,6 +64,7 @@ fun SettingsScreen(
     onTestSound: (Boolean) -> Unit, // true: start, false: stop
     onDisconnect: () -> Unit,
     onBack: () -> Unit,
+    onOpenDose: () -> Unit = {},
 ) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
@@ -164,6 +166,16 @@ fun SettingsScreen(
                     enabled = Prefs.basalTimes.isNotEmpty(),
                     onCheckedChange = { Prefs.chooseBasalReminder(it); com.lumenarcanus.dialife.live.BasalReminder.schedule(ctx) },
                 )
+            }
+        }
+
+        Section(stringResource(R.string.dose_title)) {
+            val d = state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings()
+            Line(stringResource(R.string.dose_ratio_short), stringResource(R.string.meal_ratio, d.ratio))
+            Line(stringResource(R.string.dose_rounding), com.lumenarcanus.dialife.ui.meal.ruleName(d.rule) + " · " + formatAmount(d.step, locale))
+            Line(stringResource(R.string.dose_limits_short), formatAmount(d.maxRapid, locale) + " " + stringResource(R.string.unit_insulin) + " · " + d.maxCarbs + " " + stringResource(R.string.unit_carbs))
+            OutlinedButton(onClick = onOpenDose, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                Text(stringResource(R.string.dose_open), color = c.text)
             }
         }
 
