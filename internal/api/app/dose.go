@@ -17,16 +17,21 @@ import (
 const doseKey = "dose"
 
 type doseSettings struct {
-	Ratio     float64    `json:"ratio"` // 1 unit per this many grams of carbohydrate
-	Rule      string     `json:"rule"`  // "nearest" | "halfDown" | "down" | "up"
-	Step      float64    `json:"step"`  // 1 or 0.5 unit
-	FreshMin  int        `json:"fresh_min"`
-	MaxRapid  float64    `json:"max_rapid"`
-	MaxBasal  float64    `json:"max_basal"`
-	MaxCarbs  int        `json:"max_carbs"`
-	Table     []doseStep `json:"table"`
-	UpdatedAt int64      `json:"updated_at"`
-	UpdatedBy string     `json:"updated_by"`
+	Ratio    float64    `json:"ratio"` // 1 unit per this many grams of carbohydrate
+	Rule     string     `json:"rule"`  // "nearest" | "halfDown" | "down" | "up"
+	Step     float64    `json:"step"`  // 1 or 0.5 unit
+	FreshMin int        `json:"fresh_min"`
+	MaxRapid float64    `json:"max_rapid"`
+	MaxBasal float64    `json:"max_basal"`
+	MaxCarbs int        `json:"max_carbs"`
+	Table    []doseStep `json:"table"`
+	// the physiological forecast: mg/dL one unit lowers (0: from the table),
+	// how long rapid acts, how long a meal takes to absorb
+	ISF       float64 `json:"isf"`
+	DIAMin    int     `json:"dia_min"`
+	CarbMin   int     `json:"carb_min"`
+	UpdatedAt int64   `json:"updated_at"`
+	UpdatedBy string  `json:"updated_by"`
 }
 
 // doseStep: from this glucometer value (mg/dL) up, add this many units.
@@ -37,7 +42,41 @@ type doseStep struct {
 
 var defaultDose = doseSettings{
 	Ratio: 20, Rule: "halfDown", Step: 1, FreshMin: 15, MaxRapid: 10, MaxBasal: 20, MaxCarbs: 150,
-	Table: []doseStep{{140, 1}, {180, 2}, {220, 3}, {260, 4}, {300, 5}},
+	Table:  []doseStep{{140, 1}, {180, 2}, {220, 3}, {260, 4}, {300, 5}},
+	DIAMin: 240, CarbMin: 180,
+}
+
+// withDefaults: settings saved before a field existed, or sent by an older
+// app, keep the default for it.
+func (d doseSettings) withDefaults() doseSettings {
+	if d.DIAMin == 0 {
+		d.DIAMin = defaultDose.DIAMin
+	}
+	if d.CarbMin == 0 {
+		d.CarbMin = defaultDose.CarbMin
+	}
+	return d
+}
+
+// isf: the one set, or the table's own: the typical mg/dL between its rows
+// per unit added; 40 with no table to read it from.
+func (d doseSettings) isf() float64 {
+	if d.ISF > 0 {
+		return d.ISF
+	}
+	var steps []float64
+	t := slices.Clone(d.Table)
+	slices.SortFunc(t, func(a, b doseStep) int { return a.MG - b.MG })
+	for i := 1; i < len(t); i++ {
+		if du := t[i].U - t[i-1].U; du > 0 {
+			steps = append(steps, float64(t[i].MG-t[i-1].MG)/du)
+		}
+	}
+	if len(steps) == 0 {
+		return 40
+	}
+	slices.Sort(steps)
+	return steps[len(steps)/2]
 }
 
 func (h *Handlers) dose(ctx context.Context) doseSettings {
@@ -49,7 +88,9 @@ func (h *Handlers) dose(ctx context.Context) doseSettings {
 		return defaultDose
 	}
 	var d doseSettings
-	if json.Unmarshal(raw, &d) != nil || d.valid() != nil {
+	err = json.Unmarshal(raw, &d)
+	d = d.withDefaults()
+	if err != nil || d.valid() != nil {
 		slog.Error("dose settings: stored value unreadable, using defaults")
 		return defaultDose
 	}
@@ -66,6 +107,9 @@ func (d doseSettings) valid() error {
 		d.MaxRapid >= 0.5 && d.MaxRapid <= 100 &&
 		d.MaxBasal >= 0.5 && d.MaxBasal <= 200 &&
 		d.MaxCarbs >= 20 && d.MaxCarbs <= 500 &&
+		(d.ISF == 0 || d.ISF >= 5 && d.ISF <= 400) &&
+		d.DIAMin >= 120 && d.DIAMin <= 480 &&
+		d.CarbMin >= 60 && d.CarbMin <= 360 &&
 		len(d.Table) <= 20
 	if !ok {
 		return errDose
@@ -87,6 +131,7 @@ func (h *Handlers) PutDose(w http.ResponseWriter, r *http.Request) {
 	if !decodeOptional(w, r, &d) {
 		return
 	}
+	d = d.withDefaults()
 	if d.valid() != nil {
 		httpx.Error(w, http.StatusBadRequest)
 		return

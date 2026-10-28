@@ -225,3 +225,68 @@ func TestAsleepSilencesRisesForTwoHours(t *testing.T) {
 		t.Fatalf("asleep: %+v", qs)
 	}
 }
+
+func TestIOBInState(t *testing.T) {
+	f := newFixture(t)
+	_, mom := f.addDevice(t, "Мама", auth.RoleCaregiver)
+	_, xd := f.addDevice(t, "xDrip", auth.RoleUploader)
+	h := map[string]string{"Authorization": "Bearer " + mom, "Content-Type": "application/json"}
+	type iobBody struct {
+		Insulin  float64
+		Carbs    float64
+		ISF      float64
+		Forecast []struct {
+			T int64
+			V int
+		}
+	}
+	state := func() (*iobBody, doseBody) {
+		var st struct {
+			IOB  *iobBody
+			Dose struct {
+				doseBody
+				ISF     float64
+				DIAMin  int `json:"dia_min"`
+				CarbMin int `json:"carb_min"`
+			}
+		}
+		json.NewDecoder(f.get(t, "/api/state", h).Body).Decode(&st)
+		if st.Dose.DIAMin != 240 || st.Dose.CarbMin != 180 || st.Dose.ISF != 0 {
+			t.Fatalf("forecast defaults: %+v", st.Dose)
+		}
+		return st.IOB, st.Dose.doseBody
+	}
+	if iob, _ := state(); iob != nil {
+		t.Fatalf("nothing logged, no iob: %+v", iob)
+	}
+
+	now := f.now()
+	var es []string
+	for i := 6; i >= 0; i-- {
+		at := now.Add(-time.Duration(i) * 5 * time.Minute)
+		es = append(es, fmt.Sprintf(`{"type":"sgv","sgv":150,"date":%d,"dateString":"%s","direction":"Flat"}`, at.UnixMilli(), at.UTC().Format(time.RFC3339)))
+	}
+	f.do(t, "POST", "/api/v1/entries", strings.NewReader("["+strings.Join(es, ",")+"]"), xdrip(xd))
+	ago := now.Add(-30 * time.Minute).UTC().Format(time.RFC3339)
+	f.do(t, "POST", "/api/v1/treatments", strings.NewReader(`[{"eventType":"Bolus","insulin":3,"insulinType":"rapid","created_at":"`+ago+`"},
+		{"eventType":"Carb Correction","carbs":40,"created_at":"`+ago+`"},
+		{"eventType":"Bolus","insulin":12,"insulinType":"basal","created_at":"`+ago+`"}]`), h)
+
+	iob, _ := state()
+	if iob == nil || iob.Insulin < 2.5 || iob.Insulin > 3 || iob.Carbs < 35 || iob.Carbs > 40 || iob.ISF != 40 || len(iob.Forecast) != 3 {
+		t.Fatalf("long-acting left out, the rapid and the meal on board: %+v", iob)
+	}
+
+	// the forecast's own parameters, and an older app that does not send them keeps them
+	body := `{"ratio":20,"rule":"halfDown","step":1,"fresh_min":15,"max_rapid":10,"max_basal":20,"max_carbs":150,"table":[{"mg":140,"u":1}],"isf":55,"dia_min":300,"carb_min":120}`
+	if code := f.do(t, "PUT", "/api/dose", strings.NewReader(body), h).StatusCode; code != 200 {
+		t.Fatalf("put: %d", code)
+	}
+	if code := f.do(t, "PUT", "/api/dose", strings.NewReader(strings.Replace(body, `"isf":55`, `"isf":3`, 1)), h).StatusCode; code != 400 {
+		t.Fatalf("isf 3: %d", code)
+	}
+	old := `{"ratio":20,"rule":"halfDown","step":1,"fresh_min":15,"max_rapid":10,"max_basal":20,"max_carbs":150,"table":[]}`
+	if code := f.do(t, "PUT", "/api/dose", strings.NewReader(old), h).StatusCode; code != 200 {
+		t.Fatalf("an older app: %d", code)
+	}
+}

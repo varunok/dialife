@@ -11,7 +11,6 @@ package forecast
 
 import (
 	"math"
-	"slices"
 	"time"
 
 	"dialife/internal/glucose"
@@ -71,41 +70,13 @@ func Trend(rs []Point, q Quality) (glucose.Forecast, bool) {
 // Backtest replays the forecast over readings (oldest first): from every
 // reading, what it would have said for 30 minutes later, against what came.
 func Backtest(rs []Point) Quality {
-	var errs []float64
-	hits := 0
-	for i := range rs {
-		target := rs[i].T + horizon.Milliseconds()
-		j, _ := slices.BinarySearchFunc(rs, target, func(p Point, t int64) int { return cmp(p.T, t) })
-		// the reading nearest to +30 min, within 2.5 minutes of it
-		best := -1
-		for _, k := range []int{j - 1, j} {
-			if k > i && k < len(rs) && abs64(rs[k].T-target) <= 150_000 && (best < 0 || abs64(rs[k].T-target) < abs64(rs[best].T-target)) {
-				best = k
-			}
-		}
-		if best < 0 {
-			continue
-		}
+	return score(rs, func(i int) (int, bool) {
 		f, ok := Trend(rs[:i+1], Quality{N: 1})
 		if !ok {
-			continue
+			return 0, false
 		}
-		actual := float64(rs[best].V)
-		e := math.Abs(float64(f.Predicted[len(f.Predicted)-1].SGV) - actual)
-		errs = append(errs, e)
-		if e <= math.Max(hitAbs, hitRel*actual) {
-			hits++
-		}
-	}
-	if len(errs) == 0 {
-		return Quality{}
-	}
-	slices.Sort(errs)
-	return Quality{
-		Err80:  int(math.Round(errs[int(float64(len(errs))*0.8)])),
-		HitPct: int(math.Round(100 * float64(hits) / float64(len(errs)))),
-		N:      len(errs),
-	}
+		return f.Predicted[len(f.Predicted)-1].SGV, true
+	})
 }
 
 // slope is the least-squares rate (mg/dL per minute) over the last trendSpan before to.

@@ -65,6 +65,7 @@ type Handlers struct {
 	webCodes webCodes     // web login codes, in memory for their QR pictures
 	intents  intentBoard  // who has the insulin form open
 	quality  qualityCache // how the chart's forecast did lately
+	iobQ     iobQualityCache
 }
 
 type stateResponse struct {
@@ -83,6 +84,8 @@ type stateResponse struct {
 	Intents      []insulinIntent     `json:"intents"`                 // parents with the insulin form open now
 	Dose         doseSettings        `json:"dose"`                    // the family's dose calculation
 	Planned      []plannedDose       `json:"planned"`                 // doses worked out for a meal, not given yet
+	IOB          *iobState           `json:"iob,omitempty"`           // what logged food and rapid insulin will still do; not for alarms
+	IOBQuality   *forecast.Quality   `json:"iob_quality,omitempty"`   // how often its "in 30 min" came true
 }
 
 type caregiver struct {
@@ -174,6 +177,12 @@ func (h *Handlers) snapshot(ctx context.Context, now time.Time) (stateResponse, 
 		}
 	}
 	resp.Dose = h.dose(ctx)
+	fresh := ok && !st.Error && now.UnixMilli()-st.Last.Date <= forecastMaxAge.Milliseconds()
+	if resp.IOB = h.iob(ctx, st, fresh, resp.Dose, now); resp.IOB != nil {
+		if q := h.iobQuality(ctx, resp.Dose, now); q.N > 0 {
+			resp.IOBQuality = &q
+		}
+	}
 	if resp.Planned, err = h.planned(ctx, devs); err != nil {
 		return resp, err
 	}
