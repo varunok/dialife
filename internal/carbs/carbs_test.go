@@ -58,10 +58,10 @@ func TestRecall(t *testing.T) {
 		it   Item
 		want *Mine
 	}{
-		{Item{"борщ", ""}, &Mine{18, "тарілка", 1}},
-		{Item{"Борщ", "2 тарілки"}, &Mine{36, "тарілка", 1}},
-		{Item{"хліб чорний", "3 скибки"}, &Mine{33, "2 скибки", 2}},
-		{Item{"Гречка", "200 г"}, &Mine{36, "150 г", 1}},
+		{Item{"борщ", ""}, &Mine{Carbs: 18, Portion: "тарілка", Times: 1}},
+		{Item{"Борщ", "2 тарілки"}, &Mine{Carbs: 36, Portion: "тарілка", Times: 1}},
+		{Item{"хліб чорний", "3 скибки"}, &Mine{Carbs: 33, Portion: "2 скибки", Times: 2}},
+		{Item{"Гречка", "200 г"}, &Mine{Carbs: 36, Portion: "150 г", Times: 1}},
 		{Item{"гречка", "тарілка"}, nil}, // grams cannot become plates
 		{Item{"банан", ""}, nil},
 	}

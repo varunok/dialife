@@ -29,6 +29,10 @@ type Config struct {
 	OpenAIKey    string
 	OpenAIModels string
 	LLMTimeout   string // per model, a Go duration; default 10s
+	// Food names found by meaning ("картопелька" is "Papa"), with the Gemini
+	// key: an embedding model, "none" to switch it off; and how close counts.
+	GeminiEmbedModel string // default "gemini-embedding-001"
+	FoodSimilar      string // least cosine, 0–1; default 0.80
 }
 
 func FromEnv() Config {
@@ -48,6 +52,9 @@ func FromEnv() Config {
 		OpenAIKey:     os.Getenv("DIALIFE_OPENAI_KEY"),
 		OpenAIModels:  os.Getenv("DIALIFE_OPENAI_MODEL"),
 		LLMTimeout:    os.Getenv("DIALIFE_LLM_TIMEOUT"),
+
+		GeminiEmbedModel: getenv("DIALIFE_GEMINI_EMBED_MODEL", "gemini-embedding-001"),
+		FoodSimilar:      os.Getenv("DIALIFE_FOOD_SIMILAR"),
 	}
 }
 

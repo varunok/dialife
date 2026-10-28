@@ -12,6 +12,8 @@
 //	dialife alarms set high=250 high_for_min=30  change them (live within a minute)
 //	dialife alarms live                         alarms firing right now
 //	dialife readings [-n 12]                    newest CGM readings
+//	dialife foods import FILE|-                  load a carbohydrate table (replaces the same source)
+//	dialife foods show                          imported tables
 //	dialife version
 package main
 
@@ -24,6 +26,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"text/tabwriter"
 	"time"
@@ -71,6 +74,8 @@ func main() {
 		err = alarmSettings(cfg, os.Args[2:])
 	case "readings":
 		err = readings(cfg, os.Args[2:])
+	case "foods":
+		err = foods(cfg, os.Args[2:])
 	case "version":
 		fmt.Println(version)
 	default:
@@ -84,7 +89,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: dialife serve | migrate | device add|list|revoke | alarms show|set|live | readings | backup | ntfy-test | version")
+	fmt.Fprintln(os.Stderr, "usage: dialife serve | migrate | device add|list|revoke | alarms show|set|live | readings | foods import|show | backup | ntfy-test | version")
 }
 
 func openMigrated(cfg config.Config) (*store.Store, error) {
@@ -132,10 +137,21 @@ func serve(cfg config.Config) error {
 		names[i] = m.Name()
 	}
 	slog.Info("carb estimates", "models", names) // none: only the family's own numbers
+	var embed carbs.Embedder
+	if cfg.GeminiKey != "" && cfg.GeminiEmbedModel != "" && cfg.GeminiEmbedModel != "none" {
+		embed = &carbs.GeminiEmbed{Key: cfg.GeminiKey, Model: cfg.GeminiEmbedModel}
+		slog.Info("food names by meaning", "model", embed.Name())
+	}
+	similar := 0.0
+	if cfg.FoodSimilar != "" {
+		if similar, err = strconv.ParseFloat(cfg.FoodSimilar, 64); err != nil || similar <= 0 || similar >= 1 {
+			return fmt.Errorf("DIALIFE_FOOD_SIMILAR: want a number between 0 and 1, got %q", cfg.FoodSimilar)
+		}
+	}
 
 	events := bus.New(maxStreams)
 	wired := server.New(server.Deps{
-		Carbs:     &carbs.Service{Store: s, Models: models, Timeout: llmTimeout, Now: time.Now},
+		Carbs:     &carbs.Service{Store: s, Models: models, Embed: embed, Similar: float32(similar), Timeout: llmTimeout, Now: time.Now},
 		Links:     links,
 		Store:     s,
 		Auth:      auth.NewAuthenticator(s, time.Now),

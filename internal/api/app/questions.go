@@ -11,7 +11,7 @@ import (
 )
 
 type answerRequest struct {
-	Answer      string `json:"answer"`                 // "food" | "food_unknown" | "insulin" | "nothing"
+	Answer      string `json:"answer"`                 // "food" | "food_unknown" | "insulin" | "nothing"; a rise: "asleep"
 	TreatmentID string `json:"treatment_id,omitempty"` // the entry made for it
 }
 

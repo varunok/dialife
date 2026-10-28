@@ -97,6 +97,8 @@ Backups & deploy
   dl backups                 list backups on the server and on this laptop
   dl pull                    copy new backups to this laptop now
   dl deploy                  test, build and ship the server binary
+  dl foods [FILE]            imported carbohydrate tables; with FILE (JSON) import it,
+                             replacing the table of the same source
   dl app [debug]             build the Android app (release; debug = with the adb test hooks)
                              and install it on every phone connected by USB
   dl ssh                     interactive shell on the server
@@ -118,6 +120,14 @@ status | s)
 	;;
 
 last | l) cli readings -n "${1:-12}" ;;
+
+foods)
+	if [ -n "${1:-}" ]; then
+		[ -f "$1" ] || { echo "no such file: $1" >&2; exit 1; }
+		cli foods import - <"$1"
+	fi
+	cli foods show
+	;;
 
 logs | log)
 	if [ "${1:-}" = "-f" ]; then

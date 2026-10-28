@@ -24,6 +24,12 @@ const (
 	sameEpisode = 30 * time.Minute // a rise that keeps going is still the first question
 	nightFrom   = 23               // local hours when asking is silent
 	nightTo     = 7
+
+	// a planned dose: asked about after an hour, gone (expired) after three
+	PlannedAsk    = time.Hour
+	PlannedExpire = 3 * time.Hour
+	// "asleep" for a rise: no more rise questions this long from its start
+	asleepFor = 2 * time.Hour
 )
 
 var (
@@ -39,6 +45,8 @@ type Engine struct {
 	Loc   *time.Location // night hours; nil: UTC
 	// what the family calls the xDrip+ phone: who gave a dose that came from it
 	Uploader string
+	// called after planned doses expired, so the phones get a fresh state; nil: nothing
+	OnPlanned func()
 
 	mu sync.Mutex
 }
@@ -73,6 +81,9 @@ type View struct {
 	Insulin    string     `json:"insulin,omitempty"`
 	WatchUntil int64      `json:"watch_until,omitempty"`
 	Quiet      bool       `json:"quiet,omitempty"` // night: show it without sound
+	// "planned": the dose asked about (From is its meal's time)
+	PlannedID string  `json:"planned_id,omitempty"`
+	Dose      float64 `json:"dose,omitempty"`
 }
 
 type DoseView struct {
@@ -126,7 +137,75 @@ func (e *Engine) Evaluate(ctx context.Context) error {
 	if err := e.detectBolus(ctx, qs, logged, now); err != nil {
 		return err
 	}
+	if err := e.detectPlanned(ctx, qs, now); err != nil {
+		return err
+	}
 	return e.detectDouble(ctx, qs, now)
+}
+
+// detectPlanned ends the planned doses nobody confirmed in three hours, and
+// asks about those still waiting after an hour.
+func (e *Engine) detectPlanned(ctx context.Context, qs []store.Question, now time.Time) error {
+	gone, err := e.Store.ExpirePlannedDoses(ctx, now.Add(-PlannedExpire).UnixMilli(), now.UnixMilli())
+	if err != nil {
+		return err
+	}
+	for _, p := range gone {
+		slog.Info("planned dose expired", "id", p.ID)
+		if err := e.settlePlanned(ctx, p.ID, now); err != nil {
+			return err
+		}
+	}
+	if len(gone) > 0 && e.OnPlanned != nil {
+		e.OnPlanned()
+	}
+	ps, err := e.Store.PlannedDoses(ctx)
+	if err != nil {
+		return err
+	}
+	for _, p := range ps {
+		if now.UnixMilli()-p.CreatedAt < PlannedAsk.Milliseconds() || slices.ContainsFunc(qs, func(q store.Question) bool { return q.Kind == "planned" && q.RefID == p.ID }) {
+			continue
+		}
+		at := p.CreatedAt
+		if meal, ok, err := e.treatment(ctx, p.MealID); err != nil {
+			return err
+		} else if ok {
+			at = meal.CreatedAt
+		}
+		q, err := e.Store.InsertQuestion(ctx, store.Question{Kind: "planned", From: at, To: now.UnixMilli(), RefID: p.ID}, now)
+		if err != nil {
+			return err
+		}
+		slog.Info("question", "id", q.ID, "kind", "planned", "dose", p.ID)
+		if err := e.publish(ctx, q, now, false); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// SettlePlanned closes the question about a planned dose once it was given,
+// skipped or expired; nothing when there is none.
+func (e *Engine) SettlePlanned(ctx context.Context, plannedID string) error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	return e.settlePlanned(ctx, plannedID, e.Now())
+}
+
+func (e *Engine) settlePlanned(ctx context.Context, plannedID string, now time.Time) error {
+	qs, err := e.Store.QuestionsSince(ctx, now.Add(-PlannedExpire-36*time.Hour).UnixMilli())
+	if err != nil {
+		return err
+	}
+	for _, q := range qs {
+		if q.Kind == "planned" && q.RefID == plannedID && q.State == "open" {
+			if err := e.step(ctx, q, nil, now); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // detectDouble asks about two doses too close together when xDrip+ sent one of them.
@@ -230,6 +309,14 @@ func (e *Engine) detectBolus(ctx context.Context, qs []store.Question, logged []
 	if !ok {
 		return nil
 	}
+	// a dose was worked out for this meal: the planned-dose question asks instead
+	ps, err := e.Store.PlannedDosesSince(ctx, meal.T-bolusBefore.Milliseconds())
+	if err != nil {
+		return err
+	}
+	if len(ps) > 0 {
+		return nil
+	}
 	for _, q := range qs {
 		if q.Kind == "bolus" && q.From == meal.T {
 			return nil // asked already
@@ -248,6 +335,31 @@ func (e *Engine) step(ctx context.Context, q store.Question, logged []loggedEntr
 	devs, err := e.Store.ListDevices(ctx)
 	if err != nil {
 		return err
+	}
+	if q.Kind == "planned" {
+		p, err := e.Store.PlannedDose(ctx, q.RefID)
+		if err != nil && !errors.Is(err, store.ErrNotFound) {
+			return err
+		}
+		if err != nil || p.State != "planned" {
+			q.State, q.Outcome = "answered", p.State
+			if q.Outcome == "" {
+				q.Outcome = "expired"
+			}
+			q.TreatmentID = p.InsulinID
+			q.ClosedAt = ptr(now.UnixMilli())
+			if p.ClosedBy != nil {
+				if d, ok := caregiverByID(devs, *p.ClosedBy); ok {
+					q.ClosedBy = d.Person
+				}
+			}
+			return e.save(ctx, q, now, false)
+		}
+		if q.RemindedAt == nil || now.UnixMilli()-*q.RemindedAt >= remindEvery.Milliseconds() {
+			q.RemindedAt = ptr(now.UnixMilli())
+			return e.save(ctx, q, now, true)
+		}
+		return nil
 	}
 	if q.Kind == "double" {
 		// someone deleted one of the two: nothing left to ask
@@ -331,6 +443,9 @@ func (e *Engine) detect(ctx context.Context, qs []store.Question, logged []logge
 		if q.Kind == s.Kind && q.To >= s.From-sameEpisode.Milliseconds() {
 			return nil // the same rise or fall, already asked (or answered)
 		}
+		if s.Kind == "rise" && q.Kind == "rise" && q.Outcome == "asleep" && s.From >= q.From && s.From < q.From+asleepFor.Milliseconds() {
+			return nil // she sleeps: a rise now is not food
+		}
 	}
 	q, err := e.Store.InsertQuestion(ctx, store.Question{Kind: s.Kind, From: s.From, To: s.To, SGVFrom: s.SGVFrom, SGVTo: s.SGVTo}, now)
 	if err != nil {
@@ -349,13 +464,33 @@ func (e *Engine) Answer(ctx context.Context, id int64, by store.Device, answer, 
 		return View{}, err
 	}
 	valid := []string{"food", "food_unknown", "insulin", "nothing"}
-	if q.Kind == "double" {
+	switch q.Kind {
+	case "double":
 		valid = []string{"one", "two"}
+	case "rise":
+		valid = append(valid, "asleep")
+	case "planned":
+		valid = nil // settled by confirming or skipping the dose itself
 	}
 	if !slices.Contains(valid, answer) {
 		return View{}, ErrAnswer
 	}
 	now := e.Now()
+	if answer == "asleep" {
+		// one parent who knows she was asleep settles it
+		if err := e.Store.InsertQuestionAnswer(ctx, store.QuestionAnswer{
+			QuestionID: q.ID, Round: q.Round, Person: by.Person, DeviceID: by.ID, Answer: answer, At: now.UnixMilli(),
+		}); err != nil {
+			return View{}, err
+		}
+		q.State, q.Outcome, q.ClosedBy = "answered", "asleep", by.Person
+		q.ClosedAt = ptr(now.UnixMilli())
+		slog.Info("question answered", "id", q.ID, "outcome", "asleep")
+		if err := e.save(ctx, q, now, false); err != nil {
+			return View{}, err
+		}
+		return e.View(ctx, q, now)
+	}
 	if err := e.vote(ctx, q, by, answer, treatmentID, now); err != nil {
 		return View{}, err
 	}
@@ -539,6 +674,14 @@ func (e *Engine) View(ctx context.Context, q store.Question, now time.Time) (Vie
 	}
 	if q.Kind == "double" {
 		if err := e.describeDoses(ctx, q, &v); err != nil {
+			return v, err
+		}
+	}
+	if q.Kind == "planned" {
+		v.PlannedID = q.RefID
+		if p, err := e.Store.PlannedDose(ctx, q.RefID); err == nil {
+			v.Dose = p.Dose
+		} else if !errors.Is(err, store.ErrNotFound) {
 			return v, err
 		}
 	}

@@ -16,6 +16,9 @@ type Mine struct {
 	Carbs   int    `json:"carbs"`
 	Portion string `json:"portion"` // of that entry: "тарілка", "150 г"
 	Times   int    `json:"times"`   // how often this food was logged
+	// found by meaning, not by name: the family's food it was taken from
+	Like  string  `json:"like,omitempty"`
+	Score float32 `json:"score,omitempty"`
 }
 
 // norm: lower case, letters and digits, single spaces.

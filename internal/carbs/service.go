@@ -31,35 +31,48 @@ type Estimate struct {
 }
 
 type Suggestion struct {
-	Mine     *Mine     `json:"mine,omitempty"`
-	Estimate *Estimate `json:"estimate,omitempty"`
+	Mine     *Mine      `json:"mine,omitempty"`
+	Table    []TableHit `json:"table,omitempty"`   // from an imported carbohydrate table
+	Similar  []TableHit `json:"similar,omitempty"` // table foods that mean the same in other words
+	Estimate *Estimate  `json:"estimate,omitempty"`
 }
 
 type Service struct {
 	Store   *store.Store
-	Models  []Model // none: only the family's own numbers, nothing leaves the server
+	Models  []Model  // none: only the family's own numbers, nothing leaves the server
+	Embed   Embedder // nil: names match only as written
+	Similar float32  // least cosine for a look-alike; 0: defaultSimilar
 	Timeout time.Duration
 	Now     func() time.Time
 
 	mu    sync.Mutex
 	asked map[int64][]time.Time // per device: model questions in the last hour
+	vecs  map[string][]float32  // embedding vectors already read or made
 }
 
 // Enabled: some model is configured, so estimates may come.
 func (s *Service) Enabled() bool { return len(s.Models) > 0 }
 
 // Suggest answers for each item: the family's own number if there is one,
-// and the models' estimate when they are configured and answer in time.
+// the portions of an imported table that match, and the models' estimate when
+// they are configured and answer in time. A food the table knows is not put to
+// the models.
 func (s *Service) Suggest(ctx context.Context, device int64, items []Item) ([]Suggestion, error) {
 	now := s.Now()
 	foods, err := s.Store.FoodItems(ctx, now.Add(-memoryFor).UnixMilli())
 	if err != nil {
 		return nil, err
 	}
+	tables, err := s.Store.FoodTables(ctx)
+	if err != nil {
+		return nil, err
+	}
+	index := tableIndex(tables)
 	out := make([]Suggestion, len(items))
 	var ask []int // items with no cached estimate
 	for i, it := range items {
 		out[i].Mine = recall(foods, it)
+		out[i].Table = lookup(index, it)
 		if !s.Enabled() {
 			continue
 		}
@@ -68,11 +81,14 @@ func (s *Service) Suggest(ctx context.Context, device int64, items []Item) ([]Su
 		case err == nil:
 			out[i].Estimate = &Estimate{Carbs: e.Carbs, Lo: e.Lo, Hi: e.Hi, Models: e.Models}
 		case errors.Is(err, store.ErrNotFound):
-			ask = append(ask, i)
+			if len(out[i].Table) == 0 {
+				ask = append(ask, i)
+			}
 		default:
 			return nil, err
 		}
 	}
+	s.similar(ctx, index, foods, items, out)
 	if len(ask) == 0 || !s.allow(device, len(ask), now) {
 		return out, nil
 	}
@@ -91,6 +107,30 @@ func (s *Service) Suggest(ctx context.Context, device int64, items []Item) ([]Su
 		}
 	}
 	return out, nil
+}
+
+const (
+	frequentFor = 90 * 24 * time.Hour
+	frequentMax = 12
+)
+
+// Catalog is what the food form offers to pick from: the imported tables and
+// the foods the family logs most.
+type Catalog struct {
+	Tables   []store.FoodTable
+	Frequent []Frequent
+}
+
+func (s *Service) Catalog(ctx context.Context) (Catalog, error) {
+	tables, err := s.Store.FoodTables(ctx)
+	if err != nil {
+		return Catalog{}, err
+	}
+	foods, err := s.Store.FoodItems(ctx, s.Now().Add(-frequentFor).UnixMilli())
+	if err != nil {
+		return Catalog{}, err
+	}
+	return Catalog{Tables: tables, Frequent: frequent(foods, frequentMax)}, nil
 }
 
 // ask puts the items to every model at once, each with its own deadline; a

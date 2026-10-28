@@ -11,12 +11,15 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
+	"strconv"
 	"strings"
 	"time"
 
 	"dialife/internal/acklink"
 	"dialife/internal/alarms"
 	"dialife/internal/bus"
+	"dialife/internal/questions"
 )
 
 // Target is one caregiver's phone: their ntfy topic and their DiaLife device,
@@ -99,6 +102,10 @@ func (n *Ntfy) forward(ctx context.Context, events <-chan bus.Event) {
 			if !ok {
 				return
 			}
+			if ev.Type == questions.EventQuestion {
+				n.planned(ctx, ev.Data)
+				continue
+			}
 			switch ev.Type {
 			case alarms.EventAlarm, alarms.EventHandled, alarms.EventCheckin, alarms.EventHelp, alarms.EventComing,
 				alarms.EventCheckinOK, alarms.EventClear:
@@ -120,6 +127,37 @@ func (n *Ntfy) forward(ctx context.Context, events <-chan bus.Event) {
 			}
 		}
 	}
+}
+
+func sidPlanned(id int64) string { return fmt.Sprintf("planned-%d", id) }
+
+// planned pushes "was the dose given?" to whoever has not settled it, again at
+// each reminder, and takes it off the phones once it is settled. The other
+// questions the app asks by itself.
+func (n *Ntfy) planned(ctx context.Context, data []byte) {
+	var q questions.View
+	if err := json.Unmarshal(data, &q); err != nil || q.Kind != "planned" {
+		return
+	}
+	for _, t := range n.Targets {
+		if q.State != "open" {
+			n.clear(ctx, t.Topic, sidPlanned(q.ID))
+			continue
+		}
+		if !q.Remind || !slices.Contains(q.WaitingIDs, t.DeviceID) {
+			continue
+		}
+		m := PlannedMessage(q, t, n.clock(q.From))
+		n.send(ctx, m)
+	}
+}
+
+// PlannedMessage: «Кололи до їжі о 12:40?» with the dose and what to press.
+func PlannedMessage(q questions.View, t Target, at string) Message {
+	dose := strconv.FormatFloat(q.Dose, 'f', -1, 64)
+	return Message{Topic: t.Topic, SequenceID: sidPlanned(q.ID), Title: "Кололи до їжі о " + at + "?",
+		Message:  "Очікувана доза " + strings.ReplaceAll(dose, ".", ",") + " од ще не підтверджена. У DiaLife: «Вкололи» або «Не кололи».",
+		Priority: prioNormal, Tags: []string{"syringe"}}
 }
 
 func (n *Ntfy) send(ctx context.Context, m Message) {

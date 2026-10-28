@@ -81,6 +81,8 @@ type stateResponse struct {
 	Questions    []questions.View    `json:"questions,omitempty"`     // open ones and the last day's suspect marks; never to the web viewer
 	UploaderName string              `json:"uploader_name,omitempty"` // what the family calls the xDrip+ phone
 	Intents      []insulinIntent     `json:"intents"`                 // parents with the insulin form open now
+	Dose         doseSettings        `json:"dose"`                    // the family's dose calculation
+	Planned      []plannedDose       `json:"planned"`                 // doses worked out for a meal, not given yet
 }
 
 type caregiver struct {
@@ -170,6 +172,10 @@ func (h *Handlers) snapshot(ctx context.Context, now time.Time) (stateResponse, 
 		if resp.Questions, err = h.Questions.Recent(ctx); err != nil {
 			return resp, err
 		}
+	}
+	resp.Dose = h.dose(ctx)
+	if resp.Planned, err = h.planned(ctx, devs); err != nil {
+		return resp, err
 	}
 	resp.Caregivers = []caregiver{}
 	for _, d := range devs {
@@ -308,13 +314,16 @@ type historyTreatment struct {
 	InsulinType string     `json:"insulin_type,omitempty"`
 	InsulinName string     `json:"insulin_name,omitempty"`
 	FoodItems   []foodItem `json:"food_items,omitempty"` // a meal logged as a list in the app
+	// rapid insulin: the meal it was for, and "meal" or "corr" (a correction)
+	MealID      string `json:"meal_id,omitempty"`
+	InsulinRole string `json:"insulin_role,omitempty"`
 }
 
 type foodItem struct {
 	Name    string   `json:"name"`
 	Portion string   `json:"portion,omitempty"`
 	Carbs   *float64 `json:"carbs,omitempty"`
-	Source  string   `json:"source,omitempty"` // "mine" | "estimate" | "manual": where the number came from
+	Source  string   `json:"source,omitempty"` // "mine" | "table" | "estimate" | "manual": where the number came from
 }
 
 func foodItems(raw []byte) []foodItem {
@@ -325,6 +334,21 @@ func foodItems(raw []byte) []foodItem {
 		return nil
 	}
 	return d.Items
+}
+
+// insulinFor reads which meal a dose was for and whether it was a correction.
+func insulinFor(raw []byte) (mealID, role string) {
+	var d struct {
+		MealID string `json:"mealId"`
+		Role   string `json:"insulinRole"`
+	}
+	if json.Unmarshal(raw, &d) != nil {
+		return "", ""
+	}
+	if d.Role != "meal" && d.Role != "corr" {
+		d.Role = ""
+	}
+	return d.MealID, d.Role
 }
 
 // exercise reads an activity entry: Nightscout's duration (minutes) and the app's intensity.
@@ -412,6 +436,9 @@ func (h *Handlers) History(w http.ResponseWriter, r *http.Request) {
 		}
 		if t.Carbs != nil {
 			ht.FoodItems = foodItems(t.Raw)
+		}
+		if t.Insulin != nil {
+			ht.MealID, ht.InsulinRole = insulinFor(t.Raw)
 		}
 		if ht.Glucose = bgCheck(t.Raw); ht.Glucose != nil {
 			checks = append(checks, series1{t.CreatedAt, *ht.Glucose})

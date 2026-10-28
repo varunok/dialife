@@ -8,6 +8,7 @@ import (
 
 	"dialife/internal/acklink"
 	"dialife/internal/alarms"
+	"dialife/internal/questions"
 )
 
 var (
@@ -146,5 +147,12 @@ func TestParseTargets(t *testing.T) {
 		if _, err := ParseTargets(bad); err == nil {
 			t.Errorf("ParseTargets(%q) accepted", bad)
 		}
+	}
+}
+
+func TestPlannedMessage(t *testing.T) {
+	m := PlannedMessage(questions.View{ID: 7, Kind: "planned", Dose: 2.5}, Target{Topic: "mom"}, "12:40")
+	if m.Topic != "mom" || m.SequenceID != "planned-7" || m.Title != "Кололи до їжі о 12:40?" || !strings.Contains(m.Message, "2,5 од") {
+		t.Fatalf("%+v", m)
 	}
 }
