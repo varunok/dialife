@@ -58,12 +58,29 @@ the app; a demo server with a generated day for the web).
   correction (rapid within 3 hours), a second long-acting dose (within 16
   hours). A dose from xDrip+ that lands next to another asks every parent
   "one injection or two?", and "two" keeps a watch for a low.
-- **Meals as a list, with carb suggestions.** Each food gets its own carbs.
-  Suggestions come from the family's own earlier entries first and, if you
-  configure one or more language models (Gemini, or any OpenAI-compatible API:
-  OpenAI, OpenRouter, a local Ollama), from their estimate with a range. A
-  suggestion is only ever a tap away, never filled in by itself. Without a
-  model configured nothing about food leaves the server.
+- **Meals as a list, with carb suggestions.** Each dish is its own line on a
+  food screen of its own, kept as a draft until it is saved. Suggestions come
+  from the family's own earlier entries first, then from an imported carb
+  table (a clinic's or a glucometer maker's handout, in Ukrainian, English and
+  Spanish), and, if you configure one or more language models (Gemini, or any
+  OpenAI-compatible API: OpenAI, OpenRouter, a local Ollama), from their
+  estimate with a range. With a Gemini key a name is also found by meaning:
+  "mashed potatoes" finds the table's potato, "rye bread" the family's own
+  "black bread". The foods logged most are quick buttons; the whole table is
+  one tap further. A suggestion is only ever a tap away, never filled in by
+  itself. Without a model configured nothing about food leaves the server.
+- **The rapid dose, worked out but never recorded by itself.** From the
+  family's settings, shared by every phone: grams of carbs per unit, a
+  correction table by glucometer, one of four clinic rounding rules (step 1 or
+  0.5 unit), and limits. The meal's part and the correction are added, then
+  rounded once. The correction applies only to a glucometer reading under 15
+  minutes old; a low, a very high, rapid insulin in the last 3 hours, a dose
+  over the limit, an unusual meal all show as cards, red ones needing an extra
+  tap. A meal's later dishes join it, and what was already given is taken into
+  account. The dose can go in as *planned*: every phone shows it, it counts as
+  insulin only once someone taps "Given" with when, and an hour later everyone
+  is asked whether it was given. Under the chart, a meal shows what it needed
+  and what was given.
 - **"Did you forget to log?"** A rise with no food or a fall with no insulin
   asks every parent what happened, and asks again until their answers agree.
   Unanswered questions become marks on the chart.
@@ -186,7 +203,20 @@ push notifications with action buttons. Set `DIALIFE_NTFY_URL`,
 `deploy/ntfy.Caddyfile.snippet` exposes ntfy on its own domain:
 `deploy/caddy-add.sh deploy/ntfy.Caddyfile.snippet ntfy`.
 
-### 7. Optional: carb estimates
+### 7. Optional: carb tables, estimates and names by meaning
+
+A carb table is a JSON file (`source`, `title`, categories and foods with
+their portion, carbs and names in `uk`, `en`, `es`); `dl foods FILE` loads it
+and replaces the table of the same source, `dl foods` lists what is loaded.
+No table ships with DiaLife: printed ones belong to their publishers.
+
+With a Gemini key, food names are also compared by meaning
+(`DIALIFE_GEMINI_EMBED_MODEL`, `none` to switch it off; vectors are made once
+and kept). `DIALIFE_FOOD_SIMILAR` (0–1, default 0.80) is how close two names
+must be.
+
+#### Carb estimates
+
 
 Add one or more models to `/etc/dialife.env` and redeploy; each comma-separated
 model is asked at the same time, each with its own timeout, and their answers
@@ -225,6 +255,7 @@ dl status                 # services, versions, memory, age of the newest readin
 dl last                   # newest readings
 dl alarms                 # thresholds and live episodes
 dl set low=70 high=180    # change thresholds (takes effect within a minute)
+dl foods table.json       # load a carb table (dl foods: what is loaded)
 dl logs -f                # follow the server log
 dl help                   # everything else
 ```

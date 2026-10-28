@@ -10,6 +10,13 @@ disease.
   "≈ meter" estimate, statistics and every other figure it shows may be late,
   wrong or missing. Always confirm with an approved glucose meter and follow
   the advice of your healthcare team.
+- **The dose is your decision.** The rapid dose DiaLife works out is plain
+  arithmetic from the settings you enter (carb ratio, correction table,
+  rounding, limits) and the carbs and glucometer value you type. It knows
+  nothing else about the child: not activity, illness, the insulin still
+  working beyond what was logged, or a wrong number typed. Carb tables and
+  suggestions are approximate. Set every value with your healthcare team and
+  check every dose before injecting.
 - **Alarms can fail.** Notifications and alarms depend on phones, batteries,
   operating-system power saving, networks, servers and third-party software
   (such as xDrip+ and ntfy). Any of these can stop working without warning.
@@ -41,6 +48,13 @@ By using DiaLife, its code or any part of it, you accept these terms.
   оцінка «≈ глюкометр», статистика й будь-які інші цифри можуть запізнюватися,
   бути хибними або відсутніми. Завжди перевіряйте сертифікованим глюкометром і
   дотримуйтеся порад лікаря.
+- **Дозу вирішуєте ви.** Доза rapid, яку рахує DiaLife, — проста арифметика з
+  налаштувань, які ви вносите (коефіцієнт, таблиця корекції, округлення,
+  межі), і вуглеводів та заміру глюкометра, які ви вводите. Більше нічого про
+  дитину він не знає: ні активності, ні хвороби, ні інсуліну, що ще діє поза
+  внесеним, ні помилково набраної цифри. Таблиці вуглеводів і підказки
+  орієнтовні. Встановлюйте кожне значення разом з лікарем і перевіряйте кожну
+  дозу перед уколом.
 - **Тривоги можуть не спрацювати.** Сповіщення й тривоги залежать від
   телефонів, батарей, енергозбереження системи, мережі, серверів і сторонніх
   програм (xDrip+, ntfy). Будь-що з цього може перестати працювати без
