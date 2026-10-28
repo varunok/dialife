@@ -31,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -138,13 +139,16 @@ private fun FoodRowCard(row: FoodRow, canRemove: Boolean, onChange: ((FoodRow) -
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            // a long name wraps onto up to three lines, so all of it can be seen and edited;
+            // it is still one line of text (Enter moves on to the portion)
             OutlinedTextField(
                 value = row.name,
-                onValueChange = { v -> onChange { it.copy(name = v.take(80)) } },
+                onValueChange = { v -> onChange { it.copy(name = v.replace('\n', ' ').take(80)) } },
                 label = { Text(stringResource(R.string.food_name)) },
-                singleLine = true,
+                minLines = 1,
+                maxLines = 3,
                 colors = fieldColors(),
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Next),
                 modifier = Modifier.weight(1f),
             )
             if (canRemove) {
