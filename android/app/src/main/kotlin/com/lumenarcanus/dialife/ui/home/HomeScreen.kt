@@ -100,6 +100,8 @@ data class HomeState(
     val high: Int,
     val forecast30: Int?,
     val forecastQuality: com.lumenarcanus.dialife.data.ForecastQuality? = null,
+    val iob: com.lumenarcanus.dialife.data.Iob? = null,
+    val iobQuality: com.lumenarcanus.dialife.data.ForecastQuality? = null,
     val phoneBattery: Int?,
     val uploaderName: String? = null, // the family's name for the xDrip+ phone, from the server
     val alarms: Int = 0,
@@ -143,7 +145,9 @@ fun sampleHomeUi(now: Long = 1_761_400_000_000L, dad: String = "Тато", mom: 
     )
     return HomeUi(
         state = StateResponse(now, "mg/dl", Thresholds(55, 80, 250, 300), bg, ar2, Uploader(battery = 69), questions = questions,
-            forecastQuality = com.lumenarcanus.dialife.data.ForecastQuality(19, 74, 560, listOf(com.lumenarcanus.dialife.data.ForecastBlind("food", t[270])))),
+            forecastQuality = com.lumenarcanus.dialife.data.ForecastQuality(19, 74, 560, listOf(com.lumenarcanus.dialife.data.ForecastBlind("food", t[270]))),
+            iob = com.lumenarcanus.dialife.data.Iob(1.8, 25, 40, listOf(com.lumenarcanus.dialife.data.IobPoint(t[287] + 15 * 60_000L, 176), com.lumenarcanus.dialife.data.IobPoint(t[287] + 30 * 60_000L, 168), com.lumenarcanus.dialife.data.IobPoint(t[287] + 60 * 60_000L, 150))),
+            iobQuality = com.lumenarcanus.dialife.data.ForecastQuality(18, 71, 1900)),
         myId = 8,
         history = History(t.first(), now, Series(t, v), mbg = Series(listOf(t[270]), listOf(v[270] - 9)), treatments = treatments),
         now = now,
@@ -170,6 +174,8 @@ fun HomeUi.toHomeState(fallbackUnits: Units): HomeState? {
         high = th.high,
         forecast30 = st.ar2?.predicted?.lastOrNull()?.sgv,
         forecastQuality = st.forecastQuality,
+        iob = st.iob,
+        iobQuality = st.iobQuality,
         phoneBattery = st.uploader?.battery,
         uploaderName = st.uploaderName,
         alarms = st.alarms.count { it.state != "cleared" },
@@ -609,6 +615,24 @@ private fun Hero(state: HomeState, locale: Locale) {
                 else stringResource(R.string.forecast_30, formatGlucose(it, state.units, locale))
                 Chip(text, background = c.surface, color = c.textMuted)
             }
+        }
+        // the forecast that knows the food and insulin logged; alarms do not use it
+        state.iob?.let { iob ->
+            val u = stringResource(R.string.unit_insulin)
+            val parts = listOfNotNull(
+                stringResource(R.string.iob_insulin, com.lumenarcanus.dialife.ui.treatment.formatAmount(iob.insulin, locale), u).takeIf { iob.insulin >= 0.05 },
+                stringResource(R.string.iob_carbs, iob.carbs).takeIf { iob.carbs > 0 },
+            )
+            val f30 = iob.forecast.getOrNull(1)?.v
+            val q = state.iobQuality?.takeIf { it.n >= 50 }
+            val fc = f30?.let { v ->
+                if (q != null) stringResource(R.string.iob_forecast_q, formatGlucose(v, state.units, locale), q.hitPct) else stringResource(R.string.iob_forecast, formatGlucose(v, state.units, locale))
+            }
+            if (parts.isNotEmpty() || fc != null) Text(
+                (parts + listOfNotNull(fc)).joinToString(" · "),
+                color = c.insulin, fontSize = 13.sp,
+                modifier = Modifier.background(c.insulinContainer.copy(alpha = 0.5f), RoundedCornerShape(10.dp)).padding(horizontal = 10.dp, vertical = 6.dp),
+            )
         }
         // what the trend cannot see: food or rapid insulin in the last two hours
         state.forecastQuality?.ignores?.maxByOrNull { it.t }?.let { b ->

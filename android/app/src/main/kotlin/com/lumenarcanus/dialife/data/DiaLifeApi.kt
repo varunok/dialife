@@ -83,6 +83,7 @@ class DiaLifeApi(
         buildJsonObject {
             put("ratio", d.ratio); put("rule", d.rule); put("step", d.step); put("fresh_min", d.freshMin)
             put("max_rapid", d.maxRapid); put("max_basal", d.maxBasal); put("max_carbs", d.maxCarbs)
+            put("isf", d.isf); put("dia_min", d.diaMin); put("carb_min", d.carbMin)
             put("table", kotlinx.serialization.json.buildJsonArray { d.table.forEach { r -> add(buildJsonObject { put("mg", r.mg); put("u", r.u) }) } })
         }.toString(),
     )

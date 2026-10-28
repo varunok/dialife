@@ -762,4 +762,17 @@
     <string name="planned_yes">Так</string>
     <string name="meal_low_title">Вуглеводи від гіпо</string>
     <string name="meal_low_note">Вуглеводи, щоб підняти низький цукор: інсулін на них не рахується.</string>
+    <string name="dose_forecast">Прогноз з їжею та інсуліном</string>
+    <string name="dose_forecast_note">Для прогнозу, що враховує інсулін, який ще діє, і вуглеводи, що ще засвоюються. Тривоги на нього не спираються.</string>
+    <string name="dose_isf">1 од rapid знижує на</string>
+    <string name="dose_isf_note">Порожньо — виводиться з кроків таблиці корекції. Точне число спитайте в лікаря.</string>
+    <string name="dose_dia">Rapid діє</string>
+    <string name="dose_carb_min">Вуглеводи засвоюються за</string>
+    <string name="dose_err_isf">1 од знижує на 5–400 мг/дл (або лишіть порожнім).</string>
+    <string name="dose_err_dia">Rapid діє від 120 до 480 хв.</string>
+    <string name="dose_err_carb_min">Вуглеводи засвоюються за 60–360 хв.</string>
+    <string name="iob_insulin">Активного інсуліну %1$s %2$s</string>
+    <string name="iob_carbs">вуглеводів засвоюється %1$d г</string>
+    <string name="iob_forecast">з їжею та інсуліном за 30 хв ≈ %1$s</string>
+    <string name="iob_forecast_q">з їжею та інсуліном за 30 хв ≈ %1$s, збувається в %2$d%%</string>
 </resources>

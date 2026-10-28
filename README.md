@@ -90,6 +90,11 @@ the app; a demo server with a generated day for the web).
 - **Statistics.** Time in range, mean, GMI, CV, the typical day (AGP), daily
   insulin and carbs, and an alarm log. The 30-minute forecast shows how often
   it came true on the child's own recent readings.
+- **A forecast that knows the food and insulin.** Rapid insulin still working
+  and carbs still coming in (the LoopKit/oref0 insulin curve, carbs absorbed
+  evenly) give a second forecast for the next hour, with its own record of how
+  often it came true. The sensitivity comes from the correction table unless
+  you set it. Alarms do not use it.
 - **Read-only web viewer** for a computer: the chart, any period, and every
   reading and entry as a table. A browser gets in only when a parent scans its
   QR code in the app and chooses how long it may stay; the parent can end the

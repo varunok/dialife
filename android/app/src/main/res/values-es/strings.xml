@@ -750,4 +750,17 @@
     <string name="planned_yes">Sí</string>
     <string name="meal_low_title">Hidratos para la bajada</string>
     <string name="meal_low_note">Hidratos para subir una bajada: no se calcula insulina para ellos.</string>
+    <string name="dose_forecast">Previsión con comida e insulina</string>
+    <string name="dose_forecast_note">Para la previsión que cuenta la insulina que aún actúa y los hidratos que aún entran. Las alarmas no la usan.</string>
+    <string name="dose_isf">Una unidad rápida baja</string>
+    <string name="dose_isf_note">Vacío: se deduce de los pasos de la tabla de corrección. Pedid el número real al médico.</string>
+    <string name="dose_dia">La rápida actúa</string>
+    <string name="dose_carb_min">Los hidratos entran en</string>
+    <string name="dose_err_isf">Una unidad baja de 5 a 400 mg/dL (o dejadlo vacío).</string>
+    <string name="dose_err_dia">La rápida actúa de 120 a 480 min.</string>
+    <string name="dose_err_carb_min">Los hidratos entran en 60 a 360 min.</string>
+    <string name="iob_insulin">Insulina activa %1$s %2$s</string>
+    <string name="iob_carbs">hidratos entrando %1$d g</string>
+    <string name="iob_forecast">con comida e insulina en 30 min ≈ %1$s</string>
+    <string name="iob_forecast_q">con comida e insulina en 30 min ≈ %1$s, se cumple el %2$d%%</string>
 </resources>

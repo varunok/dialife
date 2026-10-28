@@ -102,7 +102,21 @@ data class StateResponse(
     val intents: List<InsulinIntent> = emptyList(), // parents with the insulin form open right now
     val dose: DoseSettings = DoseSettings(), // the family's dose calculation, the same on every phone
     val planned: List<PlannedDose> = emptyList(), // doses worked out for a meal, not given yet
+    val iob: Iob? = null, // insulin still working and carbs still coming in; null: nothing
+    @SerialName("iob_quality") val iobQuality: ForecastQuality? = null, // how often that forecast came true
 )
+
+/** Rapid insulin still working, carbs still coming in, and what they make of the next hour. Alarms never use it. */
+@Serializable
+data class Iob(
+    val insulin: Double = 0.0,
+    val carbs: Int = 0,
+    val isf: Int = 0,
+    val forecast: List<IobPoint> = emptyList(), // +15, +30, +60 min; empty when the reading is old
+)
+
+@Serializable
+data class IobPoint(val t: Long, val v: Int)
 
 /** How the food form works out a rapid dose: shared by the family, set in settings. */
 @Serializable
@@ -115,6 +129,9 @@ data class DoseSettings(
     @SerialName("max_basal") val maxBasal: Double = 20.0,
     @SerialName("max_carbs") val maxCarbs: Int = 150,
     val table: List<CorrectionRow> = listOf(CorrectionRow(140, 1.0), CorrectionRow(180, 2.0), CorrectionRow(220, 3.0), CorrectionRow(260, 4.0), CorrectionRow(300, 5.0)),
+    val isf: Int = 0, // mg/dL one rapid unit lowers; 0: from the correction table's steps
+    @SerialName("dia_min") val diaMin: Int = 240, // how long rapid insulin works
+    @SerialName("carb_min") val carbMin: Int = 180, // how long carbs take to come in
     @SerialName("updated_at") val updatedAt: Long = 0,
     @SerialName("updated_by") val updatedBy: String = "",
 )

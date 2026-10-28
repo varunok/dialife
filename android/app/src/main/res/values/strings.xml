@@ -741,4 +741,17 @@
     <string name="planned_yes">Yes</string>
     <string name="meal_low_title">Carbs for the low</string>
     <string name="meal_low_note">Carbs given to raise a low: no insulin is worked out for them.</string>
+    <string name="dose_forecast">Forecast with food and insulin</string>
+    <string name="dose_forecast_note">For the forecast that counts insulin still working and carbs still coming in. Alarms do not use it.</string>
+    <string name="dose_isf">One rapid unit lowers by</string>
+    <string name="dose_isf_note">Empty: worked out from the correction table\'s steps. Ask your doctor for the real number.</string>
+    <string name="dose_dia">Rapid insulin works for</string>
+    <string name="dose_carb_min">Carbs come in over</string>
+    <string name="dose_err_isf">One unit lowers by 5 to 400 mg/dL (or leave it empty).</string>
+    <string name="dose_err_dia">Rapid insulin works 120 to 480 min.</string>
+    <string name="dose_err_carb_min">Carbs come in over 60 to 360 min.</string>
+    <string name="iob_insulin">Active insulin %1$s %2$s</string>
+    <string name="iob_carbs">carbs coming in %1$d g</string>
+    <string name="iob_forecast">with food and insulin in 30 min ≈ %1$s</string>
+    <string name="iob_forecast_q">with food and insulin in 30 min ≈ %1$s, comes true %2$d%%</string>
 </resources>

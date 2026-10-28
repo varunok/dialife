@@ -79,6 +79,9 @@ fun DoseSettingsScreen(dose: DoseSettings, units: Units, onSave: suspend (DoseSe
     var maxRapid by remember { mutableStateOf(f(dose.maxRapid)) }
     var maxBasal by remember { mutableStateOf(f(dose.maxBasal)) }
     var maxCarbs by remember { mutableStateOf(dose.maxCarbs.toString()) }
+    var isf by remember { mutableStateOf(if (dose.isf > 0) formatGlucose(dose.isf, units, locale) else "") }
+    var dia by remember { mutableStateOf(dose.diaMin.toString()) }
+    var carbMin by remember { mutableStateOf(dose.carbMin.toString()) }
     // rows as typed: the mg/dL shown in this phone's units
     val rows = remember { mutableStateListOf<Pair<String, String>>().apply { dose.table.forEach { add(formatGlucose(it.mg, units, locale) to f(it.u)) } } }
     var saving by remember { mutableStateOf(false) }
@@ -98,6 +101,9 @@ fun DoseSettingsScreen(dose: DoseSettings, units: Units, onSave: suspend (DoseSe
         val mgs = table.mapNotNull { it.first }
         if (mgs.size != mgs.toSet().size) add(stringResource(R.string.dose_err_twice))
         if (mr != null && table.any { (_, u) -> u != null && u > mr }) add(stringResource(R.string.dose_err_table_max, f(mr)))
+        if (isf.isNotBlank() && mgOf(isf)?.let { it in 5..400 } != true) add(stringResource(R.string.dose_err_isf))
+        if (dia.toIntOrNull()?.let { it in 120..480 } != true) add(stringResource(R.string.dose_err_dia))
+        if (carbMin.toIntOrNull()?.let { it in 60..360 } != true) add(stringResource(R.string.dose_err_carb_min))
     }
 
     Column(Modifier.fillMaxSize().background(c.background).safeDrawingPadding()) {
@@ -189,6 +195,14 @@ fun DoseSettingsScreen(dose: DoseSettings, units: Units, onSave: suspend (DoseSe
                 NumberRow(stringResource(R.string.dose_fresh_pre), fresh, stringResource(R.string.unit_min), KeyboardType.Number) { fresh = it.filter(Char::isDigit).take(2) }
                 Text(stringResource(R.string.dose_fresh_note), color = c.textFaint, fontSize = 12.sp)
             }
+            Group(stringResource(R.string.dose_forecast)) {
+                Text(stringResource(R.string.dose_forecast_note), color = c.textMuted, fontSize = 13.sp)
+                val unit = if (units == Units.Mmol) stringResource(R.string.unit_mmol) else "mg/dL"
+                NumberRow(stringResource(R.string.dose_isf), isf, unit, KeyboardType.Decimal) { isf = it.filter { ch -> ch.isDigit() || ch == ',' || ch == '.' }.take(5) }
+                Text(stringResource(R.string.dose_isf_note), color = c.textFaint, fontSize = 12.sp)
+                NumberRow(stringResource(R.string.dose_dia), dia, stringResource(R.string.unit_min), KeyboardType.Number) { dia = it.filter(Char::isDigit).take(3) }
+                NumberRow(stringResource(R.string.dose_carb_min), carbMin, stringResource(R.string.unit_min), KeyboardType.Number) { carbMin = it.filter(Char::isDigit).take(3) }
+            }
             problems.forEach { Text(it, color = c.low, fontSize = 13.sp) }
             when (result) {
                 true -> Text(stringResource(R.string.dose_saved), color = c.inRange, fontSize = 13.sp)
@@ -203,6 +217,7 @@ fun DoseSettingsScreen(dose: DoseSettings, units: Units, onSave: suspend (DoseSe
                     ratio = r!!, rule = rule, step = step, freshMin = fresh.toInt(),
                     maxRapid = num(maxRapid)!!, maxBasal = num(maxBasal)!!, maxCarbs = maxCarbs.toInt(),
                     table = table.map { (mg, u) -> CorrectionRow(mg!!, u!!) }.sortedBy { it.mg },
+                    isf = if (isf.isBlank()) 0 else mgOf(isf)!!, diaMin = dia.toInt(), carbMin = carbMin.toInt(),
                 )
                 scope.launch { result = onSave(d).isSuccess; saving = false }
             },
