@@ -421,10 +421,10 @@ private fun entryText(e: Entry, units: Units): String {
             val type = if (e.kind == EntryKind.Basal) InsulinType.Basal else InsulinType.Rapid
             (tr?.insulinName ?: Prefs.nameOf(type) ?: stringResource(if (type == InsulinType.Basal) R.string.ins_basal else R.string.ins_rapid)) + " " + formatAmount(tr?.insulin ?: 0.0, locale) + " " + u
         }
-        EntryKind.Carbs -> formatAmount(tr?.carbs ?: 0.0, locale) + " " + stringResource(R.string.unit_carbs) + ((tr?.foodText() ?: tr?.notes?.takeIf { it.isNotBlank() })?.let { " · " + it.take(40) } ?: "")
+        EntryKind.Carbs -> formatAmount(tr?.carbs ?: 0.0, locale) + " " + stringResource(R.string.unit_carbs) + ((tr?.foodText() ?: tr?.notes?.takeIf { it.isNotBlank() })?.let { " · $it" } ?: "")
         EntryKind.Meter -> "◆ " + formatGlucose(e.meter ?: 0, units, locale)
         EntryKind.Activity -> stringResource(R.string.tr_activity) + " " + stringResource(R.string.data_step_min, tr?.duration ?: 0)
-        EntryKind.Note -> tr?.notes.orEmpty().take(32)
+        EntryKind.Note -> tr?.notes.orEmpty()
         EntryKind.Suspect -> suspectText(e, units)
     }
 }
@@ -467,14 +467,14 @@ private fun EntryChip(e: Entry, units: Units, onEdit: (Treatment) -> Unit, showT
     val who = whoOf(e)
     Row(
         Modifier
-            .background(bg, CircleShape)
+            .background(bg, androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
             .then(if (e.treatment != null && e.kind != EntryKind.Suspect) Modifier.clickable { onEdit(e.treatment) } else Modifier)
             .padding(horizontal = 8.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // in an interval, say when exactly; a suspect already carries its span
         val at = if (showTime && e.kind != EntryKind.Suspect) " · " + AlarmText.clock(ctx, e.t) else ""
-        Text(entryText(e, units) + at + (who?.let { " · " + it.first } ?: ""), color = ink, fontSize = 11.5.sp, fontWeight = FontWeight.Medium, maxLines = 2)
+        Text(entryText(e, units) + at + (who?.let { " · " + it.first } ?: ""), color = ink, fontSize = 11.5.sp, fontWeight = FontWeight.Medium)
         if (who?.second == true) {
             Spacer(Modifier.width(5.dp))
             Box(Modifier.size(5.dp).background(DiaTheme.colors.textMuted, CircleShape))
@@ -592,7 +592,7 @@ private fun WideTable(
                                         else -> listOfNotNull(e.treatment?.foodText(), e.treatment?.notes?.takeIf { it.isNotBlank() }).joinToString(" · ").ifBlank { null }
                                     }
                                 } + r.entries.mapNotNull { whoOf(it)?.first }.distinct()
-                                Text(notes.joinToString(" · "), color = c.textMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(notes.joinToString(" · "), color = c.textMuted, fontSize = 12.sp)
                             },
                         ),
                         Modifier.then(if (r.entries.isNotEmpty()) Modifier.background(c.surfaceRaised.copy(alpha = 0.5f)) else Modifier),
