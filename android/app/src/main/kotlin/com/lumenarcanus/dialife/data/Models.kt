@@ -104,6 +104,7 @@ data class StateResponse(
     val planned: List<PlannedDose> = emptyList(), // doses worked out for a meal, not given yet
     val iob: Iob? = null, // insulin still working and carbs still coming in; null: nothing
     @SerialName("iob_quality") val iobQuality: ForecastQuality? = null, // how often that forecast came true
+    @SerialName("meal_gap_min") val mealGapMin: Int = Meals.DEFAULT_GAP_MIN, // food entries this close are one meal
 )
 
 /** Rapid insulin still working, carbs still coming in, and what they make of the next hour. Alarms never use it. */

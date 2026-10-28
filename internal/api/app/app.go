@@ -66,6 +66,7 @@ type Handlers struct {
 	intents  intentBoard  // who has the insulin form open
 	quality  qualityCache // how the chart's forecast did lately
 	iobQ     iobQualityCache
+	mealGapQ mealGapCache // how far apart a meal's entries may be
 }
 
 type stateResponse struct {
@@ -86,6 +87,7 @@ type stateResponse struct {
 	Planned      []plannedDose       `json:"planned"`                 // doses worked out for a meal, not given yet
 	IOB          *iobState           `json:"iob,omitempty"`           // what logged food and rapid insulin will still do; not for alarms
 	IOBQuality   *forecast.Quality   `json:"iob_quality,omitempty"`   // how often its "in 30 min" came true
+	MealGapMin   int                 `json:"meal_gap_min"`            // food entries this close (minutes) are one meal
 }
 
 type caregiver struct {
@@ -177,6 +179,7 @@ func (h *Handlers) snapshot(ctx context.Context, now time.Time) (stateResponse, 
 		}
 	}
 	resp.Dose = h.dose(ctx)
+	resp.MealGapMin = h.mealGap(ctx, now)
 	fresh := ok && !st.Error && now.UnixMilli()-st.Last.Date <= forecastMaxAge.Milliseconds()
 	if resp.IOB = h.iob(ctx, st, fresh, resp.Dose, now); resp.IOB != nil {
 		if q := h.iobQuality(ctx, resp.Dose, now); q.N > 0 {

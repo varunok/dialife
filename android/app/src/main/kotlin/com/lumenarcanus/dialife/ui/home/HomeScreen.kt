@@ -262,6 +262,7 @@ fun HomeScreen(
             units = state?.units ?: fallbackUnits,
             onFood = { onOpenMeal(null, sheetFor); sheet = null; sheetFor = null },
             dose = ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
+            mealGap = ui.state?.mealGapMin ?: com.lumenarcanus.dialife.data.Meals.DEFAULT_GAP_MIN,
         )
     }
     confirmDelete?.let { tr ->
@@ -293,6 +294,7 @@ fun HomeScreen(
                 onDismissSuspect = onDismissQuestion,
                 dose = ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
                 planned = ui.state?.planned.orEmpty(),
+                mealGap = ui.state?.mealGapMin ?: com.lumenarcanus.dialife.data.Meals.DEFAULT_GAP_MIN,
             )
         }
         return
@@ -374,6 +376,7 @@ fun HomeScreen(
             onDismissSuspect = onDismissQuestion,
             dose = ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
             planned = ui.state?.planned.orEmpty(),
+            mealGap = ui.state?.mealGapMin ?: com.lumenarcanus.dialife.data.Meals.DEFAULT_GAP_MIN,
             onOpenTable = onOpenData,
         )
         state?.let { Tiles(it, onOpenStats, onOpenLog) }

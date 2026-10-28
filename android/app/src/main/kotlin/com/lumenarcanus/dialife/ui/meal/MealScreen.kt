@@ -139,6 +139,7 @@ fun MealScreen(
     onSaved: (food: Treatment) -> Unit,
     onClose: () -> Unit,
     forLow: Boolean = false, // carbs given for a low: no insulin is worked out, no planned dose, no meal draft
+    mealGap: Int = Meals.DEFAULT_GAP_MIN, // the server's: food entries this close are one meal
 ) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
@@ -186,7 +187,7 @@ fun MealScreen(
 
     // the meal this belongs to: the one being edited, or the one it joins
     val others = treatments.filter { it.id != editing?.id }
-    val gap = Meals.gapMin(treatments)
+    val gap = mealGap
     val meal = remember(treatments, editing, time, gap) {
         if (editing != null) Meals.group(treatments, gap).firstOrNull { m -> m.foods.any { it.id == editing.id } }
         else Meals.joining(Meals.group(others, gap), time, gap)

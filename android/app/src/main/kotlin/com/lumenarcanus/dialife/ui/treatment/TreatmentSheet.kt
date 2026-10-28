@@ -114,6 +114,7 @@ fun TreatmentSheet(
     initialTime: Long? = null, // a question's "log it": when the rise or fall began
     onFood: (() -> Unit)? = null, // food has a screen of its own: the tab opens it
     dose: com.lumenarcanus.dialife.data.DoseSettings = com.lumenarcanus.dialife.data.DoseSettings(), // the dose limits
+    mealGap: Int = com.lumenarcanus.dialife.data.Meals.DEFAULT_GAP_MIN, // the server's: food entries this close are one meal
 ) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
@@ -217,7 +218,7 @@ fun TreatmentSheet(
                 val basal = insType == InsulinType.Basal
                 // rapid: for a meal or a correction; the meal near it chooses, a tap changes it
                 val nearMeal = remember(recent, time) {
-                    com.lumenarcanus.dialife.data.Meals.group(recent).lastOrNull { time in (it.from - 90 * 60_000L)..(it.to + 60 * 60_000L) }
+                    com.lumenarcanus.dialife.data.Meals.group(recent, mealGap).lastOrNull { time in (it.from - 90 * 60_000L)..(it.to + 60 * 60_000L) }
                 }
                 if (!basal) {
                     val role = insRole ?: if (nearMeal != null) "meal" else "corr"
@@ -328,7 +329,7 @@ fun TreatmentSheet(
                 confirmedNew = confirmedNew,
                 foodItems = if (kind == TreatmentKind.Food) foodItemsOf(foodRows) else editing?.foodItems?.takeIf { kind == TreatmentKind.Insulin },
                 insulinRole = if (kind == TreatmentKind.Insulin && insType == InsulinType.Rapid) {
-                    insRole ?: if (com.lumenarcanus.dialife.data.Meals.group(recent).any { time in (it.from - 90 * 60_000L)..(it.to + 60 * 60_000L) }) "meal" else "corr"
+                    insRole ?: if (com.lumenarcanus.dialife.data.Meals.group(recent, mealGap).any { time in (it.from - 90 * 60_000L)..(it.to + 60 * 60_000L) }) "meal" else "corr"
                 } else editing?.insulinRole,
                 mealId = editing?.mealId,
             )

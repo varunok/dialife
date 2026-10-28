@@ -14,27 +14,15 @@ data class Meal(val foods: List<Treatment>, val insulin: List<Treatment>) {
 }
 
 object Meals {
-    const val DEFAULT_GAP_MIN = 90
+    const val DEFAULT_GAP_MIN = 30 // the server's until /api/state brings it
     private const val BEFORE_MIN = 90L // rapid this long before the first food still counts
     private const val AFTER_MIN = 60L // and this long after the last
 
     fun isFood(t: Treatment) = (t.carbs ?: 0.0) > 0
     fun isRapid(t: Treatment) = (t.insulin ?: 0.0) > 0 && InsulinType.of(t.insulinType) == InsulinType.Rapid
 
-    /**
-     * How far apart two entries of one meal may be: 90 min until there is
-     * history, then the family's own habit, the larger gaps between food
-     * entries less than 3 h apart, with a margin.
-     */
-    fun gapMin(treatments: List<Treatment>): Int {
-        val ts = treatments.filter(::isFood).map { it.t }.sorted()
-        val gaps = ts.zipWithNext { a, b -> ((b - a) / 60_000L).toInt() }.filter { it in 1 until 180 }.sorted()
-        if (gaps.size < 10) return DEFAULT_GAP_MIN
-        val p75 = gaps[(gaps.size * 3) / 4]
-        return (p75 + 15).coerceIn(45, 150)
-    }
-
-    fun group(treatments: List<Treatment>, gapMin: Int = gapMin(treatments)): List<Meal> {
+    /** [gapMin]: how far apart two entries of one meal may be; the server works it out for every phone. */
+    fun group(treatments: List<Treatment>, gapMin: Int): List<Meal> {
         val foods = treatments.filter(::isFood).sortedBy { it.t }
         val runs = mutableListOf<MutableList<Treatment>>()
         for (f in foods) {

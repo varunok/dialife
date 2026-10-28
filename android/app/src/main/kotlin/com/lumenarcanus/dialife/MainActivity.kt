@@ -130,6 +130,7 @@ class MainActivity : AppCompatActivity() {
                                     repo = liveRepository,
                                     treatments = all,
                                     dose = ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
+                                    mealGap = ui.state?.mealGapMin ?: com.lumenarcanus.dialife.data.Meals.DEFAULT_GAP_MIN,
                                     planned = ui.state?.planned.orEmpty(),
                                     units = unitsOf(ui.state?.displayUnits ?: s.credentials.displayUnits),
                                     editing = mealEdit?.let { id -> all.firstOrNull { it.id == id } ?: mealEntry?.takeIf { it.id == id } },
