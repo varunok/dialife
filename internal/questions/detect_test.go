@@ -84,3 +84,27 @@ func TestNightAsksOnlyAboutFastRises(t *testing.T) {
 		t.Fatal("a fast rise at night must still ask")
 	}
 }
+
+func TestMissingBolus(t *testing.T) {
+	min := func(m int) int64 { return now.Add(time.Duration(m) * time.Minute).UnixMilli() }
+	meal := Entry{T: min(-75), Carbs: true, ID: "food"}
+	noSensor := func(int64) int { return 0 }
+	cases := []struct {
+		name   string
+		rapid  Entry
+		missed bool
+	}{
+		{"none", Entry{}, true},
+		{"37 min before: a pre-bolus", Entry{T: min(-112), Rapid: true}, false},
+		{"two hours before", Entry{T: min(-195), Rapid: true}, true},
+		{"two hours before, linked to it", Entry{T: min(-195), Rapid: true, MealID: "food"}, false},
+		{"next to it but a correction", Entry{T: min(-80), Rapid: true, Corr: true}, true},
+		{"linked to another meal, far away", Entry{T: min(-195), Rapid: true, MealID: "other"}, true},
+	}
+	for _, c := range cases {
+		_, missed := MissingBolus([]Entry{meal, c.rapid}, now, noSensor)
+		if missed != c.missed {
+			t.Errorf("%s: missed=%v, want %v", c.name, missed, c.missed)
+		}
+	}
+}

@@ -42,6 +42,9 @@ type Entry struct {
 	Carbs    bool // any carbs
 	Rapid    bool // rapid-acting insulin
 	Exercise bool
+	ID       string // the treatment
+	MealID   string // rapid: the food entry it was given for, when the app said
+	Corr     bool   // rapid marked a correction: not for a meal
 }
 
 type Suspect struct {
@@ -115,15 +118,17 @@ func Explains(kind string, from int64, e Entry) bool {
 	case "fall":
 		return (e.Rapid && e.T >= from-insulinAct.Milliseconds()) || (e.Exercise && e.T >= from-exerciseAct.Milliseconds())
 	case "bolus":
-		return e.Rapid && e.T >= from-bolusBefore.Milliseconds() && e.T <= from+bolusAfter.Milliseconds()
+		return e.Rapid && !e.Corr && e.T >= from-bolusBefore.Milliseconds() && e.T <= from+bolusAfter.Milliseconds()
 	}
 	return false
 }
 
-// A meal and its bolus: insulin up to half an hour before or an hour after
-// counts as given for it. Asked once the hour has passed.
+// A meal and its bolus: insulin up to an hour and a half before or an hour
+// after counts as given for it, the app's own meal window; a dose linked to
+// the meal counts wherever it is, one marked a correction never does. Asked
+// once the hour has passed.
 const (
-	bolusBefore = 30 * time.Minute
+	bolusBefore = 90 * time.Minute
 	bolusAfter  = time.Hour
 	bolusLookUp = 3 * time.Hour // meals this recent are checked
 	// carbs at a low treat the low: no insulin is right then
@@ -141,7 +146,8 @@ func MissingBolus(logged []Entry, now time.Time, sgvAt func(int64) int) (Entry, 
 		if !m.Carbs || age < bolusAfter.Milliseconds() || age > bolusLookUp.Milliseconds() {
 			continue
 		}
-		if explained(logged, m.T-bolusBefore.Milliseconds(), m.T+bolusAfter.Milliseconds(), func(e Entry) bool { return e.Rapid }) {
+		if explained(logged, m.T-bolusBefore.Milliseconds(), m.T+bolusAfter.Milliseconds(), func(e Entry) bool { return e.Rapid && !e.Corr }) ||
+			linked(logged, m) {
 			continue
 		}
 		if v := sgvAt(m.T); v > 0 && v < bolusLowBelow {
@@ -152,6 +158,26 @@ func MissingBolus(logged []Entry, now time.Time, sgvAt func(int64) int) (Entry, 
 		}
 	}
 	return found, ok
+}
+
+// linked: a rapid dose the app gave for this very meal.
+func linked(logged []Entry, meal Entry) bool {
+	for _, e := range logged {
+		if e.Rapid && meal.ID != "" && e.MealID == meal.ID {
+			return true
+		}
+	}
+	return false
+}
+
+// MealAt is the food entry logged at t.
+func MealAt(logged []Entry, t int64) Entry {
+	for _, e := range logged {
+		if e.Carbs && e.T == t {
+			return e
+		}
+	}
+	return Entry{}
 }
 
 func explained(logged []Entry, from, to int64, what func(Entry) bool) bool {

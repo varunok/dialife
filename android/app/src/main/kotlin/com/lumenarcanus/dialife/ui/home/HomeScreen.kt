@@ -354,6 +354,7 @@ fun HomeScreen(
                     q, ui.myId, ui.history?.treatments.orEmpty(), state?.units ?: fallbackUnits,
                     onAnswer = { answer, tr -> onAnswerQuestion(q.id, answer, tr) },
                     onLog = { sheetFor = q; sheet = (if (q.kind == "rise") TreatmentKind.Food else TreatmentKind.Insulin) to null },
+                    onLink = onSaveTreatment,
                 )
             }
         }
@@ -406,6 +407,7 @@ private fun QuestionCard(
     units: Units,
     onAnswer: (answer: String, treatmentId: String?) -> Unit,
     onLog: () -> Unit,
+    onLink: (Treatment) -> Unit = {}, // a dose said to be for the meal: saved linked to it
 ) {
     val c = DiaTheme.colors
     val ctx = androidx.compose.ui.platform.LocalContext.current
@@ -447,8 +449,26 @@ private fun QuestionCard(
                     androidx.compose.material3.OutlinedButton(onClick = { onAnswer("two", null) }) { Text(stringResource(R.string.q_btn_two), color = c.text) }
                     return@FlowRow
                 }
+                // food with no dose near it: the rapid dose before it may have been for it all the same
+                val food = treatments.firstOrNull { q.kind == "bolus" && (it.carbs ?: 0.0) > 0 && it.t == q.from }
+                val foodIds = treatments.filter { (it.carbs ?: 0.0) > 0 }.map { it.id }.toSet()
+                val before = food?.let { f ->
+                    treatments.filter {
+                        com.lumenarcanus.dialife.data.Meals.isRapid(it) && it.t in (f.t - 3 * 3_600_000L)..f.t &&
+                            (it.mealId == null || it.mealId == f.id || it.mealId !in foodIds)
+                    }.maxByOrNull { it.t }
+                }
                 if (entry != null) {
                     Button(onClick = { onAnswer(if (rise) "food" else "insulin", entry.id) }) { Text(stringResource(R.string.q_btn_yes)) }
+                } else if (before != null) {
+                    Button(onClick = {
+                        onLink(before.copy(mealId = food.id, insulinRole = "meal"))
+                        onAnswer("insulin", before.id)
+                    }) {
+                        Text(stringResource(R.string.q_btn_was_for_it, com.lumenarcanus.dialife.live.AlarmText.clock(ctx, before.t),
+                            com.lumenarcanus.dialife.ui.treatment.formatAmount(before.insulin ?: 0.0, locale)))
+                    }
+                    androidx.compose.material3.OutlinedButton(onClick = onLog) { Text(stringResource(R.string.q_btn_insulin), color = c.text) }
                 } else {
                     Button(onClick = onLog) { Text(stringResource(if (rise) R.string.q_btn_food else R.string.q_btn_insulin)) }
                 }

@@ -377,7 +377,11 @@ func (e *Engine) step(ctx context.Context, q store.Question, logged []loggedEntr
 	}
 	// an entry that explains it: from xDrip+ it settles the question, from a parent it is their vote
 	for _, l := range logged {
-		if l.T > now.UnixMilli() || !Explains(q.Kind, q.From, l.Entry) || l.ID == q.TreatmentID {
+		explains := Explains(q.Kind, q.From, l.Entry)
+		if q.Kind == "bolus" && !explains {
+			explains = linked([]Entry{l.Entry}, mealAtLogged(logged, q.From))
+		}
+		if l.T > now.UnixMilli() || !explains || l.ID == q.TreatmentID {
 			continue
 		}
 		answer := "food"
@@ -769,12 +773,16 @@ func (e *Engine) logged(ctx context.Context, from, to time.Time) ([]loggedEntry,
 	out := make([]loggedEntry, 0, len(ts))
 	for _, tr := range ts {
 		insulin := tr.Insulin != nil && *tr.Insulin > 0
+		mealID, role := insulinFor(tr.Raw)
 		out = append(out, loggedEntry{
 			Entry: Entry{
 				T:        tr.CreatedAt,
 				Carbs:    tr.Carbs != nil && *tr.Carbs > 0,
 				Rapid:    insulin && !isBasal(tr.Raw),
 				Exercise: tr.EventType == "Exercise",
+				ID:       tr.ID,
+				MealID:   mealID,
+				Corr:     role == "corr",
 			},
 			ID:       tr.ID,
 			DeviceID: tr.DeviceID,
@@ -814,6 +822,24 @@ func answeredThisRound(as []store.QuestionAnswer, round int, person string) bool
 		}
 	}
 	return false
+}
+
+func mealAtLogged(logged []loggedEntry, t int64) Entry {
+	es := make([]Entry, len(logged))
+	for i, l := range logged {
+		es[i] = l.Entry
+	}
+	return MealAt(es, t)
+}
+
+// insulinFor: the meal a dose was given for and "meal" or "corr", as the app sent them.
+func insulinFor(raw []byte) (mealID, role string) {
+	var d struct {
+		MealID string `json:"mealId"`
+		Role   string `json:"insulinRole"`
+	}
+	_ = json.Unmarshal(raw, &d)
+	return d.MealID, d.Role
 }
 
 func isBasal(raw []byte) bool {

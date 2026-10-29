@@ -235,6 +235,7 @@
     <string name="q_fall_body">Цукор знизився з %1$s до %2$s з %3$s. Що було?</string>
     <string name="q_bolus_title">Їжа без інсуліну?</string>
     <string name="q_bolus_body">Записано їжу о %1$s, а короткого інсуліну поруч немає. Що було?</string>
+    <string name="q_btn_was_for_it">Інсулін о %1$s (%2$s од) був для неї</string>
     <string name="q_btn_no_insulin">Інсулін не давали</string>
     <string name="suspect_bolus">Підозра: їжа о %1$s без інсуліну</string>
     <string name="data_suspect_bolus">\? їжа о %1$s без інсуліну</string>
