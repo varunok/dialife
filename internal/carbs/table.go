@@ -22,12 +22,15 @@ type TableHit struct {
 	Base   int    `json:"base"` // grams for the table's own portion
 	Scaled bool   `json:"scaled,omitempty"`
 	// counted from carbohydrate per 100 g (a portion typed in grams), and its source
-	Per100    *float64    `json:"per100,omitempty"`
-	Per100Src string      `json:"per100_src,omitempty"`
-	Names     store.Langs `json:"names"`
-	Portions  store.Langs `json:"portions"`
-	Source    string      `json:"source"`
-	Score     float32     `json:"score,omitempty"` // a look-alike: how close the names are, 0–1
+	Per100    *float64 `json:"per100,omitempty"`
+	Per100Src string   `json:"per100_src,omitempty"`
+	// for information, with Per100 when the source gives them: fibre and available carbohydrate per 100 g
+	Fiber100 *float64    `json:"fiber100,omitempty"`
+	Avail100 *float64    `json:"avail100,omitempty"`
+	Names    store.Langs `json:"names"`
+	Portions store.Langs `json:"portions"`
+	Source   string      `json:"source"`
+	Score    float32     `json:"score,omitempty"` // a look-alike: how close the names are, 0–1
 }
 
 type tableEntry struct {
@@ -96,6 +99,7 @@ func hitFor(e tableEntry, typed string) TableHit {
 	h := TableHit{ID: e.ref.ID, Base: e.ref.Carbs, Names: e.ref.Names, Portions: e.ref.Portions, Source: e.source}
 	if c, ok := per100(e.ref, typed); ok {
 		h.Carbs, h.Scaled, h.Per100, h.Per100Src = c, true, e.ref.Carbs100, e.ref.Carbs100Src
+		h.Fiber100, h.Avail100 = e.ref.Fiber100, e.ref.Avail100
 	} else {
 		h.Carbs, h.Scaled = scale(e.ref, typed)
 	}

@@ -554,6 +554,8 @@
     <string name="food_all">Усі продукти</string>
     <string name="food_table">З таблиці вуглеводів</string>
     <string name="food_table_free">Можна не рахувати: вуглеводів майже нема</string>
+    <string name="food_fiber_avail">довідково: клітковина %1$s г, засвоюваних %2$s г</string>
+    <string name="food_fiber">довідково: клітковина %1$s г</string>
     <string name="food_table_per100">%1$s г на 100 г · %2$s</string>
     <string name="food_table_scaled">%1$d г за «%2$s», перераховано на вашу порцію</string>
     <string name="food_src_table">Обрано: з таблиці. Перевірте порцію</string>

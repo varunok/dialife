@@ -350,10 +350,21 @@ fun FoodSuggestions(row: FoodRow, lang: String, onChange: ((FoodRow) -> FoodRow)
     }
 }
 
-/** "7.7 g per 100 g · SARA 2 (AR)": where the number for a weight comes from. */
+/**
+ * "7.7 g per 100 g · SARA 2 (AR)": where the number for a weight comes from; under
+ * it, for information only, the fibre and available carbohydrate the source gives.
+ */
 @Composable
-private fun per100Note(h: CarbTableHit): String =
-    stringResource(R.string.food_table_per100, "%.1f".format(java.util.Locale.ROOT, h.per100).removeSuffix(".0"), h.per100Src)
+private fun per100Note(h: CarbTableHit): String {
+    val n = { v: Double -> "%.1f".format(java.util.Locale.ROOT, v).removeSuffix(".0") }
+    val main = stringResource(R.string.food_table_per100, n(h.per100 ?: 0.0), h.per100Src)
+    val info = when {
+        h.fiber100 != null && h.avail100 != null -> stringResource(R.string.food_fiber_avail, n(h.fiber100), n(h.avail100))
+        h.fiber100 != null -> stringResource(R.string.food_fiber, n(h.fiber100))
+        else -> return main
+    }
+    return main + "\n" + info
+}
 
 /** "For «1 cup (250 ml)», not for «100 g»" when the table could not recount its line. */
 @Composable

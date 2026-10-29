@@ -35,6 +35,8 @@ type foodFile struct {
 		Grams    *float64    `json:"grams"`
 		Carbs100 *float64    `json:"carbs100"`
 		Per100   string      `json:"carbs100_src"`
+		Fiber100 *float64    `json:"fiber100"`
+		Avail100 *float64    `json:"avail100"`
 		Names    store.Langs `json:"names"`
 		Portions store.Langs `json:"portions"`
 		Aliases  []string    `json:"aliases"`
@@ -128,7 +130,7 @@ func readFoodFile(r io.Reader) (store.FoodTable, error) {
 		}
 		ids[it.ID] = true
 		t.Items = append(t.Items, store.FoodRef{ID: it.ID, Cat: it.Cat, Carbs: it.Carbs, Qty: it.Qty, Unit: it.Unit, Grams: it.Grams,
-			Carbs100: it.Carbs100, Carbs100Src: it.Per100, Names: it.Names, Portions: it.Portions, Aliases: it.Aliases, Sort: it.Sort})
+			Carbs100: it.Carbs100, Carbs100Src: it.Per100, Fiber100: it.Fiber100, Avail100: it.Avail100, Names: it.Names, Portions: it.Portions, Aliases: it.Aliases, Sort: it.Sort})
 	}
 	if len(probs) > 0 {
 		return store.FoodTable{}, errors.New("foods file:\n  " + strings.Join(probs, "\n  "))
