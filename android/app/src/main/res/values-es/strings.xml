@@ -596,7 +596,7 @@
     <string name="meal_line_total">Total %1$s, redondeado una vez</string>
     <string name="meal_line_given">Ya puesto</string>
     <string name="meal_rule_note">Redondeo: %1$s.</string>
-    <string name="meal_fresh_meter">Medición reciente del glucómetro, %1$s</string>
+    <string name="meal_fresh_meter">Glucómetro ahora, %1$s</string>
     <string name="meal_to_give">Según el cálculo</string>
     <string name="meal_to_give_more">Falta por poner</string>
     <string name="meal_cannot_plan">Esta dosis no se puede prever: parece un error. Comprobad los hidratos.</string>

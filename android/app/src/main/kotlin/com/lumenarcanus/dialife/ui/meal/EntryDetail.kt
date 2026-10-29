@@ -76,10 +76,10 @@ fun EntryDetail(tr: Treatment, treatments: List<Treatment>, dose: DoseSettings, 
         // the dishes, every line whole
         tr.foodItems?.takeIf { it.isNotEmpty() }?.forEach { item ->
             Row {
-                Text(listOfNotNull(item.name, item.portion?.takeIf { it.isNotBlank() }).joinToString(", "), color = c.text, fontSize = 13.5.sp, modifier = Modifier.weight(1f))
+                Text(listOfNotNull(item.name, item.portion?.takeIf { it.isNotBlank() }).joinToString(", "), color = c.text, fontSize = 13.5.sp, modifier = Modifier.weight(1f).alignByBaseline())
                 Spacer(Modifier.width(10.dp))
                 Text((if (item.suggested) "≈ " else "") + (item.carbs?.let { kotlin.math.round(it).toInt().toString() } ?: "—") + " $g",
-                    style = GlucoseHero.copy(fontSize = 14.sp, lineHeight = 18.sp, color = c.carbs))
+                    style = GlucoseHero.copy(fontSize = 14.sp, lineHeight = 18.sp, color = c.carbs), modifier = Modifier.alignByBaseline())
             }
         }
 
@@ -105,13 +105,13 @@ fun EntryDetail(tr: Treatment, treatments: List<Treatment>, dose: DoseSettings, 
             val m = DoseCalc.meal(dose, meal.carbs, meter?.glucose, meter?.t, first + 5 * 60_000L, meal.given)
             Row {
                 Text(stringResource(R.string.detail_worked_out, meal.carbs, String.format(locale, "%.2f", m.food).trimEnd('0').trimEnd(',', '.')) + if (m.corr > 0) " + " + stringResource(R.string.planned_corr, f(m.corr)) else "",
-                    color = c.textMuted, fontSize = 13.sp, modifier = Modifier.weight(1f))
-                Text(f(m.dose) + " $u", style = GlucoseHero.copy(fontSize = 14.sp, lineHeight = 18.sp, color = c.insulin))
+                    color = c.textMuted, fontSize = 13.sp, modifier = Modifier.weight(1f).alignByBaseline())
+                Text(f(m.dose) + " $u", style = GlucoseHero.copy(fontSize = 14.sp, lineHeight = 18.sp, color = c.insulin), modifier = Modifier.alignByBaseline())
             }
             meal.insulin.forEach { i ->
                 Row {
-                    Text(stringResource(R.string.detail_given_at, AlarmText.clock(ctx, i.t)), color = c.textMuted, fontSize = 13.sp, modifier = Modifier.weight(1f))
-                    Text(f(i.insulin ?: 0.0) + " $u", style = GlucoseHero.copy(fontSize = 14.sp, lineHeight = 18.sp, color = c.insulin))
+                    Text(stringResource(R.string.detail_given_at, AlarmText.clock(ctx, i.t)), color = c.textMuted, fontSize = 13.sp, modifier = Modifier.weight(1f).alignByBaseline())
+                    Text(f(i.insulin ?: 0.0) + " $u", style = GlucoseHero.copy(fontSize = 14.sp, lineHeight = 18.sp, color = c.insulin), modifier = Modifier.alignByBaseline())
                 }
             }
             when {

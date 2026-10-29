@@ -635,10 +635,11 @@ private fun DoseCard(
 @Composable
 private fun Line(label: String, value: String) {
     val c = DiaTheme.colors
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-        Text(label, color = c.textMuted, fontSize = 13.5.sp, modifier = Modifier.weight(1f))
+    // on one baseline: the number's face sits higher than the label's otherwise
+    Row(Modifier.fillMaxWidth()) {
+        Text(label, color = c.textMuted, fontSize = 13.5.sp, modifier = Modifier.weight(1f).alignByBaseline())
         Spacer(Modifier.width(12.dp))
-        Text(value, style = GlucoseHero.copy(fontSize = 14.sp, lineHeight = 18.sp, color = c.text))
+        Text(value, style = GlucoseHero.copy(fontSize = 14.sp, lineHeight = 18.sp, color = c.text), modifier = Modifier.alignByBaseline())
     }
 }
 

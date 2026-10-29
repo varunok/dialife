@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -290,8 +291,18 @@ private fun Label(text: String) {
 @Composable
 private fun Line(label: String, value: String) {
     val c = DiaTheme.colors
+    // a long value ("до найближчого, рівно половина — вниз · 1") goes under its label:
+    // side by side it squeezes the label into a column of syllables
+    if (value.length > 18) {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(label, color = c.textMuted, fontSize = 14.sp)
+            Text(value, color = c.text, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+        }
+        return
+    }
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(label, color = c.textMuted, fontSize = 14.sp, modifier = Modifier.weight(1f))
+        Spacer(Modifier.width(12.dp))
         Text(value, color = c.text, fontSize = 14.sp, fontWeight = FontWeight.Medium, textAlign = TextAlign.End)
     }
 }
