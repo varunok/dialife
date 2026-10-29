@@ -657,6 +657,9 @@ func (h *Handlers) Me(w http.ResponseWriter, r *http.Request) {
 
 type forecastInfo struct {
 	forecast.Quality
+	// the same, scored apart: the quiet hours and the 3 hours after food
+	Quiet     forecast.Quality `json:"quiet"`
+	AfterFood forecast.Quality `json:"after_food"`
 	Ignores []ignored `json:"ignores,omitempty"` // food or rapid insulin of the last 2 hours: the trend does not see them
 }
 
@@ -667,9 +670,10 @@ type ignored struct {
 
 // quality is measured on the last week once an hour, not on every reading.
 type qualityCache struct {
-	mu   sync.Mutex
-	at   time.Time
-	last forecast.Quality
+	mu               sync.Mutex
+	at               time.Time
+	last             forecast.Quality
+	quiet, afterFood forecast.Quality
 }
 
 const (
@@ -683,7 +687,7 @@ func (h *Handlers) chartForecast(ctx context.Context, st glucose.State, now time
 	if st.Error || now.UnixMilli()-st.Last.Date > forecastMaxAge.Milliseconds() {
 		return nil, nil
 	}
-	q := h.forecastQuality(ctx, now)
+	q, quiet, fed := h.forecastQuality(ctx, now)
 	from := st.Last.Date - 35*time.Minute.Milliseconds()
 	es, err := h.Store.QueryEntries(ctx, store.EntryQuery{Type: "sgv", Gte: &from, Lte: &st.Last.Date, Count: 50, Asc: true})
 	if err != nil {
@@ -694,7 +698,7 @@ func (h *Handlers) chartForecast(ctx context.Context, st glucose.State, now time
 	if !ok {
 		return nil, nil
 	}
-	info := &forecastInfo{Quality: q}
+	info := &forecastInfo{Quality: q, Quiet: quiet, AfterFood: fed}
 	since := now.Add(-blindAfter).UnixMilli()
 	nowMs := now.UnixMilli()
 	if ts, err := h.Store.ListTreatments(ctx, store.TreatmentQuery{Gte: &since, Lte: &nowMs, Count: 50}); err == nil {
@@ -711,21 +715,37 @@ func (h *Handlers) chartForecast(ctx context.Context, st glucose.State, now time
 	return &f, info
 }
 
-func (h *Handlers) forecastQuality(ctx context.Context, now time.Time) forecast.Quality {
+// forecastQuality: how the trend did over the last week, overall and apart
+// for the quiet hours and the hours after food.
+func (h *Handlers) forecastQuality(ctx context.Context, now time.Time) (all, quiet, afterFood forecast.Quality) {
 	c := &h.quality
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if !c.at.IsZero() && now.Sub(c.at) < qualityEvery {
-		return c.last
+		return c.last, c.quiet, c.afterFood
 	}
 	from, to := now.Add(-qualityOver).UnixMilli(), now.UnixMilli()
 	es, err := h.Store.QueryEntries(ctx, store.EntryQuery{Type: "sgv", Gte: &from, Lte: &to, Count: maxHistoryRows, Asc: true})
 	if err != nil {
 		slog.Error("forecast quality", "err", err)
-		return c.last
+		return c.last, c.quiet, c.afterFood
 	}
-	c.last, c.at = forecast.Backtest(points(es)), now
-	return c.last
+	fedFrom := from - forecast.AfterFood.Milliseconds()
+	ts, err := h.Store.ListTreatments(ctx, store.TreatmentQuery{Gte: &fedFrom, Lte: &to, Count: maxHistoryRows})
+	if err != nil {
+		slog.Error("forecast quality food", "err", err)
+		return c.last, c.quiet, c.afterFood
+	}
+	var foods []int64
+	for _, t := range ts {
+		if t.Carbs != nil && *t.Carbs > 0 {
+			foods = append(foods, t.CreatedAt)
+		}
+	}
+	rs := points(es)
+	c.last, c.at = forecast.Backtest(rs), now
+	c.quiet, c.afterFood = forecast.BacktestSplit(rs, foods)
+	return c.last, c.quiet, c.afterFood
 }
 
 func points(es []store.Entry) []forecast.Point {

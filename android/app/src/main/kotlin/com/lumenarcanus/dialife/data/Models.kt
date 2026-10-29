@@ -183,6 +183,8 @@ data class ForecastQuality(
     @SerialName("hit_pct") val hitPct: Int = 0,
     val n: Int = 0,
     val ignores: List<ForecastBlind> = emptyList(),
+    val quiet: ForecastQuality? = null, // the same, scored apart for the quiet hours
+    @SerialName("after_food") val afterFood: ForecastQuality? = null, // and for the 3 hours after food
 )
 
 @Serializable

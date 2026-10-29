@@ -12,8 +12,10 @@
     <string name="state_in_range">In range · %1$s</string>
     <string name="state_low">Low · below %1$s</string>
     <string name="state_high">High · above %1$s</string>
+    <string name="forecast_30_err">In 30 min ≈ %1$s · ±%2$s</string>
+    <string name="forecast_hits">Came true this week: quiet hours %1$s, after food %2$s</string>
+    <string name="forecast_few">too few yet</string>
     <string name="forecast_30">In 30 min ≈ %1$s</string>
-    <string name="forecast_30_q">In 30 min ≈ %1$s · ±%2$s · comes true %3$d%%</string>
     <string name="forecast_blind_food">The forecast does not see the food at %1$s</string>
     <string name="forecast_blind_insulin">The forecast does not see the insulin at %1$s</string>
     <string name="delta_per_5">%1$s in 5 min</string>
@@ -756,8 +758,6 @@
     <string name="dose_err_carb_min">Carbs come in over 60 to 360 min.</string>
     <string name="iob_insulin">Active insulin %1$s %2$s</string>
     <string name="iob_carbs">carbs coming in %1$d g</string>
-    <string name="iob_forecast">with food and insulin in 30 min ≈ %1$s</string>
-    <string name="iob_forecast_q">with food and insulin in 30 min ≈ %1$s, comes true %2$d%%</string>
     <string name="wait_eat_now">Don\'t wait, eat now</string>
     <string name="wait_go">You can eat</string>
     <string name="wait_from">Eat from %1$s</string>

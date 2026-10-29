@@ -8,8 +8,10 @@
     <string name="state_in_range">В діапазоні · %1$s</string>
     <string name="state_low">Низький · нижче %1$s</string>
     <string name="state_high">Високий · вище %1$s</string>
+    <string name="forecast_30_err">За 30 хв ≈ %1$s · ±%2$s</string>
+    <string name="forecast_hits">Збувалося за тиждень: у спокійні години %1$s, після їжі %2$s</string>
+    <string name="forecast_few">ще мало даних</string>
     <string name="forecast_30">За 30 хв ≈ %1$s</string>
-    <string name="forecast_30_q">За 30 хв ≈ %1$s · ±%2$s · збувається в %3$d%%</string>
     <string name="forecast_blind_food">Прогноз не враховує їжу о %1$s</string>
     <string name="forecast_blind_insulin">Прогноз не враховує інсулін о %1$s</string>
     <string name="delta_per_5">%1$s за 5 хв</string>
@@ -776,8 +778,6 @@
     <string name="dose_err_carb_min">Вуглеводи засвоюються за 60–360 хв.</string>
     <string name="iob_insulin">Активного інсуліну %1$s %2$s</string>
     <string name="iob_carbs">вуглеводів засвоюється %1$d г</string>
-    <string name="iob_forecast">з їжею та інсуліном за 30 хв ≈ %1$s</string>
-    <string name="iob_forecast_q">з їжею та інсуліном за 30 хв ≈ %1$s, збувається в %2$d%%</string>
     <string name="wait_eat_now">Не чекати, їсти зараз</string>
     <string name="wait_go">Можна їсти</string>
     <string name="wait_from">Їсти з %1$s</string>

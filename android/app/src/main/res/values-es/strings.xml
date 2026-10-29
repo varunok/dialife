@@ -9,8 +9,10 @@
     <string name="state_in_range">En rango · %1$s</string>
     <string name="state_low">Baja · por debajo de %1$s</string>
     <string name="state_high">Alta · por encima de %1$s</string>
+    <string name="forecast_30_err">En 30 min ≈ %1$s · ±%2$s</string>
+    <string name="forecast_hits">Acertó esta semana: horas tranquilas %1$s, tras comer %2$s</string>
+    <string name="forecast_few">aún pocos datos</string>
     <string name="forecast_30">En 30 min ≈ %1$s</string>
-    <string name="forecast_30_q">En 30 min ≈ %1$s · ±%2$s · acierta el %3$d%%</string>
     <string name="forecast_blind_food">La previsión no tiene en cuenta la comida de las %1$s</string>
     <string name="forecast_blind_insulin">La previsión no tiene en cuenta la insulina de las %1$s</string>
     <string name="delta_per_5">%1$s en 5 min</string>
@@ -764,8 +766,6 @@
     <string name="dose_err_carb_min">Los hidratos entran en 60 a 360 min.</string>
     <string name="iob_insulin">Insulina activa %1$s %2$s</string>
     <string name="iob_carbs">hidratos entrando %1$d g</string>
-    <string name="iob_forecast">con comida e insulina en 30 min ≈ %1$s</string>
-    <string name="iob_forecast_q">con comida e insulina en 30 min ≈ %1$s, se cumple el %2$d%%</string>
     <string name="wait_eat_now">No esperar, comer ya</string>
     <string name="wait_go">Ya se puede comer</string>
     <string name="wait_from">Comer desde las %1$s</string>

@@ -79,6 +79,44 @@ func Backtest(rs []Point) Quality {
 	})
 }
 
+// AfterFood is how long a meal keeps the sugar moving: forecasts made within
+// this time after food are scored apart from the quiet hours.
+const AfterFood = 3 * time.Hour
+
+// BacktestSplit is Backtest scored apart for the quiet hours and for the
+// hours after food (foods: when food was logged, unix ms): one number for
+// both hides how the trend fares exactly when food moves the sugar.
+func BacktestSplit(rs []Point, foods []int64) (quiet, afterFood Quality) {
+	fed := func(t int64) bool {
+		for _, f := range foods {
+			if f <= t && t-f < AfterFood.Milliseconds() {
+				return true
+			}
+		}
+		return false
+	}
+	predict := func(i int) (int, bool) {
+		f, ok := Trend(rs[:i+1], Quality{N: 1})
+		if !ok {
+			return 0, false
+		}
+		return f.Predicted[len(f.Predicted)-1].SGV, true
+	}
+	quiet = score(rs, func(i int) (int, bool) {
+		if fed(rs[i].T) {
+			return 0, false
+		}
+		return predict(i)
+	})
+	afterFood = score(rs, func(i int) (int, bool) {
+		if !fed(rs[i].T) {
+			return 0, false
+		}
+		return predict(i)
+	})
+	return quiet, afterFood
+}
+
 // slope is the least-squares rate (mg/dL per minute) over the last trendSpan before to.
 func slope(rs []Point, to int64) (float64, bool) {
 	var n, sx, sy, sxx, sxy float64

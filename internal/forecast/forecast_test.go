@@ -58,3 +58,25 @@ func TestBacktestOnASteadyLine(t *testing.T) {
 		t.Fatalf("%+v", q)
 	}
 }
+
+func TestBacktestSplitByFood(t *testing.T) {
+	// flat for a day, then a meal: the sugar rises and the trend lags behind it
+	var rs []Point
+	t0 := int64(0)
+	for i := range 288 {
+		v := 120
+		if i >= 200 && i < 236 {
+			v = 120 + (i-200)*4
+		} else if i >= 236 {
+			v = 264
+		}
+		rs = append(rs, Point{T: t0 + int64(i)*300_000, V: v})
+	}
+	quiet, fed := BacktestSplit(rs, []int64{rs[200].T})
+	if quiet.N == 0 || fed.N == 0 || quiet.N+fed.N != Backtest(rs).N {
+		t.Fatalf("every forecast in one of the two: %+v %+v", quiet, fed)
+	}
+	if fed.HitPct >= quiet.HitPct {
+		t.Fatalf("after food it should do worse: quiet %+v, after food %+v", quiet, fed)
+	}
+}
