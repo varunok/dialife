@@ -185,7 +185,7 @@ func (h *Handlers) snapshot(ctx context.Context, now time.Time) (stateResponse, 
 	resp.MealGapMin = h.mealGap(ctx, now)
 	resp.BolusBefore, resp.BolusAfter = int(questions.BolusBefore.Minutes()), int(questions.BolusAfter.Minutes())
 	fresh := ok && !st.Error && now.UnixMilli()-st.Last.Date <= forecastMaxAge.Milliseconds()
-	resp.Wait = h.wait(ctx, st, fresh, resp.AR2, resp.Dose.Ratio, now)
+	resp.Wait = h.wait(ctx, st, fresh, resp.AR2, resp.Dose, now)
 	if resp.IOB = h.iob(ctx, st, fresh, resp.Dose, now); resp.IOB != nil {
 		if q := h.iobQuality(ctx, resp.Dose, now); q.N > 0 {
 			resp.IOBQuality = &q
@@ -660,7 +660,7 @@ type forecastInfo struct {
 	// the same, scored apart: the quiet hours and the 3 hours after food
 	Quiet     forecast.Quality `json:"quiet"`
 	AfterFood forecast.Quality `json:"after_food"`
-	Ignores []ignored `json:"ignores,omitempty"` // food or rapid insulin of the last 2 hours: the trend does not see them
+	Ignores   []ignored        `json:"ignores,omitempty"` // food or rapid insulin of the last 2 hours: the trend does not see them
 }
 
 type ignored struct {

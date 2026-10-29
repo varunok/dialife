@@ -82,6 +82,10 @@ fun DoseSettingsScreen(dose: DoseSettings, units: Units, onSave: suspend (DoseSe
     var isf by remember { mutableStateOf(if (dose.isf > 0) formatGlucose(dose.isf, units, locale) else "") }
     var dia by remember { mutableStateOf(dose.diaMin.toString()) }
     var carbMin by remember { mutableStateOf(dose.carbMin.toString()) }
+    var waitMin by remember { mutableStateOf(dose.waitMin.toString()) }
+    var waitHighMin by remember { mutableStateOf(dose.waitHighMin.toString()) }
+    var waitHighFrom by remember { mutableStateOf(formatGlucose(dose.waitHighFrom, units, locale)) }
+    var waitLowBelow by remember { mutableStateOf(formatGlucose(dose.waitLowBelow, units, locale)) }
     // rows as typed: the mg/dL shown in this phone's units
     val rows = remember { mutableStateListOf<Pair<String, String>>().apply { dose.table.forEach { add(formatGlucose(it.mg, units, locale) to f(it.u)) } } }
     var saving by remember { mutableStateOf(false) }
@@ -104,6 +108,12 @@ fun DoseSettingsScreen(dose: DoseSettings, units: Units, onSave: suspend (DoseSe
         if (isf.isNotBlank() && mgOf(isf)?.let { it in 5..400 } != true) add(stringResource(R.string.dose_err_isf))
         if (dia.toIntOrNull()?.let { it in 120..480 } != true) add(stringResource(R.string.dose_err_dia))
         if (carbMin.toIntOrNull()?.let { it in 60..360 } != true) add(stringResource(R.string.dose_err_carb_min))
+        val wm = waitMin.toIntOrNull()
+        val whm = waitHighMin.toIntOrNull()
+        val low = mgOf(waitLowBelow)
+        val high = mgOf(waitHighFrom)
+        if (wm == null || wm !in 0..45 || whm == null || whm !in wm..60 || low == null || low !in 60..120 || high == null || high <= low || high > 300)
+            add(stringResource(R.string.dose_err_wait))
     }
 
     Column(Modifier.fillMaxSize().background(c.background).safeDrawingPadding()) {
@@ -203,6 +213,15 @@ fun DoseSettingsScreen(dose: DoseSettings, units: Units, onSave: suspend (DoseSe
                 NumberRow(stringResource(R.string.dose_dia), dia, stringResource(R.string.unit_min), KeyboardType.Number) { dia = it.filter(Char::isDigit).take(3) }
                 NumberRow(stringResource(R.string.dose_carb_min), carbMin, stringResource(R.string.unit_min), KeyboardType.Number) { carbMin = it.filter(Char::isDigit).take(3) }
             }
+            Group(stringResource(R.string.dose_wait)) {
+                Text(stringResource(R.string.dose_wait_note), color = c.textMuted, fontSize = 13.sp)
+                val unit = if (units == Units.Mmol) stringResource(R.string.unit_mmol) else "mg/dL"
+                NumberRow(stringResource(R.string.dose_wait_min), waitMin, stringResource(R.string.unit_min), KeyboardType.Number) { waitMin = it.filter(Char::isDigit).take(2) }
+                NumberRow(stringResource(R.string.dose_wait_high_from), waitHighFrom, unit, KeyboardType.Decimal) { waitHighFrom = it.filter { ch -> ch.isDigit() || ch == ',' || ch == '.' }.take(5) }
+                NumberRow(stringResource(R.string.dose_wait_high_min), waitHighMin, stringResource(R.string.unit_min), KeyboardType.Number) { waitHighMin = it.filter(Char::isDigit).take(2) }
+                NumberRow(stringResource(R.string.dose_wait_low), waitLowBelow, unit, KeyboardType.Decimal) { waitLowBelow = it.filter { ch -> ch.isDigit() || ch == ',' || ch == '.' }.take(5) }
+                Text(stringResource(R.string.dose_wait_source), color = c.textFaint, fontSize = 12.sp)
+            }
             problems.forEach { Text(it, color = c.low, fontSize = 13.sp) }
             when (result) {
                 true -> Text(stringResource(R.string.dose_saved), color = c.inRange, fontSize = 13.sp)
@@ -218,6 +237,7 @@ fun DoseSettingsScreen(dose: DoseSettings, units: Units, onSave: suspend (DoseSe
                     maxRapid = num(maxRapid)!!, maxBasal = num(maxBasal)!!, maxCarbs = maxCarbs.toInt(),
                     table = table.map { (mg, u) -> CorrectionRow(mg!!, u!!) }.sortedBy { it.mg },
                     isf = if (isf.isBlank()) 0 else mgOf(isf)!!, diaMin = dia.toInt(), carbMin = carbMin.toInt(),
+                    waitMin = waitMin.toInt(), waitHighMin = waitHighMin.toInt(), waitHighFrom = mgOf(waitHighFrom)!!, waitLowBelow = mgOf(waitLowBelow)!!,
                 )
                 scope.launch { result = onSave(d).isSuccess; saving = false }
             },

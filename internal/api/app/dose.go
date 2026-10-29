@@ -27,11 +27,18 @@ type doseSettings struct {
 	Table    []doseStep `json:"table"`
 	// the physiological forecast: mg/dL one unit lowers (0: from the table),
 	// how long rapid acts, how long a meal takes to absorb
-	ISF       float64 `json:"isf"`
-	DIAMin    int     `json:"dia_min"`
-	CarbMin   int     `json:"carb_min"`
-	UpdatedAt int64   `json:"updated_at"`
-	UpdatedBy string  `json:"updated_by"`
+	ISF     float64 `json:"isf"`
+	DIAMin  int     `json:"dia_min"`
+	CarbMin int     `json:"carb_min"`
+	// when to eat after a rapid dose (a suggestion): minutes to wait with the
+	// sugar in range and above WaitHighFrom; below WaitLowBelow (now or by the
+	// trend in 15 min) eat at once
+	WaitMin      int    `json:"wait_min"`
+	WaitHighMin  int    `json:"wait_high_min"`
+	WaitHighFrom int    `json:"wait_high_from"`
+	WaitLowBelow int    `json:"wait_low_below"`
+	UpdatedAt    int64  `json:"updated_at"`
+	UpdatedBy    string `json:"updated_by"`
 }
 
 // doseStep: from this glucometer value (mg/dL) up, add this many units.
@@ -44,6 +51,7 @@ var defaultDose = doseSettings{
 	Ratio: 20, Rule: "halfDown", Step: 1, FreshMin: 15, MaxRapid: 10, MaxBasal: 20, MaxCarbs: 150,
 	Table:  []doseStep{{140, 1}, {180, 2}, {220, 3}, {260, 4}, {300, 5}},
 	DIAMin: 240, CarbMin: 180,
+	WaitMin: 15, WaitHighMin: 20, WaitHighFrom: 180, WaitLowBelow: 80,
 }
 
 // withDefaults: settings saved before a field existed, or sent by an older
@@ -54,6 +62,9 @@ func (d doseSettings) withDefaults() doseSettings {
 	}
 	if d.CarbMin == 0 {
 		d.CarbMin = defaultDose.CarbMin
+	}
+	if d.WaitMin == 0 && d.WaitHighMin == 0 && d.WaitHighFrom == 0 && d.WaitLowBelow == 0 {
+		d.WaitMin, d.WaitHighMin, d.WaitHighFrom, d.WaitLowBelow = defaultDose.WaitMin, defaultDose.WaitHighMin, defaultDose.WaitHighFrom, defaultDose.WaitLowBelow
 	}
 	return d
 }
@@ -110,6 +121,8 @@ func (d doseSettings) valid() error {
 		(d.ISF == 0 || d.ISF >= 5 && d.ISF <= 400) &&
 		d.DIAMin >= 120 && d.DIAMin <= 480 &&
 		d.CarbMin >= 60 && d.CarbMin <= 360 &&
+		d.WaitMin >= 0 && d.WaitMin <= 45 && d.WaitHighMin >= d.WaitMin && d.WaitHighMin <= 60 &&
+		d.WaitLowBelow >= 60 && d.WaitLowBelow <= 120 && d.WaitHighFrom > d.WaitLowBelow && d.WaitHighFrom <= 300 &&
 		len(d.Table) <= 20
 	if !ok {
 		return errDose

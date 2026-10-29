@@ -798,4 +798,12 @@
     <string name="age_days">%1$d дн.</string>
     <string name="role_caregiver">телефон родини</string>
     <string name="role_uploader">телефон із xDrip+</string>
+    <string name="dose_wait">Коли їсти після короткого</string>
+    <string name="dose_wait_note">Порада на екрані «Їжа» і на головному, від часу уколу. Не правило, нічого не записується.</string>
+    <string name="dose_wait_min">Чекати, цукор у нормі</string>
+    <string name="dose_wait_high_from">Цукор високий від</string>
+    <string name="dose_wait_high_min">Чекати, коли високий</string>
+    <string name="dose_wait_low">Їсти одразу нижче (зараз або за 15 хв)</string>
+    <string name="dose_wait_source">Огляди: короткий за 15–20 хв до їжі дає менший пік після неї. Досліджень, де час залежить від розміру дози чи їжі, немає.</string>
+    <string name="dose_err_wait">Коли їсти: 0–45 хв у нормі, при високому не менше й до 60 хв; їсти одразу нижче 60–120 mg/dL; високий — вище цього, до 300 mg/dL.</string>
 </resources>

@@ -778,4 +778,12 @@
     <string name="age_days">%1$d days</string>
     <string name="role_caregiver">family phone</string>
     <string name="role_uploader">xDrip+ phone</string>
+    <string name="dose_wait">When to eat after rapid insulin</string>
+    <string name="dose_wait_note">A suggestion on the food screen and the main screen, counted from the injection. Never a rule, nothing is recorded.</string>
+    <string name="dose_wait_min">Wait, sugar in range</string>
+    <string name="dose_wait_high_from">Sugar is high from</string>
+    <string name="dose_wait_high_min">Wait when high</string>
+    <string name="dose_wait_low">Eat at once below (now or in 15 min)</string>
+    <string name="dose_wait_source">Reviews: rapid insulin 15–20 min before a meal gives a lower peak after it. No study ties the wait to the size of the dose or of the meal.</string>
+    <string name="dose_err_wait">When to eat: 0–45 min in range, the wait when high no shorter and at most 60 min; eat at once below 60–120 mg/dL; high above that, up to 300 mg/dL.</string>
 </resources>

@@ -15,14 +15,9 @@ import (
 // meal give a lower peak after it; a higher sugar wants a little longer, a low
 // or falling one wants the food now. No study ties the wait to the size of
 // the dose or of the meal, so neither changes it: they only feed the
-// "more insulin than food" warning in the app.
-const (
-	waitWithin   = time.Hour        // a dose further back has no wait
-	waitInRange  = 15 * time.Minute //
-	waitHigh     = 20 * time.Minute // from waitHighFrom up
-	waitHighFrom = 180              // mg/dL
-	waitLowBelow = 80               // mg/dL, now or by the trend in 15 min: eat now
-)
+// "more insulin than food" warning in the app. The minutes and bounds are the
+// family's, in the dose settings (15 / 20 min, 80 / 180 mg/dL by default).
+const waitWithin = time.Hour // a dose further back has no wait
 
 type waitState struct {
 	DoseID  string  `json:"dose_id"`
@@ -39,7 +34,8 @@ type waitState struct {
 
 // waitFor is the latest rapid dose of the last hour not marked a correction,
 // unless the food came first (then nothing is waited for).
-func waitFor(ts []store.Treatment, now time.Time, sgv *int, in15 *int, ratio float64) *waitState {
+func waitFor(ts []store.Treatment, now time.Time, sgv *int, in15 *int, d doseSettings) *waitState {
+	ratio := d.Ratio
 	var dose *store.Treatment
 	for i := range ts {
 		t := &ts[i]
@@ -69,27 +65,27 @@ func waitFor(ts []store.Treatment, now time.Time, sgv *int, in15 *int, ratio flo
 		}
 		w.Food += *t.Carbs
 	}
-	wait := waitInRange
+	wait := time.Duration(d.WaitMin) * time.Minute
 	switch {
 	case sgv == nil:
 		w.Reason = "unseen"
-	case *sgv < waitLowBelow:
+	case *sgv < d.WaitLowBelow:
 		w.Reason, wait = "low", 0
-	case in15 != nil && *in15 < waitLowBelow:
+	case in15 != nil && *in15 < d.WaitLowBelow:
 		w.Reason, wait = "falling", 0
-	case *sgv > waitHighFrom:
-		w.Reason, wait = "high", waitHigh
+	case *sgv > d.WaitHighFrom:
+		w.Reason, wait = "high", time.Duration(d.WaitHighMin)*time.Minute
 	default:
 		w.Reason = "range"
 	}
 	w.EatFrom = dose.CreatedAt + wait.Milliseconds()
-	if wait == 0 {
+	if w.Reason == "low" || w.Reason == "falling" {
 		w.EatFrom = now.UnixMilli()
 	}
 	return w
 }
 
-func (h *Handlers) wait(ctx context.Context, st glucose.State, fresh bool, f *glucose.Forecast, ratio float64, now time.Time) *waitState {
+func (h *Handlers) wait(ctx context.Context, st glucose.State, fresh bool, f *glucose.Forecast, d doseSettings, now time.Time) *waitState {
 	from, to := now.Add(-waitWithin-30*time.Minute).UnixMilli(), now.UnixMilli()
 	ts, err := h.Store.ListTreatments(ctx, store.TreatmentQuery{Gte: &from, Lte: &to, Count: 100})
 	if err != nil {
@@ -110,5 +106,5 @@ func (h *Handlers) wait(ctx context.Context, st glucose.State, fresh bool, f *gl
 			}
 		}
 	}
-	return waitFor(ts, now, sgv, in15, ratio)
+	return waitFor(ts, now, sgv, in15, d)
 }

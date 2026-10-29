@@ -138,6 +138,11 @@ data class DoseSettings(
     val isf: Int = 0, // mg/dL one rapid unit lowers; 0: from the correction table's steps
     @SerialName("dia_min") val diaMin: Int = 240, // how long rapid insulin works
     @SerialName("carb_min") val carbMin: Int = 180, // how long carbs take to come in
+    // when to eat after a rapid dose (a suggestion): minutes in range / when high, and the bounds in mg/dL
+    @SerialName("wait_min") val waitMin: Int = 15,
+    @SerialName("wait_high_min") val waitHighMin: Int = 20,
+    @SerialName("wait_high_from") val waitHighFrom: Int = 180,
+    @SerialName("wait_low_below") val waitLowBelow: Int = 80,
     @SerialName("updated_at") val updatedAt: Long = 0,
     @SerialName("updated_by") val updatedBy: String = "",
 )

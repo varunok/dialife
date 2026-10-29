@@ -241,7 +241,7 @@ class ScreenshotTest {
     }
 
     @Test
-    @Config(qualifiers = "+uk")
+    @Config(qualifiers = "uk-w412dp-h3500dp-xxhdpi")
     fun doseSettingsUk() = shot("dose_settings_dark_uk", dark = true) {
         com.lumenarcanus.dialife.ui.settings.DoseSettingsScreen(com.lumenarcanus.dialife.data.DoseSettings(updatedBy = "Тато"), Units.MgDl, onSave = { Result.success(it) }, onBack = {})
     }
@@ -493,13 +493,13 @@ class ScreenshotTest {
 
 
     @Test
-    @Config(qualifiers = "en-w412dp-h2600dp-xxhdpi")
+    @Config(qualifiers = "en-w412dp-h3500dp-xxhdpi")
     fun doseSettingsEnAll() = shot("dose_settings_dark_en_all", dark = true) {
         com.lumenarcanus.dialife.ui.settings.DoseSettingsScreen(com.lumenarcanus.dialife.data.DoseSettings(updatedBy = "Тато"), Units.MgDl, onSave = { Result.success(it) }, onBack = {})
     }
 
     @Test
-    @Config(qualifiers = "es-w412dp-h2600dp-xxhdpi")
+    @Config(qualifiers = "es-w412dp-h3500dp-xxhdpi")
     fun doseSettingsEsAll() = shot("dose_settings_dark_es_all", dark = true) {
         com.lumenarcanus.dialife.ui.settings.DoseSettingsScreen(com.lumenarcanus.dialife.data.DoseSettings(updatedBy = "Тато"), Units.MgDl, onSave = { Result.success(it) }, onBack = {})
     }

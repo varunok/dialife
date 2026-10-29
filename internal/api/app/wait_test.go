@@ -28,7 +28,7 @@ func TestWaitFor(t *testing.T) {
 		{"no reading", []store.Treatment{rapid}, nil, nil, "unseen", at(5)},
 	}
 	for _, c := range cases {
-		w := waitFor(c.ts, now, c.sgv, c.in15, 20)
+		w := waitFor(c.ts, now, c.sgv, c.in15, defaultDose)
 		if w == nil || w.Reason != c.reason || w.EatFrom != c.eatFrom || w.Covers != 60 {
 			t.Errorf("%s: %+v", c.name, w)
 		}
@@ -40,12 +40,21 @@ func TestWaitFor(t *testing.T) {
 		"food came first":  {rapid, {CreatedAt: at(-20), Carbs: f(30), Raw: []byte(`{}`)}},
 	}
 	for name, ts := range none {
-		if w := waitFor(ts, now, i(140), nil, 20); w != nil {
+		if w := waitFor(ts, now, i(140), nil, defaultDose); w != nil {
 			t.Errorf("%s: %+v, want none", name, w)
 		}
 	}
-	w := waitFor([]store.Treatment{rapid, {CreatedAt: at(-2), Carbs: f(20), Raw: []byte(`{}`)}}, now, i(140), nil, 20)
+	w := waitFor([]store.Treatment{rapid, {CreatedAt: at(-2), Carbs: f(20), Raw: []byte(`{}`)}}, now, i(140), nil, defaultDose)
 	if w == nil || w.Food != 20 {
 		t.Errorf("food logged after the dose counts: %+v", w)
+	}
+
+	own := defaultDose
+	own.WaitMin, own.WaitHighMin, own.WaitHighFrom, own.WaitLowBelow = 10, 30, 200, 70
+	if w := waitFor([]store.Treatment{rapid}, now, i(190), nil, own); w == nil || w.Reason != "range" || w.EatFrom != at(0) {
+		t.Errorf("the family's own minutes and bounds: %+v", w)
+	}
+	if w := waitFor([]store.Treatment{rapid}, now, i(75), nil, own); w == nil || w.Reason != "range" {
+		t.Errorf("75 is above their own low bound: %+v", w)
 	}
 }

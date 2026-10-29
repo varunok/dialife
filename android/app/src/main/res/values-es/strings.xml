@@ -786,4 +786,12 @@
     <string name="age_days">%1$d días</string>
     <string name="role_caregiver">teléfono de la familia</string>
     <string name="role_uploader">teléfono con xDrip+</string>
+    <string name="dose_wait">Cuándo comer tras la rápida</string>
+    <string name="dose_wait_note">Una sugerencia en la pantalla de comida y en la principal, contada desde la inyección. No es una regla, no se registra nada.</string>
+    <string name="dose_wait_min">Esperar, glucosa en rango</string>
+    <string name="dose_wait_high_from">Glucosa alta desde</string>
+    <string name="dose_wait_high_min">Esperar si está alta</string>
+    <string name="dose_wait_low">Comer ya por debajo de (ahora o en 15 min)</string>
+    <string name="dose_wait_source">Revisiones: la rápida 15–20 min antes de comer da un pico menor después. Ningún estudio liga la espera al tamaño de la dosis o de la comida.</string>
+    <string name="dose_err_wait">Cuándo comer: 0–45 min en rango, con glucosa alta no menos y hasta 60 min; comer ya por debajo de 60–120 mg/dL; alta por encima, hasta 300 mg/dL.</string>
 </resources>
