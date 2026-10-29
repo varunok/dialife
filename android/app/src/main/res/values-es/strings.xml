@@ -31,9 +31,6 @@
     <string name="tile_time_in_range">Tiempo en rango</string>
     <string name="tile_alarms">Alarmas</string>
     <string name="tile_alarms_quiet">Todo tranquilo</string>
-    <string name="add_insulin">+ Insulina</string>
-    <string name="add_food">+ Comida</string>
-    <string name="add_meter">+ Glucómetro</string>
 
     <string name="connect_title">Conéctate a tu servidor</string>
     <string name="connect_body">Escanea el código QR del portátil. Contiene la dirección del servidor y la clave personal de este teléfono.</string>

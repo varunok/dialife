@@ -112,7 +112,6 @@ fun TreatmentSheet(
     recent: List<Treatment> = emptyList(), // the day's entries: last basal dose, what is due now
     units: Units = Units.MgDl, // a glucometer value is typed in these
     initialTime: Long? = null, // a question's "log it": when the rise or fall began
-    onFood: (() -> Unit)? = null, // food has a screen of its own: the tab opens it
     dose: com.lumenarcanus.dialife.data.DoseSettings = com.lumenarcanus.dialife.data.DoseSettings(), // the dose limits
     mealGap: Int = com.lumenarcanus.dialife.data.Meals.DEFAULT_GAP_MIN, // the server's: food entries this close are one meal
 ) {
@@ -128,7 +127,7 @@ fun TreatmentSheet(
         (editing.carbs ?: 0.0) > 0 -> TreatmentKind.Food
         else -> TreatmentKind.Note
     }
-    var kind by rememberSaveable { mutableStateOf(startKind) }
+    val kind = startKind
     var insulin by rememberSaveable { mutableDoubleStateOf(editing?.insulin ?: 0.0) }
     val lastBasal = recent.lastOrNull { InsulinType.of(it.insulinType) == InsulinType.Basal && (it.insulin ?: 0.0) > 0 }?.insulin
     var insType by rememberSaveable {
@@ -172,28 +171,13 @@ fun TreatmentSheet(
                 .padding(bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(
-                stringResource(if (editing != null) R.string.tr_edit_title else R.string.tr_add_title),
-                color = c.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
-            )
-            if (editing == null) {
-                // five kinds do not fit one segmented row on a phone: chips that wrap
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    TreatmentKind.entries.forEach { k ->
-                        FilterChip(
-                            selected = kind == k,
-                            onClick = { if (k == TreatmentKind.Food && onFood != null) onFood() else kind = k },
-                            label = {
-                                Text(stringResource(when (k) {
-                                    TreatmentKind.Insulin -> R.string.tr_insulin
-                                    TreatmentKind.Food -> R.string.tr_food
-                                    TreatmentKind.Meter -> R.string.tr_meter
-                                    TreatmentKind.Activity -> R.string.tr_activity
-                                    TreatmentKind.Note -> R.string.tr_note
-                                }))
-                            },
-                        )
-                    }
+            // the kind was chosen by the button that opened the form (or by the entry being edited)
+            val look = kindLook(kind, insType)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                KindSign(look.glyph, look.ink, 30.dp, background = look.fill)
+                Column {
+                    Text(stringResource(look.name), color = c.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                    if (editing != null) Text(stringResource(R.string.tr_edit_title), color = c.textMuted, fontSize = 12.5.sp)
                 }
             }
 
@@ -207,6 +191,8 @@ fun TreatmentSheet(
                             selected = insType == t,
                             onClick = { insType = t },
                             shape = SegmentedButtonDefaults.itemShape(i, InsulinType.entries.size),
+                            // its chart letter instead of the tick: І or Д, so a wrong one is seen
+                            icon = { kindLook(TreatmentKind.Insulin, t).let { l -> KindSign(l.glyph, l.ink, 20.dp, background = l.fill) } },
                         ) {
                             Text(
                                 stringResource(if (t == InsulinType.Basal) R.string.ins_basal else R.string.ins_rapid) + (Prefs.nameOf(t)?.let { " · $it" } ?: ""),

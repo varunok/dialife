@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.displayCutoutPadding
@@ -260,7 +261,6 @@ fun HomeScreen(
             initialTime = sheetFor?.from,
             recent = ui.history?.treatments.orEmpty(),
             units = state?.units ?: fallbackUnits,
-            onFood = { onOpenMeal(null, sheetFor); sheet = null; sheetFor = null },
             dose = ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
             mealGap = ui.state?.mealGapMin ?: com.lumenarcanus.dialife.data.Meals.DEFAULT_GAP_MIN,
         )
@@ -380,10 +380,15 @@ fun HomeScreen(
             onOpenTable = onOpenData,
         )
         state?.let { Tiles(it, onOpenStats, onOpenLog) }
+        // a button for every kind of entry, each with its chart letter; the form opens on that kind
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ActionButton(stringResource(R.string.add_insulin), c.insulinContainer, c.insulin, Modifier.weight(1f)) { sheet = TreatmentKind.Insulin to null }
-            ActionButton(stringResource(R.string.add_food), c.carbsContainer, c.carbs, Modifier.weight(1f)) { sheet = TreatmentKind.Food to null }
-            ActionButton(stringResource(R.string.add_meter), c.surfaceRaised, c.text, Modifier.weight(1f)) { sheet = TreatmentKind.Meter to null }
+            ActionButton(TreatmentKind.Insulin, Modifier.weight(1f)) { sheet = TreatmentKind.Insulin to null }
+            ActionButton(TreatmentKind.Food, Modifier.weight(1f)) { sheet = TreatmentKind.Food to null }
+            ActionButton(TreatmentKind.Meter, Modifier.weight(1f)) { sheet = TreatmentKind.Meter to null }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ActionButton(TreatmentKind.Activity, Modifier.weight(1f), small = true) { sheet = TreatmentKind.Activity to null }
+            ActionButton(TreatmentKind.Note, Modifier.weight(1f), small = true) { sheet = TreatmentKind.Note to null }
         }
     }
 }
@@ -926,15 +931,21 @@ private fun Dot() {
 }
 
 @Composable
-private fun ActionButton(text: String, background: Color, color: Color, modifier: Modifier, onClick: () -> Unit) {
+private fun ActionButton(kind: TreatmentKind, modifier: Modifier, small: Boolean = false, onClick: () -> Unit) {
+    val look = com.lumenarcanus.dialife.ui.treatment.kindLook(kind)
     Button(
         onClick = onClick,
-        modifier = modifier.height(56.dp),
-        shape = RoundedCornerShape(18.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = background, contentColor = color),
-        contentPadding = PaddingValues(0.dp),
+        modifier = modifier.height(if (small) 46.dp else 56.dp),
+        shape = RoundedCornerShape(if (small) 15.dp else 18.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = look.fill, contentColor = look.ink),
+        contentPadding = PaddingValues(horizontal = 4.dp),
     ) {
-        Text(text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+        // three to a row: "Глюкометр", "Glucómetro" must fit whole next to the sign
+        val sign = 20.dp
+        if (kind == TreatmentKind.Insulin) com.lumenarcanus.dialife.ui.treatment.InsulinSigns(sign, look.fill)
+        else com.lumenarcanus.dialife.ui.treatment.KindSign(look.glyph, look.ink, sign)
+        Spacer(Modifier.width(6.dp))
+        Text(stringResource(look.name), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
     }
 }
 

@@ -33,9 +33,6 @@
     <string name="tile_time_in_range">Time in range</string>
     <string name="tile_alarms">Alarms</string>
     <string name="tile_alarms_quiet">All quiet</string>
-    <string name="add_insulin">+ Insulin</string>
-    <string name="add_food">+ Food</string>
-    <string name="add_meter">+ Meter</string>
 
     <string name="connect_title">Connect to your server</string>
     <string name="connect_body">Scan the QR code from the laptop. It holds the server address and this phone\'s personal key.</string>
@@ -188,6 +185,7 @@
     <string name="tr_cancel">Cancel</string>
     <string name="tr_pending">not sent yet</string>
     <string name="glyph_note">N</string>
+    <string name="glyph_meter" translatable="false">◆</string>
     <string name="tr_meter">Meter</string>
     <string name="tr_meter_value">Glucometer reading, %1$s</string>
     <string name="meter_label">Meter: %1$s</string>

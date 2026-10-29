@@ -54,6 +54,15 @@ class ScreenshotTest {
     @Config(qualifiers = "+uk")
     fun homeDarkUk() = shot("home_dark_uk", dark = true) { HomeScreen(sampleHomeUi(now), deviceName = "Тато") }
 
+    // tall enough to show the entry buttons under the chart
+    @Test
+    @Config(qualifiers = "uk-w412dp-h2000dp-xxhdpi")
+    fun homeButtonsUk() = shot("home_buttons_dark_uk", dark = true) { HomeScreen(sampleHomeUi(now), deviceName = "Тато") }
+
+    @Test
+    @Config(qualifiers = "es-w412dp-h2000dp-xxhdpi")
+    fun homeButtonsEs() = shot("home_buttons_dark_es", dark = true) { HomeScreen(sampleHomeUi(now), deviceName = "Papá") }
+
     @Test
     @Config(qualifiers = "uk-w915dp-h412dp-land-xxhdpi")
     fun chartFullScreenUk() = shot("chart_full_dark_uk", dark = true) {
