@@ -202,3 +202,25 @@ func TestFromConfig(t *testing.T) {
 		t.Fatalf("%v", ms)
 	}
 }
+
+func TestRecallScalesAVolume(t *testing.T) {
+	foods := []store.FoodItem{{Name: "Молоко", Portion: "250мл", Carbs: 12}, {Name: "Кефір", Portion: "1 склянка (200 мл)", Carbs: 8}}
+	cases := []struct {
+		it    Item
+		carbs int
+	}{
+		{Item{"молоко", "200 мл"}, 10},
+		{Item{"молоко", "200"}, 10},
+		{Item{"молоко", "0.5 л"}, 24},
+		{Item{"кефір", "2 склянки"}, 16},
+		{Item{"кефір", "100 мл"}, 4},
+	}
+	for _, c := range cases {
+		if m := recall(foods, c.it); m == nil || m.Carbs != c.carbs {
+			t.Errorf("%+v: %+v, want %d g", c.it, m, c.carbs)
+		}
+	}
+	if m := recall(foods, Item{"молоко", "тарілка"}); m != nil {
+		t.Errorf("a plate of milk: %+v, want none", m)
+	}
+}

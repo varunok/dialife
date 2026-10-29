@@ -120,3 +120,27 @@ func TestFrequent(t *testing.T) {
 		t.Fatalf("%+v", got)
 	}
 }
+
+func TestScaleByVolumeAndTheTablesOwnWords(t *testing.T) {
+	milk := store.FoodRef{Carbs: 15, Qty: 250, Unit: "ml", Portions: store.Langs{"uk": "1 чашка (250 мл)", "en": "1 cup (250 ml)", "es": "1 taza (250 cc)"}}
+	cases := []struct {
+		portion string
+		carbs   int
+		scaled  bool
+	}{
+		{"200 мл", 12, true},
+		{"200", 12, true},            // a bare number this large is millilitres
+		{"2", 30, true},              // a small one counts cups
+		{"0,5 л", 30, true},          // litres
+		{"300 cc", 18, true},         // the Spanish millilitre
+		{"2 чашки", 30, true},        // the table's own word
+		{"1 taza", 15, true},         // in another language
+		{"склянка 200 мл", 12, true}, // a volume anywhere in the text
+		{"тарілка", 15, false},       // counted another way: the table's own number
+	}
+	for _, c := range cases {
+		if got, scaled := scale(milk, c.portion); got != c.carbs || scaled != c.scaled {
+			t.Errorf("%q: %d scaled=%v, want %d scaled=%v", c.portion, got, scaled, c.carbs, c.scaled)
+		}
+	}
+}

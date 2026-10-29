@@ -129,28 +129,32 @@ func wordsMatch(keys []string, words []string, prefix bool) bool {
 }
 
 // scale turns the table's portion into the typed one when both are counted
-// the same way: grams by the portion's weight, millilitres, or pieces.
-// Anything else (a cup, a plate) keeps the table's own number.
-func scale(f store.FoodRef, portion string) (int, bool) {
-	if strings.TrimSpace(portion) == "" || f.Carbs == 0 {
+// the same way: grams by the portion's weight, millilitres, pieces, or the
+// portion's own words ("2 чашки" of "1 чашка (250 мл)"). Anything else (a
+// plate of what the table counts in cups) keeps the table's own number.
+func scale(f store.FoodRef, typed string) (int, bool) {
+	if strings.TrimSpace(typed) == "" || f.Carbs == 0 {
 		return f.Carbs, false
 	}
-	p := parsePortion(portion)
-	if p.n <= 0 {
+	var have []portion
+	if f.Grams != nil && *f.Grams > 0 {
+		have = append(have, portion{*f.Grams, "g"})
+	}
+	if f.Qty > 0 && (f.Unit == "ml" || f.Unit == "pc") {
+		have = append(have, portion{f.Qty, map[string]string{"ml": "ml", "pc": ""}[f.Unit]})
+	}
+	for _, l := range []string{"uk", "en", "es"} {
+		if t := strings.TrimSpace(f.Portions[l]); t != "" {
+			if c := countOf(t); c.unit != "" && c.unit != "g" && c.unit != "ml" {
+				have = append(have, c)
+			}
+		}
+	}
+	r, ok := scaleBy(typed, have)
+	if !ok {
 		return f.Carbs, false
 	}
-	var per float64 // the table's portion, in the typed unit
-	switch {
-	case p.unit == "g" && f.Grams != nil && *f.Grams > 0:
-		per = *f.Grams
-	case p.unit == "ml" && f.Unit == "ml" && f.Qty > 0:
-		per = f.Qty
-	case f.Unit == "pc" && f.Qty > 0 && pieces(p.unit):
-		per = f.Qty
-	default:
-		return f.Carbs, false
-	}
-	return int(math.Round(float64(f.Carbs) * p.n / per)), true
+	return int(math.Round(float64(f.Carbs) * r)), true
 }
 
 // pieces: "2", "2 шт", "2 штуки", "2 pcs", "2 unidades".
