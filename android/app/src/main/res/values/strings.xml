@@ -606,7 +606,7 @@
     <string name="rule_down">always down</string>
     <string name="rule_up">always up</string>
     <string name="alert_meter_old">The correction table does not apply</string>
-    <string name="alert_meter_old_text">The last glucometer reading was %1$d min ago (up to %2$d allowed). No correction counted. Take a fresh one and type it below.</string>
+    <string name="alert_meter_old_text">The last glucometer reading was %1$s ago (up to %2$d allowed). No correction counted. Take a fresh one and type it below.</string>
     <string name="alert_no_meter_text">No glucometer reading in the last %1$d min. No correction counted. Take one and type it below.</string>
     <string name="alert_low">Low: %1$s</string>
     <string name="alert_low_text">Raise the sugar first. Nothing is taken off the dose by itself: you decide.</string>
@@ -654,7 +654,7 @@
     <string name="dose_round_why">A pen cannot dial 2.35 u, so the dose is rounded.</string>
     <string name="dose_round_once">The meal\'s part and the correction are added first, the total rounded once.</string>
     <string name="dose_pen_step">The pen\'s step</string>
-    <string name="dose_round_source">The rules come from children\'s clinics\' handouts (Nationwide Children\'s, Phoenix Children\'s, Children\'s of Alabama). Pick the one your doctor wrote.</string>
+    <string name="dose_round_source">The rules come from children\'s clinics\' handouts (Nationwide Children\'s, Phoenix Children\'s, Children\'s of Alabama). Pick the one you use.</string>
     <string name="rule_nearest_1">After the point 0.1–0.4 goes down, 0.5–0.9 up.</string>
     <string name="rule_nearest_5">After the point 0.0–0.2 down to whole, 0.3–0.7 to a half, 0.8–0.9 up to whole.</string>
     <string name="rule_half_down_1">Like “to the nearest”, only exactly 0.5 goes down: 2.5 → 2, but 2.6 → 3.</string>
@@ -747,10 +747,10 @@
     <string name="planned_yes">Yes</string>
     <string name="meal_low_title">Carbs for the low</string>
     <string name="meal_low_note">Carbs given to raise a low: no insulin is worked out for them.</string>
-    <string name="dose_forecast">Forecast with food and insulin</string>
-    <string name="dose_forecast_note">For the forecast that counts insulin still working and carbs still coming in. Alarms do not use it.</string>
+    <string name="dose_forecast">Insulin and carbs still acting</string>
+    <string name="dose_forecast_note">For the “active insulin · carbs coming in” line on the main screen. The forecast with food and insulin is not shown for now. Alarms do not use these numbers.</string>
     <string name="dose_isf">One rapid unit lowers by</string>
-    <string name="dose_isf_note">Empty: worked out from the correction table\'s steps. Ask your doctor for the real number.</string>
+    <string name="dose_isf_note">Empty: worked out from the correction table\'s steps.</string>
     <string name="dose_dia">Rapid insulin works for</string>
     <string name="dose_carb_min">Carbs come in over</string>
     <string name="dose_err_isf">One unit lowers by 5 to 400 mg/dL (or leave it empty).</string>
@@ -773,4 +773,9 @@
     <string name="wait_fact_sugar">Sugar %1$s</string>
     <string name="wait_fact_food">Food %1$d g</string>
     <string name="wait_note">A suggestion, not a rule. Every phone shows the same.</string>
+    <string name="age_min">%1$d min</string>
+    <string name="age_hours">%1$d h</string>
+    <string name="age_days">%1$d days</string>
+    <string name="role_caregiver">family phone</string>
+    <string name="role_uploader">xDrip+ phone</string>
 </resources>

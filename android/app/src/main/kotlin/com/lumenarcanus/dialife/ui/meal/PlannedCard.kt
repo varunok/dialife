@@ -114,10 +114,11 @@ fun PlannedCard(
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Row(verticalAlignment = Alignment.Top) {
+        // the title has the whole width (it is long in some languages), whose meal and who under it
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 if (loud) stringResource(R.string.planned_unconfirmed, mins) else stringResource(R.string.planned_title),
-                color = if (loud) c.high else c.insulin, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f),
+                color = if (loud) c.high else c.insulin, fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
             )
             Text(stringResource(R.string.planned_meal_at, AlarmText.clock(ctx, mealAt)) + if (p.by.isNotBlank()) " · " + p.by else "", color = c.textMuted, fontSize = 12.sp)
         }

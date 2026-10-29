@@ -204,7 +204,11 @@ fun SettingsScreen(
 
         Section(stringResource(R.string.set_connection)) {
             Line(stringResource(R.string.set_server), creds.server.removePrefix("https://"))
-            Line(stringResource(R.string.set_this_phone), creds.deviceName + " · " + creds.role)
+            Line(stringResource(R.string.set_this_phone), creds.deviceName + " · " + when (creds.role) {
+                "caregiver" -> stringResource(R.string.role_caregiver)
+                "uploader" -> stringResource(R.string.role_uploader)
+                else -> creds.role
+            })
             state?.uploader?.let { u ->
                 val seen = if (u.mills > 0) AlarmText.clock(ctx, u.mills) else "—"
                 Line(AlarmText.uploader(ctx, state), listOfNotNull(u.battery?.let { "$it%" }, stringResource(R.string.set_seen, seen)).joinToString(" · "))
@@ -310,11 +314,25 @@ private fun Line(label: String, value: String) {
 @Composable
 private fun <T> Choice(options: List<Pair<T, String>>, selected: T, onPick: (T) -> Unit) {
     val c = DiaTheme.colors
-    Row(
-        Modifier.fillMaxWidth().background(c.background, RoundedCornerShape(12.dp)).padding(3.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        options.forEach { (value, label) ->
+    androidx.compose.foundation.layout.BoxWithConstraints {
+        // all in one row while every label fits its share whole (no word split, at most
+        // two lines); else two to a row when they pair up; else one under another
+        val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        val style = androidx.compose.material3.LocalTextStyle.current.merge(androidx.compose.ui.text.TextStyle(fontSize = 13.sp, fontWeight = FontWeight.SemiBold))
+        val fitsIn = { per: Int ->
+            val slot = with(density) { ((maxWidth - 6.dp - 4.dp * (per - 1)) / per - 8.dp).roundToPx() }.coerceAtLeast(1)
+            options.all { (_, label) ->
+                label.split(' ').all { measurer.measure(it, style).size.width <= slot } &&
+                    measurer.measure(label, style, constraints = androidx.compose.ui.unit.Constraints(maxWidth = slot)).lineCount <= 2
+            }
+        }
+        val per = when {
+            fitsIn(options.size) -> options.size
+            options.size % 2 == 0 && fitsIn(2) -> 2 // three would leave one alone
+            else -> 1
+        }
+        val item = @Composable { value: T, label: String, m: Modifier ->
             val on = value == selected
             Text(
                 label,
@@ -322,14 +340,21 @@ private fun <T> Choice(options: List<Pair<T, String>>, selected: T, onPick: (T) 
                 fontSize = 13.sp,
                 fontWeight = if (on) FontWeight.SemiBold else FontWeight.Medium,
                 textAlign = TextAlign.Center,
-                maxLines = 2,
-                modifier = Modifier
-                    .weight(1f)
+                modifier = m
                     .background(if (on) c.surfaceRaised else Color.Transparent, RoundedCornerShape(9.dp))
                     .selectable(selected = on, role = Role.RadioButton, onClick = { onPick(value) })
                     .heightIn(min = 44.dp)
                     .padding(horizontal = 4.dp, vertical = 12.dp),
             )
+        }
+        val box = Modifier.fillMaxWidth().background(c.background, RoundedCornerShape(12.dp)).padding(3.dp)
+        Column(box, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            options.chunked(per).forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    row.forEach { (value, label) -> item(value, label, Modifier.weight(1f)) }
+                    repeat(per - row.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
         }
     }
 }

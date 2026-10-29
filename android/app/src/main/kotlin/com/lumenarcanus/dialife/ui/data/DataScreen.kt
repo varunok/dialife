@@ -262,7 +262,7 @@ fun DataScreen(
                 .border(1.dp, c.line, RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)),
         ) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                HeadCell(stringResource(R.string.data_time), 50.dp)
+                HeadCell(stringResource(R.string.data_time), timeColumn())
                 HeadCell(if (units == Units.MgDl) "mg/dL" else stringResource(R.string.unit_mmol), 74.dp)
                 HeadCell(stringResource(R.string.data_delta), 44.dp)
                 HeadCell(stringResource(R.string.data_entries), null)
@@ -375,7 +375,7 @@ private fun ListRow(r: DataRow, units: Units, th: Thresholds, onEdit: (Treatment
     ) {
         Text(
             AlarmText.clock(ctx, r.t) + (r.end?.let { "\n" + AlarmText.clock(ctx, it) } ?: ""),
-            color = c.textMuted, fontSize = 12.sp, fontFamily = PlexMono, lineHeight = 14.sp, modifier = Modifier.width(50.dp),
+            color = c.textMuted, fontSize = 12.sp, fontFamily = PlexMono, lineHeight = 14.sp, modifier = Modifier.width(timeColumn()),
         )
         Column(Modifier.width(74.dp)) {
             Row(verticalAlignment = Alignment.Bottom) {
@@ -624,3 +624,7 @@ private fun WideTable(
         }
     }
 }
+
+/** The time column: "10:46", or "10:46 AM" on a 12-hour clock, on one line. */
+@Composable
+private fun timeColumn() = if (android.text.format.DateFormat.is24HourFormat(androidx.compose.ui.platform.LocalContext.current)) 50.dp else 68.dp

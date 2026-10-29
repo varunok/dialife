@@ -89,6 +89,22 @@ class ScreenshotTest {
     }
 
     @Test
+    @Config(qualifiers = "uk-w320dp-h2000dp-xxhdpi")
+    fun homeNarrowUk320() = shot("home_narrow_uk_320", dark = true) { HomeScreen(sampleHomeUi(now), deviceName = "Тато") }
+
+    @Test
+    @Config(qualifiers = "es-w320dp-h2000dp-xxhdpi")
+    fun homeNarrowEs320() = shot("home_narrow_es_320", dark = true) { HomeScreen(sampleHomeUi(now), deviceName = "Тато") }
+
+    @Test
+    @Config(qualifiers = "en-w320dp-h2000dp-xxhdpi")
+    fun homeNarrowEn320() = shot("home_narrow_en_320", dark = true) { HomeScreen(sampleHomeUi(now), deviceName = "Тато") }
+
+    @Test
+    @Config(qualifiers = "es-w360dp-h2000dp-xxhdpi")
+    fun homeNarrowEs360() = shot("home_narrow_es_360", dark = true) { HomeScreen(sampleHomeUi(now), deviceName = "Тато") }
+
+    @Test
     @Config(qualifiers = "uk-w412dp-h2000dp-xxhdpi")
     fun homeButtonsUk() = shot("home_buttons_dark_uk", dark = true) { HomeScreen(sampleHomeUi(now), deviceName = "Тато") }
 
@@ -227,6 +243,264 @@ class ScreenshotTest {
     @Test
     @Config(qualifiers = "+uk")
     fun doseSettingsUk() = shot("dose_settings_dark_uk", dark = true) {
+        com.lumenarcanus.dialife.ui.settings.DoseSettingsScreen(com.lumenarcanus.dialife.data.DoseSettings(updatedBy = "Тато"), Units.MgDl, onSave = { Result.success(it) }, onBack = {})
+    }
+    @Test
+    @Config(qualifiers = "en-w412dp-h915dp-xxhdpi")
+    fun foodOtherPortionEnAll() = shot("food_other_portion_dark_en_all", dark = true) {
+        val hit = com.lumenarcanus.dialife.data.CarbTableHit(
+            "fruit-frutillas-1-taza", 15, names = mapOf("uk" to "Полуниця"), portions = mapOf("uk" to "1 чашка (250 мл)"),
+        )
+        val row = com.lumenarcanus.dialife.ui.treatment.newFoodRow("Полуниця", portion = "100 грам").copy(
+            asked = true, models = true,
+            suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(table = listOf(hit), estimate = com.lumenarcanus.dialife.data.CarbEstimate(8, 7, 9, 1)),
+        )
+        androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+            com.lumenarcanus.dialife.ui.treatment.FoodSuggestions(row, "uk") {}
+            com.lumenarcanus.dialife.ui.treatment.FoodSuggestions(
+                row.copy(suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(table = listOf(hit.copy(carbs = 8, scaled = true, per100 = 7.7, per100Src = "SARA 2 (AR)", fiber100 = 2.0, avail100 = 5.7)))), "uk",
+            ) {}
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "es-w412dp-h915dp-xxhdpi")
+    fun foodOtherPortionEsAll() = shot("food_other_portion_dark_es_all", dark = true) {
+        val hit = com.lumenarcanus.dialife.data.CarbTableHit(
+            "fruit-frutillas-1-taza", 15, names = mapOf("uk" to "Полуниця"), portions = mapOf("uk" to "1 чашка (250 мл)"),
+        )
+        val row = com.lumenarcanus.dialife.ui.treatment.newFoodRow("Полуниця", portion = "100 грам").copy(
+            asked = true, models = true,
+            suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(table = listOf(hit), estimate = com.lumenarcanus.dialife.data.CarbEstimate(8, 7, 9, 1)),
+        )
+        androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+            com.lumenarcanus.dialife.ui.treatment.FoodSuggestions(row, "uk") {}
+            com.lumenarcanus.dialife.ui.treatment.FoodSuggestions(
+                row.copy(suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(table = listOf(hit.copy(carbs = 8, scaled = true, per100 = 7.7, per100Src = "SARA 2 (AR)", fiber100 = 2.0, avail100 = 5.7)))), "uk",
+            ) {}
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "en-w412dp-h1200dp-xxhdpi")
+    fun waitCardsEnAll() = shot("wait_cards_dark_en_all", dark = true) {
+        val dose = now - 10 * 60_000
+        val w = com.lumenarcanus.dialife.data.Wait("d", dose, 3.0, dose + 15 * 60_000, "range", 142, 60.0, 0.0)
+        androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w, 0, 20, Units.MgDl, now)
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(reason = "high", sgv = 214, eatFrom = dose + 20 * 60_000), 0, 20, Units.MgDl, now)
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w, 20, 20, Units.MgDl, now)
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(reason = "falling", sgv = 92, eatFrom = now), 0, 20, Units.MgDl, now)
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(doseAt = now - 17 * 60_000, eatFrom = now - 2 * 60_000), 0, 20, Units.MgDl, now)
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(reason = "unseen", sgv = null), 0, 20, Units.MgDl, now)
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "es-w412dp-h1200dp-xxhdpi")
+    fun waitCardsEsAll() = shot("wait_cards_dark_es_all", dark = true) {
+        val dose = now - 10 * 60_000
+        val w = com.lumenarcanus.dialife.data.Wait("d", dose, 3.0, dose + 15 * 60_000, "range", 142, 60.0, 0.0)
+        androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w, 0, 20, Units.MgDl, now)
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(reason = "high", sgv = 214, eatFrom = dose + 20 * 60_000), 0, 20, Units.MgDl, now)
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w, 20, 20, Units.MgDl, now)
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(reason = "falling", sgv = 92, eatFrom = now), 0, 20, Units.MgDl, now)
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(doseAt = now - 17 * 60_000, eatFrom = now - 2 * 60_000), 0, 20, Units.MgDl, now)
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(reason = "unseen", sgv = null), 0, 20, Units.MgDl, now)
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "en-w412dp-h2600dp-xxhdpi")
+    fun meterCardEnAll() = shot("meter_card_dark_en_all", dark = true) {
+        androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.padding(16.dp)) {
+            com.lumenarcanus.dialife.ui.stats.MeterCard(com.lumenarcanus.dialife.ui.home.sampleMeter(now), Units.MgDl)
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "es-w412dp-h2600dp-xxhdpi")
+    fun meterCardEsAll() = shot("meter_card_dark_es_all", dark = true) {
+        androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.padding(16.dp)) {
+            com.lumenarcanus.dialife.ui.stats.MeterCard(com.lumenarcanus.dialife.ui.home.sampleMeter(now), Units.MgDl)
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "en-w412dp-h2600dp-xxhdpi")
+    fun dataListEnAll() = shot("data_list_dark_en_all", dark = true) {
+        val ui = sampleHomeUi(now)
+        com.lumenarcanus.dialife.ui.data.DataScreen(
+            ui.history, ui.state!!.questions, ui.state!!.thresholds, Units.MgDl, 3, now,
+            loadHistory = { _, _ -> null }, onSaveTreatment = {}, onBack = {},
+        )
+    }
+
+    @Test
+    @Config(qualifiers = "es-w412dp-h2600dp-xxhdpi")
+    fun dataListEsAll() = shot("data_list_dark_es_all", dark = true) {
+        val ui = sampleHomeUi(now)
+        com.lumenarcanus.dialife.ui.data.DataScreen(
+            ui.history, ui.state!!.questions, ui.state!!.thresholds, Units.MgDl, 3, now,
+            loadHistory = { _, _ -> null }, onSaveTreatment = {}, onBack = {},
+        )
+    }
+
+    @Test
+    @Config(qualifiers = "en-w412dp-h2600dp-xxhdpi")
+    fun handlingEnAll() = shot("handling_en_all", dark = true) {
+        val ui = sampleHomeUi(now)
+        val taken = now - 12 * 60_000L
+        val alarm = AlarmView(
+            id = 1, kind = "low", level = "urgent", state = "handled", startedAt = taken, sgv = 56,
+            handledBy = "Тато", handledById = 8, handledAt = taken, handledSgv = 52,
+            checkinPending = true, checkinSentAt = now - 60_000L,
+        )
+        val st = ui.state!!.copy(
+            bg = ui.state.bg!!.copy(sgv = 56),
+            alarms = listOf(alarm),
+            caregivers = listOf(Caregiver(8, "Тато"), Caregiver(9, "Мама")),
+        )
+        HandlingScreen(ui.copy(state = st, myId = 8), alarmId = 1, units = Units.MgDl, onAct = { _, _ -> }, onSaveTreatment = {}, onBack = {})
+    }
+
+    @Test
+    @Config(qualifiers = "es-w412dp-h2600dp-xxhdpi")
+    fun handlingEsAll() = shot("handling_es_all", dark = true) {
+        val ui = sampleHomeUi(now)
+        val taken = now - 12 * 60_000L
+        val alarm = AlarmView(
+            id = 1, kind = "low", level = "urgent", state = "handled", startedAt = taken, sgv = 56,
+            handledBy = "Тато", handledById = 8, handledAt = taken, handledSgv = 52,
+            checkinPending = true, checkinSentAt = now - 60_000L,
+        )
+        val st = ui.state!!.copy(
+            bg = ui.state.bg!!.copy(sgv = 56),
+            alarms = listOf(alarm),
+            caregivers = listOf(Caregiver(8, "Тато"), Caregiver(9, "Мама")),
+        )
+        HandlingScreen(ui.copy(state = st, myId = 8), alarmId = 1, units = Units.MgDl, onAct = { _, _ -> }, onSaveTreatment = {}, onBack = {})
+    }
+
+    @Test
+    @Config(qualifiers = "en-w412dp-h2600dp-xxhdpi")
+    fun settingsEnAll() = shot("settings_en_all", dark = true) {
+        SettingsScreen(
+            creds = creds, state = sampleHomeUi(now).state, setup = BackgroundSetup(battery = true),
+            onFixNotifications = {}, onFixBattery = {}, onFixFullScreen = {}, onTestSound = {}, onDisconnect = {}, onBack = {},
+        )
+    }
+
+    @Test
+    @Config(qualifiers = "es-w412dp-h2600dp-xxhdpi")
+    fun settingsEsAll() = shot("settings_es_all", dark = true) {
+        SettingsScreen(
+            creds = creds, state = sampleHomeUi(now).state, setup = BackgroundSetup(battery = true),
+            onFixNotifications = {}, onFixBattery = {}, onFixFullScreen = {}, onTestSound = {}, onDisconnect = {}, onBack = {},
+        )
+    }
+
+    @Test
+    @Config(qualifiers = "en-w412dp-h2600dp-xxhdpi")
+    fun mealEnAll() = shot("meal_dark_en_all", dark = true) {
+        val t = sampleHomeUi(now).history?.treatments.orEmpty() +
+            com.lumenarcanus.dialife.data.Treatment(id = "g1", t = now - 6 * 60_000L, glucose = 186)
+        com.lumenarcanus.dialife.ui.meal.MealScreen(
+            repo = null, treatments = t, dose = com.lumenarcanus.dialife.data.DoseSettings(), planned = emptyList(), units = Units.MgDl,
+            editing = meal(now).copy(foodItems = meal(now).foodItems!! + com.lumenarcanus.dialife.data.FoodItem("Гречка з котлетою", null, null, null)),
+            initialTime = null, onSave = {}, onSaved = {}, onClose = {},
+        )
+    }
+
+    @Test
+    @Config(qualifiers = "es-w412dp-h2600dp-xxhdpi")
+    fun mealEsAll() = shot("meal_dark_es_all", dark = true) {
+        val t = sampleHomeUi(now).history?.treatments.orEmpty() +
+            com.lumenarcanus.dialife.data.Treatment(id = "g1", t = now - 6 * 60_000L, glucose = 186)
+        com.lumenarcanus.dialife.ui.meal.MealScreen(
+            repo = null, treatments = t, dose = com.lumenarcanus.dialife.data.DoseSettings(), planned = emptyList(), units = Units.MgDl,
+            editing = meal(now).copy(foodItems = meal(now).foodItems!! + com.lumenarcanus.dialife.data.FoodItem("Гречка з котлетою", null, null, null)),
+            initialTime = null, onSave = {}, onSaved = {}, onClose = {},
+        )
+    }
+
+    @Test
+    @Config(qualifiers = "en-w412dp-h2600dp-xxhdpi")
+    fun plannedEnAll() = shot("planned_dark_en_all", dark = true) {
+        androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
+            val p = com.lumenarcanus.dialife.data.PlannedDose(id = "p1", mealId = "m1", dose = 4.0, food = 2.25, corr = 2.0, carbs = 45, meter = 186, meterAt = now - 30 * 60_000L, createdAt = now - 10 * 60_000L, by = "Мама")
+            com.lumenarcanus.dialife.ui.meal.PlannedCard(p, com.lumenarcanus.dialife.data.DoseSettings(), now, listOf(meal(now)), null, Units.MgDl, {}, {})
+            com.lumenarcanus.dialife.ui.meal.PlannedCard(p.copy(id = "p2", createdAt = now - 65 * 60_000L), com.lumenarcanus.dialife.data.DoseSettings(), now, listOf(meal(now)),
+                com.lumenarcanus.dialife.data.Question(id = 9, kind = "planned", state = "open", from = now - 25 * 60_000L, to = now, sgvFrom = 0, sgvTo = 0, plannedId = "p2", dose = 4.0), Units.MgDl, {}, {})
+            com.lumenarcanus.dialife.ui.meal.EntryDetail(meal(now), listOf(meal(now),
+                com.lumenarcanus.dialife.data.Treatment(id = "i1", t = now - 30 * 60_000L, insulin = 2.0, insulinType = "rapid", insulinName = "Rapilog One", enteredBy = "Тато")),
+                com.lumenarcanus.dialife.data.DoseSettings(), Units.MgDl)
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "es-w412dp-h2600dp-xxhdpi")
+    fun plannedEsAll() = shot("planned_dark_es_all", dark = true) {
+        androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
+            val p = com.lumenarcanus.dialife.data.PlannedDose(id = "p1", mealId = "m1", dose = 4.0, food = 2.25, corr = 2.0, carbs = 45, meter = 186, meterAt = now - 30 * 60_000L, createdAt = now - 10 * 60_000L, by = "Мама")
+            com.lumenarcanus.dialife.ui.meal.PlannedCard(p, com.lumenarcanus.dialife.data.DoseSettings(), now, listOf(meal(now)), null, Units.MgDl, {}, {})
+            com.lumenarcanus.dialife.ui.meal.PlannedCard(p.copy(id = "p2", createdAt = now - 65 * 60_000L), com.lumenarcanus.dialife.data.DoseSettings(), now, listOf(meal(now)),
+                com.lumenarcanus.dialife.data.Question(id = 9, kind = "planned", state = "open", from = now - 25 * 60_000L, to = now, sgvFrom = 0, sgvTo = 0, plannedId = "p2", dose = 4.0), Units.MgDl, {}, {})
+            com.lumenarcanus.dialife.ui.meal.EntryDetail(meal(now), listOf(meal(now),
+                com.lumenarcanus.dialife.data.Treatment(id = "i1", t = now - 30 * 60_000L, insulin = 2.0, insulinType = "rapid", insulinName = "Rapilog One", enteredBy = "Тато")),
+                com.lumenarcanus.dialife.data.DoseSettings(), Units.MgDl)
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "en-w412dp-h2600dp-xxhdpi")
+    fun webLoginEnAll() = shot("web_login_en_all", dark = true) {
+        androidx.compose.foundation.layout.Column(
+            androidx.compose.ui.Modifier.padding(20.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
+        ) {
+            com.lumenarcanus.dialife.ui.web.Approve(com.lumenarcanus.dialife.data.WebLoginInfo("x", "Firefox", "Linux", now + 120_000, ip = "198.51.100.9"), now = now) {}
+            com.lumenarcanus.dialife.ui.web.Sessions(
+                listOf(com.lumenarcanus.dialife.data.WebSession(1, "Chrome", "Windows", "Тато", now - 86_400_000, now + 6 * 86_400_000, now - 600_000)),
+                now = now,
+            ) {}
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "es-w412dp-h2600dp-xxhdpi")
+    fun webLoginEsAll() = shot("web_login_es_all", dark = true) {
+        androidx.compose.foundation.layout.Column(
+            androidx.compose.ui.Modifier.padding(20.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
+        ) {
+            com.lumenarcanus.dialife.ui.web.Approve(com.lumenarcanus.dialife.data.WebLoginInfo("x", "Firefox", "Linux", now + 120_000, ip = "198.51.100.9"), now = now) {}
+            com.lumenarcanus.dialife.ui.web.Sessions(
+                listOf(com.lumenarcanus.dialife.data.WebSession(1, "Chrome", "Windows", "Тато", now - 86_400_000, now + 6 * 86_400_000, now - 600_000)),
+                now = now,
+            ) {}
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "en-w412dp-h2600dp-xxhdpi")
+    fun homeDarkEnAll() = shot("home_dark_en_all", dark = true) { HomeScreen(sampleHomeUi(now), deviceName = "Тато") }
+
+    @Test
+    @Config(qualifiers = "es-w412dp-h2600dp-xxhdpi")
+    fun homeDarkEsAll() = shot("home_dark_es_all", dark = true) { HomeScreen(sampleHomeUi(now), deviceName = "Тато") }
+
+
+    @Test
+    @Config(qualifiers = "en-w412dp-h2600dp-xxhdpi")
+    fun doseSettingsEnAll() = shot("dose_settings_dark_en_all", dark = true) {
+        com.lumenarcanus.dialife.ui.settings.DoseSettingsScreen(com.lumenarcanus.dialife.data.DoseSettings(updatedBy = "Тато"), Units.MgDl, onSave = { Result.success(it) }, onBack = {})
+    }
+
+    @Test
+    @Config(qualifiers = "es-w412dp-h2600dp-xxhdpi")
+    fun doseSettingsEsAll() = shot("dose_settings_dark_es_all", dark = true) {
         com.lumenarcanus.dialife.ui.settings.DoseSettingsScreen(com.lumenarcanus.dialife.data.DoseSettings(updatedBy = "Тато"), Units.MgDl, onSave = { Result.success(it) }, onBack = {})
     }
 }

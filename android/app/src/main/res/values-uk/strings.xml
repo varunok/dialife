@@ -626,7 +626,7 @@
     <string name="rule_down">завжди вниз</string>
     <string name="rule_up">завжди вгору</string>
     <string name="alert_meter_old">Корекційна таблиця не застосовується</string>
-    <string name="alert_meter_old_text">Останній замір глюкометра був %1$d хв тому (можна до %2$d хв). Корекцію не пораховано. Зробіть свіжий замір і введіть його нижче.</string>
+    <string name="alert_meter_old_text">Останній замір глюкометра був %1$s тому (можна до %2$d хв). Корекцію не пораховано. Зробіть свіжий замір і введіть його нижче.</string>
     <string name="alert_no_meter_text">Немає заміру глюкометра за останні %1$d хв. Корекцію не пораховано. Зробіть замір і введіть його нижче.</string>
     <string name="alert_low">Низький цукор: %1$s</string>
     <string name="alert_low_text">Спершу підніміть цукор. Від дози нічого не віднімається автоматично: вирішуєте ви.</string>
@@ -674,7 +674,7 @@
     <string name="dose_round_why">Ручка не набере 2,35 од, тому дозу округлюють.</string>
     <string name="dose_round_once">Спершу додаємо дозу на їжу і корекцію, потім округлюємо один раз загальну суму.</string>
     <string name="dose_pen_step">Крок ручки</string>
-    <string name="dose_round_source">Правила з пам\'яток дитячих клінік (Nationwide Children\'s, Phoenix Children\'s, Children\'s of Alabama). Виберіть те, що написав ваш лікар.</string>
+    <string name="dose_round_source">Правила з пам\'яток дитячих клінік (Nationwide Children\'s, Phoenix Children\'s, Children\'s of Alabama). Виберіть те, яким ви користуєтеся.</string>
     <string name="rule_nearest_1">Після коми 0,1–0,4 — вниз, 0,5–0,9 — вгору.</string>
     <string name="rule_nearest_5">Після коми 0,0–0,2 — вниз до цілої, 0,3–0,7 — до половини, 0,8–0,9 — вгору до цілої.</string>
     <string name="rule_half_down_1">Як «до найближчого», тільки рівно 0,5 — вниз: 2,5 → 2, але 2,6 → 3.</string>
@@ -767,11 +767,11 @@
     <string name="planned_yes">Так</string>
     <string name="meal_low_title">Вуглеводи від гіпо</string>
     <string name="meal_low_note">Вуглеводи, щоб підняти низький цукор: інсулін на них не рахується.</string>
-    <string name="dose_forecast">Прогноз з їжею та інсуліном</string>
-    <string name="dose_forecast_note">Для прогнозу, що враховує інсулін, який ще діє, і вуглеводи, що ще засвоюються. Тривоги на нього не спираються.</string>
-    <string name="dose_isf">1 од rapid знижує на</string>
-    <string name="dose_isf_note">Порожньо — виводиться з кроків таблиці корекції. Точне число спитайте в лікаря.</string>
-    <string name="dose_dia">Rapid діє</string>
+    <string name="dose_forecast">Активний інсулін і вуглеводи</string>
+    <string name="dose_forecast_note">Для рядка «активного інсуліну · вуглеводів засвоюється» на головному екрані. Прогноз з їжею та інсуліном поки не показується. Тривоги на ці числа не спираються.</string>
+    <string name="dose_isf">1 од короткого знижує на</string>
+    <string name="dose_isf_note">Порожньо — виводиться з кроків таблиці корекції.</string>
+    <string name="dose_dia">Короткий діє</string>
     <string name="dose_carb_min">Вуглеводи засвоюються за</string>
     <string name="dose_err_isf">1 од знижує на 5–400 мг/дл (або лишіть порожнім).</string>
     <string name="dose_err_dia">Rapid діє від 120 до 480 хв.</string>
@@ -793,4 +793,9 @@
     <string name="wait_fact_sugar">Цукор %1$s</string>
     <string name="wait_fact_food">Їжа %1$d г</string>
     <string name="wait_note">Порада, не правило. На всіх телефонах однаково.</string>
+    <string name="age_min">%1$d хв</string>
+    <string name="age_hours">%1$d год</string>
+    <string name="age_days">%1$d дн.</string>
+    <string name="role_caregiver">телефон родини</string>
+    <string name="role_uploader">телефон із xDrip+</string>
 </resources>

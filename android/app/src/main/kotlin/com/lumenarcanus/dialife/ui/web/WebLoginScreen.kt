@@ -241,7 +241,8 @@ internal fun Sessions(sessions: List<WebSession>, now: Long = System.currentTime
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(Modifier.weight(1f)) {
                     Text("${s.browser} · ${s.os}", color = c.text, fontSize = 14.sp)
-                    val seen = s.lastSeenAt?.let { android.text.format.DateUtils.getRelativeTimeSpanString(it, now, android.text.format.DateUtils.MINUTE_IN_MILLIS).toString() } ?: never
+                    val seen = s.lastSeenAt?.let { android.text.format.DateUtils.getRelativeTimeSpanString(it, now, android.text.format.DateUtils.MINUTE_IN_MILLIS).toString()
+                        .replaceFirstChar { c -> c.lowercase(java.util.Locale.getDefault()) } } ?: never // mid-sentence
                     Text(stringResource(R.string.web_session_line, s.by, untilText(ctx, s.expiresAt), seen), color = c.textMuted, fontSize = 12.sp)
                 }
                 OutlinedButton(onClick = { onRevoke(s.id) }) { Text(stringResource(R.string.web_logout), color = c.low) }

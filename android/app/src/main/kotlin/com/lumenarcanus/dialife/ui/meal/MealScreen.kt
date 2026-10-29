@@ -671,7 +671,7 @@ fun AlertCard(a: DoseCalc.Alert, units: Units, locale: java.util.Locale, title: 
     fun f(x: Double) = formatAmount(x, locale)
     fun g(mg: Int) = formatGlucose(mg, units, locale)
     val (t0, x0) = when (a) {
-        is DoseCalc.Alert.MeterOld -> stringResource(R.string.alert_meter_old) to stringResource(R.string.alert_meter_old_text, a.ageMin, a.freshMin)
+        is DoseCalc.Alert.MeterOld -> stringResource(R.string.alert_meter_old) to stringResource(R.string.alert_meter_old_text, ageText(a.ageMin), a.freshMin)
         is DoseCalc.Alert.NoMeter -> stringResource(R.string.alert_meter_old) to stringResource(R.string.alert_no_meter_text, a.freshMin)
         is DoseCalc.Alert.Low -> stringResource(R.string.alert_low, g(a.mg)) to stringResource(R.string.alert_low_text)
         is DoseCalc.Alert.VeryHigh -> stringResource(R.string.alert_very_high, g(a.mg)) to stringResource(R.string.alert_very_high_text, f(a.maxCorr))
@@ -752,4 +752,12 @@ private fun SaveSheet(
             TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.tr_cancel)) }
         }
     }
+}
+
+/** "40 min", "5 h", "6 days": how long ago, in a unit that reads at a glance. */
+@Composable
+private fun ageText(min: Int): String = when {
+    min < 120 -> stringResource(R.string.age_min, min)
+    min < 48 * 60 -> stringResource(R.string.age_hours, min / 60)
+    else -> stringResource(R.string.age_days, min / (24 * 60))
 }

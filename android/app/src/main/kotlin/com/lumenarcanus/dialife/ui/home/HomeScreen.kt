@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -387,10 +388,25 @@ fun HomeScreen(
         )
         state?.let { Tiles(it, onOpenStats, onOpenLog) }
         // a button for every kind of entry, each with its chart letter; the form opens on that kind
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ActionButton(TreatmentKind.Insulin, Modifier.weight(1f)) { sheet = TreatmentKind.Insulin to null }
-            ActionButton(TreatmentKind.Food, Modifier.weight(1f)) { sheet = TreatmentKind.Food to null }
-            ActionButton(TreatmentKind.Meter, Modifier.weight(1f)) { sheet = TreatmentKind.Meter to null }
+        androidx.compose.foundation.layout.BoxWithConstraints {
+            // the three side by side when every label fits next to its sign at full
+            // size; on a narrow screen or a large font, the sign goes above the label
+            val gap = 10.dp
+            val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+            val density = androidx.compose.ui.platform.LocalDensity.current
+            val kinds = listOf(TreatmentKind.Insulin, TreatmentKind.Food, TreatmentKind.Meter)
+            val labels = kinds.map { stringResource(com.lumenarcanus.dialife.ui.treatment.kindLook(it).name) }
+            val style = androidx.compose.material3.LocalTextStyle.current.merge(androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.SemiBold))
+            val stacked = kinds.zip(labels).any { (k, l) ->
+                // insulin carries two signs, overlapping
+                val inner = ACTION_INNER + if (k == TreatmentKind.Insulin) 15.dp else 0.dp
+                measurer.measure(l, style).size.width > with(density) { ((maxWidth - gap * 2) / 3 - inner).roundToPx() }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+                ActionButton(TreatmentKind.Insulin, Modifier.weight(1f), stacked = stacked) { sheet = TreatmentKind.Insulin to null }
+                ActionButton(TreatmentKind.Food, Modifier.weight(1f), stacked = stacked) { sheet = TreatmentKind.Food to null }
+                ActionButton(TreatmentKind.Meter, Modifier.weight(1f), stacked = stacked) { sheet = TreatmentKind.Meter to null }
+            }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ActionButton(TreatmentKind.Activity, Modifier.weight(1f), small = true) { sheet = TreatmentKind.Activity to null }
@@ -771,7 +787,13 @@ private fun Tile(label: String, value: String, modifier: Modifier) {
     ) {
         Text(label, color = c.textMuted, fontSize = 12.sp)
         Spacer(Modifier.weight(1f))
-        Text(value, color = c.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        // "Todo tranquilo" stays whole: up to two lines, shrinking rather than being cut
+        androidx.compose.foundation.text.BasicText(
+            value,
+            style = androidx.compose.material3.LocalTextStyle.current.merge(androidx.compose.ui.text.TextStyle(color = c.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)),
+            maxLines = 2,
+            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 13.sp, maxFontSize = 20.sp, stepSize = 0.5.sp),
+        )
     }
 }
 
@@ -957,22 +979,41 @@ private fun Dot() {
     Box(Modifier.size(3.dp).background(DiaTheme.colors.textFaint, CircleShape))
 }
 
+/** What a button needs besides its label when the sign sits beside it: padding, sign, gap. */
+private val ACTION_INNER = 8.dp + 22.dp + 6.dp
+
 @Composable
-private fun ActionButton(kind: TreatmentKind, modifier: Modifier, small: Boolean = false, onClick: () -> Unit) {
+private fun ActionButton(kind: TreatmentKind, modifier: Modifier, small: Boolean = false, stacked: Boolean = false, onClick: () -> Unit) {
     val look = com.lumenarcanus.dialife.ui.treatment.kindLook(kind)
     Button(
         onClick = onClick,
-        modifier = modifier.height(if (small) 46.dp else 56.dp),
+        modifier = modifier.heightIn(min = if (small) 46.dp else if (stacked) 66.dp else 56.dp),
         shape = RoundedCornerShape(if (small) 15.dp else 18.dp),
         colors = ButtonDefaults.buttonColors(containerColor = look.fill, contentColor = look.ink),
-        contentPadding = PaddingValues(horizontal = 4.dp),
+        contentPadding = PaddingValues(horizontal = 4.dp, vertical = if (stacked) 6.dp else 0.dp),
     ) {
-        // three to a row: "Глюкометр", "Glucómetro" must fit whole next to the sign
         val sign = 20.dp
-        if (kind == TreatmentKind.Insulin) com.lumenarcanus.dialife.ui.treatment.InsulinSigns(sign, look.fill)
-        else com.lumenarcanus.dialife.ui.treatment.KindSign(look.glyph, look.ink, sign)
-        Spacer(Modifier.width(6.dp))
-        Text(stringResource(look.name), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
+        val signs = @Composable {
+            if (kind == TreatmentKind.Insulin) com.lumenarcanus.dialife.ui.treatment.InsulinSigns(sign, look.fill)
+            else com.lumenarcanus.dialife.ui.treatment.KindSign(look.glyph, look.ink, sign)
+        }
+        // the label stays whole: past what the layout allows (a very large font), it shrinks rather than being cut
+        val label = @Composable { m: Modifier ->
+            androidx.compose.foundation.text.BasicText(
+                stringResource(look.name), modifier = m,
+                style = androidx.compose.material3.LocalTextStyle.current.merge(androidx.compose.ui.text.TextStyle(color = look.ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)),
+                maxLines = 1, softWrap = false,
+                autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 14.sp, stepSize = 0.5.sp),
+            )
+        }
+        if (stacked) Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            signs()
+            label(Modifier)
+        } else {
+            signs()
+            Spacer(Modifier.width(6.dp))
+            label(Modifier.weight(1f, fill = false))
+        }
     }
 }
 
