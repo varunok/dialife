@@ -131,6 +131,7 @@ class MainActivity : AppCompatActivity() {
                                     treatments = all,
                                     dose = ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
                                     mealRules = ui.state?.mealRules ?: com.lumenarcanus.dialife.data.MealRules(),
+                                    wait = ui.state?.wait,
                                     planned = ui.state?.planned.orEmpty(),
                                     units = unitsOf(ui.state?.displayUnits ?: s.credentials.displayUnits),
                                     editing = mealEdit?.let { id -> all.firstOrNull { it.id == id } ?: mealEntry?.takeIf { it.id == id } },

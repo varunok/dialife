@@ -766,4 +766,19 @@
     <string name="iob_carbs">hidratos entrando %1$d g</string>
     <string name="iob_forecast">con comida e insulina en 30 min ≈ %1$s</string>
     <string name="iob_forecast_q">con comida e insulina en 30 min ≈ %1$s, se cumple el %2$d%%</string>
+    <string name="wait_eat_now">No esperar, comer ya</string>
+    <string name="wait_go">Ya se puede comer</string>
+    <string name="wait_from">Comer desde las %1$s</string>
+    <string name="wait_more">Insulina para %1$d g, anotados %2$d g</string>
+    <string name="wait_more_check">Comprobad que está anotada toda la comida, o si parte de la dosis fue corrección.</string>
+    <string name="wait_ago">Insulina hace %1$d min</string>
+    <string name="wait_why_low">Glucosa %1$s, baja</string>
+    <string name="wait_why_falling">Glucosa %1$s y bajando rápido</string>
+    <string name="wait_why_high">Glucosa alta: %1$d min tras la insulina</string>
+    <string name="wait_why_unseen">%1$d min tras la insulina. Sin lectura reciente del sensor</string>
+    <string name="wait_why_range">%1$d min tras la insulina, glucosa en rango</string>
+    <string name="wait_fact_dose">Insulina %1$s u a las %2$s</string>
+    <string name="wait_fact_sugar">Glucosa %1$s</string>
+    <string name="wait_fact_food">Comida %1$d g</string>
+    <string name="wait_note">Una sugerencia, no una regla. Igual en todos los teléfonos.</string>
 </resources>

@@ -349,6 +349,10 @@ fun HomeScreen(
                 )
             }
         }
+        // after a dose is given: when to start eating, the same card as on the food form
+        ui.state?.wait?.let { w ->
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w, 0, ui.state.dose.ratio, state?.units ?: fallbackUnits, ui.now, home = true)
+        }
         ui.state?.questions.orEmpty().filter { it.state == "open" && it.kind != "planned" }.forEach { q ->
             androidx.compose.runtime.key("q", q.id) {
                 QuestionCard(

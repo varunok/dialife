@@ -87,6 +87,7 @@ type stateResponse struct {
 	Planned      []plannedDose       `json:"planned"`                 // doses worked out for a meal, not given yet
 	IOB          *iobState           `json:"iob,omitempty"`           // what logged food and rapid insulin will still do; not for alarms
 	IOBQuality   *forecast.Quality   `json:"iob_quality,omitempty"`   // how often its "in 30 min" came true
+	Wait         *waitState          `json:"wait,omitempty"`          // after a rapid dose: when to start eating, a suggestion
 	MealGapMin   int                 `json:"meal_gap_min"`            // food entries this close (minutes) are one meal
 	BolusBefore  int                 `json:"bolus_before_min"`        // rapid this long before a meal's first food is for it
 	BolusAfter   int                 `json:"bolus_after_min"`         // and this long after its last
@@ -184,6 +185,7 @@ func (h *Handlers) snapshot(ctx context.Context, now time.Time) (stateResponse, 
 	resp.MealGapMin = h.mealGap(ctx, now)
 	resp.BolusBefore, resp.BolusAfter = int(questions.BolusBefore.Minutes()), int(questions.BolusAfter.Minutes())
 	fresh := ok && !st.Error && now.UnixMilli()-st.Last.Date <= forecastMaxAge.Milliseconds()
+	resp.Wait = h.wait(ctx, st, fresh, resp.AR2, resp.Dose.Ratio, now)
 	if resp.IOB = h.iob(ctx, st, fresh, resp.Dose, now); resp.IOB != nil {
 		if q := h.iobQuality(ctx, resp.Dose, now); q.N > 0 {
 			resp.IOBQuality = &q

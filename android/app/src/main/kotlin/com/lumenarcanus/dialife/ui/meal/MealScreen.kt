@@ -140,6 +140,7 @@ fun MealScreen(
     onClose: () -> Unit,
     forLow: Boolean = false, // carbs given for a low: no insulin is worked out, no planned dose, no meal draft
     mealRules: com.lumenarcanus.dialife.data.MealRules = com.lumenarcanus.dialife.data.MealRules(), // the server's: what makes one meal
+    wait: com.lumenarcanus.dialife.data.Wait? = null, // after a rapid dose: when to start eating
 ) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
@@ -300,6 +301,14 @@ fun MealScreen(
                         SegmentedButton(selected = !join, onClick = { join = false }, shape = SegmentedButtonDefaults.itemShape(1, 2)) { Text(stringResource(R.string.meal_join_no), fontSize = 13.sp) }
                     }
                 }
+            }
+
+            if (wait != null && editing == null && !forLow) {
+                var now by remember { androidx.compose.runtime.mutableLongStateOf(System.currentTimeMillis()) }
+                androidx.compose.runtime.LaunchedEffect(wait) {
+                    while (true) { now = System.currentTimeMillis(); kotlinx.coroutines.delay(10_000) }
+                }
+                WaitCard(wait, current, dose.ratio, units, now)
             }
 
             Row(verticalAlignment = Alignment.Bottom) {

@@ -778,4 +778,19 @@
     <string name="iob_carbs">вуглеводів засвоюється %1$d г</string>
     <string name="iob_forecast">з їжею та інсуліном за 30 хв ≈ %1$s</string>
     <string name="iob_forecast_q">з їжею та інсуліном за 30 хв ≈ %1$s, збувається в %2$d%%</string>
+    <string name="wait_eat_now">Не чекати, їсти зараз</string>
+    <string name="wait_go">Можна їсти</string>
+    <string name="wait_from">Їсти з %1$s</string>
+    <string name="wait_more">Інсуліну на %1$d г, внесено %2$d г</string>
+    <string name="wait_more_check">Перевірте, чи вся їжа внесена, або чи частина дози не була корекцією.</string>
+    <string name="wait_ago">Укол %1$d хв тому</string>
+    <string name="wait_why_low">Цукор %1$s, низький</string>
+    <string name="wait_why_falling">Цукор %1$s і швидко падає</string>
+    <string name="wait_why_high">Цукор високий: %1$d хв після уколу</string>
+    <string name="wait_why_unseen">%1$d хв після уколу. Немає свіжого показу сенсора</string>
+    <string name="wait_why_range">%1$d хв після уколу, цукор у нормі</string>
+    <string name="wait_fact_dose">Укол %1$s од о %2$s</string>
+    <string name="wait_fact_sugar">Цукор %1$s</string>
+    <string name="wait_fact_food">Їжа %1$d г</string>
+    <string name="wait_note">Порада, не правило. На всіх телефонах однаково.</string>
 </resources>
