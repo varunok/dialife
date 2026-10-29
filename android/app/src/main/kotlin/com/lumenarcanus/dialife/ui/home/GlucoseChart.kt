@@ -203,6 +203,7 @@ fun ChartCard(
             highlightFrom = highlightFrom,
             estimate = estimate,
             planned = planned,
+            entryTooltip = expanded,
             modifier = if (expanded) Modifier.fillMaxWidth().weight(1f) else Modifier.fillMaxWidth().height(230.dp),
         )
         // the tapped marker's actions: the canvas tooltip says what it is, these say what to do
@@ -212,7 +213,8 @@ fun ChartCard(
                 Text(stringResource(R.string.q_dismiss), color = c.text)
             }
         }
-        selected?.let { tr ->
+        // full screen: the entry says what it is over the chart, like a reading; no editing there
+        selected?.takeIf { !expanded }?.let { tr ->
             com.lumenarcanus.dialife.ui.meal.EntryDetail(tr, history?.treatments.orEmpty(), dose, units, mealGap)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 androidx.compose.material3.OutlinedButton(onClick = { onEdit(tr) }, modifier = Modifier.weight(1f)) {
@@ -296,6 +298,7 @@ fun GlucoseChart(
     highlightFrom: Long? = null,
     estimate: com.lumenarcanus.dialife.data.MeterModel? = null, // draw "≈ meter" from it; null: off
     planned: List<com.lumenarcanus.dialife.data.PlannedDose> = emptyList(), // not given yet: a dashed mark
+    entryTooltip: Boolean = false, // a tapped entry is told over the chart; false: the card under it does
     modifier: Modifier = Modifier,
 ) {
     val c = DiaTheme.colors
@@ -335,6 +338,8 @@ fun GlucoseChart(
     val insulinLabel = stringResource(R.string.event_insulin)
     val carbsLabel = stringResource(R.string.event_carbs)
     val noteLabel = stringResource(R.string.tr_note)
+    val corrLabel = stringResource(R.string.detail_for_corr)
+    val unitCarbs = stringResource(R.string.unit_carbs)
     val pendingLabel = stringResource(R.string.tr_pending)
     val noteGlyph = stringResource(R.string.glyph_note)
     val basalGlyph = stringResource(R.string.glyph_basal)
@@ -683,7 +688,7 @@ fun GlucoseChart(
                         who,
                         pendingLabel.takeIf { m.treatment?.pending == true },
                     ).joinToString(" · "),
-                    m.treatment?.notes?.takeIf { it.isNotBlank() }?.take(40),
+                    m.treatment?.notes?.takeIf { it.isNotBlank() },
                 )
                 tooltip(measurer, lines, x(m.t), y(m.v), plotW, plotH, c.background, c.line, c.text, c.textMuted)
             }
@@ -697,8 +702,31 @@ fun GlucoseChart(
                 )
                 tooltip(measurer, lines, x(q.from), plotH - 40.dp.toPx(), plotW, plotH, c.background, c.high, c.text, c.textMuted)
             }
-            // the entry's details are under the chart, not over it
-            is Pick.Event -> {}
+            // full screen: over the chart, every dish whole; otherwise the card under the chart tells it
+            is Pick.Event -> if (entryTooltip) {
+                val tr = p.treatment
+                val amounts = listOfNotNull(
+                    tr.insulin?.takeIf { it > 0 }?.let { u ->
+                        // "Lantus 10 од" when the brand is known, else "Інсулін 10 од"
+                        tr.insulinName?.let { "$it " + String.format(locale, "%s %s", com.lumenarcanus.dialife.ui.treatment.formatAmount(u, locale), unitInsulin) }
+                            ?: insulinLabel.format(locale, u)
+                    },
+                    tr.carbs?.takeIf { it > 0 }?.let { carbsLabel.format(locale, it.toInt()) },
+                ).joinToString(" · ")
+                val what = tr.duration?.let { d -> activityLabel.format(locale, intensityLabel(tr.intensity), d) }
+                    ?: amounts.ifBlank { tr.notes ?: noteLabel }
+                val dishes = tr.foodItems.orEmpty().map { f ->
+                    listOfNotNull(f.name, f.portion?.takeIf { it.isNotBlank() }).joinToString(", ") +
+                        (f.carbs?.let { " — " + (if (f.suggested) "≈ " else "") + kotlin.math.round(it).toInt() + " $unitCarbs" } ?: "")
+                }
+                val lines = listOfNotNull(what) + dishes + listOfNotNull(
+                    corrLabel.takeIf { tr.insulinRole == "corr" && (tr.insulin ?: 0.0) > 0 },
+                    tr.notes?.takeIf { amounts.isNotBlank() && it.isNotBlank() },
+                    listOfNotNull(clock(tr.t), originText(originOf(tr)), pendingLabel.takeIf { tr.pending }).joinToString(" · "),
+                )
+                val ty = if (tr.duration != null) ACT_TOP.toPx() + ACT_H.toPx() else plotH - 40.dp.toPx()
+                tooltip(measurer, lines, x(tr.t), ty, plotW, plotH, c.background, c.line, c.text, c.textMuted)
+            }
             null -> {}
         }
     }
