@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -56,7 +57,8 @@ func (s *Service) Enabled() bool { return len(s.Models) > 0 }
 // Suggest answers for each item: the family's own number if there is one,
 // the portions of an imported table that match, and the models' estimate when
 // they are configured and answer in time. A food the table knows is not put to
-// the models.
+// the models, unless its portion is typed and no table portion could be
+// recounted to it: then both are shown.
 func (s *Service) Suggest(ctx context.Context, device int64, items []Item) ([]Suggestion, error) {
 	now := s.Now()
 	foods, err := s.Store.FoodItems(ctx, now.Add(-memoryFor).UnixMilli())
@@ -81,7 +83,7 @@ func (s *Service) Suggest(ctx context.Context, device int64, items []Item) ([]Su
 		case err == nil:
 			out[i].Estimate = &Estimate{Carbs: e.Carbs, Lo: e.Lo, Hi: e.Hi, Models: e.Models}
 		case errors.Is(err, store.ErrNotFound):
-			if len(out[i].Table) == 0 {
+			if !recounted(it, out[i].Table) {
 				ask = append(ask, i)
 			}
 		default:
@@ -214,6 +216,17 @@ func (s *Service) allow(device int64, n int, now time.Time) bool {
 	}
 	s.asked[device] = recent
 	return true
+}
+
+// recounted: the table has the food, for the portion typed (or none was typed).
+func recounted(it Item, hits []TableHit) bool {
+	if len(hits) == 0 {
+		return false
+	}
+	if strings.TrimSpace(it.Portion) == "" {
+		return true
+	}
+	return slices.ContainsFunc(hits, func(h TableHit) bool { return h.Scaled || h.Carbs == 0 && h.Base == 0 })
 }
 
 func key(it Item) string { return norm(it.Name) + "|" + norm(it.Portion) }

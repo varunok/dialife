@@ -529,6 +529,7 @@
     <string name="food_mine">Como en vuestros registros</string>
     <string name="food_mine_note">por «%1$s» · registrado %2$d veces</string>
     <string name="food_estimate">Estimación, %1$d–%2$d g</string>
+    <string name="food_other_portion">Para «%1$s», no para «%2$s»</string>
     <string name="food_stale">No recalculado para «%1$s»: el número es de otra porción. Comprobadlo o escribid los hidratos.</string>
     <string name="food_unknown">Sin sugerencia. Escribid los hidratos, y la próxima vez DiaLife sugerirá vuestro número.</string>
     <string name="food_no_models">Solo se sugieren vuestros registros (no hay estimaciones en el servidor). Escribid los hidratos, y la próxima vez DiaLife sugerirá vuestro número.</string>

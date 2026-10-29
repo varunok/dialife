@@ -541,6 +541,7 @@
     <string name="food_mine">Як у ваших записах</string>
     <string name="food_mine_note">за «%1$s» · записано %2$d раз(ів)</string>
     <string name="food_estimate">Оцінка, %1$d–%2$d г</string>
+    <string name="food_other_portion">Для «%1$s», не для «%2$s»</string>
     <string name="food_stale">Не перераховано на «%1$s»: число для іншої порції. Перевірте або введіть вуглеводи самі.</string>
     <string name="food_unknown">Підказки немає. Введіть вуглеводи самі, і наступного разу DiaLife запропонує ваше число.</string>
     <string name="food_no_models">Підказки лише з ваших записів (оцінок на сервері немає). Введіть вуглеводи самі, і наступного разу DiaLife запропонує ваше число.</string>

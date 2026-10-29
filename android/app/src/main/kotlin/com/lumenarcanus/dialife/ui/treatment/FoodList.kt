@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.data.CarbSuggestion
+import com.lumenarcanus.dialife.data.CarbTableHit
 import com.lumenarcanus.dialife.data.FoodCatalog
 import com.lumenarcanus.dialife.data.inLang
 import com.lumenarcanus.dialife.data.FoodItem
@@ -75,13 +76,17 @@ data class FoodRow(
         return when (source) {
             "mine" -> s.mine?.carbs != grams
             // a line the lookup by name no longer finds (picked from the full list) cannot be judged
-            "table" -> (s.table + s.similar).firstOrNull { it.id == tableId }?.let { h ->
-                h.carbs != grams || (!h.scaled && h.portions.values.none { it.trim().equals(portion.trim(), ignoreCase = true) })
-            } ?: false
+            "table" -> (s.table + s.similar).firstOrNull { it.id == tableId }?.let { h -> h.carbs != grams || otherPortion(h) } ?: false
             "estimate" -> s.estimate?.carbs != grams
             else -> false
         }
     }
+
+    /** A table line for its own portion, not recounted to the one typed. */
+    fun otherPortion(h: CarbTableHit): Boolean =
+        portion.isNotBlank() && !h.scaled && !(h.carbs == 0 && h.base == 0) &&
+            h.portions.values.none { it.trim().equals(portion.trim(), ignoreCase = true) }
+
     fun toItem() = FoodItem(name.trim(), portion.trim().ifBlank { null }, grams?.toDouble(), source)
 }
 
@@ -313,6 +318,7 @@ fun FoodSuggestions(row: FoodRow, lang: String, onChange: ((FoodRow) -> FoodRow)
                         else -> h.names.inLang(lang) + if (portion.isBlank()) "" else " · $portion"
                     },
                     on = row.source == "table" && row.tableId == h.id && row.grams == h.carbs,
+                    warn = otherPortion(row, h, portion),
                 ) { onChange { it.copy(carbs = h.carbs.toString(), source = "table", tableId = h.id) } }
             }
             row.suggestion.similar.forEach { h ->
@@ -321,6 +327,7 @@ fun FoodSuggestions(row: FoodRow, lang: String, onChange: ((FoodRow) -> FoodRow)
                     "≈ ${h.carbs}", stringResource(R.string.food_similar, h.names.inLang(lang)),
                     if (h.scaled) stringResource(R.string.food_table_scaled, h.base, portion) else portion.ifBlank { stringResource(R.string.food_table_free) },
                     on = row.source == "table" && row.tableId == h.id && row.grams == h.carbs,
+                    warn = otherPortion(row, h, portion),
                 ) { onChange { it.copy(carbs = h.carbs.toString(), source = "table", tableId = h.id) } }
             }
             row.suggestion.estimate?.let { e ->
@@ -338,6 +345,11 @@ fun FoodSuggestions(row: FoodRow, lang: String, onChange: ((FoodRow) -> FoodRow)
     }
 }
 
+/** "For «1 cup (250 ml)», not for «100 g»" when the table could not recount its line. */
+@Composable
+private fun otherPortion(row: FoodRow, h: CarbTableHit, portion: String): String? =
+    if (row.otherPortion(h) && portion.isNotBlank()) stringResource(R.string.food_other_portion, portion, row.portion.trim()) else null
+
 /** Fields that stand out on the card: the default outline is lost on the raised surface. */
 @Composable
 private fun fieldColors() = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
@@ -347,7 +359,7 @@ private fun fieldColors() = androidx.compose.material3.OutlinedTextFieldDefaults
 )
 
 @Composable
-fun SuggestionButton(value: String, label: String, note: String, on: Boolean, onClick: () -> Unit) {
+fun SuggestionButton(value: String, label: String, note: String, on: Boolean, warn: String? = null, onClick: () -> Unit) {
     val c = DiaTheme.colors
     OutlinedButton(
         onClick = onClick,
@@ -362,6 +374,7 @@ fun SuggestionButton(value: String, label: String, note: String, on: Boolean, on
             Column {
                 Text(label, color = if (on) c.carbs else c.text, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
                 Text(note, color = c.textMuted, fontSize = 11.5.sp)
+                if (warn != null) Text(warn, color = c.high, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             }
         }
     }

@@ -56,6 +56,21 @@ class ScreenshotTest {
 
     // tall enough to show the entry buttons under the chart
     @Test
+    @Config(qualifiers = "uk-w412dp-h915dp-xxhdpi")
+    fun foodOtherPortionUk() = shot("food_other_portion_dark_uk", dark = true) {
+        val hit = com.lumenarcanus.dialife.data.CarbTableHit(
+            "fruit-frutillas-1-taza", 15, names = mapOf("uk" to "Полуниця"), portions = mapOf("uk" to "1 чашка (250 мл)"),
+        )
+        val row = com.lumenarcanus.dialife.ui.treatment.newFoodRow("Полуниця", portion = "100 грам").copy(
+            asked = true, models = true,
+            suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(table = listOf(hit), estimate = com.lumenarcanus.dialife.data.CarbEstimate(8, 7, 9, 1)),
+        )
+        androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+            com.lumenarcanus.dialife.ui.treatment.FoodSuggestions(row, "uk") {}
+        }
+    }
+
+    @Test
     @Config(qualifiers = "uk-w412dp-h2000dp-xxhdpi")
     fun homeButtonsUk() = shot("home_buttons_dark_uk", dark = true) { HomeScreen(sampleHomeUi(now), deviceName = "Тато") }
 

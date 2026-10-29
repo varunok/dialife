@@ -224,3 +224,23 @@ func TestRecallScalesAVolume(t *testing.T) {
 		t.Errorf("a plate of milk: %+v, want none", m)
 	}
 }
+
+func TestServiceAsksTooWhenTheTableCannotRecount(t *testing.T) {
+	st := openStore(t)
+	if err := st.ReplaceFoodTable(context.Background(), sampleTable); err != nil {
+		t.Fatal(err)
+	}
+	m := &fake{name: "m", carbs: 20}
+	s := &Service{Store: st, Models: []Model{m}, Now: time.Now}
+	out, err := s.Suggest(context.Background(), 1, []Item{{Name: "банан", Portion: "3 шт"}, {Name: "банан"}, {Name: "помідор", Portion: "200 г"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.calls != 0 || out[0].Estimate != nil || out[1].Estimate != nil || out[2].Estimate != nil {
+		t.Fatalf("recounted, no portion and a free food need no model: %d calls", m.calls)
+	}
+	out, _ = s.Suggest(context.Background(), 1, []Item{{Name: "банан", Portion: "150 г"}})
+	if len(out[0].Table) != 1 || out[0].Table[0].Scaled || out[0].Estimate == nil || out[0].Estimate.Carbs != 20 {
+		t.Fatalf("the table's own portion and the estimate for 150 g: %+v", out[0])
+	}
+}
