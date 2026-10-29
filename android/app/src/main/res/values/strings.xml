@@ -522,6 +522,7 @@
     <string name="food_mine">As in your entries</string>
     <string name="food_mine_note">for “%1$s” · logged %2$d times</string>
     <string name="food_estimate">Estimate, %1$d–%2$d g</string>
+    <string name="food_stale">Not recounted for «%1$s»: the number is for another portion. Check it or type the carbs yourself.</string>
     <string name="food_unknown">No suggestion. Type the carbs yourself, and next time DiaLife suggests your number.</string>
     <string name="food_no_models">Only your own entries are suggested (no estimates on the server). Type the carbs yourself, and next time DiaLife suggests your number.</string>
     <string name="food_src_none">No carbs yet</string>

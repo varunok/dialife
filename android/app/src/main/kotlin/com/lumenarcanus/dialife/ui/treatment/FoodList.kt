@@ -2,6 +2,7 @@ package com.lumenarcanus.dialife.ui.treatment
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -63,6 +64,24 @@ data class FoodRow(
     val tableId: String? = null, // the table portion picked, so a new portion follows it
 ) {
     val grams get() = carbs.toIntOrNull()
+
+    /**
+     * A suggestion picked for one portion, kept after the portion changed to
+     * one it could not be recounted for: the number is not for what is typed.
+     */
+    val stale: Boolean get() {
+        val s = suggestion ?: return false
+        if (loading || !asked || portion.isBlank()) return false
+        return when (source) {
+            "mine" -> s.mine?.carbs != grams
+            // a line the lookup by name no longer finds (picked from the full list) cannot be judged
+            "table" -> (s.table + s.similar).firstOrNull { it.id == tableId }?.let { h ->
+                h.carbs != grams || (!h.scaled && h.portions.values.none { it.trim().equals(portion.trim(), ignoreCase = true) })
+            } ?: false
+            "estimate" -> s.estimate?.carbs != grams
+            else -> false
+        }
+    }
     fun toItem() = FoodItem(name.trim(), portion.trim().ifBlank { null }, grams?.toDouble(), source)
 }
 
@@ -269,6 +288,11 @@ private fun FoodRowCard(row: FoodRow, canRemove: Boolean, lang: String, onChange
 @Composable
 fun FoodSuggestions(row: FoodRow, lang: String, onChange: ((FoodRow) -> FoodRow) -> Unit) {
     val c = DiaTheme.colors
+    if (row.stale) Text(
+        stringResource(R.string.food_stale, row.portion.trim()),
+        color = c.high, fontSize = 13.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+        modifier = Modifier.fillMaxWidth().background(c.highContainer, RoundedCornerShape(12.dp)).border(1.dp, c.high, RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 10.dp),
+    )
     when {
         row.loading -> Text(stringResource(R.string.food_looking), color = c.textMuted, fontSize = 12.5.sp)
         row.suggestion?.mine != null || row.suggestion?.table?.isNotEmpty() == true || row.suggestion?.similar?.isNotEmpty() == true || row.suggestion?.estimate != null -> {
