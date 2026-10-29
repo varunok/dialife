@@ -141,7 +141,7 @@ fun ChartCard(
     onOpenTable: (() -> Unit)? = null, // the same data as a table
     dose: com.lumenarcanus.dialife.data.DoseSettings = com.lumenarcanus.dialife.data.DoseSettings(), // for a meal's worked-out dose
     planned: List<com.lumenarcanus.dialife.data.PlannedDose> = emptyList(),
-    mealGap: Int = com.lumenarcanus.dialife.data.Meals.DEFAULT_GAP_MIN, // the server's: food entries this close are one meal
+    mealRules: com.lumenarcanus.dialife.data.MealRules = com.lumenarcanus.dialife.data.MealRules(), // the server's: what makes one meal
 ) {
     val c = DiaTheme.colors
     val context = LocalContext.current
@@ -215,7 +215,7 @@ fun ChartCard(
         }
         // full screen: the entry says what it is over the chart, like a reading; no editing there
         selected?.takeIf { !expanded }?.let { tr ->
-            com.lumenarcanus.dialife.ui.meal.EntryDetail(tr, history?.treatments.orEmpty(), dose, units, mealGap)
+            com.lumenarcanus.dialife.ui.meal.EntryDetail(tr, history?.treatments.orEmpty(), dose, units, mealRules)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 androidx.compose.material3.OutlinedButton(onClick = { onEdit(tr) }, modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.tr_edit), color = c.text)

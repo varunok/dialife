@@ -13,16 +13,24 @@ data class Meal(val foods: List<Treatment>, val insulin: List<Treatment>) {
     val given get() = insulin.sumOf { it.insulin ?: 0.0 }
 }
 
+/**
+ * The server's meal rules, the same on every phone: food entries [gapMin]
+ * apart are one meal; rapid from [beforeMin] before its first food to
+ * [afterMin] after its last was given for it.
+ */
+data class MealRules(val gapMin: Int = 30, val beforeMin: Int = 30, val afterMin: Int = 60) {
+    val beforeMs get() = beforeMin * 60_000L
+    val afterMs get() = afterMin * 60_000L
+}
+
 object Meals {
-    const val DEFAULT_GAP_MIN = 30 // the server's until /api/state brings it
-    private const val BEFORE_MIN = 90L // rapid this long before the first food still counts
-    private const val AFTER_MIN = 60L // and this long after the last
 
     fun isFood(t: Treatment) = (t.carbs ?: 0.0) > 0
     fun isRapid(t: Treatment) = (t.insulin ?: 0.0) > 0 && InsulinType.of(t.insulinType) == InsulinType.Rapid
 
-    /** [gapMin]: how far apart two entries of one meal may be; the server works it out for every phone. */
-    fun group(treatments: List<Treatment>, gapMin: Int): List<Meal> {
+    /** Meals by the server's [rules]: how far apart their entries may be, which rapid is theirs. */
+    fun group(treatments: List<Treatment>, rules: MealRules): List<Meal> {
+        val gapMin = rules.gapMin
         val foods = treatments.filter(::isFood).sortedBy { it.t }
         val runs = mutableListOf<MutableList<Treatment>>()
         for (f in foods) {
@@ -36,8 +44,8 @@ object Meals {
         val linked = runs.indices.map { i -> rapid.filter { it.mealId != null && it.mealId in ids[i] }.also { l -> taken += l.map { it.id } } }
         val known = foods.map { it.id }.toSet()
         return runs.mapIndexed { i, r ->
-            val from = r.first().t - BEFORE_MIN * 60_000L
-            val to = r.last().t + AFTER_MIN * 60_000L
+            val from = r.first().t - rules.beforeMs
+            val to = r.last().t + rules.afterMs
             val near = rapid.filter {
                 it.id !in taken && it.insulinRole != "corr" && (it.mealId == null || it.mealId !in known) && it.t in from..to
             }

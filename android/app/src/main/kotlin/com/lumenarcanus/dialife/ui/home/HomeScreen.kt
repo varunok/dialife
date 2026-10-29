@@ -262,7 +262,7 @@ fun HomeScreen(
             recent = ui.history?.treatments.orEmpty(),
             units = state?.units ?: fallbackUnits,
             dose = ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
-            mealGap = ui.state?.mealGapMin ?: com.lumenarcanus.dialife.data.Meals.DEFAULT_GAP_MIN,
+            mealRules = ui.state?.mealRules ?: com.lumenarcanus.dialife.data.MealRules(),
         )
     }
     confirmDelete?.let { tr ->
@@ -294,7 +294,7 @@ fun HomeScreen(
                 onDismissSuspect = onDismissQuestion,
                 dose = ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
                 planned = ui.state?.planned.orEmpty(),
-                mealGap = ui.state?.mealGapMin ?: com.lumenarcanus.dialife.data.Meals.DEFAULT_GAP_MIN,
+                mealRules = ui.state?.mealRules ?: com.lumenarcanus.dialife.data.MealRules(),
             )
         }
         return
@@ -345,6 +345,7 @@ fun HomeScreen(
                     units = state?.units ?: fallbackUnits,
                     onPlanned = onPlanned,
                     onSaveTreatment = onSaveTreatment,
+                    mealRules = ui.state?.mealRules ?: com.lumenarcanus.dialife.data.MealRules(),
                 )
             }
         }
@@ -377,7 +378,7 @@ fun HomeScreen(
             onDismissSuspect = onDismissQuestion,
             dose = ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
             planned = ui.state?.planned.orEmpty(),
-            mealGap = ui.state?.mealGapMin ?: com.lumenarcanus.dialife.data.Meals.DEFAULT_GAP_MIN,
+            mealRules = ui.state?.mealRules ?: com.lumenarcanus.dialife.data.MealRules(),
             onOpenTable = onOpenData,
         )
         state?.let { Tiles(it, onOpenStats, onOpenLog) }

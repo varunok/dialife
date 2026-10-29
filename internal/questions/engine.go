@@ -310,7 +310,7 @@ func (e *Engine) detectBolus(ctx context.Context, qs []store.Question, logged []
 		return nil
 	}
 	// a dose was worked out for this meal: the planned-dose question asks instead
-	ps, err := e.Store.PlannedDosesSince(ctx, meal.T-bolusBefore.Milliseconds())
+	ps, err := e.Store.PlannedDosesSince(ctx, meal.T-BolusBefore.Milliseconds())
 	if err != nil {
 		return err
 	}

@@ -42,14 +42,14 @@ import com.lumenarcanus.dialife.ui.treatment.formatAmount
  * dose compares with what was given; an injection and what it was for.
  */
 @Composable
-fun EntryDetail(tr: Treatment, treatments: List<Treatment>, dose: DoseSettings, units: Units, mealGap: Int = Meals.DEFAULT_GAP_MIN) {
+fun EntryDetail(tr: Treatment, treatments: List<Treatment>, dose: DoseSettings, units: Units, mealRules: com.lumenarcanus.dialife.data.MealRules = com.lumenarcanus.dialife.data.MealRules()) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
     fun f(x: Double) = formatAmount(x, locale)
     val u = stringResource(R.string.unit_insulin)
     val g = stringResource(R.string.unit_carbs)
-    val meals = Meals.group(treatments, mealGap)
+    val meals = Meals.group(treatments, mealRules)
     val meal = meals.firstOrNull { m -> m.foods.any { it.id == tr.id } || m.insulin.any { it.id == tr.id } }
     val who = tr.enteredBy?.takeIf { it.isNotBlank() }
 

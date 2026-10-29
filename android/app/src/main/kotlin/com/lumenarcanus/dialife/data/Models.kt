@@ -104,8 +104,12 @@ data class StateResponse(
     val planned: List<PlannedDose> = emptyList(), // doses worked out for a meal, not given yet
     val iob: Iob? = null, // insulin still working and carbs still coming in; null: nothing
     @SerialName("iob_quality") val iobQuality: ForecastQuality? = null, // how often that forecast came true
-    @SerialName("meal_gap_min") val mealGapMin: Int = Meals.DEFAULT_GAP_MIN, // food entries this close are one meal
-)
+    @SerialName("meal_gap_min") val mealGapMin: Int = MealRules().gapMin, // food entries this close are one meal
+    @SerialName("bolus_before_min") val bolusBeforeMin: Int = MealRules().beforeMin, // rapid this long before a meal is for it
+    @SerialName("bolus_after_min") val bolusAfterMin: Int = MealRules().afterMin, // and this long after
+) {
+    val mealRules get() = MealRules(mealGapMin, bolusBeforeMin, bolusAfterMin)
+}
 
 /** Rapid insulin still working, carbs still coming in, and what they make of the next hour. Alarms never use it. */
 @Serializable

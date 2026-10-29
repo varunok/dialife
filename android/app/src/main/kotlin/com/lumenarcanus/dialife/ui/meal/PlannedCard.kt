@@ -89,6 +89,7 @@ fun PlannedCard(
     units: Units,
     onPlanned: (PlannedAction) -> Unit,
     onSaveTreatment: (Treatment) -> Unit,
+    mealRules: com.lumenarcanus.dialife.data.MealRules = com.lumenarcanus.dialife.data.MealRules(), // the server's: which rapid is a meal's
 ) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
@@ -177,7 +178,7 @@ fun PlannedCard(
                     Text(stringResource(R.string.planned_recorded_hint), color = c.textMuted, fontSize = 13.sp)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(onClick = {
-                            val found = nearRapid(treatments, mealAt, now)
+                            val found = nearRapid(treatments, mealAt, now, mealRules)
                             if (found != null) onPlanned(PlannedAction.Given(p, found, isNew = false)) else step = "missing"
                         }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.planned_recorded_yes)) }
                         OutlinedButton(onClick = { injecting = true }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.planned_recorded_no), color = c.text) }
@@ -206,8 +207,8 @@ fun PlannedCard(
 }
 
 /** Rapid near a meal that no other meal has: what "it is recorded" refers to. */
-private fun nearRapid(treatments: List<Treatment>, mealAt: Long, now: Long): Treatment? =
-    treatments.filter { Meals.isRapid(it) && it.insulinRole != "corr" && it.mealId == null && it.t in (mealAt - 90 * 60_000L)..now }
+private fun nearRapid(treatments: List<Treatment>, mealAt: Long, now: Long, rules: com.lumenarcanus.dialife.data.MealRules): Treatment? =
+    treatments.filter { Meals.isRapid(it) && it.insulinRole != "corr" && it.mealId == null && it.t in (mealAt - rules.beforeMs)..now }
         .minByOrNull { kotlin.math.abs(it.t - mealAt) }
 
 /** "Given": how much, and when, within reason; the same-dose guard and the limits as everywhere. */

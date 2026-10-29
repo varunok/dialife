@@ -139,7 +139,7 @@ fun MealScreen(
     onSaved: (food: Treatment) -> Unit,
     onClose: () -> Unit,
     forLow: Boolean = false, // carbs given for a low: no insulin is worked out, no planned dose, no meal draft
-    mealGap: Int = Meals.DEFAULT_GAP_MIN, // the server's: food entries this close are one meal
+    mealRules: com.lumenarcanus.dialife.data.MealRules = com.lumenarcanus.dialife.data.MealRules(), // the server's: what makes one meal
 ) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
@@ -187,10 +187,9 @@ fun MealScreen(
 
     // the meal this belongs to: the one being edited, or the one it joins
     val others = treatments.filter { it.id != editing?.id }
-    val gap = mealGap
-    val meal = remember(treatments, editing, time, gap) {
-        if (editing != null) Meals.group(treatments, gap).firstOrNull { m -> m.foods.any { it.id == editing.id } }
-        else Meals.joining(Meals.group(others, gap), time, gap)
+    val meal = remember(treatments, editing, time, mealRules) {
+        if (editing != null) Meals.group(treatments, mealRules).firstOrNull { m -> m.foods.any { it.id == editing.id } }
+        else Meals.joining(Meals.group(others, mealRules), time, mealRules.gapMin)
     }
     val joined = meal != null && (editing != null || join)
     val earlier = if (!joined) 0 else meal!!.carbs - (editing?.let { (it.carbs ?: 0.0).toInt() } ?: 0)
@@ -207,7 +206,7 @@ fun MealScreen(
     }.maxByOrNull { it.t }?.let { (it.insulin ?: 0.0) to it.t }
     val span = (treatments.maxOfOrNull { it.t } ?: 0) - (treatments.minOfOrNull { it.t } ?: 0)
     val usualDose = if (span >= 24 * 3_600_000L) treatments.filter(Meals::isRapid).maxOfOrNull { it.insulin ?: 0.0 } else null
-    val usualCarbs = Meals.group(others, gap).takeIf { it.size >= 5 }?.maxOfOrNull { it.carbs }
+    val usualCarbs = Meals.group(others, mealRules).takeIf { it.size >= 5 }?.maxOfOrNull { it.carbs }
     val m = DoseCalc.meal(dose, earlier + current, meter, meterAt, now, given, recent, usualDose, usualCarbs)
     val planOn = plan && m.canPlan
 

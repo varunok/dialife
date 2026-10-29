@@ -118,18 +118,18 @@ func Explains(kind string, from int64, e Entry) bool {
 	case "fall":
 		return (e.Rapid && e.T >= from-insulinAct.Milliseconds()) || (e.Exercise && e.T >= from-exerciseAct.Milliseconds())
 	case "bolus":
-		return e.Rapid && !e.Corr && e.T >= from-bolusBefore.Milliseconds() && e.T <= from+bolusAfter.Milliseconds()
+		return e.Rapid && !e.Corr && e.T >= from-BolusBefore.Milliseconds() && e.T <= from+BolusAfter.Milliseconds()
 	}
 	return false
 }
 
-// A meal and its bolus: insulin up to an hour and a half before or an hour
-// after counts as given for it, the app's own meal window; a dose linked to
-// the meal counts wherever it is, one marked a correction never does. Asked
-// once the hour has passed.
+// A meal and its bolus: insulin up to half an hour before or an hour after
+// counts as given for it (the app groups a meal's insulin by the same window);
+// a dose linked to the meal counts wherever it is, one marked a correction
+// never does. Asked once the hour has passed.
 const (
-	bolusBefore = 90 * time.Minute
-	bolusAfter  = time.Hour
+	BolusBefore = 30 * time.Minute
+	BolusAfter  = time.Hour
 	bolusLookUp = 3 * time.Hour // meals this recent are checked
 	// carbs at a low treat the low: no insulin is right then
 	bolusLowBelow = 100
@@ -143,10 +143,10 @@ func MissingBolus(logged []Entry, now time.Time, sgvAt func(int64) int) (Entry, 
 	ok := false
 	for _, m := range logged {
 		age := now.UnixMilli() - m.T
-		if !m.Carbs || age < bolusAfter.Milliseconds() || age > bolusLookUp.Milliseconds() {
+		if !m.Carbs || age < BolusAfter.Milliseconds() || age > bolusLookUp.Milliseconds() {
 			continue
 		}
-		if explained(logged, m.T-bolusBefore.Milliseconds(), m.T+bolusAfter.Milliseconds(), func(e Entry) bool { return e.Rapid && !e.Corr }) ||
+		if explained(logged, m.T-BolusBefore.Milliseconds(), m.T+BolusAfter.Milliseconds(), func(e Entry) bool { return e.Rapid && !e.Corr }) ||
 			linked(logged, m) {
 			continue
 		}

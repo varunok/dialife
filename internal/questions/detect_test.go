@@ -95,10 +95,13 @@ func TestMissingBolus(t *testing.T) {
 		missed bool
 	}{
 		{"none", Entry{}, true},
-		{"37 min before: a pre-bolus", Entry{T: min(-112), Rapid: true}, false},
+		{"25 min before: a pre-bolus", Entry{T: min(-100), Rapid: true}, false},
+		{"37 min before", Entry{T: min(-112), Rapid: true}, true},
+		{"37 min before, linked to it", Entry{T: min(-112), Rapid: true, MealID: "food"}, false},
 		{"two hours before", Entry{T: min(-195), Rapid: true}, true},
 		{"two hours before, linked to it", Entry{T: min(-195), Rapid: true, MealID: "food"}, false},
 		{"next to it but a correction", Entry{T: min(-80), Rapid: true, Corr: true}, true},
+		{"40 min after", Entry{T: min(-35), Rapid: true}, false},
 		{"linked to another meal, far away", Entry{T: min(-195), Rapid: true, MealID: "other"}, true},
 	}
 	for _, c := range cases {
