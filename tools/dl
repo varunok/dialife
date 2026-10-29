@@ -101,6 +101,8 @@ Backups & deploy
                              replacing the table of the same source
   dl app [debug]             build the Android app (release; debug = with the adb test hooks)
                              and install it on every phone connected by USB
+  dl app-publish             build the APK for GitHub, signed with the project's key
+                             (.local/keys), into .local/dist/dialife-VERSION.apk; installs nothing
   dl ssh                     interactive shell on the server
 EOF
 }
@@ -242,6 +244,19 @@ app)
 		echo "==> $s ($(adb -s "$s" shell getprop ro.product.model | tr -d '\r'))"
 		adb -s "$s" install -r "$apk" 2>&1 | tail -1
 	done
+	;;
+app-publish)
+	# the GitHub APK: its own build type and folder, never the family's build
+	[ -f "$ROOT/.local/keys/release.properties" ] || { echo "no project key: .local/keys/release.properties" >&2; exit 1; }
+	(cd "$ROOT/android" && ./gradlew -q ":app:testDebugUnitTest" ":app:verifyRoborazziDebug" ":app:assemblePublish") || exit 1
+	src="$ROOT/android/app/build/outputs/apk/publish/app-publish.apk"
+	[ -f "$src" ] || { echo "no signed APK at $src" >&2; exit 1; }
+	ver=$(sed -n 's/.*versionName = "\(.*\)".*/\1/p' "$ROOT/android/app/build.gradle.kts")
+	mkdir -p "$ROOT/.local/dist"
+	out="$ROOT/.local/dist/dialife-$ver.apk"
+	cp "$src" "$out"
+	echo "$out"
+	sha256sum "$out" | cut -d' ' -f1
 	;;
 ssh) exec $SSH "$HOST" ;;
 

@@ -19,16 +19,14 @@ android {
         versionName = "0.5.2"
     }
 
-    // Release builds for the family's own phones are signed with the local debug key,
-    // like the builds already on them. The APKs published on GitHub get the project's
-    // key instead, only when asked: ./gradlew assembleRelease -Ppublish. That key lives
-    // outside git, in .local/keys/release.properties (storeFile, storePassword,
-    // keyAlias, keyPassword).
-    val publish = project.hasProperty("publish")
+    // Two builds, never mixed: "release" for the family's own phones, signed with the
+    // local debug key like the builds already on them (dl app); "publish" for the APKs
+    // on GitHub, signed with the project's key (dl app-publish), in its own folder
+    // (apk/publish). That key lives outside git, in .local/keys/release.properties
+    // (storeFile, storePassword, keyAlias, keyPassword); without it no publish build.
     val releaseKey = rootDir.resolve("../.local/keys/release.properties")
-    if (publish) check(releaseKey.isFile) { "-Ppublish needs $releaseKey" }
     signingConfigs {
-        if (publish) create("release") {
+        if (releaseKey.isFile) create("project") {
             val p = Properties().apply { releaseKey.inputStream().use { load(it) } }
             storeFile = releaseKey.parentFile.resolve(p.getProperty("storeFile"))
             storePassword = p.getProperty("storePassword")
@@ -49,10 +47,15 @@ android {
         release {
             // Installed by hand, not through Play: an APK installs over another only when
             // both are signed with the same key, so never mix the two.
-            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+        create("publish") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.findByName("project") // none without the key: the build stops
+            matchingFallbacks += "release"
         }
     }
 

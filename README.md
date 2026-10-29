@@ -197,7 +197,7 @@ Install the APK, open it and scan the QR code from `dl device-add … --qr`.
 Then allow notifications, alarms over the lock screen and unrestricted battery
 use, as the app asks. An APK you build yourself is signed with your local debug
 key. The APKs on Releases are signed with the project's key
-(`./gradlew assembleRelease -Ppublish`, see `android/app/build.gradle.kts`), so
+(the `publish` build type, `./gradlew assemblePublish`, see `android/app/build.gradle.kts`), so
 yours will not install over them, nor theirs over yours.
 
 ### 6. Optional: push through ntfy

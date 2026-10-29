@@ -207,7 +207,7 @@ class ScreenshotTest {
     fun settingsUk() = shot("settings_uk", dark = true) {
         SettingsScreen(
             creds = creds, state = sampleHomeUi(now).state, setup = BackgroundSetup(battery = true),
-            onFixNotifications = {}, onFixBattery = {}, onFixFullScreen = {}, onTestSound = {}, onDisconnect = {}, onBack = {},
+            onFixNotifications = {}, onFixBattery = {}, onFixFullScreen = {}, onTestSound = {}, onDisconnect = {}, onBack = {}, version = "0.0.0",
         )
     }
 
@@ -388,7 +388,7 @@ class ScreenshotTest {
     fun settingsEnAll() = shot("settings_en_all", dark = true) {
         SettingsScreen(
             creds = creds, state = sampleHomeUi(now).state, setup = BackgroundSetup(battery = true),
-            onFixNotifications = {}, onFixBattery = {}, onFixFullScreen = {}, onTestSound = {}, onDisconnect = {}, onBack = {},
+            onFixNotifications = {}, onFixBattery = {}, onFixFullScreen = {}, onTestSound = {}, onDisconnect = {}, onBack = {}, version = "0.0.0",
         )
     }
 
@@ -397,7 +397,7 @@ class ScreenshotTest {
     fun settingsEsAll() = shot("settings_es_all", dark = true) {
         SettingsScreen(
             creds = creds, state = sampleHomeUi(now).state, setup = BackgroundSetup(battery = true),
-            onFixNotifications = {}, onFixBattery = {}, onFixFullScreen = {}, onTestSound = {}, onDisconnect = {}, onBack = {},
+            onFixNotifications = {}, onFixBattery = {}, onFixFullScreen = {}, onTestSound = {}, onDisconnect = {}, onBack = {}, version = "0.0.0",
         )
     }
 

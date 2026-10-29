@@ -66,6 +66,7 @@ fun SettingsScreen(
     onDisconnect: () -> Unit,
     onBack: () -> Unit,
     onOpenDose: () -> Unit = {},
+    version: String = BuildConfig.VERSION_NAME, // fixed in screenshot tests, so a new version does not change them
 ) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
@@ -213,7 +214,7 @@ fun SettingsScreen(
                 val seen = if (u.mills > 0) AlarmText.clock(ctx, u.mills) else "—"
                 Line(AlarmText.uploader(ctx, state), listOfNotNull(u.battery?.let { "$it%" }, stringResource(R.string.set_seen, seen)).joinToString(" · "))
             }
-            Line(stringResource(R.string.set_version), BuildConfig.VERSION_NAME)
+            Line(stringResource(R.string.set_version), version)
             OutlinedButton(onClick = { confirmDisconnect = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
                 Text(stringResource(R.string.action_disconnect), color = c.low)
             }
