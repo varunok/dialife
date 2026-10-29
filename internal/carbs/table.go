@@ -2,7 +2,9 @@ package carbs
 
 import (
 	"math"
+	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	"dialife/internal/store"
@@ -15,14 +17,17 @@ const maxTable = 4
 // typed food: Carbs for that portion, or for the typed one when it could be
 // scaled (Scaled).
 type TableHit struct {
-	ID       string      `json:"id"`
-	Carbs    int         `json:"carbs"`
-	Base     int         `json:"base"` // grams for the table's own portion
-	Scaled   bool        `json:"scaled,omitempty"`
-	Names    store.Langs `json:"names"`
-	Portions store.Langs `json:"portions"`
-	Source   string      `json:"source"`
-	Score    float32     `json:"score,omitempty"` // a look-alike: how close the names are, 0–1
+	ID     string `json:"id"`
+	Carbs  int    `json:"carbs"`
+	Base   int    `json:"base"` // grams for the table's own portion
+	Scaled bool   `json:"scaled,omitempty"`
+	// counted from carbohydrate per 100 g (a portion typed in grams), and its source
+	Per100    *float64    `json:"per100,omitempty"`
+	Per100Src string      `json:"per100_src,omitempty"`
+	Names     store.Langs `json:"names"`
+	Portions  store.Langs `json:"portions"`
+	Source    string      `json:"source"`
+	Score     float32     `json:"score,omitempty"` // a look-alike: how close the names are, 0–1
 }
 
 type tableEntry struct {
@@ -81,10 +86,20 @@ func lookup(index []tableEntry, it Item) []TableHit {
 	}
 	out := make([]TableHit, 0, len(found))
 	for _, e := range found {
-		c, scaled := scale(e.ref, it.Portion)
-		out = append(out, TableHit{ID: e.ref.ID, Carbs: c, Base: e.ref.Carbs, Scaled: scaled, Names: e.ref.Names, Portions: e.ref.Portions, Source: e.source})
+		out = append(out, hitFor(e, it.Portion))
 	}
 	return out
+}
+
+// hitFor: a table line for the typed portion, from carbohydrate per 100 g or scaled.
+func hitFor(e tableEntry, typed string) TableHit {
+	h := TableHit{ID: e.ref.ID, Base: e.ref.Carbs, Names: e.ref.Names, Portions: e.ref.Portions, Source: e.source}
+	if c, ok := per100(e.ref, typed); ok {
+		h.Carbs, h.Scaled, h.Per100, h.Per100Src = c, true, e.ref.Carbs100, e.ref.Carbs100Src
+	} else {
+		h.Carbs, h.Scaled = scale(e.ref, typed)
+	}
+	return h
 }
 
 func hasKey(keys []string, q string) bool {
@@ -126,6 +141,32 @@ func wordsMatch(keys []string, words []string, prefix bool) bool {
 		}
 	}
 	return false
+}
+
+var bareRe = regexp.MustCompile(`^\d+(?:[.,]\d+)?$`)
+
+// per100 counts a portion typed in grams ("100 г", "0,2 кг", or a bare "100"
+// of a food not measured in millilitres) from the food's carbohydrate per
+// 100 g, when the table has it: a cup or a piece of the table need not match
+// the weight. Anything else is left to scale.
+func per100(f store.FoodRef, typed string) (int, bool) {
+	if f.Carbs100 == nil || f.Carbs == 0 {
+		return 0, false
+	}
+	t := strings.TrimSpace(typed)
+	var g float64
+	if p := parsePortion(t); p.unit == "g" {
+		g = p.n
+	} else if bareRe.MatchString(t) && f.Unit != "ml" {
+		g, _ = strconv.ParseFloat(strings.ReplaceAll(t, ",", "."), 64)
+		if g < 20 { // "2": two of the table's portions
+			return 0, false
+		}
+	}
+	if g <= 0 {
+		return 0, false
+	}
+	return int(math.Round(g * *f.Carbs100 / 100)), true
 }
 
 // scale turns the table's portion into the typed one when both are counted

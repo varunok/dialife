@@ -152,9 +152,9 @@ func (s *Service) similar(ctx context.Context, index []tableEntry, foods []store
 			return 0
 		})
 		for _, h := range hits[:min(len(hits), maxSimilar)] {
-			c, scaled := scale(h.e.ref, items[i].Portion)
-			out[i].Similar = append(out[i].Similar, TableHit{ID: h.e.ref.ID, Carbs: c, Base: h.e.ref.Carbs, Scaled: scaled,
-				Names: h.e.ref.Names, Portions: h.e.ref.Portions, Source: h.e.source, Score: h.score})
+			th := hitFor(h.e, items[i].Portion)
+			th.Score = h.score
+			out[i].Similar = append(out[i].Similar, th)
 		}
 
 		bestName, bestScore := "", least

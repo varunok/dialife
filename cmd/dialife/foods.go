@@ -33,6 +33,8 @@ type foodFile struct {
 		Qty      float64     `json:"qty"`
 		Unit     string      `json:"unit"`
 		Grams    *float64    `json:"grams"`
+		Carbs100 *float64    `json:"carbs100"`
+		Per100   string      `json:"carbs100_src"`
 		Names    store.Langs `json:"names"`
 		Portions store.Langs `json:"portions"`
 		Aliases  []string    `json:"aliases"`
@@ -119,12 +121,14 @@ func readFoodFile(r io.Reader) (store.FoodTable, error) {
 			probs = append(probs, fmt.Sprintf("%s: unit %q is not pc, g, ml or empty", it.ID, it.Unit))
 		case missing(it.Names) != "":
 			probs = append(probs, it.ID+": no name in "+missing(it.Names))
+		case it.Carbs100 != nil && (*it.Carbs100 < 0 || *it.Carbs100 > 100 || it.Per100 == ""):
+			probs = append(probs, it.ID+": carbs100 out of 0–100 g or without its source")
 		case it.Carbs > 0 && missing(it.Portions) != "":
 			probs = append(probs, it.ID+": no portion in "+missing(it.Portions))
 		}
 		ids[it.ID] = true
 		t.Items = append(t.Items, store.FoodRef{ID: it.ID, Cat: it.Cat, Carbs: it.Carbs, Qty: it.Qty, Unit: it.Unit, Grams: it.Grams,
-			Names: it.Names, Portions: it.Portions, Aliases: it.Aliases, Sort: it.Sort})
+			Carbs100: it.Carbs100, Carbs100Src: it.Per100, Names: it.Names, Portions: it.Portions, Aliases: it.Aliases, Sort: it.Sort})
 	}
 	if len(probs) > 0 {
 		return store.FoodTable{}, errors.New("foods file:\n  " + strings.Join(probs, "\n  "))

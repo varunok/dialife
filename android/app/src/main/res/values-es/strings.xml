@@ -542,6 +542,7 @@
     <string name="food_all">Todos los alimentos</string>
     <string name="food_table">De la tabla de hidratos</string>
     <string name="food_table_free">No se cuenta: casi sin hidratos</string>
+    <string name="food_table_per100">%1$s g por 100 g · %2$s</string>
     <string name="food_table_scaled">%1$d g por «%2$s», recalculado para vuestra ración</string>
     <string name="food_src_table">Elegido: tabla de hidratos. Comprobad la ración</string>
     <string name="food_pick_title">Tabla de hidratos</string>

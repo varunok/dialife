@@ -28,16 +28,20 @@ type FoodCategory struct {
 
 // FoodRef is one portion of one food in a table: Carbs grams for Portions.
 type FoodRef struct {
-	ID       string
-	Cat      string
-	Carbs    int
-	Qty      float64
-	Unit     string   // "pc", "g", "ml" or "" (not scaled)
-	Grams    *float64 // the portion's weight, when the table gives it
-	Names    Langs
-	Portions Langs
-	Aliases  []string
-	Sort     int
+	ID    string
+	Cat   string
+	Carbs int
+	Qty   float64
+	Unit  string   // "pc", "g", "ml" or "" (not scaled)
+	Grams *float64 // the portion's weight, when the table gives it
+	// carbohydrate per 100 g and its source (a composition table or a label):
+	// a portion typed in grams is counted from it
+	Carbs100    *float64
+	Carbs100Src string
+	Names       Langs
+	Portions    Langs
+	Aliases     []string
+	Sort        int
 }
 
 // FoodTable is a whole source with what it holds.
@@ -74,9 +78,9 @@ func (s *Store) ReplaceFoodTable(ctx context.Context, t FoodTable) error {
 		portions, _ := json.Marshal(f.Portions)
 		aliases, _ := json.Marshal(f.Aliases)
 		if _, err := tx.ExecContext(ctx,
-			`INSERT INTO food_ref (source, id, cat, carbs, qty, unit, grams, names, portions, aliases, sort)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			t.Source, f.ID, f.Cat, f.Carbs, f.Qty, f.Unit, f.Grams, string(names), string(portions), string(aliases), f.Sort); err != nil {
+			`INSERT INTO food_ref (source, id, cat, carbs, qty, unit, grams, carbs100, carbs100_src, names, portions, aliases, sort)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			t.Source, f.ID, f.Cat, f.Carbs, f.Qty, f.Unit, f.Grams, f.Carbs100, f.Carbs100Src, string(names), string(portions), string(aliases), f.Sort); err != nil {
 			return fmt.Errorf("food %s: %w", f.ID, err)
 		}
 	}
@@ -136,7 +140,7 @@ func (s *Store) foodCategories(ctx context.Context, source string) ([]FoodCatego
 
 func (s *Store) foodRefs(ctx context.Context, source string) ([]FoodRef, error) {
 	rows, err := s.r.QueryContext(ctx,
-		`SELECT id, cat, carbs, qty, unit, grams, names, portions, aliases, sort FROM food_ref WHERE source = ? ORDER BY sort, id`, source)
+		`SELECT id, cat, carbs, qty, unit, grams, carbs100, carbs100_src, names, portions, aliases, sort FROM food_ref WHERE source = ? ORDER BY sort, id`, source)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +149,7 @@ func (s *Store) foodRefs(ctx context.Context, source string) ([]FoodRef, error) 
 	for rows.Next() {
 		var f FoodRef
 		var names, portions, aliases string
-		if err := rows.Scan(&f.ID, &f.Cat, &f.Carbs, &f.Qty, &f.Unit, &f.Grams, &names, &portions, &aliases, &f.Sort); err != nil {
+		if err := rows.Scan(&f.ID, &f.Cat, &f.Carbs, &f.Qty, &f.Unit, &f.Grams, &f.Carbs100, &f.Carbs100Src, &names, &portions, &aliases, &f.Sort); err != nil {
 			return nil, err
 		}
 		_ = json.Unmarshal([]byte(names), &f.Names)

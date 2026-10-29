@@ -314,6 +314,7 @@ fun FoodSuggestions(row: FoodRow, lang: String, onChange: ((FoodRow) -> FoodRow)
                     "≈ ${h.carbs}", stringResource(R.string.food_table),
                     when {
                         h.carbs == 0 && h.base == 0 -> stringResource(R.string.food_table_free)
+                        h.per100 != null -> per100Note(h)
                         h.scaled -> stringResource(R.string.food_table_scaled, h.base, portion)
                         else -> h.names.inLang(lang) + if (portion.isBlank()) "" else " · $portion"
                     },
@@ -325,7 +326,11 @@ fun FoodSuggestions(row: FoodRow, lang: String, onChange: ((FoodRow) -> FoodRow)
                 val portion = h.portions.inLang(lang)
                 SuggestionButton(
                     "≈ ${h.carbs}", stringResource(R.string.food_similar, h.names.inLang(lang)),
-                    if (h.scaled) stringResource(R.string.food_table_scaled, h.base, portion) else portion.ifBlank { stringResource(R.string.food_table_free) },
+                    when {
+                        h.per100 != null -> per100Note(h)
+                        h.scaled -> stringResource(R.string.food_table_scaled, h.base, portion)
+                        else -> portion.ifBlank { stringResource(R.string.food_table_free) }
+                    },
                     on = row.source == "table" && row.tableId == h.id && row.grams == h.carbs,
                     warn = otherPortion(row, h, portion),
                 ) { onChange { it.copy(carbs = h.carbs.toString(), source = "table", tableId = h.id) } }
@@ -344,6 +349,11 @@ fun FoodSuggestions(row: FoodRow, lang: String, onChange: ((FoodRow) -> FoodRow)
         )
     }
 }
+
+/** "7.7 g per 100 g · SARA 2 (AR)": where the number for a weight comes from. */
+@Composable
+private fun per100Note(h: CarbTableHit): String =
+    stringResource(R.string.food_table_per100, "%.1f".format(java.util.Locale.ROOT, h.per100).removeSuffix(".0"), h.per100Src)
 
 /** "For «1 cup (250 ml)», not for «100 g»" when the table could not recount its line. */
 @Composable

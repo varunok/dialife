@@ -304,6 +304,8 @@ data class CarbTableHit(
     val carbs: Int,
     val base: Int = carbs,
     val scaled: Boolean = false,
+    val per100: Double? = null, // counted from carbs per 100 g (a portion typed in grams)
+    @SerialName("per100_src") val per100Src: String = "",
     val names: Map<String, String> = emptyMap(),
     val portions: Map<String, String> = emptyMap(),
     val source: String = "",

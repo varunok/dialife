@@ -67,6 +67,9 @@ class ScreenshotTest {
         )
         androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
             com.lumenarcanus.dialife.ui.treatment.FoodSuggestions(row, "uk") {}
+            com.lumenarcanus.dialife.ui.treatment.FoodSuggestions(
+                row.copy(suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(table = listOf(hit.copy(carbs = 8, scaled = true, per100 = 7.7, per100Src = "SARA 2 (AR)")))), "uk",
+            ) {}
         }
     }
 

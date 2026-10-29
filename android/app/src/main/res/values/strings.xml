@@ -534,6 +534,7 @@
     <string name="food_all">All foods</string>
     <string name="food_table">From the carb table</string>
     <string name="food_table_free">Not counted: almost no carbs</string>
+    <string name="food_table_per100">%1$s g per 100 g · %2$s</string>
     <string name="food_table_scaled">%1$d g for “%2$s”, scaled to your portion</string>
     <string name="food_src_table">Picked: carb table. Check the portion</string>
     <string name="food_pick_title">Carb table</string>

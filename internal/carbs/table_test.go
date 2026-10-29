@@ -19,6 +19,7 @@ var sampleTable = store.FoodTable{
 		{ID: "juice", Cat: "fruit", Carbs: 15, Qty: 100, Unit: "ml", Names: store.Langs{"uk": "Сік апельсиновий свіжий", "en": "Fresh orange juice", "es": "Jugo de naranja"}},
 		{ID: "pasta-half", Cat: "fruit", Carbs: 30, Qty: 1, Unit: "", Names: store.Langs{"uk": "Макарони варені", "en": "Pasta, cooked"}, Aliases: []string{"макарони"}},
 		{ID: "pasta-plate", Cat: "fruit", Carbs: 75, Qty: 1, Unit: "", Names: store.Langs{"uk": "Макарони варені", "en": "Pasta, cooked"}, Aliases: []string{"макарони"}},
+		{ID: "strawberry", Cat: "fruit", Carbs: 15, Qty: 1, Unit: "", Carbs100: grams(7.68), Carbs100Src: "USDA FDC 167762", Names: store.Langs{"uk": "Полуниця", "en": "Strawberries"}, Portions: store.Langs{"uk": "1 чашка (250 мл)"}},
 		{ID: "tomato", Cat: "fruit", Carbs: 0, Names: store.Langs{"uk": "Помідор", "en": "Tomato", "es": "Tomate"}},
 		{ID: "rice-raw", Cat: "fruit", Carbs: 45, Names: store.Langs{"uk": "Рис сирий", "en": "Rice, raw"}},
 		{ID: "cheese", Cat: "fruit", Carbs: 0, Names: store.Langs{"uk": "Сир (твердий)", "en": "Cheese"}},
@@ -142,5 +143,30 @@ func TestScaleByVolumeAndTheTablesOwnWords(t *testing.T) {
 		if got, scaled := scale(milk, c.portion); got != c.carbs || scaled != c.scaled {
 			t.Errorf("%q: %d scaled=%v, want %d scaled=%v", c.portion, got, scaled, c.carbs, c.scaled)
 		}
+	}
+}
+
+func TestPer100CountsGrams(t *testing.T) {
+	index := tableIndex([]store.FoodTable{sampleTable})
+	cases := []struct {
+		portion string
+		carbs   int
+		per100  bool
+	}{
+		{"100 грам", 8, true},
+		{"0,2 кг", 15, true},
+		{"150", 12, true},      // a bare weight
+		{"2", 15, false},       // not a weight, and nothing to count it in
+		{"2 чашки", 30, false}, // the table's own measure
+		{"", 15, false},
+	}
+	for _, c := range cases {
+		hs := lookup(index, Item{"полуниця", c.portion})
+		if len(hs) != 1 || hs[0].Carbs != c.carbs || (hs[0].Per100 != nil) != c.per100 {
+			t.Errorf("%q: %+v, want %d g", c.portion, hs, c.carbs)
+		}
+	}
+	if hs := lookup(index, Item{"полуниця", "100 г"}); hs[0].Per100Src != "USDA FDC 167762" || !hs[0].Scaled {
+		t.Errorf("the source goes with the number: %+v", hs[0])
 	}
 }
