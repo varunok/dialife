@@ -23,8 +23,8 @@ import com.lumenarcanus.dialife.data.InsulinIntent
 import com.lumenarcanus.dialife.data.Question
 import com.lumenarcanus.dialife.data.Series
 import com.lumenarcanus.dialife.data.Treatment
+import com.lumenarcanus.dialife.feature.alarms.HandlingScreen
 import com.lumenarcanus.dialife.ui.data.DataScreen
-import com.lumenarcanus.dialife.ui.handling.HandlingScreen
 import com.lumenarcanus.dialife.ui.home.ChartCard
 import com.lumenarcanus.dialife.ui.home.HomeUi
 import com.lumenarcanus.dialife.ui.home.sampleHomeUi

@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.ui.handling
+package com.lumenarcanus.dialife.feature.alarms
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

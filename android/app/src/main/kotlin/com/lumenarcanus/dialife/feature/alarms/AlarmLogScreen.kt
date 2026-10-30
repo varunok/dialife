@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.ui.log
+package com.lumenarcanus.dialife.feature.alarms
 
 import android.content.Context
 import android.text.format.DateUtils

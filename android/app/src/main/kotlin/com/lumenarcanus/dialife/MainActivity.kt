@@ -43,14 +43,14 @@ import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.data.DiaLifeApi
 import com.lumenarcanus.dialife.data.Thresholds
+import com.lumenarcanus.dialife.feature.alarms.AlarmLogScreen
+import com.lumenarcanus.dialife.feature.alarms.HandlingScreen
 import com.lumenarcanus.dialife.live.LiveService
 import com.lumenarcanus.dialife.ui.connect.ConnectScreen
 import com.lumenarcanus.dialife.ui.data.DataScreen
-import com.lumenarcanus.dialife.ui.handling.HandlingScreen
 import com.lumenarcanus.dialife.ui.home.BackgroundSetup
 import com.lumenarcanus.dialife.ui.home.HomeScreen
 import com.lumenarcanus.dialife.ui.home.HomeViewModel
-import com.lumenarcanus.dialife.ui.log.AlarmLogScreen
 import com.lumenarcanus.dialife.ui.settings.SettingsScreen
 import com.lumenarcanus.dialife.ui.stats.StatsScreen
 import com.lumenarcanus.dialife.ui.theme.DiaLifeTheme

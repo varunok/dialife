@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.ui.alarm
+package com.lumenarcanus.dialife.feature.alarms
 
 import android.content.BroadcastReceiver
 import android.content.Context

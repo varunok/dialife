@@ -69,7 +69,7 @@
 
         <!-- the alarm over the lock screen; its own task so dismissing it does not drop the user into the app -->
         <activity
-            android:name=".ui.alarm.AlarmActivity"
+            android:name=".feature.alarms.AlarmActivity"
             android:exported="false"
             android:excludeFromRecents="true"
             android:launchMode="singleTask"

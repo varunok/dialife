@@ -12,6 +12,7 @@ import com.lumenarcanus.dialife.data.AlarmView
 import com.lumenarcanus.dialife.data.Caregiver
 import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.data.Question
+import com.lumenarcanus.dialife.feature.alarms.HandlingScreen
 import com.lumenarcanus.dialife.feature.meal.MealInputs
 import com.lumenarcanus.dialife.feature.planned.PlannedCard
 import com.lumenarcanus.dialife.feature.planned.PlannedCardUiState
@@ -19,7 +20,6 @@ import com.lumenarcanus.dialife.feature.wait.CountdownCard
 import com.lumenarcanus.dialife.feature.wait.CountdownUiState
 import com.lumenarcanus.dialife.feature.wait.WarningCard
 import com.lumenarcanus.dialife.feature.wait.warningUiState
-import com.lumenarcanus.dialife.ui.handling.HandlingScreen
 import com.lumenarcanus.dialife.ui.home.BackgroundSetup
 import com.lumenarcanus.dialife.ui.home.sampleHomeUi
 import com.lumenarcanus.dialife.ui.settings.SettingsScreen
