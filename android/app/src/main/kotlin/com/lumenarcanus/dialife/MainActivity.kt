@@ -43,7 +43,6 @@ import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.data.DiaLifeApi
 import com.lumenarcanus.dialife.data.Thresholds
-import com.lumenarcanus.dialife.live.ActionReceiver
 import com.lumenarcanus.dialife.live.LiveService
 import com.lumenarcanus.dialife.ui.connect.ConnectScreen
 import com.lumenarcanus.dialife.ui.data.DataScreen
@@ -285,10 +284,7 @@ class MainActivity : AppCompatActivity() {
             onAllowNotifications = { askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS) },
             onAllowBackground = ::askBatteryExemption,
             onAllowFullScreen = ::askFullScreen,
-            onAlarmAction = { action, id ->
-                act(action, id)
-                if (action == ActionReceiver.HANDLE) openHandling = id // took it: straight to "you are handling"
-            },
+            alarmsSection = { com.lumenarcanus.dialife.feature.alarms.AlarmsSection(onOpenHandling = { id -> openHandling = id }) },
             onRange = home::setRange,
             onOpenStats = { onOpen(Screen.Stats) },
             onOpenLog = { onOpen(Screen.Log) },
@@ -300,7 +296,6 @@ class MainActivity : AppCompatActivity() {
             watchSection = { com.lumenarcanus.dialife.feature.questions.WatchSection() },
             waitSection = { com.lumenarcanus.dialife.feature.wait.WaitSection() },
             onOpenSettings = { onOpen(Screen.Settings) },
-            onOpenHandling = { id -> openHandling = id },
             onRetry = liveRepository::reconnectNow,
             onSaveTreatment = liveRepository::saveTreatment,
             onDeleteTreatment = liveRepository::deleteTreatment,
