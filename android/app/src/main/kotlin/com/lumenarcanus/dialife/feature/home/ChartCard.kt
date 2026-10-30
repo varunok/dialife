@@ -97,53 +97,22 @@ fun ChartCard(
             val f = android.text.format.DateFormat.getTimeFormat(context)
             stringResource(R.string.chart_window, f.format(Date(w.start)), f.format(Date(min(w.end, now))))
         } ?: stringResource(R.string.chart_last_hours, rangeHours)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(title, color = c.text, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, modifier = Modifier.weight(1f))
-            // wide enough when expanded (landscape): the ranges share the title's row
-            if (expanded) {
-                RangeTabs(window == null, rangeHours, Modifier.width(320.dp)) {
-                    window = null
-                    onRange(it)
-                }
-            }
-            MeterSwitch(on = estimate != null, ready = meter?.ready == true) {
-                if (meter?.ready == true) {
-                    onMeterLine(!meterLine)
-                } else {
-                    whyNot = !whyNot
-                }
-            }
-            onOpenTable?.let { open ->
-                androidx.compose.material3.IconButton(onClick = open, modifier = Modifier.size(40.dp)) {
-                    androidx.compose.material3.Icon(
-                        androidx.compose.ui.res.painterResource(R.drawable.ic_table),
-                        stringResource(R.string.chart_table),
-                        tint = c.textMuted
-                    )
-                }
-            }
-            val what = stringResource(if (expanded) R.string.chart_close else R.string.chart_expand)
-            androidx.compose.material3.IconButton(onClick = onExpand, modifier = Modifier.size(40.dp)) {
-                androidx.compose.material3.Icon(
-                    androidx.compose.ui.res.painterResource(if (expanded) R.drawable.ic_close else R.drawable.ic_fullscreen),
-                    contentDescription = what,
-                    tint = c.textMuted
-                )
-            }
-        }
-        if (whyNot && meter?.ready != true) {
-            val used = meter?.used ?: 0
-            val need = meter?.need ?: 8
-            Text(
-                stringResource(R.string.meter_not_ready, used, need, (need - used).coerceAtLeast(1)),
-                color = c.textMuted,
-                fontSize = 12.5.sp,
-                modifier = Modifier.fillMaxWidth().background(
-                    c.surfaceRaised,
-                    RoundedCornerShape(12.dp)
-                ).padding(horizontal = 12.dp, vertical = 10.dp)
-            )
-        }
+        ChartHeader(
+            title,
+            expanded,
+            rangeHours,
+            followsRange = window == null,
+            meterOn = estimate != null,
+            meterReady = meter?.ready == true,
+            onRange = {
+                window = null
+                onRange(it)
+            },
+            onMeter = { if (meter?.ready == true) onMeterLine(!meterLine) else whyNot = !whyNot },
+            onOpenTable = onOpenTable,
+            onExpand = onExpand
+        )
+        if (whyNot && meter?.ready != true) MeterNotReady(meter)
         // own full-width row: "Останні 24 год" plus four "N год" chips do not fit side by side
         if (!expanded) {
             RangeTabs(window == null, rangeHours, Modifier.fillMaxWidth()) {
@@ -183,17 +152,81 @@ fun ChartCard(
                 mealRules,
                 mbg = history?.mbg ?: Series()
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                androidx.compose.material3.OutlinedButton(onClick = { onEdit(tr) }, modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.tr_edit), color = c.text)
-                }
-                androidx.compose.material3.OutlinedButton(onClick = {
-                    selected = null
-                    onDelete(tr)
-                }, modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.tr_delete), color = c.low)
-                }
+            EntryActions(onEdit = { onEdit(tr) }, onDelete = {
+                selected = null
+                onDelete(tr)
+            })
+        }
+    }
+}
+
+/** The title (the window when pinched), the ranges when expanded, "≈ meter", the table, full screen. */
+@Composable
+private fun ChartHeader(
+    title: String,
+    expanded: Boolean,
+    rangeHours: Int,
+    followsRange: Boolean,
+    meterOn: Boolean,
+    meterReady: Boolean,
+    onRange: (Int) -> Unit,
+    onMeter: () -> Unit,
+    onOpenTable: (() -> Unit)?,
+    onExpand: () -> Unit
+) {
+    val c = DiaTheme.colors
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(title, color = c.text, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, modifier = Modifier.weight(1f))
+        // wide enough when expanded (landscape): the ranges share the title's row
+        if (expanded) RangeTabs(followsRange, rangeHours, Modifier.width(320.dp), onRange)
+        MeterSwitch(on = meterOn, ready = meterReady, onClick = onMeter)
+        onOpenTable?.let { open ->
+            androidx.compose.material3.IconButton(onClick = open, modifier = Modifier.size(40.dp)) {
+                androidx.compose.material3.Icon(
+                    androidx.compose.ui.res.painterResource(R.drawable.ic_table),
+                    stringResource(R.string.chart_table),
+                    tint = c.textMuted
+                )
             }
+        }
+        val what = stringResource(if (expanded) R.string.chart_close else R.string.chart_expand)
+        androidx.compose.material3.IconButton(onClick = onExpand, modifier = Modifier.size(40.dp)) {
+            androidx.compose.material3.Icon(
+                androidx.compose.ui.res.painterResource(if (expanded) R.drawable.ic_close else R.drawable.ic_fullscreen),
+                contentDescription = what,
+                tint = c.textMuted
+            )
+        }
+    }
+}
+
+/** Why "≈ meter" is not on yet: how many glucometer checks it has and needs. */
+@Composable
+private fun MeterNotReady(meter: MeterReport?) {
+    val c = DiaTheme.colors
+    val used = meter?.used ?: 0
+    val need = meter?.need ?: 8
+    Text(
+        stringResource(R.string.meter_not_ready, used, need, (need - used).coerceAtLeast(1)),
+        color = c.textMuted,
+        fontSize = 12.5.sp,
+        modifier = Modifier.fillMaxWidth().background(
+            c.surfaceRaised,
+            RoundedCornerShape(12.dp)
+        ).padding(horizontal = 12.dp, vertical = 10.dp)
+    )
+}
+
+/** Edit or delete the tapped entry. */
+@Composable
+private fun EntryActions(onEdit: () -> Unit, onDelete: () -> Unit) {
+    val c = DiaTheme.colors
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+        androidx.compose.material3.OutlinedButton(onClick = onEdit, modifier = Modifier.weight(1f)) {
+            Text(stringResource(R.string.tr_edit), color = c.text)
+        }
+        androidx.compose.material3.OutlinedButton(onClick = onDelete, modifier = Modifier.weight(1f)) {
+            Text(stringResource(R.string.tr_delete), color = c.low)
         }
     }
 }
