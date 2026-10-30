@@ -92,13 +92,7 @@ func New(d Deps) *App {
 	mux.Handle("GET /api/stream", anyRole(http.HandlerFunc(api.Stream)))
 	mux.Handle("GET /api/stats", anyRole(http.HandlerFunc(api.Stats)))
 	mux.Handle("GET /api/meter", anyRole(http.HandlerFunc(api.Meter)))
-	mux.Handle("GET /api/alarms/log", anyRole(http.HandlerFunc(api.AlarmLog)))
 	caregiver := d.Auth.Require(auth.RoleCaregiver)
-	mux.Handle("POST /api/alarms/{id}/handle", caregiver(http.HandlerFunc(api.Handle)))
-	mux.Handle("POST /api/alarms/{id}/ack", caregiver(http.HandlerFunc(api.Handle))) // older name
-	mux.Handle("POST /api/alarms/{id}/checkin", caregiver(http.HandlerFunc(api.Checkin)))
-	mux.Handle("POST /api/alarms/{id}/coming", caregiver(http.HandlerFunc(api.Coming)))
-	mux.Handle("POST /api/alarms/{id}/resolve", caregiver(http.HandlerFunc(api.Resolve)))
 	// the web viewer: logging in by a QR code a parent scans, then read-only like a reader
 	mux.Handle("POST /api/web/login", http.HandlerFunc(api.WebLoginStart))
 	mux.Handle("GET /api/web/login/{id}/qr.svg", http.HandlerFunc(api.WebLoginQR))
@@ -117,8 +111,7 @@ func New(d Deps) *App {
 	planned.HTTP{Service: api.Planned}.Routes(mux, caregiver)
 	wait.HTTP{Service: api.Wait}.Routes(mux, caregiver)
 	questions.HTTP{Engine: api.Questions}.Routes(mux, caregiver)
-	// no token: the signed link is the credential (see acklink)
-	mux.Handle("POST /api/alarms/{id}/ack-link", http.HandlerFunc(api.AckLink))
+	alarms.HTTP{Engine: api.Alarms, Store: d.Store, Links: d.Links, Now: d.Now}.Routes(mux, anyRole, caregiver)
 	mux.Handle("GET /api/healthz", anyRole(healthz(d.Store)))
 	// the read-only web viewer
 	viewer := web.Handler()

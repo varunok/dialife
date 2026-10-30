@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"math"
 	"net/http"
@@ -758,4 +759,13 @@ func points(es []store.Entry) []forecast.Point {
 		}
 	}
 	return out
+}
+
+// decodeOptional accepts an empty body; false means it already answered 400.
+func decodeOptional(w http.ResponseWriter, r *http.Request, v any) bool {
+	if err := json.NewDecoder(r.Body).Decode(v); err != nil && !errors.Is(err, io.EOF) {
+		httpx.Error(w, http.StatusBadRequest)
+		return false
+	}
+	return true
 }

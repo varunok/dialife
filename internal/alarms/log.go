@@ -1,11 +1,10 @@
-package app
+package alarms
 
 import (
 	"net/http"
 	"strconv"
 	"time"
 
-	"dialife/internal/alarms"
 	"dialife/internal/httpx"
 )
 
@@ -23,7 +22,7 @@ type logEvent struct {
 }
 
 type logEpisode struct {
-	alarms.View
+	View
 	TriggerSGV *int       `json:"trigger_sgv,omitempty"`
 	ClearedAt  *int64     `json:"cleared_at,omitempty"`
 	ResolvedBy string     `json:"resolved_by,omitempty"`
@@ -31,9 +30,9 @@ type logEpisode struct {
 	Events     []logEvent `json:"events"` // oldest first; empty for episodes from before the log existed
 }
 
-// AlarmLog serves GET /api/alarms/log?days=7 (up to 90): episodes, newest
+// log serves GET /api/alarms/log?days=7 (up to 90): episodes, newest
 // first, each with its steps — who took it and when, questions, help, end.
-func (h *Handlers) AlarmLog(w http.ResponseWriter, r *http.Request) {
+func (h HTTP) log(w http.ResponseWriter, r *http.Request) {
 	days := 7
 	if v := r.URL.Query().Get("days"); v != "" {
 		n, err := strconv.Atoi(v)
@@ -65,7 +64,7 @@ func (h *Handlers) AlarmLog(w http.ResponseWriter, r *http.Request) {
 		if ev == nil {
 			ev = []logEvent{}
 		}
-		out = append(out, logEpisode{View: alarms.ToView(a), TriggerSGV: a.TriggerSGV, ClearedAt: a.ClearedAt,
+		out = append(out, logEpisode{View: ToView(a), TriggerSGV: a.TriggerSGV, ClearedAt: a.ClearedAt,
 			ResolvedBy: a.ResolvedByName, Manual: a.ResolvedManually, Events: ev})
 	}
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"episodes": out})
