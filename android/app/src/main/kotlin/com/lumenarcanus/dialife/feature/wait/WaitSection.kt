@@ -45,7 +45,7 @@ import java.util.Locale
 @Composable
 fun WaitSection() {
     val ctx = LocalContext.current
-    val vm = viewModel { WaitViewModel(ctx.liveRepository) }
+    val vm = viewModel { WaitViewModel(ctx.liveRepository, DefaultWaitRepository({ ctx.liveRepository.credentials })) }
     val uiState by vm.uiState.collectAsStateWithLifecycle()
     uiState.userMessage?.let { message ->
         LaunchedEffect(message) {

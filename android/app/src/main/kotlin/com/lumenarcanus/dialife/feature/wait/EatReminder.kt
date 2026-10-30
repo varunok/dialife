@@ -65,7 +65,7 @@ object EatReminder {
     /** "Already ate" on the notification. */
     internal suspend fun eaten(context: Context, doseId: String) {
         val live = repo(context)
-        val repository = WaitRepository({ live.credentials })
+        val repository = DefaultWaitRepository({ live.credentials })
         val eaten = WaitAction.Eaten(doseId)
         val r = repository.close(eaten).recoverCatching { repository.close(eaten).getOrThrow() } // one retry
         if (r.isFailure) context.alarmController.failed() else cancel(context)

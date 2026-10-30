@@ -12,9 +12,20 @@ import kotlinx.serialization.json.put
  * Planned doses on the server: the food form makes them, the planned dose
  * feature closes them; the list itself comes with the live state.
  */
-class PlannedDoseRepository(private val creds: () -> Credentials?, private val api: DiaLifeApi = DiaLifeApi()) {
+interface PlannedDoseRepository {
     /** Makes a planned dose, or changes it while it is still planned. */
-    suspend fun save(p: PlannedDose): Result<Unit> = post(
+    suspend fun save(p: PlannedDose): Result<Unit>
+
+    /** It was injected; [insulinId] is its insulin entry. */
+    suspend fun given(id: String, insulinId: String): Result<Unit>
+
+    /** It was not injected. */
+    suspend fun skip(id: String): Result<Unit>
+}
+
+class DefaultPlannedDoseRepository(private val creds: () -> Credentials?, private val api: DiaLifeApi = DiaLifeApi()) :
+    PlannedDoseRepository {
+    override suspend fun save(p: PlannedDose): Result<Unit> = post(
         "/api/planned",
         buildJsonObject {
             put("id", p.id)
@@ -29,12 +40,10 @@ class PlannedDoseRepository(private val creds: () -> Credentials?, private val a
         }.toString()
     )
 
-    /** It was injected; [insulinId] is its insulin entry. */
-    suspend fun given(id: String, insulinId: String): Result<Unit> =
+    override suspend fun given(id: String, insulinId: String): Result<Unit> =
         post("/api/planned/$id/given", buildJsonObject { put("insulin_id", insulinId) }.toString())
 
-    /** It was not injected. */
-    suspend fun skip(id: String): Result<Unit> = post("/api/planned/$id/skip", "{}")
+    override suspend fun skip(id: String): Result<Unit> = post("/api/planned/$id/skip", "{}")
 
     private suspend fun post(path: String, body: String): Result<Unit> {
         val c = creds() ?: return Result.failure(ApiException(ApiError.Unauthorized))
