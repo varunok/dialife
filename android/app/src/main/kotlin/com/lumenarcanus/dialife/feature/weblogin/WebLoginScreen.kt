@@ -131,73 +131,15 @@ internal fun Approve(info: WebLoginInfo, now: Long = System.currentTimeMillis(),
     ) {
         Text(stringResource(R.string.web_ask_title), color = c.text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
         Text(stringResource(R.string.web_ask_who, info.browser, info.os), color = c.textMuted, fontSize = 13.sp)
-        // a code someone else shows comes from their network: say so before anyone taps "Allow"
-        if (info.sameNetwork) {
-            Text(stringResource(R.string.web_same_network), color = c.inRange, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-        } else {
-            Text(
-                stringResource(R.string.web_other_network, info.ip ?: "?"),
-                color = c.high,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.fillMaxWidth().background(c.highContainer, RoundedCornerShape(12.dp)).padding(12.dp)
-            )
-        }
+        WhereFrom(info)
         Text(stringResource(R.string.web_ask_body), color = c.textMuted, fontSize = 14.sp)
         Text(stringResource(R.string.web_duration), color = c.textMuted, fontSize = 13.sp)
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            val less = stringResource(R.string.web_less)
-            val more = stringResource(R.string.web_more)
-            FilledTonalIconButton(onClick = {
-                set(count - 1)
-            }, modifier = Modifier.size(48.dp).semantics { contentDescription = less }) { Text("−", fontSize = 22.sp, color = c.text) }
-            OutlinedTextField(
-                value = text,
-                onValueChange = { v ->
-                    text = v.filter(Char::isDigit).take(3)
-                    text.toIntOrNull()?.let { count = it.coerceAtLeast(1) }
-                },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                textStyle = androidx.compose.ui.text.TextStyle(
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center,
-                    color = c.text
-                ),
-                modifier = Modifier.width(76.dp)
-            )
-            FilledTonalIconButton(onClick = {
-                set(count + 1)
-            }, modifier = Modifier.size(48.dp).semantics { contentDescription = more }) { Text("+", fontSize = 22.sp, color = c.text) }
-        }
-        Row(
-            Modifier.fillMaxWidth().background(c.background, RoundedCornerShape(12.dp)).padding(3.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            SpanUnit.entries.forEach { u ->
-                val on = u == unit
-                Text(
-                    stringResource(u.label),
-                    color = if (on) c.text else c.textMuted,
-                    fontSize = 13.sp,
-                    textAlign = TextAlign.Center,
-                    fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal,
-                    modifier = Modifier.weight(1f).background(if (on) c.surfaceRaised else Color.Transparent, RoundedCornerShape(9.dp))
-                        .selectable(selected = on, role = Role.Tab) { unit = u }.heightIn(min = 40.dp).padding(vertical = 10.dp)
-                )
-            }
-        }
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            listOf(30 to SpanUnit.Min, 2 to SpanUnit.Hour, 1 to SpanUnit.Day, 7 to SpanUnit.Day, 30 to SpanUnit.Day).forEach { (n, u) ->
-                val label = when (u) {
-                    SpanUnit.Min -> stringResource(R.string.web_quick_min, n)
-                    SpanUnit.Hour -> stringResource(R.string.web_quick_hour, n)
-                    SpanUnit.Day -> pluralStringResource(R.plurals.web_quick_day, n, n)
-                }
-                FilterChip(selected = count == n && unit == u, onClick = { set(n, u) }, label = { Text(label) })
-            }
-        }
+        CountField(text, onText = { v ->
+            text = v.filter(Char::isDigit).take(3)
+            text.toIntOrNull()?.let { count = it.coerceAtLeast(1) }
+        }, onLess = { set(count - 1) }, onMore = { set(count + 1) })
+        SpanUnits(unit) { unit = it }
+        QuickSpans(count, unit) { n, u -> set(n, u) }
         Text(
             if (tooLong) {
                 stringResource(R.string.web_too_long)
@@ -224,6 +166,97 @@ internal fun Approve(info: WebLoginInfo, now: Long = System.currentTimeMillis(),
             }, enabled = !tooLong, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(16.dp)) {
                 Text(stringResource(R.string.web_allow))
             }
+        }
+    }
+}
+
+/** A code someone else shows comes from their network: say so before anyone taps "Allow". */
+@Composable
+private fun WhereFrom(info: WebLoginInfo) {
+    val c = DiaTheme.colors
+    if (info.sameNetwork) {
+        Text(stringResource(R.string.web_same_network), color = c.inRange, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+    } else {
+        Text(
+            stringResource(R.string.web_other_network, info.ip ?: "?"),
+            color = c.high,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.fillMaxWidth().background(c.highContainer, RoundedCornerShape(12.dp)).padding(12.dp)
+        )
+    }
+}
+
+/** How many (of the unit below): −, the number typed, +. */
+@Composable
+private fun CountField(text: String, onText: (String) -> Unit, onLess: () -> Unit, onMore: () -> Unit) {
+    val c = DiaTheme.colors
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        val less = stringResource(R.string.web_less)
+        val more = stringResource(R.string.web_more)
+        FilledTonalIconButton(
+            onClick = onLess,
+            modifier = Modifier.size(48.dp).semantics {
+                contentDescription = less
+            }
+        ) { Text("−", fontSize = 22.sp, color = c.text) }
+        OutlinedTextField(
+            value = text,
+            onValueChange = onText,
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            textStyle = androidx.compose.ui.text.TextStyle(
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+                color = c.text
+            ),
+            modifier = Modifier.width(76.dp)
+        )
+        FilledTonalIconButton(
+            onClick = onMore,
+            modifier = Modifier.size(48.dp).semantics {
+                contentDescription = more
+            }
+        ) { Text("+", fontSize = 22.sp, color = c.text) }
+    }
+}
+
+/** Minutes, hours or days. */
+@Composable
+private fun SpanUnits(unit: SpanUnit, onUnit: (SpanUnit) -> Unit) {
+    val c = DiaTheme.colors
+    Row(
+        Modifier.fillMaxWidth().background(c.background, RoundedCornerShape(12.dp)).padding(3.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        SpanUnit.entries.forEach { u ->
+            val on = u == unit
+            Text(
+                stringResource(u.label),
+                color = if (on) c.text else c.textMuted,
+                fontSize = 13.sp,
+                textAlign = TextAlign.Center,
+                fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal,
+                modifier = Modifier.weight(1f).background(if (on) c.surfaceRaised else Color.Transparent, RoundedCornerShape(9.dp))
+                    .selectable(selected = on, role = Role.Tab) { onUnit(u) }.heightIn(min = 40.dp).padding(vertical = 10.dp)
+            )
+        }
+    }
+}
+
+/** 30 min, 2 h, 1, 7 or 30 days in one tap. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun QuickSpans(count: Int, unit: SpanUnit, onPick: (Int, SpanUnit) -> Unit) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        listOf(30 to SpanUnit.Min, 2 to SpanUnit.Hour, 1 to SpanUnit.Day, 7 to SpanUnit.Day, 30 to SpanUnit.Day).forEach { (n, u) ->
+            val label = when (u) {
+                SpanUnit.Min -> stringResource(R.string.web_quick_min, n)
+                SpanUnit.Hour -> stringResource(R.string.web_quick_hour, n)
+                SpanUnit.Day -> pluralStringResource(R.plurals.web_quick_day, n, n)
+            }
+            FilterChip(selected = count == n && unit == u, onClick = { onPick(n, u) }, label = { Text(label) })
         }
     }
 }

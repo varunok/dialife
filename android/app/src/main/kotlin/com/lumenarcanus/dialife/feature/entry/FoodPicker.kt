@@ -38,6 +38,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.core.ui.theme.GlucoseHero
+import com.lumenarcanus.dialife.data.FoodCategory
 import com.lumenarcanus.dialife.data.FoodTable
 import com.lumenarcanus.dialife.data.TableFood
 import com.lumenarcanus.dialife.data.inLang
@@ -83,53 +84,11 @@ fun FoodPicker(tables: List<FoodTable>, lang: String, onPick: (TableFood, FoodTa
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                FilterChip(selected = cat == null, onClick = { cat = null }, label = { Text(stringResource(R.string.food_pick_all)) })
-                cats.forEach { k ->
-                    FilterChip(selected = cat == k.id, onClick = {
-                        cat = if (cat == k.id) {
-                            null
-                        } else {
-                            k.id
-                        }
-                    }, label = { Text(k.names.inLang(lang)) })
-                }
-            }
+            CategoryChips(cats, cat, lang) { cat = it }
             if (shown.isEmpty()) Text(stringResource(R.string.food_pick_empty), color = c.textMuted, fontSize = 13.sp)
             LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 items(shown, key = { (f, t) -> t.source + "/" + f.id }) { (f, t) ->
-                    val portion = f.portions.inLang(lang)
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 56.dp)
-                            .background(c.surfaceRaised, RoundedCornerShape(14.dp))
-                            .clickable { onPick(f, t) }
-                            .padding(horizontal = 14.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            Text(f.names.inLang(lang), color = c.text, fontSize = 15.sp)
-                            Text(
-                                if (f.carbs == 0 && portion.isBlank()) stringResource(R.string.food_table_free) else portion,
-                                color = c.textMuted,
-                                fontSize = 12.5.sp
-                            )
-                        }
-                        Text(
-                            "${f.carbs} " + stringResource(R.string.unit_carbs),
-                            style = GlucoseHero.copy(
-                                fontSize = 18.sp,
-                                lineHeight = 22.sp,
-                                color = if (f.carbs == 0) {
-                                    c.textMuted
-                                } else {
-                                    c.carbs
-                                }
-                            )
-                        )
-                    }
+                    TableFoodRow(f, lang) { onPick(f, t) }
                 }
             }
             // where the numbers come from, and that they are approximate
@@ -146,5 +105,54 @@ fun FoodPicker(tables: List<FoodTable>, lang: String, onPick: (TableFood, FoodTa
                 )
             }
         }
+    }
+}
+
+/** All, or one category; a second tap on it is all again. */
+@Composable
+private fun CategoryChips(cats: List<FoodCategory>, cat: String?, lang: String, onCat: (String?) -> Unit) {
+    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        FilterChip(selected = cat == null, onClick = { onCat(null) }, label = { Text(stringResource(R.string.food_pick_all)) })
+        cats.forEach { k ->
+            FilterChip(selected = cat == k.id, onClick = { onCat(if (cat == k.id) null else k.id) }, label = { Text(k.names.inLang(lang)) })
+        }
+    }
+}
+
+/** A table food: name, portion ("free" when it has no carbs), carbs. */
+@Composable
+private fun TableFoodRow(f: TableFood, lang: String, onPick: () -> Unit) {
+    val c = DiaTheme.colors
+    val portion = f.portions.inLang(lang)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .background(c.surfaceRaised, RoundedCornerShape(14.dp))
+            .clickable(onClick = onPick)
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(f.names.inLang(lang), color = c.text, fontSize = 15.sp)
+            Text(
+                if (f.carbs == 0 && portion.isBlank()) stringResource(R.string.food_table_free) else portion,
+                color = c.textMuted,
+                fontSize = 12.5.sp
+            )
+        }
+        Text(
+            "${f.carbs} " + stringResource(R.string.unit_carbs),
+            style = GlucoseHero.copy(
+                fontSize = 18.sp,
+                lineHeight = 22.sp,
+                color = if (f.carbs == 0) {
+                    c.textMuted
+                } else {
+                    c.carbs
+                }
+            )
+        )
     }
 }

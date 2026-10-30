@@ -99,22 +99,7 @@ fun ConnectScreen(
             Text(stringResource(R.string.connect_scan), fontSize = 17.sp, fontWeight = FontWeight.Bold)
         }
 
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .background(c.surface, RoundedCornerShape(20.dp))
-                .border(1.dp, c.line, RoundedCornerShape(20.dp))
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Text(stringResource(R.string.connect_cli_hint), color = c.textMuted, fontSize = 13.sp)
-            Text(
-                stringResource(R.string.connect_cli_command),
-                style = DataLabel.copy(fontSize = 14.sp),
-                color = c.text,
-                modifier = Modifier.fillMaxWidth().background(c.background, RoundedCornerShape(12.dp)).padding(12.dp)
-            )
-        }
+        CliHint()
 
         Status(state)
 
@@ -127,47 +112,85 @@ fun ConnectScreen(
         }
 
         AnimatedVisibility(manual) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                val fieldColors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = c.text,
-                    unfocusedTextColor = c.text,
-                    focusedBorderColor = c.inRange,
-                    unfocusedBorderColor = c.line,
-                    focusedLabelColor = c.inRange,
-                    unfocusedLabelColor = c.textMuted,
-                    cursorColor = c.inRange
-                )
-                OutlinedTextField(
-                    value = server,
-                    onValueChange = { server = it },
-                    label = { Text(stringResource(R.string.connect_server)) },
-                    singleLine = true,
-                    colors = fieldColors,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = token,
-                    onValueChange = { token = it },
-                    label = { Text(stringResource(R.string.connect_token)) },
-                    singleLine = true,
-                    colors = fieldColors,
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Button(
-                    onClick = { onManual(server, token) },
-                    enabled = !state.checking,
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = c.surfaceRaised, contentColor = c.text)
-                ) {
-                    Text(stringResource(R.string.connect_button), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                }
-            }
+            ManualForm(server, token, state.checking, onServer = {
+                server = it
+            }, onToken = { token = it }, onConnect = { onManual(server, token) })
         }
         Spacer(Modifier.height(8.dp))
+    }
+}
+
+/** For whoever set the server up: the command that prints this phone's code. */
+@Composable
+private fun CliHint() {
+    val c = DiaTheme.colors
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .background(c.surface, RoundedCornerShape(20.dp))
+            .border(1.dp, c.line, RoundedCornerShape(20.dp))
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Text(stringResource(R.string.connect_cli_hint), color = c.textMuted, fontSize = 13.sp)
+        Text(
+            stringResource(R.string.connect_cli_command),
+            style = DataLabel.copy(fontSize = 14.sp),
+            color = c.text,
+            modifier = Modifier.fillMaxWidth().background(c.background, RoundedCornerShape(12.dp)).padding(12.dp)
+        )
+    }
+}
+
+/** The server's address and the key typed in, for a phone with no camera to scan with. */
+@Composable
+private fun ManualForm(
+    server: String,
+    token: String,
+    checking: Boolean,
+    onServer: (String) -> Unit,
+    onToken: (String) -> Unit,
+    onConnect: () -> Unit
+) {
+    val c = DiaTheme.colors
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        val fieldColors = OutlinedTextFieldDefaults.colors(
+            focusedTextColor = c.text,
+            unfocusedTextColor = c.text,
+            focusedBorderColor = c.inRange,
+            unfocusedBorderColor = c.line,
+            focusedLabelColor = c.inRange,
+            unfocusedLabelColor = c.textMuted,
+            cursorColor = c.inRange
+        )
+        OutlinedTextField(
+            value = server,
+            onValueChange = onServer,
+            label = { Text(stringResource(R.string.connect_server)) },
+            singleLine = true,
+            colors = fieldColors,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = token,
+            onValueChange = onToken,
+            label = { Text(stringResource(R.string.connect_token)) },
+            singleLine = true,
+            colors = fieldColors,
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+            modifier = Modifier.fillMaxWidth()
+        )
+        Button(
+            onClick = onConnect,
+            enabled = !checking,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            shape = RoundedCornerShape(18.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = c.surfaceRaised, contentColor = c.text)
+        ) {
+            Text(stringResource(R.string.connect_button), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        }
     }
 }
 
