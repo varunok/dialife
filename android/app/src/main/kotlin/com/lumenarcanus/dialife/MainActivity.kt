@@ -54,7 +54,6 @@ import com.lumenarcanus.dialife.feature.data.DataScreen
 import com.lumenarcanus.dialife.feature.home.BackgroundSetup
 import com.lumenarcanus.dialife.feature.home.HomeScreen
 import com.lumenarcanus.dialife.feature.home.HomeViewModel
-import com.lumenarcanus.dialife.feature.settings.SettingsScreen
 import com.lumenarcanus.dialife.live.LiveService
 import kotlinx.coroutines.launch
 
@@ -163,19 +162,13 @@ class MainActivity : AppCompatActivity() {
                                         setup =
                                             backgroundSetup()
                                     }
-                                val live by liveRepository.live.collectAsStateWithLifecycle()
-                                SettingsScreen(
+                                com.lumenarcanus.dialife.feature.settings.SettingsRoute(
                                     creds = s.credentials,
-                                    state = live.state,
                                     setup = setup,
                                     onFixNotifications = { askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS) },
                                     onFixBattery = ::askBatteryExemption,
                                     onFixFullScreen = ::askFullScreen,
-                                    onTestSound = { on -> if (on) alarmController.ringer.start(-1) else alarmController.ringer.stop(-1) },
-                                    onDisconnect = {
-                                        screen = Screen.Home
-                                        vm.disconnect()
-                                    },
+                                    onDisconnected = { screen = Screen.Home },
                                     onOpenDose = { screen = Screen.DoseSettings },
                                     onBack = { screen = Screen.Home }
                                 )

@@ -4,6 +4,7 @@ import android.app.Application
 import com.lumenarcanus.dialife.core.data.DoseSettingsRepository
 import com.lumenarcanus.dialife.core.data.FoodRepository
 import com.lumenarcanus.dialife.core.data.PlannedDoseRepository
+import com.lumenarcanus.dialife.core.data.PreferencesRepository
 import com.lumenarcanus.dialife.core.data.QuestionRepository
 import com.lumenarcanus.dialife.core.data.SessionRepository
 import com.lumenarcanus.dialife.feature.alarms.AlarmController
@@ -15,6 +16,7 @@ class DiaLifeApp : Application() {
     /** One connection per process: the screen and the foreground service share it. */
     val live by lazy { LiveRepository(this) }
     val sessions by lazy { SessionRepository(this) }
+    val preferences by lazy { PreferencesRepository(this) }
     val alarms by lazy { AlarmController(this, live) }
     val questions by lazy { com.lumenarcanus.dialife.feature.questions.QuestionNotifier(this) }
     val plannedDoses by lazy { PlannedDoseRepository({ live.credentials }) }
@@ -36,6 +38,9 @@ val android.content.Context.liveRepository: LiveRepository
 
 val android.content.Context.sessionRepository: SessionRepository
     get() = (applicationContext as DiaLifeApp).sessions
+
+val android.content.Context.preferencesRepository: PreferencesRepository
+    get() = (applicationContext as DiaLifeApp).preferences
 
 val android.content.Context.plannedDoses: PlannedDoseRepository
     get() = (applicationContext as DiaLifeApp).plannedDoses

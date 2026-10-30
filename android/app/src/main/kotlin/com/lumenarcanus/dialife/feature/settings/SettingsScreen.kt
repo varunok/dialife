@@ -1,6 +1,5 @@
 package com.lumenarcanus.dialife.feature.settings
 
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -22,7 +21,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,7 +35,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.os.LocaleListCompat
 import com.lumenarcanus.dialife.BuildConfig
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
@@ -46,24 +43,19 @@ import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.core.ui.unitsOf
-import com.lumenarcanus.dialife.data.Credentials
-import com.lumenarcanus.dialife.data.Prefs
-import com.lumenarcanus.dialife.data.StateResponse
 import com.lumenarcanus.dialife.data.ThemeChoice
 import com.lumenarcanus.dialife.feature.alarms.AlarmText
 import com.lumenarcanus.dialife.feature.home.BackgroundSetup
-import kotlinx.coroutines.delay
 
 /** This phone's settings: how it looks, alarms (view only in v1), permissions, connection. */
 @Composable
 fun SettingsScreen(
-    creds: Credentials,
-    state: StateResponse?,
+    uiState: SettingsUiState,
     setup: BackgroundSetup,
+    onAction: (SettingsAction) -> Unit,
     onFixNotifications: () -> Unit,
     onFixBattery: () -> Unit,
     onFixFullScreen: () -> Unit,
-    onTestSound: (Boolean) -> Unit, // true: start, false: stop
     onDisconnect: () -> Unit,
     onBack: () -> Unit,
     onOpenDose: () -> Unit = {},
@@ -73,16 +65,10 @@ fun SettingsScreen(
     val c = DiaTheme.colors
     val ctx = LocalContext.current
     val locale = ctx.resources.configuration.locales[0]
+    val creds = uiState.creds
+    val state = uiState.state
+    val prefs = uiState.prefs
     var confirmDisconnect by remember { mutableStateOf(false) }
-    var testing by remember { mutableStateOf(false) }
-    LaunchedEffect(testing) {
-        if (testing) {
-            onTestSound(true)
-            delay(5_000)
-            onTestSound(false)
-            testing = false
-        }
-    }
     if (confirmDisconnect) {
         AlertDialog(
             onDismissRequest = { confirmDisconnect = false },
@@ -112,13 +98,7 @@ fun SettingsScreen(
 
         Section(stringResource(R.string.set_look)) {
             Label(stringResource(R.string.set_units))
-            val serverUnits = if (state?.displayUnits?.startsWith("mmol") == true ||
-                (state == null && creds.displayUnits.startsWith("mmol"))
-            ) {
-                Units.Mmol
-            } else {
-                Units.MgDl
-            }
+            val serverUnits = uiState.serverUnits
             Choice(
                 listOf(
                     null to
@@ -137,8 +117,8 @@ fun SettingsScreen(
                     Units.MgDl to stringResource(R.string.unit_mgdl),
                     Units.Mmol to stringResource(R.string.unit_mmol)
                 ),
-                Prefs.units
-            ) { Prefs.chooseUnits(it) }
+                prefs.units
+            ) { onAction(SettingsAction.ChooseUnits(it)) }
             Label(stringResource(R.string.set_theme))
             Choice(
                 listOf(
@@ -146,39 +126,41 @@ fun SettingsScreen(
                     ThemeChoice.Light to stringResource(R.string.set_theme_light),
                     ThemeChoice.Dark to stringResource(R.string.set_theme_dark)
                 ),
-                Prefs.theme
-            ) { Prefs.chooseTheme(it) }
+                prefs.theme
+            ) { onAction(SettingsAction.ChooseTheme(it)) }
             Label(stringResource(R.string.set_language))
-            val current = AppCompatDelegate.getApplicationLocales().toLanguageTags().substringBefore('-').ifBlank { "" }
             Choice(
                 listOf("" to stringResource(R.string.set_system), "uk" to "Українська", "en" to "English", "es" to "Español"),
-                current
-            ) { tag -> AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag)) }
+                prefs.language
+            ) { tag -> onAction(SettingsAction.ChooseLanguage(tag)) }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(stringResource(R.string.set_meter_line), color = c.text, fontSize = 14.sp)
                     Text(stringResource(R.string.set_meter_line_sub), color = c.textMuted, fontSize = 12.sp)
                 }
-                androidx.compose.material3.Switch(checked = Prefs.meterLine, onCheckedChange = { Prefs.chooseMeterLine(it) })
+                androidx.compose.material3.Switch(checked = prefs.meterLine, onCheckedChange = {
+                    onAction(SettingsAction.ChooseMeterLine(it))
+                })
             }
         }
 
         Section(stringResource(R.string.set_insulins)) {
-            InsulinPicker(com.lumenarcanus.dialife.data.InsulinType.Rapid)
-            InsulinPicker(com.lumenarcanus.dialife.data.InsulinType.Basal)
+            InsulinPicker(com.lumenarcanus.dialife.data.InsulinType.Rapid, prefs.nameOf(com.lumenarcanus.dialife.data.InsulinType.Rapid)) {
+                onAction(SettingsAction.ChooseInsulin(com.lumenarcanus.dialife.data.InsulinType.Rapid, it))
+            }
+            InsulinPicker(com.lumenarcanus.dialife.data.InsulinType.Basal, prefs.nameOf(com.lumenarcanus.dialife.data.InsulinType.Basal)) {
+                onAction(SettingsAction.ChooseInsulin(com.lumenarcanus.dialife.data.InsulinType.Basal, it))
+            }
             Label(stringResource(R.string.set_basal_times))
             var adding by remember { mutableStateOf(false) }
             androidx.compose.foundation.layout.FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Prefs.basalTimes.forEach { m ->
+                prefs.basalTimes.forEach { m ->
                     androidx.compose.material3.InputChip(
                         selected = false,
-                        onClick = {
-                            Prefs.chooseBasalTimes(Prefs.basalTimes - m)
-                            com.lumenarcanus.dialife.live.BasalReminder.schedule(ctx)
-                        },
+                        onClick = { onAction(SettingsAction.RemoveBasalTime(m)) },
                         label = { Text(String.format(java.util.Locale.ROOT, "%02d:%02d", m / 60, m % 60)) },
                         trailingIcon = { Text("✕", color = c.textMuted) }
                     )
@@ -188,19 +170,15 @@ fun SettingsScreen(
             if (adding) {
                 BasalTimeDialog(onPick = { m ->
                     adding = false
-                    Prefs.chooseBasalTimes(Prefs.basalTimes + m)
-                    com.lumenarcanus.dialife.live.BasalReminder.schedule(ctx)
+                    onAction(SettingsAction.AddBasalTime(m))
                 }, onDismiss = { adding = false })
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.set_basal_remind), color = c.text, fontSize = 14.sp, modifier = Modifier.weight(1f))
                 androidx.compose.material3.Switch(
-                    checked = Prefs.basalReminder,
-                    enabled = Prefs.basalTimes.isNotEmpty(),
-                    onCheckedChange = {
-                        Prefs.chooseBasalReminder(it)
-                        com.lumenarcanus.dialife.live.BasalReminder.schedule(ctx)
-                    }
+                    checked = prefs.basalReminder,
+                    enabled = prefs.basalTimes.isNotEmpty(),
+                    onCheckedChange = { onAction(SettingsAction.ChooseBasalReminder(it)) }
                 )
             }
         }
@@ -233,8 +211,8 @@ fun SettingsScreen(
                 Line(stringResource(R.string.set_th_urgent_high), "> " + g(th.urgentHigh))
                 Text(stringResource(R.string.set_th_hint), color = c.textFaint, fontSize = 13.sp)
             }
-            OutlinedButton(onClick = { testing = !testing }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-                Text(stringResource(if (testing) R.string.set_test_stop else R.string.set_test_sound), color = c.text)
+            OutlinedButton(onClick = { onAction(SettingsAction.TestSound) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                Text(stringResource(if (uiState.testing) R.string.set_test_stop else R.string.set_test_sound), color = c.text)
             }
         }
 
@@ -277,7 +255,7 @@ fun SettingsScreen(
 
 /** "Rapid: NovoRapid ▾" — the family's insulin from the list, or any name typed in. */
 @Composable
-private fun InsulinPicker(type: com.lumenarcanus.dialife.data.InsulinType) {
+private fun InsulinPicker(type: com.lumenarcanus.dialife.data.InsulinType, chosen: String?, onChoose: (String) -> Unit) {
     val c = DiaTheme.colors
     var open by remember { mutableStateOf(false) }
     var typing by remember { mutableStateOf(false) }
@@ -291,12 +269,12 @@ private fun InsulinPicker(type: com.lumenarcanus.dialife.data.InsulinType) {
         androidx.compose.foundation.layout.Box {
             TextButton(onClick = {
                 open = true
-            }) { Text((Prefs.nameOf(type) ?: stringResource(R.string.set_insulin_choose)) + "  ▾", color = c.text) }
+            }) { Text((chosen ?: stringResource(R.string.set_insulin_choose)) + "  ▾", color = c.text) }
             androidx.compose.material3.DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
                 com.lumenarcanus.dialife.data.Insulins.of(type).forEach { name ->
                     androidx.compose.material3.DropdownMenuItem(text = { Text(name) }, onClick = {
                         open = false
-                        Prefs.chooseInsulin(type, name)
+                        onChoose(name)
                     })
                 }
                 androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.set_insulin_other)) }, onClick = {
@@ -318,7 +296,7 @@ private fun InsulinPicker(type: com.lumenarcanus.dialife.data.InsulinType) {
             confirmButton = {
                 TextButton(enabled = name.isNotBlank(), onClick = {
                     typing = false
-                    Prefs.chooseInsulin(type, name.trim())
+                    onChoose(name.trim())
                 }) { Text(stringResource(R.string.tr_ok)) }
             },
             dismissButton = { TextButton(onClick = { typing = false }) { Text(stringResource(R.string.tr_cancel)) } }
