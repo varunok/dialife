@@ -69,7 +69,6 @@ internal fun DishRow(
         },
         positionalThreshold = { it * 0.35f }
     )
-    val hinted = row.source == "mine" || row.source == "table" || row.source == "estimate"
     Column(Modifier.fillMaxWidth().background(if (open) c.surfaceRaised else Color.Transparent)) {
         SwipeToDismissBox(
             state = swipe,
@@ -80,112 +79,130 @@ internal fun DishRow(
                 }
             }
         ) {
-            Row(
-                Modifier.fillMaxWidth().background(
-                    if (open) c.surfaceRaised else c.surface
-                ).clickable(onClick = onToggle).heightIn(min = 56.dp).padding(horizontal = 14.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text(row.name.ifBlank { "—" }, color = c.text, fontSize = 15.sp, fontWeight = FontWeight.Medium)
-                    Text(
-                        (row.portion.ifBlank { stringResource(R.string.meal_no_portion) }) +
-                            if (row.grams == null) {
-                                ""
-                            } else {
-                                " · " + stringResource(if (hinted) R.string.meal_from_hint else R.string.meal_by_hand)
-                            },
-                        color = c.textMuted,
-                        fontSize = 12.sp
-                    )
-                    if ((row.grams ?: 0) > 150) Text(stringResource(R.string.meal_dish_check), color = c.high, fontSize = 12.sp)
-                }
-                val empty = row.grams == null
-                Text(
-                    if (empty) {
-                        "— " + stringResource(R.string.unit_carbs)
-                    } else {
-                        (if (hinted) "≈ " else "") + row.carbs + " " +
-                            stringResource(R.string.unit_carbs)
-                    },
-                    style = GlucoseHero.copy(fontSize = 16.sp, lineHeight = 20.sp, color = if (empty) c.high else c.carbs),
-                    modifier = Modifier
-                        .then(
-                            if (empty) {
-                                Modifier.border(
-                                    BorderStroke(1.dp, c.high),
-                                    RoundedCornerShape(10.dp)
-                                )
-                            } else {
-                                Modifier.background(c.carbsContainer, RoundedCornerShape(10.dp))
-                            }
-                        )
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                )
-            }
+            DishSummary(row, open, onToggle)
         }
-        splitParts(row.name)?.let { parts ->
-            Column(
-                Modifier.fillMaxWidth().padding(
-                    start = 14.dp,
-                    end = 14.dp,
-                    bottom = 10.dp
-                ).background(c.highContainer, RoundedCornerShape(12.dp)).padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(stringResource(R.string.meal_split_hint), color = c.text, fontSize = 12.5.sp)
-                FilledTonalButton(onClick = { onSplit(parts) }, shape = RoundedCornerShape(10.dp)) {
-                    Text(stringResource(R.string.meal_split, parts.joinToString(" + ")), fontSize = 13.sp)
-                }
-            }
-        }
-        if (open) {
-            Column(Modifier.padding(start = 14.dp, end = 14.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Bottom) {
-                    OutlinedTextField(
-                        value = row.portion,
-                        onValueChange = { v -> onChange { it.copy(portion = v.take(40)) } },
-                        label = { Text(stringResource(R.string.food_portion)) },
-                        placeholder = { Text(stringResource(R.string.food_portion_hint), color = c.textFaint) },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f)
-                    )
-                    OutlinedTextField(
-                        value = row.carbs,
-                        onValueChange = { v -> onChange { it.copy(carbs = v.filter(Char::isDigit).take(3), source = "manual") } },
-                        label = { Text(stringResource(R.string.food_carbs)) },
-                        singleLine = true,
-                        textStyle = GlucoseHero.copy(fontSize = 20.sp, lineHeight = 24.sp, color = c.carbs),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.width(116.dp)
-                    )
-                }
-                FoodSuggestions(row, lang) { f ->
-                    onChange(f)
-                    // a picked suggestion finishes the line
-                    if (f(row).source != "manual") onDone()
-                }
-                Button(
-                    onClick = onDone,
-                    enabled = row.grams != null,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = c.carbs,
-                        contentColor = c.background,
-                        disabledContainerColor = Color.Transparent,
-                        disabledContentColor = c.textMuted
-                    ),
-                    border = if (row.grams == null) BorderStroke(1.dp, c.textFaint) else null
-                ) {
-                    Text(
-                        row.grams?.let { stringResource(R.string.meal_done, it) } ?: stringResource(R.string.meal_need_carbs),
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-        }
+        splitParts(row.name)?.let { parts -> SplitOffer(parts) { onSplit(parts) } }
+        if (open) DishEditor(row, lang, onChange, onDone)
         Box(Modifier.fillMaxWidth().height(1.dp).background(c.line))
+    }
+}
+
+/** The dish as a line: name, portion and where the carbs came from, the carbs ("—" in red while there are none). */
+@Composable
+private fun DishSummary(row: FoodRow, open: Boolean, onToggle: () -> Unit) {
+    val c = DiaTheme.colors
+    val hinted = row.source == "mine" || row.source == "table" || row.source == "estimate"
+    Row(
+        Modifier.fillMaxWidth().background(
+            if (open) c.surfaceRaised else c.surface
+        ).clickable(onClick = onToggle).heightIn(min = 56.dp).padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(row.name.ifBlank { "—" }, color = c.text, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+            Text(
+                (row.portion.ifBlank { stringResource(R.string.meal_no_portion) }) +
+                    if (row.grams == null) {
+                        ""
+                    } else {
+                        " · " + stringResource(if (hinted) R.string.meal_from_hint else R.string.meal_by_hand)
+                    },
+                color = c.textMuted,
+                fontSize = 12.sp
+            )
+            if ((row.grams ?: 0) > 150) Text(stringResource(R.string.meal_dish_check), color = c.high, fontSize = 12.sp)
+        }
+        val empty = row.grams == null
+        Text(
+            if (empty) {
+                "— " + stringResource(R.string.unit_carbs)
+            } else {
+                (if (hinted) "≈ " else "") + row.carbs + " " +
+                    stringResource(R.string.unit_carbs)
+            },
+            style = GlucoseHero.copy(fontSize = 16.sp, lineHeight = 20.sp, color = if (empty) c.high else c.carbs),
+            modifier = Modifier
+                .then(
+                    if (empty) {
+                        Modifier.border(
+                            BorderStroke(1.dp, c.high),
+                            RoundedCornerShape(10.dp)
+                        )
+                    } else {
+                        Modifier.background(c.carbsContainer, RoundedCornerShape(10.dp))
+                    }
+                )
+                .padding(horizontal = 10.dp, vertical = 4.dp)
+        )
+    }
+}
+
+/** "Борщ і хліб" typed as one: split it into dishes. */
+@Composable
+private fun SplitOffer(parts: List<String>, onSplit: () -> Unit) {
+    val c = DiaTheme.colors
+    Column(
+        Modifier.fillMaxWidth().padding(
+            start = 14.dp,
+            end = 14.dp,
+            bottom = 10.dp
+        ).background(c.highContainer, RoundedCornerShape(12.dp)).padding(10.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text(stringResource(R.string.meal_split_hint), color = c.text, fontSize = 12.5.sp)
+        FilledTonalButton(onClick = onSplit, shape = RoundedCornerShape(10.dp)) {
+            Text(stringResource(R.string.meal_split, parts.joinToString(" + ")), fontSize = 13.sp)
+        }
+    }
+}
+
+/** The open dish: its portion and carbs, the suggestions, and "done". */
+@Composable
+private fun DishEditor(row: FoodRow, lang: String, onChange: ((FoodRow) -> FoodRow) -> Unit, onDone: () -> Unit) {
+    val c = DiaTheme.colors
+    Column(Modifier.padding(start = 14.dp, end = 14.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Bottom) {
+            OutlinedTextField(
+                value = row.portion,
+                onValueChange = { v -> onChange { it.copy(portion = v.take(40)) } },
+                label = { Text(stringResource(R.string.food_portion)) },
+                placeholder = { Text(stringResource(R.string.food_portion_hint), color = c.textFaint) },
+                singleLine = true,
+                modifier = Modifier.weight(1f)
+            )
+            OutlinedTextField(
+                value = row.carbs,
+                onValueChange = { v -> onChange { it.copy(carbs = v.filter(Char::isDigit).take(3), source = "manual") } },
+                label = { Text(stringResource(R.string.food_carbs)) },
+                singleLine = true,
+                textStyle = GlucoseHero.copy(fontSize = 20.sp, lineHeight = 24.sp, color = c.carbs),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.width(116.dp)
+            )
+        }
+        FoodSuggestions(row, lang) { f ->
+            onChange(f)
+            // a picked suggestion finishes the line
+            if (f(row).source != "manual") onDone()
+        }
+        Button(
+            onClick = onDone,
+            enabled = row.grams != null,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = c.carbs,
+                contentColor = c.background,
+                disabledContainerColor = Color.Transparent,
+                disabledContentColor = c.textMuted
+            ),
+            border = if (row.grams == null) BorderStroke(1.dp, c.textFaint) else null
+        ) {
+            Text(
+                row.grams?.let { stringResource(R.string.meal_done, it) } ?: stringResource(R.string.meal_need_carbs),
+                fontWeight = FontWeight.SemiBold
+            )
+        }
     }
 }
