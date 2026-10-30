@@ -411,98 +411,129 @@ func (h *Handlers) History(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx := r.Context()
-	resp := historyResponse{From: from, To: to, SGV: series{T: []int64{}, V: []int{}}, MBG: series{T: []int64{}, V: []int{}}, Treatments: []historyTreatment{}}
-
-	// A view up to now also gets entries a little ahead of it (another phone's
-	// clock, xDrip+): the apps show them once their time comes, with no refetch.
-	upTo := to
-	if now := h.Now(); to > now.Add(-entryAhead).UnixMilli() {
-		upTo = max(to, now.Add(entryAhead).UnixMilli())
-	}
-	ts, err := h.Store.ListTreatments(ctx, store.TreatmentQuery{Gte: &from, Lte: &upTo, Count: 1000})
+	resp := historyResponse{From: from, To: to, SGV: series{T: []int64{}, V: []int{}}, MBG: series{T: []int64{}, V: []int{}}}
+	treatments, checks, err := h.historyTreatments(ctx, from, to)
 	if err != nil {
 		fail(w, "history treatments", err)
 		return
 	}
-	var checks []series1                // glucometer readings seen so far, for dropping repeats
-	for i := len(ts) - 1; i >= 0; i-- { // store returns newest first
-		t := ts[i]
-		typ, name := insulin.Kind(t.Raw)
-		ht := historyTreatment{
-			ID: t.ID, T: t.CreatedAt, EventType: t.EventType, Insulin: t.Insulin, Carbs: t.Carbs, Notes: t.Notes, EnteredBy: t.EnteredBy,
-			InsulinType: typ, InsulinName: name,
-		}
-		if t.EventType == "Exercise" {
-			ht.Duration, ht.Intensity = exercise(t.Raw)
-		}
-		if t.Carbs != nil {
-			ht.FoodItems = foodItems(t.Raw)
-		}
-		if t.Insulin != nil {
-			ht.MealID, ht.InsulinRole = insulinFor(t.Raw)
-		}
-		if ht.Glucose = meter.CheckOf(t.Raw); ht.Glucose != nil {
-			checks = append(checks, series1{t.CreatedAt, *ht.Glucose})
-		}
-		resp.Treatments = append(resp.Treatments, ht)
-	}
-
+	resp.Treatments = treatments
 	step, ok := historyStep(r, to-from)
 	if !ok {
 		httpx.Error(w, http.StatusBadRequest)
 		return
 	}
-	types := map[string]*series{"sgv": &resp.SGV, "mbg": &resp.MBG}
 	if step > 0 {
 		// a long span: intervals with their mean and range, not a point per reading
 		resp.Step = int(step / time.Minute)
-		_, offSec := time.UnixMilli(from).In(h.loc()).Zone()
-		bs, err := h.Store.AggregateSGV(ctx, from, to, step, time.Duration(offSec)*time.Second, glucose.MaxErrorCode)
-		if err != nil {
+		if err := h.aggregateSGV(ctx, &resp.SGV, from, to, step); err != nil {
 			fail(w, "history aggregate", err)
 			return
 		}
-		for _, b := range bs {
-			resp.SGV.T = append(resp.SGV.T, b.Start)
-			resp.SGV.V = append(resp.SGV.V, b.Avg)
-			resp.SGV.Lo = append(resp.SGV.Lo, b.Min)
-			resp.SGV.Hi = append(resp.SGV.Hi, b.Max)
-		}
-		delete(types, "sgv")
+	} else if err := h.entrySeries(ctx, "sgv", &resp.SGV, from, to, nil); err != nil {
+		fail(w, "history entries", err)
+		return
 	}
-	for typ, dst := range types {
-		es, err := h.Store.QueryEntries(ctx, store.EntryQuery{Type: typ, Gte: &from, Lte: &to, Count: maxHistoryRows, Asc: true})
-		if err != nil {
-			fail(w, "history entries", err)
-			return
-		}
-		for _, e := range es {
-			v := e.SGV
-			if typ == "mbg" {
-				v = e.MBG
-			}
-			if v == nil || (typ == "sgv" && *v <= glucose.MaxErrorCode) {
-				continue
-			}
-			if typ == "mbg" {
-				p := series1{e.Date, *v}
-				if repeats(checks, p) {
-					continue
-				}
-				checks = append(checks, p)
-			}
-			dst.T = append(dst.T, e.Date)
-			dst.V = append(dst.V, *v)
-			if typ == "mbg" {
-				dst.D = append(dst.D, meter.Source(e.Device))
-			}
-		}
+	if err := h.entrySeries(ctx, "mbg", &resp.MBG, from, to, &checks); err != nil {
+		fail(w, "history entries", err)
+		return
 	}
 	if err := h.historyMarks(ctx, &resp, from, to); err != nil {
 		fail(w, "history marks", err)
 		return
 	}
 	httpx.WriteJSON(w, http.StatusOK, resp)
+}
+
+// historyTreatments: the entries in [from, to], oldest first, and the
+// glucometer checks among them (a reading uploaded again is not shown twice).
+// A view up to now also gets entries a little ahead of it (another phone's
+// clock, xDrip+): the apps show them once their time comes, with no refetch.
+func (h *Handlers) historyTreatments(ctx context.Context, from, to int64) ([]historyTreatment, []series1, error) {
+	upTo := to
+	if now := h.Now(); to > now.Add(-entryAhead).UnixMilli() {
+		upTo = max(to, now.Add(entryAhead).UnixMilli())
+	}
+	ts, err := h.Store.ListTreatments(ctx, store.TreatmentQuery{Gte: &from, Lte: &upTo, Count: 1000})
+	if err != nil {
+		return nil, nil, err
+	}
+	out := []historyTreatment{}
+	var checks []series1
+	for i := len(ts) - 1; i >= 0; i-- { // store returns newest first
+		ht := historyOf(ts[i])
+		if ht.Glucose != nil {
+			checks = append(checks, series1{ht.T, *ht.Glucose})
+		}
+		out = append(out, ht)
+	}
+	return out, checks, nil
+}
+
+// historyOf: an entry as the apps show it, with what its raw document adds by kind.
+func historyOf(t store.Treatment) historyTreatment {
+	typ, name := insulin.Kind(t.Raw)
+	ht := historyTreatment{
+		ID: t.ID, T: t.CreatedAt, EventType: t.EventType, Insulin: t.Insulin, Carbs: t.Carbs, Notes: t.Notes, EnteredBy: t.EnteredBy,
+		InsulinType: typ, InsulinName: name,
+	}
+	if t.EventType == "Exercise" {
+		ht.Duration, ht.Intensity = exercise(t.Raw)
+	}
+	if t.Carbs != nil {
+		ht.FoodItems = foodItems(t.Raw)
+	}
+	if t.Insulin != nil {
+		ht.MealID, ht.InsulinRole = insulinFor(t.Raw)
+	}
+	ht.Glucose = meter.CheckOf(t.Raw)
+	return ht
+}
+
+// aggregateSGV: the readings in intervals of step on the local clock, each with its mean and range.
+func (h *Handlers) aggregateSGV(ctx context.Context, dst *series, from, to int64, step time.Duration) error {
+	_, offSec := time.UnixMilli(from).In(h.loc()).Zone()
+	bs, err := h.Store.AggregateSGV(ctx, from, to, step, time.Duration(offSec)*time.Second, glucose.MaxErrorCode)
+	if err != nil {
+		return err
+	}
+	for _, b := range bs {
+		dst.T = append(dst.T, b.Start)
+		dst.V = append(dst.V, b.Avg)
+		dst.Lo = append(dst.Lo, b.Min)
+		dst.Hi = append(dst.Hi, b.Max)
+	}
+	return nil
+}
+
+// entrySeries: every sensor reading ("sgv", error codes left out) or
+// glucometer reading ("mbg", with its source; one already in checks is a
+// repeat and left out) in [from, to].
+func (h *Handlers) entrySeries(ctx context.Context, typ string, dst *series, from, to int64, checks *[]series1) error {
+	es, err := h.Store.QueryEntries(ctx, store.EntryQuery{Type: typ, Gte: &from, Lte: &to, Count: maxHistoryRows, Asc: true})
+	if err != nil {
+		return err
+	}
+	for _, e := range es {
+		v := e.SGV
+		if typ == "mbg" {
+			v = e.MBG
+		}
+		if v == nil || (typ == "sgv" && *v <= glucose.MaxErrorCode) {
+			continue
+		}
+		if typ == "mbg" {
+			p := series1{e.Date, *v}
+			if repeats(*checks, p) {
+				continue
+			}
+			*checks = append(*checks, p)
+			dst.D = append(dst.D, meter.Source(e.Device))
+		}
+		dst.T = append(dst.T, e.Date)
+		dst.V = append(dst.V, *v)
+	}
+	return nil
 }
 
 type historyAlarm struct {
