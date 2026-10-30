@@ -135,7 +135,7 @@ class AlarmActivity : AppCompatActivity() {
 }
 
 @Composable
-private fun AlarmScreen(
+internal fun AlarmScreen(
     alarm: AlarmView,
     help: Boolean,
     state: StateResponse?,
