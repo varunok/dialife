@@ -48,8 +48,6 @@ import androidx.compose.ui.unit.sp
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
-import com.lumenarcanus.dialife.ConnectFailure
-import com.lumenarcanus.dialife.ConnectUiState
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.theme.DataLabel
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme

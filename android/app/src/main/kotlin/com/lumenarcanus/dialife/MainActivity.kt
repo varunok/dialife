@@ -38,6 +38,8 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.theme.DiaLifeTheme
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
@@ -46,7 +48,8 @@ import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.data.DiaLifeApi
 import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.feature.alarms.AlarmLogScreen
-import com.lumenarcanus.dialife.feature.connect.ConnectScreen
+import com.lumenarcanus.dialife.feature.connect.ConnectRoute
+import com.lumenarcanus.dialife.feature.connect.ConnectViewModel
 import com.lumenarcanus.dialife.feature.data.DataScreen
 import com.lumenarcanus.dialife.feature.home.BackgroundSetup
 import com.lumenarcanus.dialife.feature.home.HomeScreen
@@ -59,7 +62,8 @@ private enum class Screen { Home, Stats, Log, Settings, Handling, Data, WebLogin
 
 // AppCompatActivity (not plain ComponentActivity) so the in-app language works on Android 12 too.
 class MainActivity : AppCompatActivity() {
-    private val vm: AppViewModel by viewModels()
+    private val vm: AppViewModel by viewModels { viewModelFactory { initializer { AppViewModel(sessionRepository) } } }
+    private val connectVm: ConnectViewModel by viewModels { viewModelFactory { initializer { ConnectViewModel(sessionRepository) } } }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -76,7 +80,6 @@ class MainActivity : AppCompatActivity() {
             }
             DiaLifeTheme(dark = dark) {
                 val session by vm.session.collectAsStateWithLifecycle()
-                val connect by vm.connect.collectAsStateWithLifecycle()
                 val pending by vm.pending.collectAsStateWithLifecycle()
                 pending?.let { p ->
                     AlertDialog(
@@ -91,18 +94,17 @@ class MainActivity : AppCompatActivity() {
                                 }
                             )
                         },
-                        confirmButton = { TextButton(onClick = vm::confirmReplace) { Text(stringResource(R.string.replace_confirm)) } },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                vm.confirmReplace()?.let(connectVm::onLink)
+                            }) { Text(stringResource(R.string.replace_confirm)) }
+                        },
                         dismissButton = { TextButton(onClick = vm::cancelReplace) { Text(stringResource(R.string.replace_keep)) } }
                     )
                 }
                 when (val s = session) {
                     Session.Loading -> Box(Modifier.fillMaxSize().background(DiaTheme.colors.background))
-                    Session.Disconnected -> ConnectScreen(
-                        state = connect,
-                        onScanned = vm::onLink,
-                        onScannerFailed = vm::onScannerFailed,
-                        onManual = vm::onManual
-                    )
+                    Session.Disconnected -> ConnectRoute(connectVm)
                     is Session.Connected -> {
                         var screen by rememberSaveable { mutableStateOf(Screen.Home) }
                         var handling by rememberSaveable { mutableStateOf(0L) }
@@ -330,6 +332,6 @@ class MainActivity : AppCompatActivity() {
     /** dialife://connect?... from the phone camera or another app. */
     private fun handleLink(intent: Intent?) {
         val data = intent?.data ?: return
-        if (data.scheme == "dialife") vm.onLink(data.toString())
+        if (data.scheme == "dialife" && !vm.holdLink(data.toString())) connectVm.onLink(data.toString())
     }
 }
