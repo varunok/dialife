@@ -40,6 +40,8 @@ import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.core.ui.theme.GlucoseHero
 import com.lumenarcanus.dialife.data.DoseCalc
+import com.lumenarcanus.dialife.data.DoseSettings
+import com.lumenarcanus.dialife.data.PlannedDose
 
 /**
  * A dose worked out for a meal and not given yet: calm at first, bright after
@@ -61,8 +63,6 @@ fun PlannedCard(ui: PlannedCardUiState, units: Units, onAction: (PlannedAction) 
     val mins = ui.minutes
     val loud = ui.loud
     var editing by remember { mutableStateOf(false) }
-    var newDose by remember { mutableStateOf(p.dose) }
-    var okEdit by remember { mutableStateOf(false) }
     var injecting by remember { mutableStateOf(false) }
     var skipping by remember { mutableStateOf(false) }
     var step by remember { mutableStateOf("ask") } // the question's chain: ask → recorded → missing
@@ -75,160 +75,20 @@ fun PlannedCard(ui: PlannedCardUiState, units: Units, onAction: (PlannedAction) 
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // the title has the whole width (it is long in some languages), whose meal and who under it
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(
-                if (loud) stringResource(R.string.planned_unconfirmed, mins) else stringResource(R.string.planned_title),
-                color = if (loud) c.high else c.insulin,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                stringResource(R.string.planned_meal_at, formatClock(ctx, mealAt)) + if (p.by.isNotBlank()) " · " + p.by else "",
-                color = c.textMuted,
-                fontSize = 12.sp
-            )
-        }
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(f(p.dose), style = GlucoseHero.copy(fontSize = 40.sp, lineHeight = 44.sp, color = c.insulin))
-            Text(
-                " $u · " + stringResource(R.string.planned_not_given),
-                color = c.textMuted,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(bottom = 6.dp)
-            )
-        }
-        Text(
-            "${p.carbs} " + stringResource(R.string.unit_carbs) + " → " +
-                String.format(locale, "%.2f", p.food).trimEnd('0').trimEnd(',', '.') +
-                " $u" +
-                (if (p.corr > 0) " + " + stringResource(R.string.planned_corr, f(p.corr)) + " $u" else "") + " → " + f(p.dose) + " $u",
-            color = c.textMuted,
-            fontSize = 12.5.sp
-        )
-        // the correction was for the sugar then; before injecting, a fresh reading
-        p.meterAt?.let { at ->
-            val age = ((now - at) / 60_000L).toInt()
-            if (p.corr > 0 && age > dose.freshMin) {
-                AlertCard(
-                    DoseCalc.Alert.RecentRapid(0.0, 0),
-                    units,
-                    locale,
-                    title = stringResource(R.string.planned_meter_old, age),
-                    text = stringResource(R.string.planned_meter_old_text, f(p.corr))
-                )
-            }
-        }
-
+        PlannedSummary(ui, units)
         if (editing) {
-            Stepper(newDose, dose.step, u) {
-                newDose = it
-                okEdit = false
-            }
-            val lv = DoseCalc.level(newDose, dose.maxRapid, null)
-            LimitAlert(lv, newDose, dose.maxRapid, units, locale)
-            if (lv == DoseCalc.Level.High) Confirm(okEdit, stringResource(R.string.meal_ok_big, f(newDose))) { okEdit = it }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = {
-                    editing = false
-                    newDose = p.dose
-                }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.tr_cancel)) }
-                Button(
-                    onClick = {
-                        editing = false
-                        onAction(PlannedAction.Change(p, newDose))
-                    },
-                    enabled = newDose > 0 && lv != DoseCalc.Level.Absurd && (lv != DoseCalc.Level.High || okEdit),
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = c.insulin, contentColor = c.background)
-                ) { Text(stringResource(R.string.planned_change_save)) }
-            }
+            ChangeDose(p, dose, units, onCancel = { editing = false }, onSave = { d ->
+                editing = false
+                onAction(PlannedAction.Change(p, d))
+            })
         } else {
-            val pad = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp)
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Button(
-                    onClick = { injecting = true },
-                    modifier = Modifier.weight(1f).heightIn(min = 48.dp),
-                    contentPadding = pad,
-                    colors = ButtonDefaults.buttonColors(containerColor = c.insulin, contentColor = c.background)
-                ) {
-                    Text(stringResource(R.string.planned_given), fontWeight = FontWeight.SemiBold, maxLines = 1)
-                }
-                OutlinedButton(onClick = {
-                    editing = true
-                    newDose = p.dose
-                }, modifier = Modifier.weight(1f).heightIn(min = 48.dp), contentPadding = pad) {
-                    Text(stringResource(R.string.planned_change), color = c.text, maxLines = 1)
-                }
-                OutlinedButton(onClick = {
-                    skipping = true
-                }, modifier = Modifier.weight(1f).heightIn(min = 48.dp), contentPadding = pad) {
-                    Text(stringResource(R.string.planned_skip), color = c.text, maxLines = 1)
-                }
-            }
+            PlannedButtons(onGiven = { injecting = true }, onChange = { editing = true }, onSkip = { skipping = true })
         }
-
         if (ui.question != null) {
-            Column(
-                Modifier.fillMaxWidth().background(
-                    c.surface,
-                    RoundedCornerShape(14.dp)
-                ).border(1.5.dp, c.high, RoundedCornerShape(14.dp)).padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                when (step) {
-                    "ask" -> {
-                        Text(
-                            stringResource(R.string.q_planned_title, formatClock(ctx, mealAt)),
-                            color = c.text,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = {
-                                step = "recorded"
-                            }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.planned_yes)) }
-                            OutlinedButton(onClick = {
-                                skipping = true
-                            }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.planned_no), color = c.text) }
-                        }
-                    }
-                    "recorded" -> {
-                        Text(
-                            stringResource(R.string.planned_recorded_q),
-                            color = c.text,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(stringResource(R.string.planned_recorded_hint), color = c.textMuted, fontSize = 13.sp)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = {
-                                val found = ui.recorded
-                                if (found != null) onAction(PlannedAction.Given(p, found, isNew = false)) else step = "missing"
-                            }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.planned_recorded_yes)) }
-                            OutlinedButton(onClick = {
-                                injecting = true
-                            }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.planned_recorded_no), color = c.text) }
-                        }
-                    }
-                    else -> {
-                        AlertCard(
-                            DoseCalc.Alert.NoMeter(0),
-                            units,
-                            locale,
-                            title = stringResource(R.string.planned_missing),
-                            text = stringResource(R.string.planned_missing_text)
-                        )
-                        Button(
-                            onClick = { injecting = true },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = c.insulin, contentColor = c.background)
-                        ) {
-                            Text(stringResource(R.string.planned_record))
-                        }
-                    }
-                }
-            }
+            DidYouInject(ui, units, step, onStep = { step = it }, onAction = onAction, onSkip = { skipping = true }, onRecord = {
+                injecting =
+                    true
+            })
         }
     }
 
@@ -251,5 +111,190 @@ fun PlannedCard(ui: PlannedCardUiState, units: Units, onAction: (PlannedAction) 
             injecting = false
             onAction(PlannedAction.Given(p, tr, isNew))
         }, onBack = { injecting = false })
+    }
+}
+
+/** Whose meal and who planned it, the dose not given yet, how it was worked out, and a correction made on an old reading. */
+@Composable
+private fun PlannedSummary(ui: PlannedCardUiState, units: Units) {
+    val p = ui.dose
+    val dose = ui.settings
+    val now = ui.now
+    val mealAt = ui.mealAt
+    val c = DiaTheme.colors
+    val ctx = LocalContext.current
+    val locale = LocalConfiguration.current.locales[0]
+    fun f(x: Double) = formatAmount(x, locale)
+    val u = stringResource(R.string.unit_insulin)
+    val mins = ui.minutes
+    val loud = ui.loud
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            if (loud) stringResource(R.string.planned_unconfirmed, mins) else stringResource(R.string.planned_title),
+            color = if (loud) c.high else c.insulin,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Text(
+            stringResource(R.string.planned_meal_at, formatClock(ctx, mealAt)) + if (p.by.isNotBlank()) " · " + p.by else "",
+            color = c.textMuted,
+            fontSize = 12.sp
+        )
+    }
+    Row(verticalAlignment = Alignment.Bottom) {
+        Text(f(p.dose), style = GlucoseHero.copy(fontSize = 40.sp, lineHeight = 44.sp, color = c.insulin))
+        Text(
+            " $u · " + stringResource(R.string.planned_not_given),
+            color = c.textMuted,
+            fontSize = 14.sp,
+            modifier = Modifier.padding(bottom = 6.dp)
+        )
+    }
+    Text(
+        "${p.carbs} " + stringResource(R.string.unit_carbs) + " → " +
+            String.format(locale, "%.2f", p.food).trimEnd('0').trimEnd(',', '.') +
+            " $u" +
+            (if (p.corr > 0) " + " + stringResource(R.string.planned_corr, f(p.corr)) + " $u" else "") + " → " + f(p.dose) + " $u",
+        color = c.textMuted,
+        fontSize = 12.5.sp
+    )
+    // the correction was for the sugar then; before injecting, a fresh reading
+    p.meterAt?.let { at ->
+        val age = ((now - at) / 60_000L).toInt()
+        if (p.corr > 0 && age > dose.freshMin) {
+            AlertCard(
+                DoseCalc.Alert.RecentRapid(0.0, 0),
+                units,
+                locale,
+                title = stringResource(R.string.planned_meter_old, age),
+                text = stringResource(R.string.planned_meter_old_text, f(p.corr))
+            )
+        }
+    }
+}
+
+/** Another dose instead: the stepper, its limit with a confirm over it, cancel or save. */
+@Composable
+private fun ChangeDose(p: PlannedDose, dose: DoseSettings, units: Units, onCancel: () -> Unit, onSave: (Double) -> Unit) {
+    val c = DiaTheme.colors
+    val locale = LocalConfiguration.current.locales[0]
+    fun f(x: Double) = formatAmount(x, locale)
+    val u = stringResource(R.string.unit_insulin)
+    var newDose by remember { mutableStateOf(p.dose) }
+    var okEdit by remember { mutableStateOf(false) }
+    Stepper(newDose, dose.step, u) {
+        newDose = it
+        okEdit = false
+    }
+    val lv = DoseCalc.level(newDose, dose.maxRapid, null)
+    LimitAlert(lv, newDose, dose.maxRapid, units, locale)
+    if (lv == DoseCalc.Level.High) Confirm(okEdit, stringResource(R.string.meal_ok_big, f(newDose))) { okEdit = it }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        TextButton(onClick = onCancel, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.tr_cancel)) }
+        Button(
+            onClick = { onSave(newDose) },
+            enabled = newDose > 0 && lv != DoseCalc.Level.Absurd && (lv != DoseCalc.Level.High || okEdit),
+            modifier = Modifier.weight(1f),
+            colors = ButtonDefaults.buttonColors(containerColor = c.insulin, contentColor = c.background)
+        ) { Text(stringResource(R.string.planned_change_save)) }
+    }
+}
+
+/** Given, change, skip. */
+@Composable
+private fun PlannedButtons(onGiven: () -> Unit, onChange: () -> Unit, onSkip: () -> Unit) {
+    val c = DiaTheme.colors
+    val pad = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp)
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Button(
+            onClick = onGiven,
+            modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+            contentPadding = pad,
+            colors = ButtonDefaults.buttonColors(containerColor = c.insulin, contentColor = c.background)
+        ) {
+            Text(stringResource(R.string.planned_given), fontWeight = FontWeight.SemiBold, maxLines = 1)
+        }
+        OutlinedButton(onClick = onChange, modifier = Modifier.weight(1f).heightIn(min = 48.dp), contentPadding = pad) {
+            Text(stringResource(R.string.planned_change), color = c.text, maxLines = 1)
+        }
+        OutlinedButton(onClick = onSkip, modifier = Modifier.weight(1f).heightIn(min = 48.dp), contentPadding = pad) {
+            Text(stringResource(R.string.planned_skip), color = c.text, maxLines = 1)
+        }
+    }
+}
+
+/** "Did you inject for the meal at 12:40?", then "is it recorded?", then "record it". */
+@Composable
+private fun DidYouInject(
+    ui: PlannedCardUiState,
+    units: Units,
+    step: String,
+    onStep: (String) -> Unit,
+    onAction: (PlannedAction) -> Unit,
+    onSkip: () -> Unit,
+    onRecord: () -> Unit
+) {
+    val c = DiaTheme.colors
+    val ctx = LocalContext.current
+    val locale = LocalConfiguration.current.locales[0]
+    val p = ui.dose
+    val mealAt = ui.mealAt
+    Column(
+        Modifier.fillMaxWidth().background(
+            c.surface,
+            RoundedCornerShape(14.dp)
+        ).border(1.5.dp, c.high, RoundedCornerShape(14.dp)).padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        when (step) {
+            "ask" -> {
+                Text(
+                    stringResource(R.string.q_planned_title, formatClock(ctx, mealAt)),
+                    color = c.text,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { onStep("recorded") }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.planned_yes)) }
+                    OutlinedButton(onClick = onSkip, modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.planned_no), color = c.text)
+                    }
+                }
+            }
+            "recorded" -> {
+                Text(
+                    stringResource(R.string.planned_recorded_q),
+                    color = c.text,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(stringResource(R.string.planned_recorded_hint), color = c.textMuted, fontSize = 13.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = {
+                        val found = ui.recorded
+                        if (found != null) onAction(PlannedAction.Given(p, found, isNew = false)) else onStep("missing")
+                    }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.planned_recorded_yes)) }
+                    OutlinedButton(onClick = onRecord, modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.planned_recorded_no), color = c.text)
+                    }
+                }
+            }
+            else -> {
+                AlertCard(
+                    DoseCalc.Alert.NoMeter(0),
+                    units,
+                    locale,
+                    title = stringResource(R.string.planned_missing),
+                    text = stringResource(R.string.planned_missing_text)
+                )
+                Button(
+                    onClick = onRecord,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = c.insulin, contentColor = c.background)
+                ) {
+                    Text(stringResource(R.string.planned_record))
+                }
+            }
+        }
     }
 }
