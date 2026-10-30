@@ -221,12 +221,7 @@ class MainActivity : AppCompatActivity() {
                                     }
                                 )
                             }
-                            Screen.WebLogin -> com.lumenarcanus.dialife.feature.weblogin.WebLoginScreen(
-                                repository = remember {
-                                    com.lumenarcanus.dialife.feature.weblogin.WebLoginRepository({ liveRepository.credentials })
-                                },
-                                onBack = { screen = Screen.Home }
-                            )
+                            Screen.WebLogin -> com.lumenarcanus.dialife.feature.weblogin.WebLoginRoute(onBack = { screen = Screen.Home })
                             Screen.Log -> AlarmLogScreen(
                                 creds = s.credentials,
                                 units = unitsOf(liveRepository.live.value.state?.displayUnits ?: s.credentials.displayUnits),

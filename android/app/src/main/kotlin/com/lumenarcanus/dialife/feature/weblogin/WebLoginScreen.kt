@@ -1,6 +1,5 @@
 package com.lumenarcanus.dialife.feature.weblogin
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -29,12 +28,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,18 +47,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.mlkit.vision.barcode.common.Barcode
-import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
-import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
-import com.lumenarcanus.dialife.data.ApiError
-import com.lumenarcanus.dialife.data.ApiException
 import com.lumenarcanus.dialife.data.WebLoginInfo
-import com.lumenarcanus.dialife.data.WebLoginLink
 import com.lumenarcanus.dialife.data.WebSession
-import com.lumenarcanus.dialife.data.parseWebLoginLink
-import kotlinx.coroutines.launch
 
 private enum class SpanUnit(val minutes: Int, val label: Int) {
     Min(
@@ -77,60 +66,9 @@ private enum class SpanUnit(val minutes: Int, val label: Int) {
  * it for as long as chosen (or decline), and close any browser already in.
  */
 @Composable
-fun WebLoginScreen(repository: WebLoginRepository, onBack: () -> Unit) {
+fun WebLoginScreen(uiState: WebLoginUiState, onScan: () -> Unit, onDecide: (Int?) -> Unit, onRevoke: (Long) -> Unit, onBack: () -> Unit) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var link by remember { mutableStateOf<WebLoginLink?>(null) }
-    var info by remember { mutableStateOf<WebLoginInfo?>(null) }
-    var note by remember { mutableStateOf<String?>(null) }
-    var sessions by remember { mutableStateOf<List<WebSession>>(emptyList()) }
-    var reload by remember { mutableIntStateOf(0) }
-    val notCode = stringResource(R.string.web_not_code)
-    val expired = stringResource(R.string.web_expired)
-    val failed = stringResource(R.string.err_network)
-    var awaitNew by remember { mutableStateOf(false) } // just allowed: the browser picks it up within seconds
-    LaunchedEffect(reload) {
-        val before = sessions.map { it.id }.toSet()
-        // the session exists once the browser fetches the approval, a second or two later
-        val waiting = awaitNew
-        awaitNew = false // only this once, not on later reloads (a logout)
-        repeat(if (waiting) 10 else 1) {
-            repository.sessions().onSuccess { sessions = it }
-            if (!waiting || sessions.any { it.id !in before }) return@LaunchedEffect
-            kotlinx.coroutines.delay(1500)
-        }
-    }
-    LaunchedEffect(Unit) {
-        // while the screen is open: last seen, closed elsewhere
-        while (true) {
-            kotlinx.coroutines.delay(30_000)
-            repository.sessions().onSuccess { sessions = it }
-        }
-    }
-    BackHandler(onBack = onBack)
-
-    fun scan() {
-        val options = GmsBarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE).build()
-        GmsBarcodeScanning.getClient(ctx, options).startScan().addOnSuccessListener { b ->
-            val l = parseWebLoginLink(b.rawValue.orEmpty())
-            if (l == null) {
-                note = notCode
-                return@addOnSuccessListener
-            }
-            note = null
-            scope.launch {
-                repository.inspect(l)
-                    .onSuccess {
-                        link = l
-                        info = it
-                    }
-                    .onFailure { e -> note = if ((e as? ApiException)?.error is ApiError.Server) expired else failed }
-            }
-        }
-    }
-    LaunchedEffect(Unit) { scan() } // opened to scan: go straight to the camera
-
     Column(
         Modifier.fillMaxSize().background(
             c.background
@@ -139,34 +77,26 @@ fun WebLoginScreen(repository: WebLoginRepository, onBack: () -> Unit) {
     ) {
         TextButton(onClick = onBack) { Text("‹ " + stringResource(R.string.nav_back), color = c.textMuted) }
         Text(stringResource(R.string.web_title), color = c.text, fontSize = 26.sp, fontWeight = FontWeight.SemiBold)
-        note?.let { Text(it, color = c.high, fontSize = 14.sp) }
-        val l = link
-        val i = info
-        if (l != null && i != null) {
-            Approve(i, onDecide = { minutes ->
-                scope.launch {
-                    val r = if (minutes == null) repository.reject(l) else repository.approve(l, minutes)
-                    r.onSuccess {
-                        note = if (minutes == null) {
-                            ctx.getString(R.string.web_denied)
-                        } else {
-                            ctx.getString(R.string.web_allowed, untilText(ctx, System.currentTimeMillis() + minutes * 60_000L))
-                        }
-                        link = null
-                        info = null
-                        awaitNew = minutes != null
-                        reload++
-                    }.onFailure { e -> note = if ((e as? ApiException)?.error is ApiError.Server) expired else failed }
-                }
-            })
+        uiState.note?.let { Text(noteText(ctx, it), color = c.high, fontSize = 14.sp) }
+        val request = uiState.request
+        if (request != null) {
+            Approve(request.info, onDecide = onDecide)
         } else {
             Text(stringResource(R.string.web_scan_hint), color = c.textMuted, fontSize = 14.sp)
-            Button(onClick = ::scan, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(16.dp)) {
+            Button(onClick = onScan, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(16.dp)) {
                 Text(stringResource(R.string.web_scan), fontSize = 15.sp)
             }
         }
-        Sessions(sessions) { id -> scope.launch { repository.revoke(id).onSuccess { reload++ } } }
+        Sessions(uiState.sessions, onRevoke = onRevoke)
     }
+}
+
+private fun noteText(ctx: android.content.Context, note: WebLoginNote): String = when (note) {
+    WebLoginNote.NotCode -> ctx.getString(R.string.web_not_code)
+    WebLoginNote.Expired -> ctx.getString(R.string.web_expired)
+    WebLoginNote.Failed -> ctx.getString(R.string.err_network)
+    WebLoginNote.Denied -> ctx.getString(R.string.web_denied)
+    is WebLoginNote.Allowed -> ctx.getString(R.string.web_allowed, untilText(ctx, note.until))
 }
 
 private fun untilText(ctx: android.content.Context, ms: Long): String = android.text.format.DateUtils.formatDateTime(
