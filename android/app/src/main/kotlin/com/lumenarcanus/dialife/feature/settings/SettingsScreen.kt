@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.BuildConfig
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.data.LocalPrefs
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.formatClock
@@ -46,10 +47,12 @@ import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.data.DoseSettings
 import com.lumenarcanus.dialife.data.InsulinType
 import com.lumenarcanus.dialife.data.Insulins
+import com.lumenarcanus.dialife.data.StateResponse
 import com.lumenarcanus.dialife.data.ThemeChoice
 import com.lumenarcanus.dialife.feature.alarms.AlarmText
 import com.lumenarcanus.dialife.feature.home.BackgroundSetup
 import com.lumenarcanus.dialife.feature.meal.ruleName
+import java.util.Locale
 
 /** This phone's settings: how it looks, alarms (view only in v1), permissions, connection. */
 @Composable
@@ -100,158 +103,183 @@ fun SettingsScreen(
         TextButton(onClick = onBack) { Text("‹ " + stringResource(R.string.nav_back), color = c.textMuted) }
         Text(stringResource(R.string.action_settings), color = c.text, fontSize = 26.sp, fontWeight = FontWeight.SemiBold)
 
-        Section(stringResource(R.string.set_look)) {
-            Label(stringResource(R.string.set_units))
-            val serverUnits = uiState.serverUnits
-            Choice(
-                listOf(
-                    null to
-                        stringResource(
-                            R.string.set_units_server,
-                            stringResource(
-                                if (serverUnits == Units.MgDl) {
-                                    R.string.unit_mgdl
-                                } else {
-                                    R.string.unit_mmol
-                                }
-                            )
-                        ),
-                    Units.MgDl to stringResource(R.string.unit_mgdl),
-                    Units.Mmol to stringResource(R.string.unit_mmol)
-                ),
-                prefs.units
-            ) { onAction(SettingsAction.ChooseUnits(it)) }
-            Label(stringResource(R.string.set_theme))
-            Choice(
-                listOf(
-                    ThemeChoice.System to stringResource(R.string.set_system),
-                    ThemeChoice.Light to stringResource(R.string.set_theme_light),
-                    ThemeChoice.Dark to stringResource(R.string.set_theme_dark)
-                ),
-                prefs.theme
-            ) { onAction(SettingsAction.ChooseTheme(it)) }
-            Label(stringResource(R.string.set_language))
-            Choice(
-                listOf("" to stringResource(R.string.set_system), "uk" to "Українська", "en" to "English", "es" to "Español"),
-                prefs.language
-            ) { tag -> onAction(SettingsAction.ChooseLanguage(tag)) }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(stringResource(R.string.set_meter_line), color = c.text, fontSize = 14.sp)
-                    Text(stringResource(R.string.set_meter_line_sub), color = c.textMuted, fontSize = 12.sp)
-                }
-                androidx.compose.material3.Switch(checked = prefs.meterLine, onCheckedChange = {
-                    onAction(SettingsAction.ChooseMeterLine(it))
-                })
-            }
-        }
-
-        Section(stringResource(R.string.set_insulins)) {
-            InsulinPicker(InsulinType.Rapid, prefs.nameOf(InsulinType.Rapid)) {
-                onAction(SettingsAction.ChooseInsulin(InsulinType.Rapid, it))
-            }
-            InsulinPicker(InsulinType.Basal, prefs.nameOf(InsulinType.Basal)) {
-                onAction(SettingsAction.ChooseInsulin(InsulinType.Basal, it))
-            }
-            Label(stringResource(R.string.set_basal_times))
-            var adding by remember { mutableStateOf(false) }
-            androidx.compose.foundation.layout.FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                prefs.basalTimes.forEach { m ->
-                    androidx.compose.material3.InputChip(
-                        selected = false,
-                        onClick = { onAction(SettingsAction.RemoveBasalTime(m)) },
-                        label = { Text(String.format(java.util.Locale.ROOT, "%02d:%02d", m / 60, m % 60)) },
-                        trailingIcon = { Text("✕", color = c.textMuted) }
-                    )
-                }
-                androidx.compose.material3.AssistChip(onClick = { adding = true }, label = { Text(stringResource(R.string.set_basal_add)) })
-            }
-            if (adding) {
-                BasalTimeDialog(onPick = { m ->
-                    adding = false
-                    onAction(SettingsAction.AddBasalTime(m))
-                }, onDismiss = { adding = false })
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.set_basal_remind), color = c.text, fontSize = 14.sp, modifier = Modifier.weight(1f))
-                androidx.compose.material3.Switch(
-                    checked = prefs.basalReminder,
-                    enabled = prefs.basalTimes.isNotEmpty(),
-                    onCheckedChange = { onAction(SettingsAction.ChooseBasalReminder(it)) }
-                )
-            }
-        }
-
-        Section(stringResource(R.string.dose_title)) {
-            val d = state?.dose ?: DoseSettings()
-            Line(stringResource(R.string.dose_ratio_short), stringResource(R.string.meal_ratio, d.ratio))
-            Line(
-                stringResource(R.string.dose_rounding),
-                ruleName(d.rule) + " · " + formatAmount(d.step, locale)
-            )
-            Line(
-                stringResource(R.string.dose_limits_short),
-                formatAmount(d.maxRapid, locale) + " " + stringResource(R.string.unit_insulin) + " · " + d.maxCarbs + " " +
-                    stringResource(R.string.unit_carbs)
-            )
-            OutlinedButton(onClick = onOpenDose, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-                Text(stringResource(R.string.dose_open), color = c.text)
-            }
-        }
-
-        Section(stringResource(R.string.set_alarms)) {
-            val th = state?.thresholds
-            if (th != null) {
-                val u = unitsOf(state.displayUnits)
-                fun g(v: Int) = formatGlucose(v, u, locale)
-                Line(stringResource(R.string.set_th_urgent_low), "< " + g(th.urgentLow))
-                Line(stringResource(R.string.set_th_low), "< " + g(th.low))
-                Line(stringResource(R.string.set_th_high), "> " + g(th.high))
-                Line(stringResource(R.string.set_th_urgent_high), "> " + g(th.urgentHigh))
-                Text(stringResource(R.string.set_th_hint), color = c.textFaint, fontSize = 13.sp)
-            }
-            OutlinedButton(onClick = { onAction(SettingsAction.TestSound) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-                Text(stringResource(if (uiState.testing) R.string.set_test_stop else R.string.set_test_sound), color = c.text)
-            }
-        }
-
+        Section(stringResource(R.string.set_look)) { LookSection(uiState, onAction) }
+        Section(stringResource(R.string.set_insulins)) { InsulinsSection(uiState.prefs, onAction) }
+        Section(stringResource(R.string.dose_title)) { DoseSection(state?.dose ?: DoseSettings(), locale, onOpenDose) }
+        Section(stringResource(R.string.set_alarms)) { AlarmsSection(state, uiState.testing, locale, onAction) }
         Section(stringResource(R.string.set_permissions)) {
             Permission(stringResource(R.string.set_perm_notifications), !setup.notifications, onFixNotifications)
             Permission(stringResource(R.string.set_perm_battery), !setup.battery, onFixBattery)
             Permission(stringResource(R.string.set_perm_fullscreen), !setup.fullScreen, onFixFullScreen)
         }
-
         Section(stringResource(R.string.set_connection)) {
-            Line(stringResource(R.string.set_server), creds.server.removePrefix("https://"))
-            Line(
-                stringResource(R.string.set_this_phone),
-                creds.deviceName + " · " + when (creds.role) {
-                    "caregiver" -> stringResource(R.string.role_caregiver)
-                    "uploader" -> stringResource(R.string.role_uploader)
-                    else -> creds.role
-                }
-            )
-            state?.uploader?.let { u ->
-                val seen = if (u.mills > 0) formatClock(ctx, u.mills) else "—"
-                Line(
-                    AlarmText.uploader(ctx, state),
-                    listOfNotNull(
-                        u.battery?.let {
-                            "$it%"
-                        },
-                        stringResource(R.string.set_seen, seen)
-                    ).joinToString(" · ")
-                )
-            }
-            Line(stringResource(R.string.set_version), version)
-            OutlinedButton(onClick = { confirmDisconnect = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-                Text(stringResource(R.string.action_disconnect), color = c.low)
-            }
+            ConnectionSection(uiState, version, onDisconnect = { confirmDisconnect = true })
         }
         Spacer(Modifier.heightIn(min = 12.dp))
+    }
+}
+
+/** Units, theme, language and the chart's "≈ meter" line: this phone's own. */
+@Composable
+private fun LookSection(uiState: SettingsUiState, onAction: (SettingsAction) -> Unit) {
+    val c = DiaTheme.colors
+    val prefs = uiState.prefs
+    Label(stringResource(R.string.set_units))
+    val serverUnits = uiState.serverUnits
+    Choice(
+        listOf(
+            null to
+                stringResource(
+                    R.string.set_units_server,
+                    stringResource(
+                        if (serverUnits == Units.MgDl) {
+                            R.string.unit_mgdl
+                        } else {
+                            R.string.unit_mmol
+                        }
+                    )
+                ),
+            Units.MgDl to stringResource(R.string.unit_mgdl),
+            Units.Mmol to stringResource(R.string.unit_mmol)
+        ),
+        prefs.units
+    ) { onAction(SettingsAction.ChooseUnits(it)) }
+    Label(stringResource(R.string.set_theme))
+    Choice(
+        listOf(
+            ThemeChoice.System to stringResource(R.string.set_system),
+            ThemeChoice.Light to stringResource(R.string.set_theme_light),
+            ThemeChoice.Dark to stringResource(R.string.set_theme_dark)
+        ),
+        prefs.theme
+    ) { onAction(SettingsAction.ChooseTheme(it)) }
+    Label(stringResource(R.string.set_language))
+    Choice(
+        listOf("" to stringResource(R.string.set_system), "uk" to "Українська", "en" to "English", "es" to "Español"),
+        prefs.language
+    ) { tag -> onAction(SettingsAction.ChooseLanguage(tag)) }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(R.string.set_meter_line), color = c.text, fontSize = 14.sp)
+            Text(stringResource(R.string.set_meter_line_sub), color = c.textMuted, fontSize = 12.sp)
+        }
+        androidx.compose.material3.Switch(checked = prefs.meterLine, onCheckedChange = {
+            onAction(SettingsAction.ChooseMeterLine(it))
+        })
+    }
+}
+
+/** The family's insulins, when the long-acting one is due, and the reminder before it. */
+@Composable
+private fun InsulinsSection(prefs: LocalPrefs, onAction: (SettingsAction) -> Unit) {
+    val c = DiaTheme.colors
+    InsulinPicker(InsulinType.Rapid, prefs.nameOf(InsulinType.Rapid)) {
+        onAction(SettingsAction.ChooseInsulin(InsulinType.Rapid, it))
+    }
+    InsulinPicker(InsulinType.Basal, prefs.nameOf(InsulinType.Basal)) {
+        onAction(SettingsAction.ChooseInsulin(InsulinType.Basal, it))
+    }
+    Label(stringResource(R.string.set_basal_times))
+    var adding by remember { mutableStateOf(false) }
+    androidx.compose.foundation.layout.FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        prefs.basalTimes.forEach { m ->
+            androidx.compose.material3.InputChip(
+                selected = false,
+                onClick = { onAction(SettingsAction.RemoveBasalTime(m)) },
+                label = { Text(String.format(java.util.Locale.ROOT, "%02d:%02d", m / 60, m % 60)) },
+                trailingIcon = { Text("✕", color = c.textMuted) }
+            )
+        }
+        androidx.compose.material3.AssistChip(onClick = { adding = true }, label = { Text(stringResource(R.string.set_basal_add)) })
+    }
+    if (adding) {
+        BasalTimeDialog(onPick = { m ->
+            adding = false
+            onAction(SettingsAction.AddBasalTime(m))
+        }, onDismiss = { adding = false })
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(stringResource(R.string.set_basal_remind), color = c.text, fontSize = 14.sp, modifier = Modifier.weight(1f))
+        androidx.compose.material3.Switch(
+            checked = prefs.basalReminder,
+            enabled = prefs.basalTimes.isNotEmpty(),
+            onCheckedChange = { onAction(SettingsAction.ChooseBasalReminder(it)) }
+        )
+    }
+}
+
+/** The dose calculation at a glance; it is changed on its own screen. */
+@Composable
+private fun DoseSection(d: DoseSettings, locale: Locale, onOpenDose: () -> Unit) {
+    val c = DiaTheme.colors
+    Line(stringResource(R.string.dose_ratio_short), stringResource(R.string.meal_ratio, d.ratio))
+    Line(
+        stringResource(R.string.dose_rounding),
+        ruleName(d.rule) + " · " + formatAmount(d.step, locale)
+    )
+    Line(
+        stringResource(R.string.dose_limits_short),
+        formatAmount(d.maxRapid, locale) + " " + stringResource(R.string.unit_insulin) + " · " + d.maxCarbs + " " +
+            stringResource(R.string.unit_carbs)
+    )
+    OutlinedButton(onClick = onOpenDose, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+        Text(stringResource(R.string.dose_open), color = c.text)
+    }
+}
+
+/** The thresholds (set on the server) and the alarm sound's test. */
+@Composable
+private fun AlarmsSection(state: StateResponse?, testing: Boolean, locale: Locale, onAction: (SettingsAction) -> Unit) {
+    val c = DiaTheme.colors
+    val th = state?.thresholds
+    if (th != null) {
+        val u = unitsOf(state.displayUnits)
+        fun g(v: Int) = formatGlucose(v, u, locale)
+        Line(stringResource(R.string.set_th_urgent_low), "< " + g(th.urgentLow))
+        Line(stringResource(R.string.set_th_low), "< " + g(th.low))
+        Line(stringResource(R.string.set_th_high), "> " + g(th.high))
+        Line(stringResource(R.string.set_th_urgent_high), "> " + g(th.urgentHigh))
+        Text(stringResource(R.string.set_th_hint), color = c.textFaint, fontSize = 13.sp)
+    }
+    OutlinedButton(onClick = { onAction(SettingsAction.TestSound) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+        Text(stringResource(if (testing) R.string.set_test_stop else R.string.set_test_sound), color = c.text)
+    }
+}
+
+/** Which server, this phone, the xDrip+ phone, the version, and disconnecting. */
+@Composable
+private fun ConnectionSection(uiState: SettingsUiState, version: String, onDisconnect: () -> Unit) {
+    val c = DiaTheme.colors
+    val ctx = LocalContext.current
+    val creds = uiState.creds
+    val state = uiState.state
+    Line(stringResource(R.string.set_server), creds.server.removePrefix("https://"))
+    Line(
+        stringResource(R.string.set_this_phone),
+        creds.deviceName + " · " + when (creds.role) {
+            "caregiver" -> stringResource(R.string.role_caregiver)
+            "uploader" -> stringResource(R.string.role_uploader)
+            else -> creds.role
+        }
+    )
+    state?.uploader?.let { u ->
+        val seen = if (u.mills > 0) formatClock(ctx, u.mills) else "—"
+        Line(
+            AlarmText.uploader(ctx, state),
+            listOfNotNull(
+                u.battery?.let {
+                    "$it%"
+                },
+                stringResource(R.string.set_seen, seen)
+            ).joinToString(" · ")
+        )
+    }
+    Line(stringResource(R.string.set_version), version)
+    OutlinedButton(onClick = onDisconnect, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+        Text(stringResource(R.string.action_disconnect), color = c.low)
     }
 }
 
