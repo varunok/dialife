@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.data
+package com.lumenarcanus.dialife.feature.meal
 
 import android.content.Context
 import kotlinx.serialization.Serializable

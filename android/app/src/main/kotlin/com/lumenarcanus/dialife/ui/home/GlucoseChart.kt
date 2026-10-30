@@ -241,7 +241,7 @@ fun ChartCard(
         }
         // full screen: the entry says what it is over the chart, like a reading; no editing there
         selected?.takeIf { !expanded }?.let { tr ->
-            com.lumenarcanus.dialife.ui.meal.EntryDetail(
+            com.lumenarcanus.dialife.feature.meal.EntryDetail(
                 tr,
                 history?.treatments.orEmpty(),
                 dose,

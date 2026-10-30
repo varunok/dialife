@@ -194,7 +194,7 @@ fun DoseSettingsScreen(dose: DoseSettings, units: Units, onSave: suspend (DoseSe
                         RadioButton(selected = on, onClick = null, modifier = Modifier.padding(top = 2.dp, end = 10.dp))
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(
-                                com.lumenarcanus.dialife.ui.meal.ruleName(id).replaceFirstChar {
+                                com.lumenarcanus.dialife.feature.meal.ruleName(id).replaceFirstChar {
                                     it.uppercase()
                                 },
                                 color = c.text,

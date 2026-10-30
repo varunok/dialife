@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.ui.meal
+package com.lumenarcanus.dialife.feature.meal
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

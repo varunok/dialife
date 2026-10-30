@@ -12,6 +12,7 @@ import com.lumenarcanus.dialife.data.AlarmView
 import com.lumenarcanus.dialife.data.Caregiver
 import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.data.Question
+import com.lumenarcanus.dialife.feature.meal.MealInputs
 import com.lumenarcanus.dialife.feature.planned.PlannedCard
 import com.lumenarcanus.dialife.feature.planned.PlannedCardUiState
 import com.lumenarcanus.dialife.feature.wait.CountdownCard
@@ -270,13 +271,17 @@ class ScreenshotTest {
     fun mealUk() = shot("meal_dark_uk", dark = true) {
         val t = sampleHomeUi(now).history?.treatments.orEmpty() +
             com.lumenarcanus.dialife.data.Treatment(id = "g1", t = now - 6 * 60_000L, glucose = 186)
-        com.lumenarcanus.dialife.ui.meal.MealScreen(
-            repo = null, treatments = t, dose = com.lumenarcanus.dialife.data.DoseSettings(), planned = emptyList(), units = Units.MgDl,
+        com.lumenarcanus.dialife.feature.meal.MealScreen(
+            repo = null,
+            inputs = MealInputs(treatments = t, units = Units.MgDl),
             editing = meal(now).copy(
                 foodItems =
                 meal(now).foodItems!! + com.lumenarcanus.dialife.data.FoodItem("Гречка з котлетою", null, null, null)
             ),
-            initialTime = null, onSave = {}, onSaved = {}, onClose = {}, clock = { now }
+            initialTime = null,
+            onSave = {},
+            onClose = {},
+            clock = { now }
         )
     }
 
@@ -329,7 +334,7 @@ class ScreenshotTest {
                 ),
                 Units.MgDl
             ) {}
-            com.lumenarcanus.dialife.ui.meal.EntryDetail(
+            com.lumenarcanus.dialife.feature.meal.EntryDetail(
                 meal(now),
                 listOf(
                     meal(now),
@@ -568,13 +573,17 @@ class ScreenshotTest {
     fun mealEnAll() = shot("meal_dark_en_all", dark = true) {
         val t = sampleHomeUi(now).history?.treatments.orEmpty() +
             com.lumenarcanus.dialife.data.Treatment(id = "g1", t = now - 6 * 60_000L, glucose = 186)
-        com.lumenarcanus.dialife.ui.meal.MealScreen(
-            repo = null, treatments = t, dose = com.lumenarcanus.dialife.data.DoseSettings(), planned = emptyList(), units = Units.MgDl,
+        com.lumenarcanus.dialife.feature.meal.MealScreen(
+            repo = null,
+            inputs = MealInputs(treatments = t, units = Units.MgDl),
             editing = meal(now).copy(
                 foodItems =
                 meal(now).foodItems!! + com.lumenarcanus.dialife.data.FoodItem("Гречка з котлетою", null, null, null)
             ),
-            initialTime = null, onSave = {}, onSaved = {}, onClose = {}, clock = { now }
+            initialTime = null,
+            onSave = {},
+            onClose = {},
+            clock = { now }
         )
     }
 
@@ -583,13 +592,17 @@ class ScreenshotTest {
     fun mealEsAll() = shot("meal_dark_es_all", dark = true) {
         val t = sampleHomeUi(now).history?.treatments.orEmpty() +
             com.lumenarcanus.dialife.data.Treatment(id = "g1", t = now - 6 * 60_000L, glucose = 186)
-        com.lumenarcanus.dialife.ui.meal.MealScreen(
-            repo = null, treatments = t, dose = com.lumenarcanus.dialife.data.DoseSettings(), planned = emptyList(), units = Units.MgDl,
+        com.lumenarcanus.dialife.feature.meal.MealScreen(
+            repo = null,
+            inputs = MealInputs(treatments = t, units = Units.MgDl),
             editing = meal(now).copy(
                 foodItems =
                 meal(now).foodItems!! + com.lumenarcanus.dialife.data.FoodItem("Гречка з котлетою", null, null, null)
             ),
-            initialTime = null, onSave = {}, onSaved = {}, onClose = {}, clock = { now }
+            initialTime = null,
+            onSave = {},
+            onClose = {},
+            clock = { now }
         )
     }
 
@@ -642,7 +655,7 @@ class ScreenshotTest {
                 ),
                 Units.MgDl
             ) {}
-            com.lumenarcanus.dialife.ui.meal.EntryDetail(
+            com.lumenarcanus.dialife.feature.meal.EntryDetail(
                 meal(now),
                 listOf(
                     meal(now),
@@ -710,7 +723,7 @@ class ScreenshotTest {
                 ),
                 Units.MgDl
             ) {}
-            com.lumenarcanus.dialife.ui.meal.EntryDetail(
+            com.lumenarcanus.dialife.feature.meal.EntryDetail(
                 meal(now),
                 listOf(
                     meal(now),

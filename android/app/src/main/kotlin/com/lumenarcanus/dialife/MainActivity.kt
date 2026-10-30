@@ -137,48 +137,20 @@ class MainActivity : AppCompatActivity() {
                                     Screen.Home
                                 screen = Screen.Meal
                             }) { screen = it }
-                            Screen.Meal -> {
-                                val home = viewModel { HomeViewModel(liveRepository) }
-                                val ui by home.ui.collectAsStateWithLifecycle()
-                                val all = ui.history?.treatments.orEmpty()
-                                com.lumenarcanus.dialife.ui.meal.MealScreen(
-                                    repo = liveRepository,
-                                    treatments = all,
-                                    dose = ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
-                                    mealRules = ui.state?.mealRules ?: com.lumenarcanus.dialife.data.MealRules(),
-                                    mbg = ui.history?.mbg ?: com.lumenarcanus.dialife.data.Series(),
-                                    planned = ui.state?.planned.orEmpty(),
-                                    units = unitsOf(ui.state?.displayUnits ?: s.credentials.displayUnits),
-                                    editing = mealEdit?.let { id -> all.firstOrNull { it.id == id } ?: mealEntry?.takeIf { it.id == id } },
-                                    forLow = mealLow,
-                                    initialTime = mealFrom.takeIf { it > 0 },
-                                    onSave = liveRepository::saveTreatment,
-                                    onSaved = { food ->
-                                        val q = mealQuestion
-                                        if (q !=
-                                            0L
-                                        ) {
-                                            lifecycleScope.launch {
-                                                liveRepository.answerQuestion(q, "food", food.id).onSuccess {
-                                                    questionNotifier.cancel(q)
-                                                }
-                                            }
-                                        }
-                                        mealEdit = null
-                                        mealEntry = null
-                                        mealQuestion = 0L
-                                        mealFrom = 0L
-                                        screen = mealBack
-                                    },
-                                    onClose = {
-                                        mealEdit = null
-                                        mealEntry = null
-                                        mealQuestion = 0L
-                                        mealFrom = 0L
-                                        screen = mealBack
-                                    }
-                                )
-                            }
+                            Screen.Meal -> com.lumenarcanus.dialife.feature.meal.MealRoute(
+                                editingId = mealEdit,
+                                entry = mealEntry,
+                                initialTime = mealFrom.takeIf { it > 0 },
+                                forLow = mealLow,
+                                questionId = mealQuestion,
+                                onDone = {
+                                    mealEdit = null
+                                    mealEntry = null
+                                    mealQuestion = 0L
+                                    mealFrom = 0L
+                                    screen = mealBack
+                                }
+                            )
                             Screen.DoseSettings -> {
                                 val live by liveRepository.live.collectAsStateWithLifecycle()
                                 com.lumenarcanus.dialife.ui.settings.DoseSettingsScreen(

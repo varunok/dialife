@@ -209,7 +209,7 @@ fun SettingsScreen(
             Line(stringResource(R.string.dose_ratio_short), stringResource(R.string.meal_ratio, d.ratio))
             Line(
                 stringResource(R.string.dose_rounding),
-                com.lumenarcanus.dialife.ui.meal.ruleName(d.rule) + " · " + formatAmount(d.step, locale)
+                com.lumenarcanus.dialife.feature.meal.ruleName(d.rule) + " · " + formatAmount(d.step, locale)
             )
             Line(
                 stringResource(R.string.dose_limits_short),
