@@ -8,6 +8,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.data.Treatment
+import com.lumenarcanus.dialife.foodRepository
 import com.lumenarcanus.dialife.liveRepository
 import com.lumenarcanus.dialife.plannedDoses
 import com.lumenarcanus.dialife.questionAnswers
@@ -27,7 +28,7 @@ fun MealRoute(editingId: String?, entry: Treatment?, initialTime: Long?, forLow:
     }
     val inputs by vm.inputs.collectAsStateWithLifecycle()
     MealScreen(
-        repo = ctx.liveRepository,
+        repo = ctx.foodRepository,
         inputs = inputs,
         editing = editingId?.let { id -> inputs.treatments.firstOrNull { it.id == id } ?: entry?.takeIf { it.id == id } },
         initialTime = initialTime,

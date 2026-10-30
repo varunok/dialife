@@ -151,7 +151,9 @@ fun TreatmentSheet(
     var time by rememberSaveable { mutableLongStateOf(editing?.t ?: initialTime ?: now) }
 
     // "… is giving insulin" on the other phones while this form is on insulin
-    val repo = (ctx.applicationContext as? com.lumenarcanus.dialife.DiaLifeApp)?.live // null in previews and tests
+    // null in previews and tests
+    val repo = (ctx.applicationContext as? com.lumenarcanus.dialife.DiaLifeApp)?.live
+    val foods = (ctx.applicationContext as? com.lumenarcanus.dialife.DiaLifeApp)?.foods
     val live = repo?.live?.collectAsState()?.value?.state
     val announce = editing == null && kind == TreatmentKind.Insulin
     var announced by remember { mutableStateOf(false) }
@@ -284,7 +286,7 @@ fun TreatmentSheet(
                         }
                     }
                 }
-                TreatmentKind.Food -> FoodList(foodRows, repo)
+                TreatmentKind.Food -> FoodList(foodRows, foods)
                 TreatmentKind.Meter -> MeterField(meter, units) { meter = it }
                 TreatmentKind.Activity -> {
                     Text(stringResource(R.string.act_intensity), color = c.textMuted, fontSize = 13.sp)

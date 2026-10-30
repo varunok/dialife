@@ -255,11 +255,6 @@ class LiveRepository(context: Context, private val api: DiaLifeApi = DiaLifeApi(
         scope.launch { api.insulinIntentEnd(c) }
     }
 
-    suspend fun suggestCarbs(name: String, portion: String): Result<com.lumenarcanus.dialife.data.CarbSuggestions> {
-        val c = creds ?: return Result.failure(ApiException(ApiError.Unauthorized))
-        return api.suggestCarbs(c, listOf(name to portion))
-    }
-
     /** The server's state right now, past whatever the stream has brought (or missed). */
     suspend fun freshState(): Result<com.lumenarcanus.dialife.data.StateResponse> =
         creds?.let { api.state(it) } ?: Result.failure(ApiException(ApiError.Unauthorized))
@@ -268,14 +263,8 @@ class LiveRepository(context: Context, private val api: DiaLifeApi = DiaLifeApi(
         creds?.let { api.putDose(it, d) } ?: Result.failure(ApiException(ApiError.Unauthorized))
 
     // the tables change only on an import; the frequent foods come with them
-    private var foods: Pair<Long, com.lumenarcanus.dialife.data.FoodCatalog>? = null
 
     /** The food catalog, kept for a few minutes between forms. */
-    suspend fun foods(): Result<com.lumenarcanus.dialife.data.FoodCatalog> {
-        foods?.takeIf { System.currentTimeMillis() - it.first < 5 * 60_000L }?.let { return Result.success(it.second) }
-        val c = creds ?: return Result.failure(ApiException(ApiError.Unauthorized))
-        return api.foods(c).onSuccess { foods = System.currentTimeMillis() to it }
-    }
 
     fun saveTreatment(t: Treatment) {
         _pending.value = queue.put(PendingOp(t.id, treatment = t.copy(pending = false)))

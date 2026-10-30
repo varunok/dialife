@@ -58,13 +58,13 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.data.FoodRepository
 import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.data.inLang
 import com.lumenarcanus.dialife.feature.meal.MealDraft
 import com.lumenarcanus.dialife.feature.meal.MealDrafts
-import com.lumenarcanus.dialife.live.LiveRepository
 import com.lumenarcanus.dialife.live.TreatmentQueue
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.ui.theme.GlucoseHero
@@ -88,7 +88,7 @@ import com.lumenarcanus.dialife.ui.treatment.parseMeter
 @Composable
 fun MealScreen(
     // food lookup and the carb tables; null in previews
-    repo: LiveRepository?,
+    repo: FoodRepository?,
     inputs: MealInputs,
     editing: Treatment?,
     initialTime: Long?,

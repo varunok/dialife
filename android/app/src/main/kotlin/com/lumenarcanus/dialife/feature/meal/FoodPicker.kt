@@ -21,23 +21,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.data.FoodRepository
 import com.lumenarcanus.dialife.data.FoodCatalog
 import com.lumenarcanus.dialife.feature.meal.MealDraft
 import com.lumenarcanus.dialife.feature.meal.MealDrafts
-import com.lumenarcanus.dialife.live.LiveRepository
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 
 @Composable
-internal fun rememberCatalog(repo: LiveRepository?): FoodCatalog? {
+internal fun rememberCatalog(repo: FoodRepository?): FoodCatalog? {
     var catalog by remember { mutableStateOf<FoodCatalog?>(null) }
-    LaunchedEffect(repo) { catalog = repo?.foods()?.getOrNull() }
+    LaunchedEffect(repo) { catalog = repo?.catalog()?.getOrNull() }
     return catalog
 }
 
 /** "Often: + Борщ, + Хліб…" and the whole table: a quick button adds the name and portion, the carbs come as a suggestion. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun QuickFoods(repo: LiveRepository?, lang: String, onAdd: (String, String) -> Unit, onAll: () -> Unit) {
+internal fun QuickFoods(repo: FoodRepository?, lang: String, onAdd: (String, String) -> Unit, onAll: () -> Unit) {
     val c = DiaTheme.colors
     val catalog = rememberCatalog(repo) ?: return
     if (catalog.frequent.isEmpty() && catalog.tables.isEmpty()) return

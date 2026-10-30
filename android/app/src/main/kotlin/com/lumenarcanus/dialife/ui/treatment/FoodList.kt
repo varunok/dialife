@@ -42,12 +42,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.data.FoodRepository
 import com.lumenarcanus.dialife.data.CarbSuggestion
 import com.lumenarcanus.dialife.data.CarbTableHit
 import com.lumenarcanus.dialife.data.FoodCatalog
 import com.lumenarcanus.dialife.data.FoodItem
 import com.lumenarcanus.dialife.data.inLang
-import com.lumenarcanus.dialife.live.LiveRepository
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.ui.theme.GlucoseHero
 
@@ -98,7 +98,7 @@ fun newFoodRow(name: String = "", carbs: String = "", source: String? = null, po
 
 /** Looks the food up once the typing stops; a picked suggestion follows a new portion. */
 @Composable
-fun FoodLookup(row: FoodRow, repo: LiveRepository?, update: ((FoodRow) -> FoodRow) -> Unit) {
+fun FoodLookup(row: FoodRow, repo: FoodRepository?, update: ((FoodRow) -> FoodRow) -> Unit) {
     LaunchedEffect(row.name, row.portion) {
         val name = row.name.trim()
         if (repo == null) return@LaunchedEffect // a preview: keep what it was given
@@ -108,7 +108,7 @@ fun FoodLookup(row: FoodRow, repo: LiveRepository?, update: ((FoodRow) -> FoodRo
         }
         kotlinx.coroutines.delay(700)
         update { it.copy(loading = true) }
-        val r = repo.suggestCarbs(name, row.portion.trim())
+        val r = repo.suggest(name, row.portion.trim())
         update { cur ->
             val res = r.getOrNull()
             val s = res?.items?.firstOrNull()
@@ -153,7 +153,7 @@ private val QuickCarbs = listOf(10, 15, 20, 30)
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun FoodList(rows: SnapshotStateList<FoodRow>, repo: LiveRepository?) {
+fun FoodList(rows: SnapshotStateList<FoodRow>, repo: FoodRepository?) {
     val c = DiaTheme.colors
     val lang = androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language
     fun update(id: Long, f: (FoodRow) -> FoodRow) {
@@ -186,7 +186,7 @@ fun FoodList(rows: SnapshotStateList<FoodRow>, repo: LiveRepository?) {
         if (last != null && last.name.isBlank() && last.carbs.isBlank()) rows[rows.lastIndex] = row else rows.add(row)
     }
     var catalog by remember { mutableStateOf<FoodCatalog?>(null) }
-    LaunchedEffect(repo) { catalog = repo?.foods()?.getOrNull() }
+    LaunchedEffect(repo) { catalog = repo?.catalog()?.getOrNull() }
     var picking by remember { mutableStateOf(false) }
     val tables = catalog?.tables.orEmpty()
     val often = catalog?.frequent.orEmpty()
