@@ -7,11 +7,11 @@ import android.content.Context
 import android.content.Intent
 import android.os.SystemClock
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.data.AlarmEvent
 import com.lumenarcanus.dialife.data.AlarmView
 import com.lumenarcanus.dialife.data.DiaLifeApi
 import com.lumenarcanus.dialife.ui.alarm.AlarmActivity
-import com.lumenarcanus.dialife.ui.home.unitsOf
 
 /**
  * Turns episode events into what this phone does: ring, ask, inform or stay

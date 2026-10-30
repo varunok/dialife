@@ -53,11 +53,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.data.DiaLifeApi
 import com.lumenarcanus.dialife.data.Stats
-import com.lumenarcanus.dialife.ui.home.Units
-import com.lumenarcanus.dialife.ui.home.formatGlucose
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.ui.theme.PlexMono
 import java.util.Locale

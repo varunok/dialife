@@ -23,6 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.data.DoseCalc
 import com.lumenarcanus.dialife.data.DoseSettings
 import com.lumenarcanus.dialife.data.InsulinType
@@ -30,8 +32,6 @@ import com.lumenarcanus.dialife.data.Meals
 import com.lumenarcanus.dialife.data.Prefs
 import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.live.AlarmText
-import com.lumenarcanus.dialife.ui.home.Units
-import com.lumenarcanus.dialife.ui.home.formatGlucose
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.ui.theme.GlucoseHero
 import com.lumenarcanus.dialife.ui.treatment.basalColor

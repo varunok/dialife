@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.lumenarcanus.dialife.ui.home.Units
+import com.lumenarcanus.dialife.core.ui.Units
 
 enum class ThemeChoice { System, Light, Dark }
 

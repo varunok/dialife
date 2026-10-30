@@ -45,6 +45,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatDelta
+import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.data.EpisodeRules
 import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.live.ActionReceiver
@@ -54,9 +57,6 @@ import com.lumenarcanus.dialife.live.TreatmentQueue
 import com.lumenarcanus.dialife.ui.home.ChartWindow
 import com.lumenarcanus.dialife.ui.home.GlucoseChart
 import com.lumenarcanus.dialife.ui.home.HomeUi
-import com.lumenarcanus.dialife.ui.home.Units
-import com.lumenarcanus.dialife.ui.home.formatDelta
-import com.lumenarcanus.dialife.ui.home.formatGlucose
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.ui.theme.GlucoseHero
 

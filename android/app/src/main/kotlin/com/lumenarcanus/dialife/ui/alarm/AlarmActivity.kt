@@ -47,11 +47,14 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.alarmController
+import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatDelta
+import com.lumenarcanus.dialife.core.ui.formatGlucose
+import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.data.AlarmView
 import com.lumenarcanus.dialife.live.ActionReceiver
 import com.lumenarcanus.dialife.live.AlarmText
 import com.lumenarcanus.dialife.liveRepository
-import com.lumenarcanus.dialife.ui.home.unitsOf
 import com.lumenarcanus.dialife.ui.theme.DiaLifeTheme
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.ui.theme.GlucoseHero
@@ -130,7 +133,7 @@ private fun AlarmScreen(
     help: Boolean,
     state: com.lumenarcanus.dialife.data.StateResponse?,
     current: Int?,
-    units: com.lumenarcanus.dialife.ui.home.Units,
+    units: Units,
     onAct: suspend (String) -> Result<Unit>,
     onDone: () -> Unit
 ) {
@@ -201,7 +204,7 @@ private fun AlarmScreen(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             // fits the ring even with the largest system font
                             androidx.compose.foundation.text.BasicText(
-                                com.lumenarcanus.dialife.ui.home.formatGlucose(sgv, units, locale),
+                                formatGlucose(sgv, units, locale),
                                 style = GlucoseHero.copy(
                                     fontSize = 92.sp,
                                     lineHeight = 92.sp,
@@ -220,10 +223,10 @@ private fun AlarmScreen(
                             Text(
                                 listOfNotNull(
                                     com.lumenarcanus.dialife.live.Notifications.arrowOf(bg?.direction).ifBlank { null },
-                                    bg?.delta?.let { com.lumenarcanus.dialife.ui.home.formatDelta(it, units, locale) },
+                                    bg?.delta?.let { formatDelta(it, units, locale) },
                                     stringResource(
                                         if (units ==
-                                            com.lumenarcanus.dialife.ui.home.Units.MgDl
+                                            Units.MgDl
                                         ) {
                                             R.string.unit_mgdl
                                         } else {
@@ -244,7 +247,7 @@ private fun AlarmScreen(
                 }
                 state?.ar2?.predicted?.lastOrNull()?.let {
                     Text(
-                        stringResource(R.string.forecast_30, com.lumenarcanus.dialife.ui.home.formatGlucose(it.sgv, units, locale)),
+                        stringResource(R.string.forecast_30, formatGlucose(it.sgv, units, locale)),
                         color = c.textMuted,
                         fontSize = 16.sp,
                         modifier = Modifier.fillMaxWidth(),

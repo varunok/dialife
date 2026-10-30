@@ -74,6 +74,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.data.DoseCalc
 import com.lumenarcanus.dialife.data.DoseSettings
 import com.lumenarcanus.dialife.data.FoodCatalog
@@ -86,8 +88,6 @@ import com.lumenarcanus.dialife.data.inLang
 import com.lumenarcanus.dialife.live.AlarmText
 import com.lumenarcanus.dialife.live.LiveRepository
 import com.lumenarcanus.dialife.live.TreatmentQueue
-import com.lumenarcanus.dialife.ui.home.Units
-import com.lumenarcanus.dialife.ui.home.formatGlucose
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.ui.theme.GlucoseHero
 import com.lumenarcanus.dialife.ui.treatment.FoodLookup

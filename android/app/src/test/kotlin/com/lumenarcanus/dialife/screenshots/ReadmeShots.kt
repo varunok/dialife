@@ -12,6 +12,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
+import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.data.AlarmView
 import com.lumenarcanus.dialife.data.CarbEstimate
 import com.lumenarcanus.dialife.data.CarbMine
@@ -27,7 +28,6 @@ import com.lumenarcanus.dialife.ui.handling.HandlingScreen
 import com.lumenarcanus.dialife.ui.home.ChartCard
 import com.lumenarcanus.dialife.ui.home.HomeScreen
 import com.lumenarcanus.dialife.ui.home.HomeUi
-import com.lumenarcanus.dialife.ui.home.Units
 import com.lumenarcanus.dialife.ui.home.sampleHomeUi
 import com.lumenarcanus.dialife.ui.theme.DiaLifeTheme
 import com.lumenarcanus.dialife.ui.theme.DiaTheme

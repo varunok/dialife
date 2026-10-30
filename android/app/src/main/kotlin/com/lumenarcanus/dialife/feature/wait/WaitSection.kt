@@ -34,10 +34,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.live.AlarmText
 import com.lumenarcanus.dialife.liveRepository
-import com.lumenarcanus.dialife.ui.home.Units
-import com.lumenarcanus.dialife.ui.home.formatGlucose
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import java.util.Locale
 

@@ -7,9 +7,9 @@ import android.content.Context
 import android.content.Intent
 import com.lumenarcanus.dialife.MainActivity
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.data.Question
-import com.lumenarcanus.dialife.ui.home.Units
-import com.lumenarcanus.dialife.ui.home.formatGlucose
 
 /**
  * "Did you forget to log?" on this phone: shown while this person still has to

@@ -60,6 +60,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatDelta
+import com.lumenarcanus.dialife.core.ui.formatGlucose
+import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.data.AlarmView
 import com.lumenarcanus.dialife.data.Bg
 import com.lumenarcanus.dialife.data.ConePoint
@@ -80,8 +84,6 @@ import com.lumenarcanus.dialife.ui.theme.GlucoseHero
 import com.lumenarcanus.dialife.ui.treatment.TreatmentKind
 import com.lumenarcanus.dialife.ui.treatment.TreatmentSheet
 import java.util.Locale
-
-enum class Units { MgDl, Mmol }
 
 /** Nightscout trend names, as the server sends them. */
 enum class Trend(val degrees: Float, val double: Boolean = false) {
@@ -189,10 +191,6 @@ fun sampleHomeUi(now: Long = 1_761_400_000_000L, dad: String = "Тато", mom: 
     )
 }
 
-/** The units to show: this phone's own choice (settings), else what the server keeps for it. */
-fun unitsOf(displayUnits: String?): Units =
-    com.lumenarcanus.dialife.data.Prefs.units ?: if (displayUnits?.startsWith("mmol") == true) Units.Mmol else Units.MgDl
-
 /** What the hero and tiles show, or null while there is no reading yet. */
 fun HomeUi.toHomeState(fallbackUnits: Units): HomeState? {
     val st = state ?: return null
@@ -220,27 +218,6 @@ fun HomeUi.toHomeState(fallbackUnits: Units): HomeState? {
 
 /** Readings older than this are shown as stale: the chain is broken somewhere. */
 const val STALE_MIN = 15
-
-/** mg/dL → the text shown for the chosen units, with the locale's decimal separator. */
-fun formatGlucose(mgdl: Int, units: Units, locale: Locale): String = when (units) {
-    Units.MgDl -> mgdl.toString()
-    Units.Mmol -> String.format(locale, "%.1f", mgdl / 18.0)
-}
-
-fun formatDelta(mgdl: Int, units: Units, locale: Locale): String {
-    val sign = if (mgdl > 0) {
-        "+"
-    } else if (mgdl < 0) {
-        "−"
-    } else {
-        "±"
-    }
-    val abs = kotlin.math.abs(mgdl)
-    return sign + when (units) {
-        Units.MgDl -> abs.toString()
-        Units.Mmol -> String.format(locale, "%.1f", abs / 18.0)
-    }
-}
 
 @Composable
 fun HomeScreen(

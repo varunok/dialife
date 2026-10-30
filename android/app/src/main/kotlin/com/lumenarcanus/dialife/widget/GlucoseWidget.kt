@@ -40,6 +40,10 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.lumenarcanus.dialife.MainActivity
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatDelta
+import com.lumenarcanus.dialife.core.ui.formatGlucose
+import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.data.AlarmView
 import com.lumenarcanus.dialife.data.CredentialStore
 import com.lumenarcanus.dialife.data.Credentials
@@ -49,10 +53,6 @@ import com.lumenarcanus.dialife.live.LiveCache
 import com.lumenarcanus.dialife.live.Notifications
 import com.lumenarcanus.dialife.liveRepository
 import com.lumenarcanus.dialife.ui.home.STALE_MIN
-import com.lumenarcanus.dialife.ui.home.Units
-import com.lumenarcanus.dialife.ui.home.formatDelta
-import com.lumenarcanus.dialife.ui.home.formatGlucose
-import com.lumenarcanus.dialife.ui.home.unitsOf
 import kotlinx.coroutines.flow.first
 
 /** Everything the widget shows, already worded: Glance renders, it does not compute. */

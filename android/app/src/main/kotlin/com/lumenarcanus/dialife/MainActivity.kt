@@ -39,6 +39,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.data.DiaLifeApi
 import com.lumenarcanus.dialife.data.Thresholds
@@ -50,7 +51,6 @@ import com.lumenarcanus.dialife.ui.handling.HandlingScreen
 import com.lumenarcanus.dialife.ui.home.BackgroundSetup
 import com.lumenarcanus.dialife.ui.home.HomeScreen
 import com.lumenarcanus.dialife.ui.home.HomeViewModel
-import com.lumenarcanus.dialife.ui.home.unitsOf
 import com.lumenarcanus.dialife.ui.log.AlarmLogScreen
 import com.lumenarcanus.dialife.ui.settings.SettingsScreen
 import com.lumenarcanus.dialife.ui.stats.StatsScreen

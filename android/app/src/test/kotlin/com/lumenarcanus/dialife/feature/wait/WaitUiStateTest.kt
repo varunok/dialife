@@ -1,7 +1,7 @@
 package com.lumenarcanus.dialife.feature.wait
 
+import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.data.Wait
-import com.lumenarcanus.dialife.ui.home.Units
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull

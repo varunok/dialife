@@ -1,8 +1,8 @@
 package com.lumenarcanus.dialife.feature.wait
 
 import androidx.annotation.StringRes
+import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.data.Wait
-import com.lumenarcanus.dialife.ui.home.Units
 import kotlin.math.ceil
 import kotlin.math.roundToInt
 

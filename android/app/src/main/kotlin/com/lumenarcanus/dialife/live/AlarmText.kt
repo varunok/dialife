@@ -3,10 +3,10 @@ package com.lumenarcanus.dialife.live
 import android.content.Context
 import android.text.format.DateFormat
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.data.AlarmEvent
 import com.lumenarcanus.dialife.data.AlarmView
-import com.lumenarcanus.dialife.ui.home.Units
-import com.lumenarcanus.dialife.ui.home.formatGlucose
 import java.util.Date
 
 /** The words of an alarm, shared by notifications, the alarm screen and the home banner. */

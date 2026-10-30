@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
+import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.data.AlarmView
 import com.lumenarcanus.dialife.data.Caregiver
 import com.lumenarcanus.dialife.data.Credentials
@@ -18,7 +19,6 @@ import com.lumenarcanus.dialife.feature.wait.warningUiState
 import com.lumenarcanus.dialife.ui.handling.HandlingScreen
 import com.lumenarcanus.dialife.ui.home.BackgroundSetup
 import com.lumenarcanus.dialife.ui.home.HomeScreen
-import com.lumenarcanus.dialife.ui.home.Units
 import com.lumenarcanus.dialife.ui.home.sampleHomeUi
 import com.lumenarcanus.dialife.ui.settings.SettingsScreen
 import com.lumenarcanus.dialife.ui.theme.DiaLifeTheme
@@ -318,7 +318,7 @@ class ScreenshotTest {
                     sgvFrom = 0,
                     sgvTo = 0,
                     plannedId = "p2",
-                    dose = 4.0,
+                    dose = 4.0
                 ),
                 Units.MgDl,
                 {
@@ -629,7 +629,7 @@ class ScreenshotTest {
                     sgvFrom = 0,
                     sgvTo = 0,
                     plannedId = "p2",
-                    dose = 4.0,
+                    dose = 4.0
                 ),
                 Units.MgDl,
                 {
@@ -695,7 +695,7 @@ class ScreenshotTest {
                     sgvFrom = 0,
                     sgvTo = 0,
                     plannedId = "p2",
-                    dose = 4.0,
+                    dose = 4.0
                 ),
                 Units.MgDl,
                 {

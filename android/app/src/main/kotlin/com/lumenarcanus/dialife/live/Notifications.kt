@@ -8,11 +8,11 @@ import android.content.Context
 import android.content.Intent
 import com.lumenarcanus.dialife.MainActivity
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatDelta
+import com.lumenarcanus.dialife.core.ui.formatGlucose
+import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.ui.home.Trend
-import com.lumenarcanus.dialife.ui.home.Units
-import com.lumenarcanus.dialife.ui.home.formatDelta
-import com.lumenarcanus.dialife.ui.home.formatGlucose
-import com.lumenarcanus.dialife.ui.home.unitsOf
 
 object Notifications {
     const val CHANNEL_LIVE = "live"

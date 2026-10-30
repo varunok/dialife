@@ -8,10 +8,10 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
+import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.data.FoodItem
 import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.ui.home.ChartCard
-import com.lumenarcanus.dialife.ui.home.Units
 import com.lumenarcanus.dialife.ui.home.sampleHomeUi
 import com.lumenarcanus.dialife.ui.theme.DiaLifeTheme
 import org.junit.Rule
