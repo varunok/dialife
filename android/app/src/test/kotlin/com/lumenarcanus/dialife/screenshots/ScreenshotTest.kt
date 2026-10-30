@@ -195,6 +195,31 @@ class ScreenshotTest {
         }
     }
 
+    /** The data table sideways, by quarter hours: one column per kind, totals at the bottom. */
+    @Test
+    @Config(qualifiers = "uk-w915dp-h412dp-land-xxhdpi")
+    fun dataWideUk() = shot("data_wide_dark_uk", dark = true) {
+        val ui = sampleHomeUi(now)
+        DataScreen(
+            dataUiState(ui.history, null, ui.state!!.questions, ui.state!!.thresholds, Units.MgDl, 3, now, step = 15, wide = true),
+            onAction = {},
+            onSaveTreatment = {},
+            onBack = {}
+        )
+    }
+
+    @Test
+    @Config(qualifiers = "uk-w915dp-h412dp-land-xxhdpi")
+    fun dataWideEachReadingUk() = shot("data_wide_each_dark_uk", dark = true) {
+        val ui = sampleHomeUi(now)
+        DataScreen(
+            dataUiState(ui.history, null, ui.state!!.questions, ui.state!!.thresholds, Units.MgDl, 3, now, wide = true),
+            onAction = {},
+            onSaveTreatment = {},
+            onBack = {}
+        )
+    }
+
     @Test
     @Config(qualifiers = "+uk")
     fun dataListUk() = shot("data_list_dark_uk", dark = true) {
