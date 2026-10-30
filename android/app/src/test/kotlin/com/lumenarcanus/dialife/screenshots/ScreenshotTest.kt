@@ -3,6 +3,7 @@ package com.lumenarcanus.dialife.screenshots
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
@@ -355,16 +356,7 @@ class ScreenshotTest {
     @Test
     @Config(qualifiers = "uk-w412dp-h3500dp-xxhdpi")
     fun doseSettingsUk() = shot("dose_settings_dark_uk", dark = true) {
-        com.lumenarcanus.dialife.feature.settings.DoseSettingsScreen(
-            com.lumenarcanus.dialife.data.DoseSettings(
-                updatedBy = "Тато"
-            ),
-            Units.MgDl,
-            onSave = {
-                Result.success(it)
-            },
-            onBack = {}
-        )
+        DoseSettingsSample()
     }
 
     @Test
@@ -810,29 +802,23 @@ class ScreenshotTest {
     @Test
     @Config(qualifiers = "en-w412dp-h3500dp-xxhdpi")
     fun doseSettingsEnAll() = shot("dose_settings_dark_en_all", dark = true) {
-        com.lumenarcanus.dialife.feature.settings.DoseSettingsScreen(
-            com.lumenarcanus.dialife.data.DoseSettings(
-                updatedBy = "Тато"
-            ),
-            Units.MgDl,
-            onSave = {
-                Result.success(it)
-            },
-            onBack = {}
-        )
+        DoseSettingsSample()
     }
 
     @Test
     @Config(qualifiers = "es-w412dp-h3500dp-xxhdpi")
     fun doseSettingsEsAll() = shot("dose_settings_dark_es_all", dark = true) {
+        DoseSettingsSample()
+    }
+
+    @Composable
+    private fun DoseSettingsSample() {
+        val dose = com.lumenarcanus.dialife.data.DoseSettings(updatedBy = "Тато")
+        val form = com.lumenarcanus.dialife.feature.settings.doseSettingsForm(dose, Units.MgDl, LocalConfiguration.current.locales[0])
         com.lumenarcanus.dialife.feature.settings.DoseSettingsScreen(
-            com.lumenarcanus.dialife.data.DoseSettings(
-                updatedBy = "Тато"
-            ),
-            Units.MgDl,
-            onSave = {
-                Result.success(it)
-            },
+            com.lumenarcanus.dialife.feature.settings.DoseSettingsUiState(form, Units.MgDl, dose.updatedBy),
+            onEdit = {},
+            onSave = {},
             onBack = {}
         )
     }

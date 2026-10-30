@@ -152,12 +152,7 @@ class MainActivity : AppCompatActivity() {
                             )
                             Screen.DoseSettings -> {
                                 val live by liveRepository.live.collectAsStateWithLifecycle()
-                                com.lumenarcanus.dialife.feature.settings.DoseSettingsScreen(
-                                    dose = live.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
-                                    units = unitsOf(live.state?.displayUnits ?: s.credentials.displayUnits),
-                                    onSave = { d -> doseSettings.save(d) },
-                                    onBack = { screen = Screen.Settings }
-                                )
+                                com.lumenarcanus.dialife.feature.settings.DoseSettingsRoute(onBack = { screen = Screen.Settings })
                             }
                             Screen.Stats -> com.lumenarcanus.dialife.feature.stats.StatsRoute(onBack = { screen = Screen.Home })
                             Screen.Settings -> {
