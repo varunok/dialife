@@ -2,6 +2,7 @@ package com.lumenarcanus.dialife
 
 import android.app.Application
 import com.lumenarcanus.dialife.core.data.DefaultDoseSettingsRepository
+import com.lumenarcanus.dialife.core.data.DefaultFoodRepository
 import com.lumenarcanus.dialife.core.data.DefaultPlannedDoseRepository
 import com.lumenarcanus.dialife.core.data.DefaultPreferencesRepository
 import com.lumenarcanus.dialife.core.data.DefaultQuestionRepository
@@ -27,7 +28,7 @@ class DiaLifeApp : Application() {
     val questions by lazy { com.lumenarcanus.dialife.feature.questions.QuestionNotifier(this) }
     val plannedDoses: PlannedDoseRepository by lazy { DefaultPlannedDoseRepository({ live.credentials }) }
     val questionAnswers: QuestionRepository by lazy { DefaultQuestionRepository(live, questions) }
-    val foods by lazy { FoodRepository({ live.credentials }) }
+    val foods: FoodRepository by lazy { DefaultFoodRepository({ live.credentials }) }
     val insulinIntents by lazy { InsulinIntentRepository({ live.credentials }, kotlinx.coroutines.MainScope()) }
     val doseSettings: DoseSettingsRepository by lazy { DefaultDoseSettingsRepository({ live.credentials }) }
 

@@ -100,17 +100,28 @@ fun newFoodRow(name: String = "", carbs: String = "", source: String? = null, po
 @Composable
 fun FoodLookup(row: FoodRow, repo: FoodRepository?, update: ((FoodRow) -> FoodRow) -> Unit) {
     LaunchedEffect(row.name, row.portion) {
-        val name = row.name.trim()
-        if (repo == null) return@LaunchedEffect // a preview: keep what it was given
-        if (name.length < 2) {
-            update { it.copy(loading = false, asked = false, suggestion = null) }
-            return@LaunchedEffect
-        }
-        kotlinx.coroutines.delay(700)
-        update { it.copy(loading = true) }
-        val r = repo.suggest(name, row.portion.trim())
-        update { it.withSuggestions(r) }
+        if (repo != null) lookUp(row, repo, update) // null: a preview, keep what it was given
     }
+}
+
+/** How long the typing must stop before a food is looked up. */
+const val LOOKUP_PAUSE_MS = 700L
+
+/**
+ * Suggestions for [row] as typed: none for a name under two letters; else,
+ * after [LOOKUP_PAUSE_MS] (cancelled by more typing), "looking" and then the
+ * answer. The row changes only through [update], as it may change meanwhile.
+ */
+suspend fun lookUp(row: FoodRow, repo: FoodRepository, update: ((FoodRow) -> FoodRow) -> Unit) {
+    val name = row.name.trim()
+    if (name.length < 2) {
+        update { it.copy(loading = false, asked = false, suggestion = null) }
+        return
+    }
+    kotlinx.coroutines.delay(LOOKUP_PAUSE_MS)
+    update { it.copy(loading = true) }
+    val r = repo.suggest(name, row.portion.trim())
+    update { it.withSuggestions(r) }
 }
 
 /**

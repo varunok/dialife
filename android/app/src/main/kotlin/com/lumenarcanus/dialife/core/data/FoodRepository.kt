@@ -12,15 +12,23 @@ import com.lumenarcanus.dialife.data.FoodCatalog
  * food, and the carb tables with the family's most logged foods (kept five
  * minutes: they change only on an import).
  */
-class FoodRepository(private val creds: () -> Credentials?, private val api: DiaLifeApi = DiaLifeApi()) {
+interface FoodRepository {
+    /** Carbs for a food as typed: the family's own, the tables', the models' estimate. */
+    suspend fun suggest(name: String, portion: String): Result<CarbSuggestions>
+
+    /** The carb tables and the family's most logged foods. */
+    suspend fun catalog(): Result<FoodCatalog>
+}
+
+class DefaultFoodRepository(private val creds: () -> Credentials?, private val api: DiaLifeApi = DiaLifeApi()) : FoodRepository {
     @Volatile private var catalog: Pair<Long, FoodCatalog>? = null
 
-    suspend fun suggest(name: String, portion: String): Result<CarbSuggestions> {
+    override suspend fun suggest(name: String, portion: String): Result<CarbSuggestions> {
         val c = creds() ?: return Result.failure(ApiException(ApiError.Unauthorized))
         return api.suggestCarbs(c, listOf(name to portion))
     }
 
-    suspend fun catalog(): Result<FoodCatalog> {
+    override suspend fun catalog(): Result<FoodCatalog> {
         catalog?.takeIf { System.currentTimeMillis() - it.first < CATALOG_FOR_MS }?.let { return Result.success(it.second) }
         val c = creds() ?: return Result.failure(ApiException(ApiError.Unauthorized))
         return api.foods(c).onSuccess { catalog = System.currentTimeMillis() to it }
