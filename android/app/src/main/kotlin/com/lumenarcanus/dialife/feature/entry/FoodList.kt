@@ -153,8 +153,9 @@ fun foodRowsOf(items: List<FoodItem>?, carbs: Double?): List<FoodRow> = when {
     !items.isNullOrEmpty() -> items.map {
         newFoodRow(it.name, it.carbs?.let { c -> kotlin.math.round(c).toInt().toString() }.orEmpty(), it.source, it.portion.orEmpty())
     }
-    (carbs ?: 0.0) > 0 -> listOf(newFoodRow(carbs = kotlin.math.round(carbs!!).toInt().toString(), source = "manual"))
-    else -> listOf(newFoodRow())
+    else -> listOf(
+        carbs?.takeIf { it > 0 }?.let { newFoodRow(carbs = kotlin.math.round(it).toInt().toString(), source = "manual") } ?: newFoodRow()
+    )
 }
 
 /** What goes into the entry: the lines worth keeping; none for a lone unnamed total. */

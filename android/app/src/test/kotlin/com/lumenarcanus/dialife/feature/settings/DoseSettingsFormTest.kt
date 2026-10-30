@@ -22,7 +22,7 @@ class DoseSettingsFormTest {
     fun mmolIsTypedAndSavedAsMgDl() {
         val f = form(Units.Mmol).copy(rows = listOf("7,8" to "1"))
         assertTrue(f.problems(Units.Mmol).isEmpty())
-        assertEquals(listOf(CorrectionRow(140, 1.0)), f.toSettings(Units.Mmol).table)
+        assertEquals(listOf(CorrectionRow(140, 1.0)), f.toSettings(Units.Mmol)?.table)
     }
 
     @Test
@@ -46,6 +46,12 @@ class DoseSettingsFormTest {
     @Test
     fun rowsAreSavedInOrder() {
         val f = form().copy(rows = listOf("180" to "2", "140" to "1"))
-        assertEquals(listOf(140, 180), f.toSettings(Units.MgDl).table.map { it.mg })
+        assertEquals(listOf(140, 180), f.toSettings(Units.MgDl)?.table?.map { it.mg })
+    }
+
+    @Test
+    fun aFieldThatIsNotANumberGivesNoSettings() {
+        assertEquals(null, form().copy(maxRapid = "abc").toSettings(Units.MgDl))
+        assertEquals(null, form().copy(rows = listOf("140" to "")).toSettings(Units.MgDl))
     }
 }

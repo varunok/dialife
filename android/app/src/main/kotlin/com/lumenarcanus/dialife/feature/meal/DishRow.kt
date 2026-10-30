@@ -180,11 +180,7 @@ internal fun DishRow(
                     border = if (row.grams == null) BorderStroke(1.dp, c.textFaint) else null
                 ) {
                     Text(
-                        if (row.grams == null) {
-                            stringResource(R.string.meal_need_carbs)
-                        } else {
-                            stringResource(R.string.meal_done, row.grams!!)
-                        },
+                        row.grams?.let { stringResource(R.string.meal_done, it) } ?: stringResource(R.string.meal_need_carbs),
                         fontWeight = FontWeight.SemiBold
                     )
                 }

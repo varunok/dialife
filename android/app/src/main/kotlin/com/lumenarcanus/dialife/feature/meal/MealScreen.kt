@@ -98,7 +98,7 @@ fun MealScreen(
     val openPlan = d.openPlan
     val meter = d.meter
     val m = d.calc
-    val given = if (joined) meal!!.given else 0.0
+    val given = d.given
     val planOn = form.plan && m.canPlan
 
     fun finish(withPlan: Boolean) {

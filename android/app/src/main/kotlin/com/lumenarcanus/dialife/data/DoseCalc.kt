@@ -98,7 +98,7 @@ object DoseCalc {
         val food = carbs.toDouble() / s.ratio.coerceAtLeast(1)
         val age = meterAt?.let { ((now - it) / 60_000L).toInt().coerceAtLeast(0) }
         val fresh = meter != null && age != null && age <= s.freshMin
-        val corr = if (fresh) correction(meter!!, s.table) else 0.0
+        val corr = meter?.takeIf { fresh }?.let { correction(it, s.table) } ?: 0.0
         val raw = food + corr
         val dose = round(raw, s.rule, s.step)
         val toGive = round(dose - given, "nearest", 0.1)

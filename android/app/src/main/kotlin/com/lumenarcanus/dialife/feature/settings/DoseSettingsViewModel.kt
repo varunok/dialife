@@ -44,7 +44,7 @@ class DoseSettingsViewModel(private val repository: DoseSettingsRepository, live
         if (s.saving || s.problems.isNotEmpty()) return
         _uiState.update { it.copy(saving = true, saved = null) }
         viewModelScope.launch {
-            val ok = repository.save(s.form.toSettings(s.units)).isSuccess
+            val ok = s.form.toSettings(s.units)?.let { repository.save(it).isSuccess } ?: false
             _uiState.update { it.copy(saving = false, saved = ok) }
         }
     }

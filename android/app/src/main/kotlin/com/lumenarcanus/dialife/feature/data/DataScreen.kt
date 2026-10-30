@@ -39,6 +39,7 @@ import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.data.InsulinType
+import com.lumenarcanus.dialife.data.Series
 import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.feature.entry.TreatmentKind
 import com.lumenarcanus.dialife.feature.entry.TreatmentSheet
@@ -182,14 +183,12 @@ fun DataScreen(
                 rows.isEmpty() -> Text(stringResource(R.string.data_empty), color = c.textMuted, modifier = Modifier.padding(14.dp))
                 else -> {
                     val groups = rows.groupBy { hourOf(it.t) }
-                    val readings = h?.sgv
+                    val readings = h?.sgv ?: Series()
                     LazyColumn(Modifier.fillMaxSize()) {
                         groups.forEach { (hourStart, rs) ->
                             item(key = "h$hourStart") {
-                                val vs = readings?.t.orEmpty().indices.filter {
-                                    readings!!.t[it] in
-                                        maxOf(hourStart, from)..minOf(hourStart + HOUR, to)
-                                }.map { readings!!.v[it] }
+                                val vs = readings.t.indices.filter { readings.t[it] in maxOf(hourStart, from)..minOf(hourStart + HOUR, to) }
+                                    .map { readings.v[it] }
                                 HourHeader(hourStart, vs, units)
                             }
                             items(rs, key = { "r${it.t}" }) { r -> ListRow(r, units, thresholds, onEdit) }

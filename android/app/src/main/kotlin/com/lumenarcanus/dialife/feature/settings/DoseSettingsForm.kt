@@ -106,21 +106,24 @@ fun DoseSettingsForm.problems(units: Units): List<DoseProblem> = buildList {
     }
 }
 
-/** The settings to save; only for a form with no [problems]. */
-fun DoseSettingsForm.toSettings(units: Units): DoseSettings = DoseSettings(
-    ratio = ratio.toInt(),
-    rule = rule,
-    step = step,
-    freshMin = fresh.toInt(),
-    maxRapid = num(maxRapid)!!,
-    maxBasal = num(maxBasal)!!,
-    maxCarbs = maxCarbs.toInt(),
-    table = table(units).map { (mg, u) -> CorrectionRow(mg!!, u!!) }.sortedBy { it.mg },
-    isf = if (isf.isBlank()) 0 else mgOf(isf, units)!!,
-    diaMin = dia.toInt(),
-    carbMin = carbMin.toInt(),
-    waitMin = waitMin.toInt(),
-    waitHighMin = waitHighMin.toInt(),
-    waitHighFrom = mgOf(waitHighFrom, units)!!,
-    waitLowBelow = mgOf(waitLowBelow, units)!!
-)
+/** The settings to save; null while a field does not read as a number (the form then has [problems]). */
+fun DoseSettingsForm.toSettings(units: Units): DoseSettings? {
+    val table = table(units).map { (mg, u) -> CorrectionRow(mg ?: return null, u ?: return null) }.sortedBy { it.mg }
+    return DoseSettings(
+        ratio = ratio.toIntOrNull() ?: return null,
+        rule = rule,
+        step = step,
+        freshMin = fresh.toIntOrNull() ?: return null,
+        maxRapid = num(maxRapid) ?: return null,
+        maxBasal = num(maxBasal) ?: return null,
+        maxCarbs = maxCarbs.toIntOrNull() ?: return null,
+        table = table,
+        isf = if (isf.isBlank()) 0 else mgOf(isf, units) ?: return null,
+        diaMin = dia.toIntOrNull() ?: return null,
+        carbMin = carbMin.toIntOrNull() ?: return null,
+        waitMin = waitMin.toIntOrNull() ?: return null,
+        waitHighMin = waitHighMin.toIntOrNull() ?: return null,
+        waitHighFrom = mgOf(waitHighFrom, units) ?: return null,
+        waitLowBelow = mgOf(waitLowBelow, units) ?: return null
+    )
+}

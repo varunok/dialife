@@ -36,7 +36,10 @@ data class MealDose(
     val meter: Int?,
     val meterAt: Long?,
     val calc: DoseCalc.Meal
-)
+) {
+    /** Insulin already given for the meal it joins. */
+    val given: Double get() = meal?.takeIf { joined }?.given ?: 0.0
+}
 
 /**
  * The dose for [current] grams on the form at [time]: the meal it joins (or
@@ -51,11 +54,11 @@ fun mealDose(inputs: MealInputs, editing: Treatment?, time: Long, now: Long, joi
     } else {
         Meals.joining(Meals.group(others, inputs.mealRules), time, inputs.mealRules.gapMin)
     }
-    val joined = meal != null && (editing != null || join)
-    val earlier = if (!joined) 0 else meal!!.carbs - (editing?.let { (it.carbs ?: 0.0).toInt() } ?: 0)
+    val joinedMeal = meal?.takeIf { editing != null || join }
+    val earlier = joinedMeal?.let { it.carbs - (editing?.let { e -> (e.carbs ?: 0.0).toInt() } ?: 0) } ?: 0
     val mealIds = meal?.foods?.map { it.id }.orEmpty().toSet() + listOfNotNull(editing?.id)
     val openPlan = inputs.planned.firstOrNull { it.state == "planned" && it.mealId in mealIds }
-    val given = if (joined) meal!!.given else 0.0
+    val given = joinedMeal?.given ?: 0.0
 
     val lastMeter = Meters.latest(treatments, inputs.mbg, to = now)
     val meter = typedMeter ?: lastMeter?.mg
@@ -67,7 +70,7 @@ fun mealDose(inputs: MealInputs, editing: Treatment?, time: Long, now: Long, joi
     val usualDose = if (span >= 24 * 3_600_000L) treatments.filter(Meals::isRapid).maxOfOrNull { it.insulin ?: 0.0 } else null
     val usualCarbs = Meals.group(others, inputs.mealRules).takeIf { it.size >= 5 }?.maxOfOrNull { it.carbs }
     val calc = DoseCalc.meal(inputs.dose, earlier + current, meter, meterAt, now, given, recent, usualDose, usualCarbs)
-    return MealDose(meal, joined, earlier, openPlan, meter, meterAt, calc)
+    return MealDose(meal, joinedMeal != null, earlier, openPlan, meter, meterAt, calc)
 }
 
 /**
