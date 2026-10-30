@@ -61,10 +61,16 @@ fun FoodPicker(tables: List<FoodTable>, lang: String, onPick: (TableFood, FoodTa
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Column(
             Modifier.fillMaxSize().background(c.surface).safeDrawingPadding().padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.food_pick_title), color = c.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                Text(
+                    stringResource(R.string.food_pick_title),
+                    color = c.text,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f)
+                )
                 val close = stringResource(R.string.food_pick_close)
                 IconButton(onClick = onDismiss, modifier = Modifier.semantics { contentDescription = close }) {
                     Text("×", fontSize = 26.sp, color = c.textMuted)
@@ -75,12 +81,20 @@ fun FoodPicker(tables: List<FoodTable>, lang: String, onPick: (TableFood, FoodTa
                 onValueChange = { query = it.take(40) },
                 placeholder = { Text(stringResource(R.string.food_pick_search), color = c.textFaint) },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth()
             )
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 FilterChip(selected = cat == null, onClick = { cat = null }, label = { Text(stringResource(R.string.food_pick_all)) })
                 cats.forEach { k ->
-                    FilterChip(selected = cat == k.id, onClick = { cat = if (cat == k.id) null else k.id }, label = { Text(k.names.inLang(lang)) })
+                    FilterChip(selected = cat == k.id, onClick = {
+                        cat = if (cat ==
+                            k.id
+                        ) {
+                            null
+                        } else {
+                            k.id
+                        }
+                    }, label = { Text(k.names.inLang(lang)) })
                 }
             }
             if (shown.isEmpty()) Text(stringResource(R.string.food_pick_empty), color = c.textMuted, fontSize = 13.sp)
@@ -95,25 +109,45 @@ fun FoodPicker(tables: List<FoodTable>, lang: String, onPick: (TableFood, FoodTa
                             .clickable { onPick(f, t) }
                             .padding(horizontal = 14.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Column(Modifier.weight(1f)) {
                             Text(f.names.inLang(lang), color = c.text, fontSize = 15.sp)
                             Text(
                                 if (f.carbs == 0 && portion.isBlank()) stringResource(R.string.food_table_free) else portion,
-                                color = c.textMuted, fontSize = 12.5.sp,
+                                color = c.textMuted,
+                                fontSize = 12.5.sp
                             )
                         }
                         Text(
                             "${f.carbs} " + stringResource(R.string.unit_carbs),
-                            style = GlucoseHero.copy(fontSize = 18.sp, lineHeight = 22.sp, color = if (f.carbs == 0) c.textMuted else c.carbs),
+                            style = GlucoseHero.copy(
+                                fontSize = 18.sp,
+                                lineHeight = 22.sp,
+                                color = if (f.carbs ==
+                                    0
+                                ) {
+                                    c.textMuted
+                                } else {
+                                    c.carbs
+                                }
+                            )
                         )
                     }
                 }
             }
             // where the numbers come from, and that they are approximate
             tables.forEach { t ->
-                Text(t.title + (t.note.inLang(lang).takeIf { it.isNotBlank() }?.let { ". $it" } ?: ""), color = c.textFaint, fontSize = 11.sp, lineHeight = 14.sp)
+                Text(
+                    t.title + (
+                        t.note.inLang(lang).takeIf {
+                            it.isNotBlank()
+                        }?.let { ". $it" } ?: ""
+                        ),
+                    color = c.textFaint,
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp
+                )
             }
         }
     }

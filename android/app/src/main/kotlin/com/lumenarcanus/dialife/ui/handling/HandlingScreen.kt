@@ -59,8 +59,6 @@ import com.lumenarcanus.dialife.ui.home.formatDelta
 import com.lumenarcanus.dialife.ui.home.formatGlucose
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.ui.theme.GlucoseHero
-import com.lumenarcanus.dialife.ui.treatment.TreatmentKind
-import com.lumenarcanus.dialife.ui.treatment.TreatmentSheet
 
 private val QuickCarbs = listOf(10.0, 15.0, 20.0)
 
@@ -78,7 +76,8 @@ fun HandlingScreen(
     onAct: (action: String, alarmId: Long) -> Unit,
     onSaveTreatment: (Treatment) -> Unit,
     onBack: () -> Unit,
-    onOpenMeal: () -> Unit = {}, // "another amount": the food screen, without a dose
+    // "another amount": the food screen, without a dose
+    onOpenMeal: () -> Unit = {}
 ) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
@@ -97,15 +96,24 @@ fun HandlingScreen(
     var lastCarbs by remember { mutableStateOf<Double?>(null) }
 
     if (sheet) {
-        LaunchedEffect(Unit) { sheet = false; onOpenMeal() }
+        LaunchedEffect(Unit) {
+            sheet = false
+            onOpenMeal()
+        }
     }
     if (confirmEnd) {
         AlertDialog(
             onDismissRequest = { confirmEnd = false },
             title = { Text(stringResource(R.string.act_resolve)) },
             text = { Text(stringResource(R.string.hd_end_body)) },
-            confirmButton = { TextButton(onClick = { haptics.performHapticFeedback(HapticFeedbackType.Confirm); confirmEnd = false; onAct(ActionReceiver.RESOLVE, a.id) }) { Text(stringResource(R.string.hd_end_confirm)) } },
-            dismissButton = { TextButton(onClick = { confirmEnd = false }) { Text(stringResource(R.string.tr_cancel)) } },
+            confirmButton = {
+                TextButton(onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                    confirmEnd = false
+                    onAct(ActionReceiver.RESOLVE, a.id)
+                }) { Text(stringResource(R.string.hd_end_confirm)) }
+            },
+            dismissButton = { TextButton(onClick = { confirmEnd = false }) { Text(stringResource(R.string.tr_cancel)) } }
         )
     }
 
@@ -116,55 +124,96 @@ fun HandlingScreen(
             .safeDrawingPadding()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         TextButton(onClick = onBack) { Text("‹ " + stringResource(R.string.nav_back), color = c.textMuted) }
-        Text(stringResource(R.string.you_handle, AlarmText.kind(ctx, a)), color = c.text, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
+        Text(
+            stringResource(R.string.you_handle, AlarmText.kind(ctx, a)),
+            color = c.text,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.SemiBold
+        )
 
         // now, and how it moved since you took it
         val now = bg?.sgv ?: a.sgv
         Row(verticalAlignment = Alignment.Bottom) {
-            Text(now?.let { formatGlucose(it, units, locale) } ?: "—", style = GlucoseHero.copy(fontSize = 88.sp, lineHeight = 88.sp, color = c.text))
+            Text(
+                now?.let {
+                    formatGlucose(it, units, locale)
+                } ?: "—",
+                style = GlucoseHero.copy(fontSize = 88.sp, lineHeight = 88.sp, color = c.text)
+            )
             Spacer(Modifier.width(10.dp))
             Text(Notifications.arrowOf(bg?.direction), color = c.textMuted, fontSize = 40.sp, modifier = Modifier.padding(bottom = 12.dp))
         }
         if (a.handledSgv != null && now != null) {
             Text(
-                stringResource(R.string.hd_since_taken, formatGlucose(a.handledSgv, units, locale), formatDelta(now - a.handledSgv, units, locale)),
-                color = c.text, fontSize = 16.sp,
+                stringResource(
+                    R.string.hd_since_taken,
+                    formatGlucose(a.handledSgv, units, locale),
+                    formatDelta(now - a.handledSgv, units, locale)
+                ),
+                color = c.text,
+                fontSize = 16.sp
             )
         }
         a.handledAt?.let {
             val min = ((ui.now - it) / 60_000).toInt().coerceAtLeast(0)
-            Text(stringResource(R.string.hd_taken_at, AlarmText.clock(ctx, it), ctx.resources.getQuantityString(R.plurals.minutes_short, min, min)), color = c.textMuted, fontSize = 14.sp)
+            Text(
+                stringResource(
+                    R.string.hd_taken_at,
+                    AlarmText.clock(ctx, it),
+                    ctx.resources.getQuantityString(R.plurals.minutes_short, min, min)
+                ),
+                color = c.textMuted,
+                fontSize = 14.sp
+            )
         }
         when {
-            a.comingAt != null -> Text(stringResource(R.string.someone_coming, a.comingBy.orEmpty()), color = c.inRange, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            a.comingAt != null -> Text(
+                stringResource(R.string.someone_coming, a.comingBy.orEmpty()),
+                color = c.inRange,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold
+            )
             a.helpAt != null -> Text(stringResource(R.string.hd_help_asked), color = c.high, fontSize = 15.sp)
         }
 
         // the question, when it is asked; otherwise when it will be
         if (a.checkinPending) {
             Column(
-                Modifier.fillMaxWidth().background(c.highContainer, RoundedCornerShape(20.dp)).padding(16.dp).semantics { liveRegion = LiveRegionMode.Assertive },
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                Modifier.fillMaxWidth().background(c.highContainer, RoundedCornerShape(20.dp)).padding(16.dp).semantics {
+                    liveRegion =
+                        LiveRegionMode.Assertive
+                },
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(stringResource(R.string.checkin_title), color = c.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                 a.checkinSentAt?.let {
-                    Text(stringResource(R.string.hd_checkin_deadline, AlarmText.clock(ctx, it + rules.checkinTimeoutMin * 60_000L)), color = c.high, fontSize = 14.sp)
+                    Text(
+                        stringResource(R.string.hd_checkin_deadline, AlarmText.clock(ctx, it + rules.checkinTimeoutMin * 60_000L)),
+                        color = c.high,
+                        fontSize = 14.sp
+                    )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Button(
-                        onClick = { haptics.performHapticFeedback(HapticFeedbackType.Confirm); onAct(ActionReceiver.OK, a.id) },
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                            onAct(ActionReceiver.OK, a.id)
+                        },
                         modifier = Modifier.weight(1f).height(56.dp),
                         shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = c.inRange, contentColor = c.background),
+                        colors = ButtonDefaults.buttonColors(containerColor = c.inRange, contentColor = c.background)
                     ) { Text(stringResource(R.string.act_ok), fontWeight = FontWeight.SemiBold) }
                     Button(
-                        onClick = { haptics.performHapticFeedback(HapticFeedbackType.Confirm); onAct(ActionReceiver.HELP, a.id) },
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                            onAct(ActionReceiver.HELP, a.id)
+                        },
                         modifier = Modifier.weight(1f).height(56.dp),
                         shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = c.high, contentColor = c.background),
+                        colors = ButtonDefaults.buttonColors(containerColor = c.high, contentColor = c.background)
                     ) { Text(stringResource(R.string.act_help), fontWeight = FontWeight.SemiBold) }
                 }
             }
@@ -188,13 +237,23 @@ fun HandlingScreen(
                             },
                             label = { Text(stringResource(R.string.hd_carbs_g, g.toInt()), fontSize = 15.sp) },
                             colors = AssistChipDefaults.assistChipColors(containerColor = c.carbsContainer, labelColor = c.carbs),
-                            modifier = Modifier.heightIn(min = 48.dp),
+                            modifier = Modifier.heightIn(min = 48.dp)
                         )
                     }
-                    AssistChip(onClick = { sheet = true }, label = { Text(stringResource(R.string.hd_carbs_other)) }, modifier = Modifier.heightIn(min = 48.dp))
+                    AssistChip(onClick = {
+                        sheet = true
+                    }, label = { Text(stringResource(R.string.hd_carbs_other)) }, modifier = Modifier.heightIn(min = 48.dp))
                 }
                 lastCarbs?.let {
-                    Text(stringResource(R.string.hd_carbs_saved, it.toInt()), color = c.inRange, fontSize = 14.sp, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+                    Text(
+                        stringResource(R.string.hd_carbs_saved, it.toInt()),
+                        color = c.inRange,
+                        fontSize = 14.sp,
+                        modifier = Modifier.semantics {
+                            liveRegion =
+                                LiveRegionMode.Polite
+                        }
+                    )
                 }
             }
         }
@@ -203,10 +262,14 @@ fun HandlingScreen(
         val from = (a.handledAt ?: a.startedAt) - 15 * 60_000L
         Card {
             GlucoseChart(
-                history = ui.history, forecast = ui.state.ar2, thresholds = ui.state.thresholds, units = units,
-                rangeHours = 3, now = ui.now,
+                history = ui.history,
+                forecast = ui.state.ar2,
+                thresholds = ui.state.thresholds,
+                units = units,
+                rangeHours = 3,
+                now = ui.now,
                 window = ChartWindow(from, maxOf(ui.now + 30 * 60_000L, from + 3_600_000L), followsNow = true),
-                modifier = Modifier.fillMaxWidth().height(200.dp),
+                modifier = Modifier.fillMaxWidth().height(200.dp)
             )
         }
 
@@ -215,18 +278,44 @@ fun HandlingScreen(
             Text(stringResource(R.string.hd_wake_title), color = c.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             if (a.handledSgv != null && (a.kind == "low" || a.kind == "high")) {
                 val limit = if (a.kind == "low") a.handledSgv - rules.worseBy else a.handledSgv + rules.worseBy
-                Bullet(stringResource(if (a.kind == "low") R.string.hd_wake_worse_low else R.string.hd_wake_worse_high, formatGlucose(limit, units, locale)))
+                Bullet(
+                    stringResource(
+                        if (a.kind ==
+                            "low"
+                        ) {
+                            R.string.hd_wake_worse_low
+                        } else {
+                            R.string.hd_wake_worse_high
+                        },
+                        formatGlucose(limit, units, locale)
+                    )
+                )
             }
             if (a.level == "urgent" && a.handledAt != null) {
-                Bullet(stringResource(R.string.hd_wake_ceiling, AlarmText.clock(ctx, a.handledAt + rules.ceilingMin * 60_000L), rules.ceilingMin))
+                Bullet(
+                    stringResource(
+                        R.string.hd_wake_ceiling,
+                        AlarmText.clock(ctx, a.handledAt + rules.ceilingMin * 60_000L),
+                        rules.ceilingMin
+                    )
+                )
             }
             Bullet(stringResource(R.string.hd_wake_no_answer, rules.checkinTimeoutMin))
             val others = ui.state.caregivers.filter { it.id != ui.myId }.map { it.name }
-            if (others.isNotEmpty()) Text(stringResource(R.string.hd_wake_who, others.joinToString(", ")), color = c.textMuted, fontSize = 13.sp)
+            if (others.isNotEmpty()) {
+                Text(
+                    stringResource(R.string.hd_wake_who, others.joinToString(", ")),
+                    color = c.textMuted,
+                    fontSize = 13.sp
+                )
+            }
         }
 
         if (a.helpAt == null) {
-            OutlinedButton(onClick = { haptics.performHapticFeedback(HapticFeedbackType.Confirm); onAct(ActionReceiver.HELP, a.id) }, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+            OutlinedButton(onClick = {
+                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                onAct(ActionReceiver.HELP, a.id)
+            }, modifier = Modifier.fillMaxWidth().height(52.dp)) {
                 Text(stringResource(R.string.act_help), color = c.high)
             }
         }
@@ -234,7 +323,7 @@ fun HandlingScreen(
             onClick = { confirmEnd = true },
             modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = RoundedCornerShape(18.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = c.surfaceRaised, contentColor = c.text),
+            colors = ButtonDefaults.buttonColors(containerColor = c.surfaceRaised, contentColor = c.text)
         ) { Text(stringResource(R.string.act_resolve), fontSize = 15.sp, fontWeight = FontWeight.SemiBold) }
         Spacer(Modifier.height(8.dp))
     }
@@ -244,8 +333,11 @@ fun HandlingScreen(
 private fun Card(content: @Composable () -> Unit) {
     val c = DiaTheme.colors
     Column(
-        Modifier.fillMaxWidth().background(c.surface, RoundedCornerShape(20.dp)).border(1.dp, c.line, RoundedCornerShape(20.dp)).padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        Modifier.fillMaxWidth().background(
+            c.surface,
+            RoundedCornerShape(20.dp)
+        ).border(1.dp, c.line, RoundedCornerShape(20.dp)).padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) { content() }
 }
 

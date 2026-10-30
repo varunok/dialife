@@ -16,7 +16,10 @@ import com.lumenarcanus.dialife.data.MeterReport
 import com.lumenarcanus.dialife.data.Question
 import com.lumenarcanus.dialife.data.Series
 import com.lumenarcanus.dialife.data.StateResponse
+import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.data.Uploader
+import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -25,14 +28,13 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
-import com.lumenarcanus.dialife.data.Treatment
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -40,8 +42,6 @@ import okhttp3.Response
 import okhttp3.sse.EventSource
 import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
-import java.util.concurrent.TimeUnit
-import kotlin.coroutines.resume
 
 enum class Link { Connecting, Live, Offline }
 
@@ -51,7 +51,8 @@ data class Live(
     val link: Link = Link.Connecting,
     val lastLiveAt: Long = 0, // elapsedRealtime of the last moment the stream was open
     val unauthorized: Boolean = false,
-    val meter: MeterReport? = null, // sensor vs glucometer; refetched when checks or sensors change
+    // sensor vs glucometer; refetched when checks or sensors change
+    val meter: MeterReport? = null
 )
 
 /**
@@ -68,6 +69,7 @@ class LiveRepository(context: Context, private val api: DiaLifeApi = DiaLifeApi(
     private val flushing = Mutex()
 
     private val _pending = MutableStateFlow(queue.all())
+
     /** Food/insulin changes made here that the server has not confirmed yet. */
     val pending: StateFlow<List<PendingOp>> = _pending.asStateFlow()
 
@@ -81,11 +83,13 @@ class LiveRepository(context: Context, private val api: DiaLifeApi = DiaLifeApi(
     /** This phone's device id: who "I" am in handled_by_id / coming_by_id. */
     @Volatile var myId: Long = 0
         private set
+
     @Volatile var credentials: Credentials? = null
         private set
 
     private var job: Job? = null
     private var creds: Credentials? = null
+
     @Volatile private var lastEventId: String? = null
 
     @Volatile private var source: EventSource? = null
@@ -156,37 +160,40 @@ class LiveRepository(context: Context, private val api: DiaLifeApi = DiaLifeApi(
             .header("Authorization", "Bearer ${c.token}")
             .apply { lastEventId?.let { header("Last-Event-ID", it) } }
             .build()
-        val source = EventSources.createFactory(sseClient).newEventSource(req, object : EventSourceListener() {
-            override fun onOpen(eventSource: EventSource, response: Response) {
-                opened = true
-                _live.update { it.copy(link = Link.Live, lastLiveAt = SystemClock.elapsedRealtime()) }
-                flush() // back online: send what waited
-            }
+        val source = EventSources.createFactory(sseClient).newEventSource(
+            req,
+            object : EventSourceListener() {
+                override fun onOpen(eventSource: EventSource, response: Response) {
+                    opened = true
+                    _live.update { it.copy(link = Link.Live, lastLiveAt = SystemClock.elapsedRealtime()) }
+                    flush() // back online: send what waited
+                }
 
-            override fun onEvent(eventSource: EventSource, id: String?, type: String?, data: String) {
-                try {
-                    handle(c, type, data)
-                    if (id != null) lastEventId = id
-                    _live.update { it.copy(lastLiveAt = SystemClock.elapsedRealtime()) }
-                    persist(c)
-                } catch (e: Exception) {
-                    Log.w(TAG, "bad event $type", e)
+                override fun onEvent(eventSource: EventSource, id: String?, type: String?, data: String) {
+                    try {
+                        handle(c, type, data)
+                        if (id != null) lastEventId = id
+                        _live.update { it.copy(lastLiveAt = SystemClock.elapsedRealtime()) }
+                        persist(c)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "bad event $type", e)
+                    }
+                }
+
+                override fun onClosed(eventSource: EventSource) {
+                    if (opened) _live.update { it.copy(lastLiveAt = SystemClock.elapsedRealtime()) } // live until this moment
+                    if (cont.isActive) cont.resume(opened)
+                }
+
+                override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
+                    if (opened) _live.update { it.copy(lastLiveAt = SystemClock.elapsedRealtime()) }
+                    if (response?.code == 401 || response?.code == 403) {
+                        _live.update { it.copy(unauthorized = true, link = Link.Offline) }
+                    }
+                    if (cont.isActive) cont.resume(opened)
                 }
             }
-
-            override fun onClosed(eventSource: EventSource) {
-                if (opened) _live.update { it.copy(lastLiveAt = SystemClock.elapsedRealtime()) } // live until this moment
-                if (cont.isActive) cont.resume(opened)
-            }
-
-            override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
-                if (opened) _live.update { it.copy(lastLiveAt = SystemClock.elapsedRealtime()) }
-                if (response?.code == 401 || response?.code == 403) {
-                    _live.update { it.copy(unauthorized = true, link = Link.Offline) }
-                }
-                if (cont.isActive) cont.resume(opened)
-            }
-        })
+        )
         this.source = source
         cont.invokeOnCancellation { source.cancel() }
     }
@@ -304,12 +311,16 @@ class LiveRepository(context: Context, private val api: DiaLifeApi = DiaLifeApi(
             try {
                 var sent = false
                 for (op in queue.all()) {
-                    val r = if (op.delete) api.deleteTreatment(c, op.id)
-                    else api.upsertTreatment(c, op.treatment ?: continue, c.deviceName)
+                    val r = if (op.delete) {
+                        api.deleteTreatment(c, op.id)
+                    } else {
+                        api.upsertTreatment(c, op.treatment ?: continue, c.deviceName)
+                    }
                     val err = (r.exceptionOrNull() as? ApiException)?.error
                     when {
                         r.isSuccess -> sent = true
-                        err is ApiError.Server && err.code in 400..499 -> Log.w(TAG, "treatment ${op.id} refused: ${err.code}") // never accepted: drop it
+                        // never accepted: drop it
+                        err is ApiError.Server && err.code in 400..499 -> Log.w(TAG, "treatment ${op.id} refused: ${err.code}")
                         else -> break // offline or server trouble: keep it for later
                     }
                     _pending.value = queue.done(op)
@@ -351,7 +362,10 @@ class LiveRepository(context: Context, private val api: DiaLifeApi = DiaLifeApi(
         val key = h.mbg.t + h.treatments.filter { it.glucose != null || it.eventType == "Sensor Start" }.map { it.t }
         if (key == meterKey && _live.value.meter != null) return
         scope.launch {
-            api.meter(c).onSuccess { m -> meterKey = key; _live.update { it.copy(meter = m) } }
+            api.meter(c).onSuccess { m ->
+                meterKey = key
+                _live.update { it.copy(meter = m) }
+            }
         }
     }
 
@@ -392,7 +406,7 @@ internal fun History.withReading(st: StateResponse): History {
     return copy(
         from = from,
         to = st.now,
-        sgv = Series(sgv.t.drop(keep) + bg.mills, sgv.v.drop(keep) + bg.sgv),
+        sgv = Series(sgv.t.drop(keep) + bg.mills, sgv.v.drop(keep) + bg.sgv)
     )
 }
 

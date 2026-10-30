@@ -1,28 +1,23 @@
 package com.lumenarcanus.dialife.data
 
+import java.io.IOException
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
-import okhttp3.OkHttpClient
+import kotlinx.serialization.json.put
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import java.io.IOException
-import java.util.concurrent.TimeUnit
 
 @Serializable
-data class Me(
-    val id: Long,
-    val name: String,
-    val role: String,
-    @SerialName("display_units") val displayUnits: String,
-)
+data class Me(val id: Long, val name: String, val role: String, @SerialName("display_units") val displayUnits: String)
 
 sealed interface ApiError {
     data object Network : ApiError
@@ -33,15 +28,12 @@ sealed interface ApiError {
 class ApiException(val error: ApiError) : Exception(error.toString())
 
 /** Thin client for the DiaLife server API (see .local/notes/api-app.md). */
-class DiaLifeApi(
-    private val http: OkHttpClient = defaultClient,
-) {
+class DiaLifeApi(private val http: OkHttpClient = defaultClient) {
     suspend fun me(server: String, token: String): Result<Me> = get(server, token, "/api/me")
 
     suspend fun state(c: Credentials): Result<StateResponse> = get(c.server, c.token, "/api/state")
 
-    suspend fun history(c: Credentials, from: Long, to: Long): Result<History> =
-        get(c.server, c.token, "/api/history?from=$from&to=$to")
+    suspend fun history(c: Credentials, from: Long, to: Long): Result<History> = get(c.server, c.token, "/api/history?from=$from&to=$to")
 
     suspend fun alarmLog(c: Credentials, days: Int): Result<AlarmLog> = get(c.server, c.token, "/api/alarms/log?days=$days")
 
@@ -60,8 +52,14 @@ class DiaLifeApi(
     suspend fun coming(c: Credentials, id: Long): Result<Unit> = post(c, "/api/alarms/$id/coming", "{}")
 
     /** An answer to "did you forget to log?"; a closed question (409) counts as done. */
-    suspend fun answerQuestion(c: Credentials, id: Long, answer: String, treatmentId: String? = null): Result<Unit> =
-        post(c, "/api/questions/$id/answer", buildJsonObject { put("answer", answer); treatmentId?.let { put("treatment_id", it) } }.toString()).closedIsDone()
+    suspend fun answerQuestion(c: Credentials, id: Long, answer: String, treatmentId: String? = null): Result<Unit> = post(
+        c,
+        "/api/questions/$id/answer",
+        buildJsonObject {
+            put("answer", answer)
+            treatmentId?.let { put("treatment_id", it) }
+        }.toString()
+    ).closedIsDone()
 
     suspend fun dismissQuestion(c: Credentials, id: Long): Result<Unit> = post(c, "/api/questions/$id/dismiss", "{}").closedIsDone()
 
@@ -70,30 +68,70 @@ class DiaLifeApi(
 
     /** Carb suggestions for the foods typed in the form; only ever suggestions. */
     suspend fun suggestCarbs(c: Credentials, items: List<Pair<String, String>>): Result<CarbSuggestions> = postFor(
-        c, "/api/carbs/suggest",
+        c,
+        "/api/carbs/suggest",
         buildJsonObject {
-            put("items", kotlinx.serialization.json.buildJsonArray {
-                items.forEach { (name, portion) -> add(buildJsonObject { put("name", name); put("portion", portion) }) }
-            })
-        }.toString(),
+            put(
+                "items",
+                kotlinx.serialization.json.buildJsonArray {
+                    items.forEach { (name, portion) ->
+                        add(
+                            buildJsonObject {
+                                put("name", name)
+                                put("portion", portion)
+                            }
+                        )
+                    }
+                }
+            )
+        }.toString()
     )
 
     suspend fun putDose(c: Credentials, d: DoseSettings): Result<DoseSettings> = sendFor(
-        c, "PUT", "/api/dose",
+        c,
+        "PUT",
+        "/api/dose",
         buildJsonObject {
-            put("ratio", d.ratio); put("rule", d.rule); put("step", d.step); put("fresh_min", d.freshMin)
-            put("max_rapid", d.maxRapid); put("max_basal", d.maxBasal); put("max_carbs", d.maxCarbs)
-            put("isf", d.isf); put("dia_min", d.diaMin); put("carb_min", d.carbMin)
-            put("table", kotlinx.serialization.json.buildJsonArray { d.table.forEach { r -> add(buildJsonObject { put("mg", r.mg); put("u", r.u) }) } })
-        }.toString(),
+            put("ratio", d.ratio)
+            put("rule", d.rule)
+            put("step", d.step)
+            put("fresh_min", d.freshMin)
+            put("max_rapid", d.maxRapid)
+            put("max_basal", d.maxBasal)
+            put("max_carbs", d.maxCarbs)
+            put("isf", d.isf)
+            put("dia_min", d.diaMin)
+            put("carb_min", d.carbMin)
+            put(
+                "table",
+                kotlinx.serialization.json.buildJsonArray {
+                    d.table.forEach { r ->
+                        add(
+                            buildJsonObject {
+                                put("mg", r.mg)
+                                put("u", r.u)
+                            }
+                        )
+                    }
+                }
+            )
+        }.toString()
     )
 
     suspend fun planDose(c: Credentials, p: PlannedDose): Result<Unit> = post(
-        c, "/api/planned",
+        c,
+        "/api/planned",
         buildJsonObject {
-            put("id", p.id); put("meal_id", p.mealId); put("dose", p.dose); put("food", p.food); put("corr", p.corr)
-            put("carbs", p.carbs); p.meter?.let { put("meter", it) }; p.meterAt?.let { put("meter_at", it) }; put("created_at", p.createdAt)
-        }.toString(),
+            put("id", p.id)
+            put("meal_id", p.mealId)
+            put("dose", p.dose)
+            put("food", p.food)
+            put("corr", p.corr)
+            put("carbs", p.carbs)
+            p.meter?.let { put("meter", it) }
+            p.meterAt?.let { put("meter_at", it) }
+            put("created_at", p.createdAt)
+        }.toString()
     )
 
     suspend fun plannedGiven(c: Credentials, id: String, insulinId: String): Result<Unit> =
@@ -127,7 +165,11 @@ class DiaLifeApi(
             put("created_at", java.time.Instant.ofEpochMilli(t.t).toString())
             t.insulin?.let { put("insulin", it) }
             t.carbs?.let { put("carbs", it) }
-            t.glucose?.let { put("glucose", it); put("glucoseType", "Finger"); put("units", "mg/dl") }
+            t.glucose?.let {
+                put("glucose", it)
+                put("glucoseType", "Finger")
+                put("units", "mg/dl")
+            }
             t.duration?.let { put("duration", it) }
             t.intensity?.let { put("exerciseIntensity", it) }
             if ((t.insulin ?: 0.0) > 0) {
@@ -160,14 +202,33 @@ class DiaLifeApi(
     }
 
     /** Which browser a scanned web-login code belongs to; 404 or 410: no longer valid. */
-    suspend fun webInspect(c: Credentials, link: WebLoginLink): Result<WebLoginInfo> =
-        postFor(c, "/api/web/inspect", buildJsonObject { put("id", link.id); put("code", link.code) }.toString())
+    suspend fun webInspect(c: Credentials, link: WebLoginLink): Result<WebLoginInfo> = postFor(
+        c,
+        "/api/web/inspect",
+        buildJsonObject {
+            put("id", link.id)
+            put("code", link.code)
+        }.toString()
+    )
 
-    suspend fun webApprove(c: Credentials, link: WebLoginLink, minutes: Int): Result<Unit> =
-        postFor<Unit?>(c, "/api/web/approve", buildJsonObject { put("id", link.id); put("code", link.code); put("minutes", minutes) }.toString()).map { }
+    suspend fun webApprove(c: Credentials, link: WebLoginLink, minutes: Int): Result<Unit> = postFor<Unit?>(
+        c,
+        "/api/web/approve",
+        buildJsonObject {
+            put("id", link.id)
+            put("code", link.code)
+            put("minutes", minutes)
+        }.toString()
+    ).map { }
 
-    suspend fun webReject(c: Credentials, link: WebLoginLink): Result<Unit> =
-        postFor<Unit?>(c, "/api/web/reject", buildJsonObject { put("id", link.id); put("code", link.code) }.toString()).map { }
+    suspend fun webReject(c: Credentials, link: WebLoginLink): Result<Unit> = postFor<Unit?>(
+        c,
+        "/api/web/reject",
+        buildJsonObject {
+            put("id", link.id)
+            put("code", link.code)
+        }.toString()
+    ).map { }
 
     suspend fun webSessions(c: Credentials): Result<List<WebSession>> = get(c.server, c.token, "/api/web/sessions")
 
@@ -176,22 +237,23 @@ class DiaLifeApi(
     /** A POST whose answer matters, every status as it is (unlike the alarm actions). */
     private suspend inline fun <reified T> postFor(c: Credentials, path: String, body: String): Result<T> = sendFor(c, "POST", path, body)
 
-    private suspend inline fun <reified T> sendFor(c: Credentials, method: String, path: String, body: String): Result<T> = withContext(Dispatchers.IO) {
-        val req = Request.Builder().url(c.server + path).header("Authorization", "Bearer ${c.token}")
-            .method(method, body.toRequestBody("application/json".toMediaType())).build()
-        try {
-            http.newCall(req).execute().use { resp ->
-                when {
-                    resp.code == 401 || resp.code == 403 -> Result.failure(ApiException(ApiError.Unauthorized))
-                    !resp.isSuccessful -> Result.failure(ApiException(ApiError.Server(resp.code)))
-                    resp.code == 204 -> Result.success(null as T)
-                    else -> Result.success(json.decodeFromString<T>(resp.body.string()))
+    private suspend inline fun <reified T> sendFor(c: Credentials, method: String, path: String, body: String): Result<T> =
+        withContext(Dispatchers.IO) {
+            val req = Request.Builder().url(c.server + path).header("Authorization", "Bearer ${c.token}")
+                .method(method, body.toRequestBody("application/json".toMediaType())).build()
+            try {
+                http.newCall(req).execute().use { resp ->
+                    when {
+                        resp.code == 401 || resp.code == 403 -> Result.failure(ApiException(ApiError.Unauthorized))
+                        !resp.isSuccessful -> Result.failure(ApiException(ApiError.Server(resp.code)))
+                        resp.code == 204 -> Result.success(null as T)
+                        else -> Result.success(json.decodeFromString<T>(resp.body.string()))
+                    }
                 }
+            } catch (e: IOException) {
+                Result.failure(ApiException(ApiError.Network))
             }
-        } catch (e: IOException) {
-            Result.failure(ApiException(ApiError.Network))
         }
-    }
 
     /** Alarm actions; 404 (episode already over) counts as done, 409 is a refused quiet. */
     /** A JSON request whose answer is only "done"; for the features' own requests too. */
@@ -214,21 +276,20 @@ class DiaLifeApi(
         }
     }
 
-    private suspend inline fun <reified T> get(server: String, token: String, path: String): Result<T> =
-        withContext(Dispatchers.IO) {
-            val req = Request.Builder().url(server + path).header("Authorization", "Bearer $token").build()
-            try {
-                http.newCall(req).execute().use { resp ->
-                    when {
-                        resp.code == 401 || resp.code == 403 -> Result.failure(ApiException(ApiError.Unauthorized))
-                        !resp.isSuccessful -> Result.failure(ApiException(ApiError.Server(resp.code)))
-                        else -> Result.success(json.decodeFromString<T>(resp.body.string()))
-                    }
+    private suspend inline fun <reified T> get(server: String, token: String, path: String): Result<T> = withContext(Dispatchers.IO) {
+        val req = Request.Builder().url(server + path).header("Authorization", "Bearer $token").build()
+        try {
+            http.newCall(req).execute().use { resp ->
+                when {
+                    resp.code == 401 || resp.code == 403 -> Result.failure(ApiException(ApiError.Unauthorized))
+                    !resp.isSuccessful -> Result.failure(ApiException(ApiError.Server(resp.code)))
+                    else -> Result.success(json.decodeFromString<T>(resp.body.string()))
                 }
-            } catch (e: IOException) {
-                Result.failure(ApiException(ApiError.Network))
             }
+        } catch (e: IOException) {
+            Result.failure(ApiException(ApiError.Network))
         }
+    }
 
     companion object {
         /** Nightscout event types, so xDrip+ and Nightscout tools read our entries right. */

@@ -16,14 +16,14 @@ import com.lumenarcanus.dialife.R
 private fun onest(weight: Int) = Font(
     R.font.onest,
     weight = FontWeight(weight),
-    variationSettings = FontVariation.Settings(FontVariation.weight(weight)),
+    variationSettings = FontVariation.Settings(FontVariation.weight(weight))
 )
 
 val Onest = FontFamily(onest(300), onest(400), onest(500), onest(600), onest(700))
 
 val PlexMono = FontFamily(
     Font(R.font.plexmono_regular, FontWeight.Normal),
-    Font(R.font.plexmono_medium, FontWeight.Medium),
+    Font(R.font.plexmono_medium, FontWeight.Medium)
 )
 
 /** The hero glucose number: thin, tight, tabular so digits never jump. */
@@ -33,7 +33,7 @@ val GlucoseHero = TextStyle(
     fontSize = 120.sp,
     lineHeight = 104.sp,
     letterSpacing = (-0.045).em,
-    fontFeatureSettings = "tnum",
+    fontFeatureSettings = "tnum"
 )
 
 /** Small numbers, times and axis labels. */
@@ -55,6 +55,6 @@ val DiaTypography = Typography().let { base ->
         bodySmall = base.bodySmall.copy(fontFamily = Onest),
         labelLarge = base.labelLarge.copy(fontFamily = Onest, fontWeight = FontWeight.SemiBold),
         labelMedium = base.labelMedium.copy(fontFamily = Onest, fontWeight = FontWeight.Medium),
-        labelSmall = base.labelSmall.copy(fontFamily = Onest, fontWeight = FontWeight.Medium),
+        labelSmall = base.labelSmall.copy(fontFamily = Onest, fontWeight = FontWeight.Medium)
     )
 }

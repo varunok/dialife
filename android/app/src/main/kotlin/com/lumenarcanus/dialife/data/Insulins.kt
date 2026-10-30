@@ -2,7 +2,7 @@ package com.lumenarcanus.dialife.data
 
 enum class InsulinType(val wire: String) {
     Rapid("rapid"), // short-acting, for meals and corrections
-    Basal("basal"), // long-acting background insulin
+    Basal("basal") // long-acting background insulin
     ;
 
     companion object {
@@ -18,11 +18,17 @@ enum class InsulinType(val wire: String) {
 object Insulins {
     val rapid = listOf(
         "NovoRapid", "Fiasp", "Humalog", "Lyumjev", "Apidra", "Rapilog One",
-        "Admelog", "Trurapi", "Kirsty", "Insulin lispro Sanofi",
+        "Admelog", "Trurapi", "Kirsty", "Insulin lispro Sanofi"
     )
     val basal = listOf(
-        "Lantus", "Toujeo", "Abasaglar", "Semglee", "Rezvoglar", "Basalog",
-        "Tresiba", "Levemir",
+        "Lantus",
+        "Toujeo",
+        "Abasaglar",
+        "Semglee",
+        "Rezvoglar",
+        "Basalog",
+        "Tresiba",
+        "Levemir"
     )
 
     fun of(type: InsulinType) = if (type == InsulinType.Basal) basal else rapid

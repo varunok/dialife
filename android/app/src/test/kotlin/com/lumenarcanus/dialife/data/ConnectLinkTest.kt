@@ -28,7 +28,7 @@ class ConnectLinkTest {
             "dialife://connect?token=$token" to LinkError.BadServer,
             "dialife://connect?server=https%3A%2F%2Fx.com&token=dl_short" to LinkError.BadToken,
             "dialife://connect?server=https%3A%2F%2Fx.com" to LinkError.BadToken,
-            "not a url at all" to LinkError.NotDiaLife,
+            "not a url at all" to LinkError.NotDiaLife
         )
         for ((raw, want) in cases) {
             val err = (parseConnectLink(raw).exceptionOrNull() as? LinkException)?.error

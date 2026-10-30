@@ -40,15 +40,50 @@ internal object Sparkline {
         val faint = if (dark) 0x33FFFFFF else 0x33000000
 
         cv.clipRect(0, 0, w, h) // thresholds outside the window simply fall off the picture
-        cv.drawRect(0f, y(th.high), w.toFloat(), y(th.low), Paint().apply { color = inRange; alpha = 28 })
+        cv.drawRect(
+            0f,
+            y(th.high),
+            w.toFloat(),
+            y(th.low),
+            Paint().apply {
+                color = inRange
+                alpha = 28
+            }
+        )
         val dash = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE; strokeWidth = 2f; pathEffect = DashPathEffect(floatArrayOf(8f, 10f), 0f)
+            style = Paint.Style.STROKE
+            strokeWidth = 2f
+            pathEffect = DashPathEffect(floatArrayOf(8f, 10f), 0f)
         }
-        cv.drawLine(0f, y(th.high), w.toFloat(), y(th.high), dash.apply { color = high; alpha = 140 })
-        cv.drawLine(0f, y(th.low), w.toFloat(), y(th.low), dash.apply { color = low; alpha = 150 })
+        cv.drawLine(
+            0f,
+            y(th.high),
+            w.toFloat(),
+            y(th.high),
+            dash.apply {
+                color = high
+                alpha = 140
+            }
+        )
+        cv.drawLine(
+            0f,
+            y(th.low),
+            w.toFloat(),
+            y(th.low),
+            dash.apply {
+                color = low
+                alpha = 150
+            }
+        )
 
         // the line, one colour per segment; a gap over 15 min breaks it
-        val line = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 7f; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND }
+        val line = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 7f
+            strokeCap = Paint.Cap.ROUND
+            strokeJoin =
+                Paint.Join.ROUND
+        }
         fun colour(v: Int) = when {
             v < th.low -> low
             v > th.high -> high
@@ -59,13 +94,19 @@ internal object Sparkline {
             val b = idx[k]
             if (ts[b] - ts[a] > 15 * 60_000L) continue
             line.color = colour(vs[b])
-            val p = Path().apply { moveTo(x(ts[a]), y(vs[a])); lineTo(x(ts[b]), y(vs[b])) }
+            val p = Path().apply {
+                moveTo(x(ts[a]), y(vs[a]))
+                lineTo(x(ts[b]), y(vs[b]))
+            }
             cv.drawPath(p, line)
         }
         val lastI = idx.last()
         cv.drawCircle(x(ts[lastI]), y(vs[lastI]), 10f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colour(vs[lastI]) })
         // hour marks
-        val tick = Paint().apply { color = faint; strokeWidth = 2f }
+        val tick = Paint().apply {
+            color = faint
+            strokeWidth = 2f
+        }
         var t = (from / 3_600_000L + 1) * 3_600_000L
         while (t < now) {
             cv.drawLine(x(t), 0f, x(t), h.toFloat(), tick)

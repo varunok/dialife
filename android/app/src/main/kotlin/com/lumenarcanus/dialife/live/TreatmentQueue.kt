@@ -2,17 +2,18 @@ package com.lumenarcanus.dialife.live
 
 import com.lumenarcanus.dialife.data.DiaLifeApi
 import com.lumenarcanus.dialife.data.Treatment
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.ListSerializer
 import java.io.File
 import java.security.SecureRandom
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
 
 /** One change made on this phone that the server has not confirmed yet. */
 @Serializable
 data class PendingOp(
     val id: String, // treatment id; one op per id, the newest wins
     val delete: Boolean = false,
-    val treatment: Treatment? = null, // for an upsert
+    // for an upsert
+    val treatment: Treatment? = null
 )
 
 /**

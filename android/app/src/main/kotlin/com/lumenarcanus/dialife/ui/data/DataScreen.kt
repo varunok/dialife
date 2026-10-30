@@ -80,7 +80,7 @@ data class Entry(
     val treatment: Treatment? = null, // editable when set
     val meter: Int? = null,
     val src: String? = null, // a glucometer reading from xDrip+: "Roche 00:00:5E:…" or "manual"
-    val question: Question? = null,
+    val question: Question? = null
 )
 
 /**
@@ -96,7 +96,7 @@ data class DataRow(
     val end: Long? = null,
     val min: Int? = null,
     val max: Int? = null,
-    val span: Boolean = false,
+    val span: Boolean = false
 )
 
 private const val MIN = 60_000L
@@ -111,14 +111,25 @@ fun entriesOf(h: History?, questions: List<Question>, from: Long, to: Long): Lis
             tr.glucose != null -> out += Entry(tr.t, EntryKind.Meter, tr, meter = tr.glucose)
             tr.duration != null -> out += Entry(tr.t, EntryKind.Activity, tr)
             else -> {
-                if (ins) out += Entry(tr.t, if (InsulinType.of(tr.insulinType) == InsulinType.Basal) EntryKind.Basal else EntryKind.Rapid, tr)
+                if (ins) {
+                    out +=
+                        Entry(tr.t, if (InsulinType.of(tr.insulinType) == InsulinType.Basal) EntryKind.Basal else EntryKind.Rapid, tr)
+                }
                 if ((tr.carbs ?: 0.0) > 0) out += Entry(tr.t, EntryKind.Carbs, tr)
                 if (!ins && (tr.carbs ?: 0.0) <= 0 && !tr.notes.isNullOrBlank()) out += Entry(tr.t, EntryKind.Note, tr)
             }
         }
     }
-    h?.mbg?.let { m -> m.t.indices.filter { m.t[it] in from..to }.forEach { out += Entry(m.t[it], EntryKind.Meter, meter = m.v[it], src = m.d.getOrNull(it)) } }
-    questions.filter { it.from in from..to && (it.state == "unknown" || it.state == "open") }.forEach { out += Entry(it.from, EntryKind.Suspect, question = it) }
+    h?.mbg?.let { m ->
+        m.t.indices.filter { m.t[it] in from..to }.forEach {
+            out +=
+                Entry(m.t[it], EntryKind.Meter, meter = m.v[it], src = m.d.getOrNull(it))
+        }
+    }
+    questions.filter { it.from in from..to && (it.state == "unknown" || it.state == "open") }.forEach {
+        out +=
+            Entry(it.from, EntryKind.Suspect, question = it)
+    }
     return out.sortedBy { it.t }
 }
 
@@ -127,7 +138,14 @@ fun entriesOf(h: History?, questions: List<Question>, from: Long, to: Long): Lis
  * one before. Longer: intervals on the clock (10:00–10:15…), every reading in
  * them averaged, every entry in the interval it falls in.
  */
-fun rowsOf(h: History?, entries: List<Entry>, from: Long, to: Long, stepMin: Int, zone: java.util.TimeZone = java.util.TimeZone.getDefault()): List<DataRow> {
+fun rowsOf(
+    h: History?,
+    entries: List<Entry>,
+    from: Long,
+    to: Long,
+    stepMin: Int,
+    zone: java.util.TimeZone = java.util.TimeZone.getDefault()
+): List<DataRow> {
     val ts = h?.sgv?.t.orEmpty()
     val vs = h?.sgv?.v.orEmpty()
     val idx = ts.indices.filter { ts[it] in from..to }
@@ -146,18 +164,23 @@ fun rowsOf(h: History?, entries: List<Entry>, from: Long, to: Long, stepMin: Int
         return rows
     }
     val step = stepMin * MIN
-    fun bucket(t: Long): Long { val off = zone.getOffset(t); return Math.floorDiv(t + off, step) * step - off }
+    fun bucket(t: Long): Long {
+        val off = zone.getOffset(t)
+        return Math.floorDiv(t + off, step) * step - off
+    }
     val values = idx.groupBy({ bucket(ts[it]) }, { vs[it] })
     val logged = entries.groupBy { bucket(it.t) }
     return (values.keys + logged.keys).distinct().sortedDescending().map { b ->
         val v = values[b].orEmpty()
         DataRow(
-            t = b, end = b + step,
+            t = b,
+            end = b + step,
             sgv = if (v.isEmpty()) null else Math.round(v.average()).toInt(),
-            min = v.minOrNull(), max = v.maxOrNull(),
+            min = v.minOrNull(),
+            max = v.maxOrNull(),
             delta = if (v.size > 1) v.last() - v.first() else null,
             entries = logged[b].orEmpty(),
-            span = suspects.any { q -> q.from < b && q.to >= b },
+            span = suspects.any { q -> q.from < b && q.to >= b }
         )
     }
 }
@@ -180,21 +203,29 @@ fun DataScreen(
     loadHistory: suspend (from: Long, to: Long) -> History?, // for windows older than the live day
     onSaveTreatment: (Treatment) -> Unit,
     onBack: () -> Unit,
-    onOpenMeal: (Treatment) -> Unit = {}, // food has a screen of its own
+    // food has a screen of its own
+    onOpenMeal: (Treatment) -> Unit = {}
 ) {
     val c = DiaTheme.colors
     // a tapped entry opens the same sheet as on the chart; food its own screen
     var editing by remember { mutableStateOf<Treatment?>(null) }
     editing?.takeIf { (it.carbs ?: 0.0) > 0 && (it.insulin ?: 0.0) <= 0 && it.glucose == null && it.duration == null }?.let { tr ->
-        LaunchedEffect(tr.id) { editing = null; onOpenMeal(tr) }
+        LaunchedEffect(tr.id) {
+            editing = null
+            onOpenMeal(tr)
+        }
     }
     editing?.takeIf { !((it.carbs ?: 0.0) > 0 && (it.insulin ?: 0.0) <= 0 && it.glucose == null && it.duration == null) }?.let { tr ->
         com.lumenarcanus.dialife.ui.treatment.TreatmentSheet(
-            com.lumenarcanus.dialife.ui.treatment.TreatmentKind.Insulin, tr,
-            onSave = { onSaveTreatment(it); editing = null },
+            com.lumenarcanus.dialife.ui.treatment.TreatmentKind.Insulin,
+            tr,
+            onSave = {
+                onSaveTreatment(it)
+                editing = null
+            },
             onDismiss = { editing = null },
             recent = history?.treatments.orEmpty(),
-            units = units,
+            units = units
         )
     }
     val onEdit: (Treatment) -> Unit = { editing = it }
@@ -221,45 +252,92 @@ fun DataScreen(
         when (filter) {
             DataFilter.All -> true
             DataFilter.Entries -> r.entries.isNotEmpty()
-            DataFilter.Out -> (r.min ?: r.sgv)?.let { it < thresholds.low } == true || (r.max ?: r.sgv)?.let { it > thresholds.high } == true
+            DataFilter.Out ->
+                (r.min ?: r.sgv)?.let { it < thresholds.low } == true ||
+                    (r.max ?: r.sgv)?.let { it > thresholds.high } == true
         }
     }
     val ctx = LocalContext.current
-    val day = if (android.text.format.DateUtils.isToday(to)) stringResource(R.string.data_today) else
-        android.text.format.DateUtils.formatDateTime(ctx, to, android.text.format.DateUtils.FORMAT_SHOW_DATE or android.text.format.DateUtils.FORMAT_NO_YEAR or android.text.format.DateUtils.FORMAT_ABBREV_MONTH)
+    val day = if (android.text.format.DateUtils.isToday(to)) {
+        stringResource(R.string.data_today)
+    } else {
+        android.text.format.DateUtils.formatDateTime(
+            ctx,
+            to,
+            android.text.format.DateUtils.FORMAT_SHOW_DATE or android.text.format.DateUtils.FORMAT_NO_YEAR or
+                android.text.format.DateUtils.FORMAT_ABBREV_MONTH
+        )
+    }
     val window = stringResource(R.string.data_window, day, AlarmText.clock(ctx, from), AlarmText.clock(ctx, to))
 
     if (wide) {
-        WideTable(rows, entries, h, from, to, window, units, thresholds, step, { step = it }, onEdit, onClose = { wide = false }, onChart = onBack)
+        WideTable(rows, entries, h, from, to, window, units, thresholds, step, {
+            step = it
+        }, onEdit, onClose = { wide = false }, onChart = onBack)
         return
     }
     BackHandler(onBack = onBack)
     Column(
         Modifier.fillMaxSize().background(c.background).safeDrawingPadding().padding(start = 20.dp, end = 20.dp, top = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = onBack) { Text("‹ " + stringResource(R.string.nav_back), color = c.textMuted) }
             Spacer(Modifier.weight(1f))
-            IconButton(onClick = onBack) { Icon(painterResource(R.drawable.ic_chart), stringResource(R.string.data_chart), tint = c.textMuted) }
-            IconButton(onClick = { wide = true }) { Icon(painterResource(R.drawable.ic_fullscreen), stringResource(R.string.data_wide), tint = c.textMuted) }
+            IconButton(onClick = onBack) {
+                Icon(painterResource(R.drawable.ic_chart), stringResource(R.string.data_chart), tint = c.textMuted)
+            }
+            IconButton(onClick = {
+                wide = true
+            }) { Icon(painterResource(R.drawable.ic_fullscreen), stringResource(R.string.data_wide), tint = c.textMuted) }
         }
         Text(stringResource(R.string.data_title), color = c.text, fontSize = 26.sp, fontWeight = FontWeight.SemiBold)
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = { page++ }) { Text("‹ " + stringResource(R.string.data_prev), color = c.textMuted) }
-            Text(window, color = c.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-            TextButton(onClick = { if (page > 0) page-- }, enabled = page > 0) { Text(stringResource(R.string.data_next) + " ›", color = if (page > 0) c.textMuted else c.textFaint) }
+            Text(
+                window,
+                color = c.text,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            TextButton(onClick = {
+                if (page >
+                    0
+                ) {
+                    page--
+                }
+            }, enabled = page > 0) {
+                Text(
+                    stringResource(R.string.data_next) + " ›",
+                    color = if (page >
+                        0
+                    ) {
+                        c.textMuted
+                    } else {
+                        c.textFaint
+                    }
+                )
+            }
         }
         // two rows: "Лише записи" and "Поза межами" do not fit beside the step
         Segments(
-            listOf(DataFilter.All to stringResource(R.string.data_all), DataFilter.Entries to stringResource(R.string.data_events), DataFilter.Out to stringResource(R.string.data_out)),
-            filter, Modifier.fillMaxWidth(), fill = true,
+            listOf(
+                DataFilter.All to stringResource(R.string.data_all),
+                DataFilter.Entries to stringResource(R.string.data_events),
+                DataFilter.Out to stringResource(R.string.data_out)
+            ),
+            filter,
+            Modifier.fillMaxWidth(),
+            fill = true
         ) { filter = it }
         StepSegments(step) { step = it }
         Column(
             Modifier.fillMaxWidth().weight(1f)
                 .background(c.surface, RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
-                .border(1.dp, c.line, RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)),
+                .border(1.dp, c.line, RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
         ) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 HeadCell(stringResource(R.string.data_time), timeColumn())
@@ -276,7 +354,10 @@ fun DataScreen(
                     LazyColumn(Modifier.fillMaxSize()) {
                         groups.forEach { (hourStart, rs) ->
                             item(key = "h$hourStart") {
-                                val vs = readings?.t.orEmpty().indices.filter { readings!!.t[it] in maxOf(hourStart, from)..minOf(hourStart + HOUR, to) }.map { readings!!.v[it] }
+                                val vs = readings?.t.orEmpty().indices.filter {
+                                    readings!!.t[it] in
+                                        maxOf(hourStart, from)..minOf(hourStart + HOUR, to)
+                                }.map { readings!!.v[it] }
                                 HourHeader(hourStart, vs, units)
                             }
                             items(rs, key = { "r${it.t}" }) { r -> ListRow(r, units, thresholds, onEdit) }
@@ -291,19 +372,30 @@ fun DataScreen(
 private fun hourOf(t: Long): Long {
     val cal = java.util.Calendar.getInstance().apply {
         timeInMillis = t
-        set(java.util.Calendar.MINUTE, 0); set(java.util.Calendar.SECOND, 0); set(java.util.Calendar.MILLISECOND, 0)
+        set(java.util.Calendar.MINUTE, 0)
+        set(java.util.Calendar.SECOND, 0)
+        set(java.util.Calendar.MILLISECOND, 0)
     }
     return cal.timeInMillis
 }
 
 @Composable
-private fun <T> Segments(options: List<Pair<T, String>>, selected: T, modifier: Modifier = Modifier, fill: Boolean = false, onPick: (T) -> Unit) {
+private fun <T> Segments(
+    options: List<Pair<T, String>>,
+    selected: T,
+    modifier: Modifier = Modifier,
+    fill: Boolean = false,
+    onPick: (T) -> Unit
+) {
     val c = DiaTheme.colors
     Row(modifier.background(c.surface, RoundedCornerShape(12.dp)).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         options.forEach { (v, label) ->
             val on = v == selected
             Text(
-                label, color = if (on) c.text else c.textMuted, fontSize = 12.sp, maxLines = 1,
+                label,
+                color = if (on) c.text else c.textMuted,
+                fontSize = 12.sp,
+                maxLines = 1,
                 fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 modifier = Modifier
@@ -311,7 +403,7 @@ private fun <T> Segments(options: List<Pair<T, String>>, selected: T, modifier: 
                     .background(if (on) c.surfaceRaised else Color.Transparent, RoundedCornerShape(9.dp))
                     .selectable(selected = on, role = Role.Tab) { onPick(v) }
                     .heightIn(min = 34.dp)
-                    .padding(horizontal = 8.dp, vertical = 9.dp),
+                    .padding(horizontal = 8.dp, vertical = 9.dp)
             )
         }
     }
@@ -319,8 +411,12 @@ private fun <T> Segments(options: List<Pair<T, String>>, selected: T, modifier: 
 
 @Composable
 private fun StepSegments(step: Int, onPick: (Int) -> Unit) = Segments(
-    listOf(5 to stringResource(R.string.data_step_min, 5), 15 to stringResource(R.string.data_step_min, 15), 60 to stringResource(R.string.chart_range, 1)),
-    step,
+    listOf(
+        5 to stringResource(R.string.data_step_min, 5),
+        15 to stringResource(R.string.data_step_min, 15),
+        60 to stringResource(R.string.chart_range, 1)
+    ),
+    step
 ) { onPick(it) }
 
 @Composable
@@ -335,19 +431,38 @@ private fun HourHeader(hourStart: Long, vs: List<Int>, units: Units) {
     val locale = LocalConfiguration.current.locales[0]
     Row(
         Modifier.fillMaxWidth().background(c.background.copy(alpha = 0.5f)).padding(horizontal = 14.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(AlarmText.clock(ctx, hourStart) + "–" + AlarmText.clock(ctx, hourStart + HOUR), color = c.text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+        Text(
+            AlarmText.clock(ctx, hourStart) + "–" + AlarmText.clock(ctx, hourStart + HOUR),
+            color = c.text,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.weight(1f)
+        )
         if (vs.isNotEmpty()) {
             Text(
-                stringResource(R.string.data_hour, formatGlucose(vs.average().toInt(), units, locale), formatGlucose(vs.min(), units, locale), formatGlucose(vs.max(), units, locale)),
-                color = c.textMuted, fontSize = 11.sp, fontFamily = PlexMono,
+                stringResource(
+                    R.string.data_hour,
+                    formatGlucose(vs.average().toInt(), units, locale),
+                    formatGlucose(vs.min(), units, locale),
+                    formatGlucose(vs.max(), units, locale)
+                ),
+                color = c.textMuted,
+                fontSize = 11.sp,
+                fontFamily = PlexMono
             )
         }
     }
 }
 
-private fun valueColor(v: Int, th: Thresholds, low: Color, ok: Color, high: Color) = if (v < th.low) low else if (v > th.high) high else ok
+private fun valueColor(v: Int, th: Thresholds, low: Color, ok: Color, high: Color) = if (v < th.low) {
+    low
+} else if (v > th.high) {
+    high
+} else {
+    ok
+}
 
 private fun arrowOf(delta: Int?): String = when {
     delta == null -> ""
@@ -371,28 +486,67 @@ private fun ListRow(r: DataRow, units: Units, th: Thresholds, onEdit: (Treatment
             .drawBehind { if (stripe) drawRect(c.high, size = androidx.compose.ui.geometry.Size(3.dp.toPx(), size.height)) }
             .padding(horizontal = 14.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             AlarmText.clock(ctx, r.t) + (r.end?.let { "\n" + AlarmText.clock(ctx, it) } ?: ""),
-            color = c.textMuted, fontSize = 12.sp, fontFamily = PlexMono, lineHeight = 14.sp, modifier = Modifier.width(timeColumn()),
+            color = c.textMuted,
+            fontSize = 12.sp,
+            fontFamily = PlexMono,
+            lineHeight = 14.sp,
+            modifier = Modifier.width(timeColumn())
         )
         Column(Modifier.width(74.dp)) {
             Row(verticalAlignment = Alignment.Bottom) {
                 r.sgv?.let { v ->
-                    Text(formatGlucose(v, units, locale), color = valueColor(v, th, c.low, c.inRange, c.high), fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        formatGlucose(v, units, locale),
+                        color = valueColor(v, th, c.low, c.inRange, c.high),
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
                     if (r.end == null) Text(" " + arrowOf(r.delta), color = c.textMuted, fontSize = 12.sp)
                 }
             }
             if (r.end != null && r.min != null && r.max != null) {
                 Row {
-                    Text(formatGlucose(r.min, units, locale), color = if (r.min < th.low) c.low else c.textMuted, fontSize = 10.5.sp, fontFamily = PlexMono)
+                    Text(
+                        formatGlucose(r.min, units, locale),
+                        color = if (r.min <
+                            th.low
+                        ) {
+                            c.low
+                        } else {
+                            c.textMuted
+                        },
+                        fontSize = 10.5.sp,
+                        fontFamily = PlexMono
+                    )
                     Text("–", color = c.textFaint, fontSize = 10.5.sp, fontFamily = PlexMono)
-                    Text(formatGlucose(r.max, units, locale), color = if (r.max > th.high) c.high else c.textMuted, fontSize = 10.5.sp, fontFamily = PlexMono)
+                    Text(
+                        formatGlucose(r.max, units, locale),
+                        color = if (r.max >
+                            th.high
+                        ) {
+                            c.high
+                        } else {
+                            c.textMuted
+                        },
+                        fontSize = 10.5.sp,
+                        fontFamily = PlexMono
+                    )
                 }
             }
         }
-        Text(r.delta?.let { formatDelta(it, units, locale) }.orEmpty(), color = c.textMuted, fontSize = 12.sp, fontFamily = PlexMono, modifier = Modifier.width(44.dp))
+        Text(
+            r.delta?.let {
+                formatDelta(it, units, locale)
+            }.orEmpty(),
+            color = c.textMuted,
+            fontSize = 12.sp,
+            fontFamily = PlexMono,
+            modifier = Modifier.width(44.dp)
+        )
         FlowRow(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             r.entries.forEach { e -> EntryChip(e, units, onEdit, showTime = r.end != null) }
         }
@@ -423,9 +577,17 @@ private fun entryText(e: Entry, units: Units): String {
     return when (e.kind) {
         EntryKind.Rapid, EntryKind.Basal -> {
             val type = if (e.kind == EntryKind.Basal) InsulinType.Basal else InsulinType.Rapid
-            (tr?.insulinName ?: Prefs.nameOf(type) ?: stringResource(if (type == InsulinType.Basal) R.string.ins_basal else R.string.ins_rapid)) + " " + formatAmount(tr?.insulin ?: 0.0, locale) + " " + u
+            (
+                tr?.insulinName ?: Prefs.nameOf(type)
+                    ?: stringResource(if (type == InsulinType.Basal) R.string.ins_basal else R.string.ins_rapid)
+                ) +
+                " " +
+                formatAmount(tr?.insulin ?: 0.0, locale) +
+                " " +
+                u
         }
-        EntryKind.Carbs -> formatAmount(tr?.carbs ?: 0.0, locale) + " " + stringResource(R.string.unit_carbs) + ((tr?.foodText() ?: tr?.notes?.takeIf { it.isNotBlank() })?.let { " · $it" } ?: "")
+        EntryKind.Carbs -> formatAmount(tr?.carbs ?: 0.0, locale) + " " + stringResource(R.string.unit_carbs) +
+            ((tr?.foodText() ?: tr?.notes?.takeIf { it.isNotBlank() })?.let { " · $it" } ?: "")
         EntryKind.Meter -> "◆ " + formatGlucose(e.meter ?: 0, units, locale)
         EntryKind.Activity -> stringResource(R.string.tr_activity) + " " + stringResource(R.string.data_step_min, tr?.duration ?: 0)
         EntryKind.Note -> tr?.notes.orEmpty()
@@ -439,11 +601,23 @@ private fun suspectText(e: Entry, units: Units): String {
     val q = e.question ?: return "?"
     val ctx = LocalContext.current
     if (q.kind == "bolus") return stringResource(R.string.data_suspect_bolus, AlarmText.clock(ctx, q.from))
-    if (q.kind == "double") return stringResource(R.string.data_suspect_double, com.lumenarcanus.dialife.live.QuestionNotifier.doubleInsulin(ctx, q), AlarmText.clock(ctx, q.from), AlarmText.clock(ctx, q.to))
+    if (q.kind ==
+        "double"
+    ) {
+        return stringResource(
+            R.string.data_suspect_double,
+            com.lumenarcanus.dialife.live.QuestionNotifier.doubleInsulin(ctx, q),
+            AlarmText.clock(ctx, q.from),
+            AlarmText.clock(ctx, q.to)
+        )
+    }
     val locale = LocalConfiguration.current.locales[0]
     return stringResource(
         if (q.kind == "fall") R.string.data_suspect_fall else R.string.data_suspect_rise,
-        AlarmText.clock(ctx, q.from), AlarmText.clock(ctx, q.to), formatGlucose(q.sgvFrom, units, locale), formatGlucose(q.sgvTo, units, locale),
+        AlarmText.clock(ctx, q.from),
+        AlarmText.clock(ctx, q.to),
+        formatGlucose(q.sgvFrom, units, locale),
+        formatGlucose(q.sgvTo, units, locale)
     )
 }
 
@@ -474,11 +648,20 @@ private fun EntryChip(e: Entry, units: Units, onEdit: (Treatment) -> Unit, showT
             .background(bg, androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
             .then(if (e.treatment != null && e.kind != EntryKind.Suspect) Modifier.clickable { onEdit(e.treatment) } else Modifier)
             .padding(horizontal = 8.dp, vertical = 3.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         // in an interval, say when exactly; a suspect already carries its span
         val at = if (showTime && e.kind != EntryKind.Suspect) " · " + AlarmText.clock(ctx, e.t) else ""
-        Text(entryText(e, units) + at + (who?.let { " · " + it.first } ?: ""), color = ink, fontSize = 11.5.sp, fontWeight = FontWeight.Medium)
+        Text(
+            entryText(e, units) + at + (
+                who?.let {
+                    " · " + it.first
+                } ?: ""
+                ),
+            color = ink,
+            fontSize = 11.5.sp,
+            fontWeight = FontWeight.Medium
+        )
         if (who?.second == true) {
             Spacer(Modifier.width(5.dp))
             Box(Modifier.size(5.dp).background(DiaTheme.colors.textMuted, CircleShape))
@@ -501,7 +684,7 @@ private fun WideTable(
     onStep: (Int) -> Unit,
     onEdit: (Treatment) -> Unit,
     onClose: () -> Unit,
-    onChart: () -> Unit,
+    onChart: () -> Unit
 ) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
@@ -526,18 +709,26 @@ private fun WideTable(
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(window, color = c.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f), maxLines = 1)
             StepSegments(step, onStep)
-            IconButton(onClick = onChart) { Icon(painterResource(R.drawable.ic_chart), stringResource(R.string.data_chart), tint = c.textMuted) }
-            IconButton(onClick = onClose) { Icon(painterResource(R.drawable.ic_close), stringResource(R.string.chart_close), tint = c.textMuted) }
+            IconButton(onClick = onChart) {
+                Icon(painterResource(R.drawable.ic_chart), stringResource(R.string.data_chart), tint = c.textMuted)
+            }
+            IconButton(onClick = onClose) {
+                Icon(painterResource(R.drawable.ic_close), stringResource(R.string.chart_close), tint = c.textMuted)
+            }
         }
         Column(
             Modifier.fillMaxSize().padding(top = 6.dp)
                 .background(c.surface, RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
                 .border(1.dp, c.line, RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
-                .horizontalScroll(rememberScrollState()),
+                .horizontalScroll(rememberScrollState())
         ) {
             @Composable
             fun Line(cells: List<@Composable () -> Unit>, modifier: Modifier = Modifier) {
-                Row(modifier.padding(horizontal = 14.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     cells.forEachIndexed { i, cell -> Box(Modifier.width(widths[i])) { cell() } }
                 }
             }
@@ -554,52 +745,126 @@ private fun WideTable(
                 stringResource(R.string.ins_basal) to basalInk,
                 stringResource(R.string.tr_carbs) to carbsInk,
                 stringResource(R.string.tr_activity) to actInk,
-                stringResource(R.string.data_note) to c.textFaint,
+                stringResource(R.string.data_note) to c.textFaint
             )
             Line(heads.map { (t, col) -> @Composable { Text(t, color = col, fontSize = 11.sp, maxLines = 1) } })
             LazyColumn(Modifier.weight(1f)) {
                 items(rows, key = { "w${it.t}" }) { r ->
                     fun of(vararg k: EntryKind) = r.entries.filter { it.kind in k }
+
                     @Composable
                     fun Cell(es: List<Entry>, ink: Color, text: @Composable (Entry) -> String) {
                         val tr = es.firstOrNull()?.treatment
                         Text(
-                            if (es.isEmpty()) "·" else es.map { text(it) + if (r.end != null) " · " + AlarmText.clock(ctx, it.t) else "" }.joinToString(", "),
-                            color = if (es.isEmpty()) c.textFaint else ink, fontSize = 12.5.sp, fontFamily = PlexMono, maxLines = 2,
-                            modifier = if (tr != null) Modifier.clickable { onEdit(tr) } else Modifier,
+                            if (es.isEmpty()) {
+                                "·"
+                            } else {
+                                es.map {
+                                    text(it) + if (r.end !=
+                                        null
+                                    ) {
+                                        " · " + AlarmText.clock(ctx, it.t)
+                                    } else {
+                                        ""
+                                    }
+                                }.joinToString(", ")
+                            },
+                            color = if (es.isEmpty()) c.textFaint else ink,
+                            fontSize = 12.5.sp,
+                            fontFamily = PlexMono,
+                            maxLines = 2,
+                            modifier = if (tr != null) Modifier.clickable { onEdit(tr) } else Modifier
                         )
                     }
                     Line(
                         listOf(
-                            { Text(AlarmText.clock(ctx, r.t) + (r.end?.let { "–" + AlarmText.clock(ctx, it) } ?: ""), color = c.textMuted, fontSize = 12.sp, fontFamily = PlexMono) },
+                            {
+                                Text(
+                                    AlarmText.clock(ctx, r.t) + (
+                                        r.end?.let {
+                                            "–" + AlarmText.clock(ctx, it)
+                                        } ?: ""
+                                        ),
+                                    color = c.textMuted,
+                                    fontSize = 12.sp,
+                                    fontFamily = PlexMono
+                                )
+                            },
                             {
                                 r.sgv?.let { v ->
                                     Row(verticalAlignment = Alignment.Bottom) {
-                                        Text(formatGlucose(v, units, locale) + if (r.end == null) " " + arrowOf(r.delta) else "", color = valueColor(v, th, c.low, c.inRange, c.high), fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                                        Text(
+                                            formatGlucose(v, units, locale) + if (r.end ==
+                                                null
+                                            ) {
+                                                " " + arrowOf(r.delta)
+                                            } else {
+                                                ""
+                                            },
+                                            color = valueColor(v, th, c.low, c.inRange, c.high),
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
                                         if (r.end != null && r.min != null && r.max != null) {
-                                            Text(" " + formatGlucose(r.min, units, locale) + "–" + formatGlucose(r.max, units, locale), color = c.textMuted, fontSize = 10.5.sp, fontFamily = PlexMono)
+                                            Text(
+                                                " " + formatGlucose(r.min, units, locale) + "–" + formatGlucose(r.max, units, locale),
+                                                color = c.textMuted,
+                                                fontSize = 10.5.sp,
+                                                fontFamily = PlexMono
+                                            )
                                         }
                                     }
                                 }
                             },
-                            { Text(r.delta?.let { formatDelta(it, units, locale) }.orEmpty(), color = c.textMuted, fontSize = 12.sp, fontFamily = PlexMono) },
-                            { Cell(of(EntryKind.Meter), c.text) { formatGlucose(it.meter ?: 0, units, locale) + if (whoOf(it)?.second == true) " •" else "" } },
-                            { Cell(of(EntryKind.Rapid), rapidInk) { formatAmount(it.treatment?.insulin ?: 0.0, locale) + " " + (it.treatment?.insulinName ?: Prefs.rapidName ?: "") } },
-                            { Cell(of(EntryKind.Basal), basalInk) { formatAmount(it.treatment?.insulin ?: 0.0, locale) + " " + (it.treatment?.insulinName ?: Prefs.basalName ?: "") } },
+                            {
+                                Text(
+                                    r.delta?.let {
+                                        formatDelta(it, units, locale)
+                                    }.orEmpty(),
+                                    color = c.textMuted,
+                                    fontSize = 12.sp,
+                                    fontFamily = PlexMono
+                                )
+                            },
+                            {
+                                Cell(of(EntryKind.Meter), c.text) {
+                                    formatGlucose(it.meter ?: 0, units, locale) +
+                                        if (whoOf(it)?.second == true) " •" else ""
+                                }
+                            },
+                            {
+                                Cell(of(EntryKind.Rapid), rapidInk) {
+                                    formatAmount(it.treatment?.insulin ?: 0.0, locale) + " " +
+                                        (it.treatment?.insulinName ?: Prefs.rapidName ?: "")
+                                }
+                            },
+                            {
+                                Cell(of(EntryKind.Basal), basalInk) {
+                                    formatAmount(it.treatment?.insulin ?: 0.0, locale) + " " +
+                                        (it.treatment?.insulinName ?: Prefs.basalName ?: "")
+                                }
+                            },
                             { Cell(of(EntryKind.Carbs), carbsInk) { formatAmount(it.treatment?.carbs ?: 0.0, locale) + " " + g } },
-                            { Cell(of(EntryKind.Activity), actInk) { stringResource(R.string.data_step_min, it.treatment?.duration ?: 0) } },
+                            {
+                                Cell(of(EntryKind.Activity), actInk) { stringResource(R.string.data_step_min, it.treatment?.duration ?: 0) }
+                            },
                             {
                                 val notes = r.entries.mapNotNull { e ->
                                     when (e.kind) {
                                         EntryKind.Suspect -> suspectText(e, units)
                                         EntryKind.Note -> e.treatment?.notes
-                                        else -> listOfNotNull(e.treatment?.foodText(), e.treatment?.notes?.takeIf { it.isNotBlank() }).joinToString(" · ").ifBlank { null }
+                                        else -> listOfNotNull(
+                                            e.treatment?.foodText(),
+                                            e.treatment?.notes?.takeIf {
+                                                it.isNotBlank()
+                                            }
+                                        ).joinToString(" · ").ifBlank { null }
                                     }
                                 } + r.entries.mapNotNull { whoOf(it)?.first }.distinct()
                                 Text(notes.joinToString(" · "), color = c.textMuted, fontSize = 12.sp)
-                            },
+                            }
                         ),
-                        Modifier.then(if (r.entries.isNotEmpty()) Modifier.background(c.surfaceRaised.copy(alpha = 0.5f)) else Modifier),
+                        Modifier.then(if (r.entries.isNotEmpty()) Modifier.background(c.surfaceRaised.copy(alpha = 0.5f)) else Modifier)
                     )
                 }
             }
@@ -610,16 +875,80 @@ private fun WideTable(
             Line(
                 listOf(
                     { Text(stringResource(R.string.data_total), color = c.textMuted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) },
-                    { Text(if (vs.isEmpty()) "" else stringResource(R.string.data_avg, formatGlucose(vs.average().toInt(), units, locale)), color = c.text, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) },
+                    {
+                        Text(
+                            if (vs.isEmpty()) "" else stringResource(R.string.data_avg, formatGlucose(vs.average().toInt(), units, locale)),
+                            color = c.text,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    },
                     {},
-                    { Text(entries.count { it.kind == EntryKind.Meter }.toString(), color = c.text, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) },
-                    { Text(formatAmount(sum(EntryKind.Rapid) { it.insulin ?: 0.0 }, locale) + " " + u, color = rapidInk, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) },
-                    { Text(formatAmount(sum(EntryKind.Basal) { it.insulin ?: 0.0 }, locale) + " " + u, color = basalInk, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) },
-                    { Text(formatAmount(sum(EntryKind.Carbs) { it.carbs ?: 0.0 }, locale) + " " + g, color = carbsInk, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) },
-                    { Text(stringResource(R.string.data_step_min, sum(EntryKind.Activity) { (it.duration ?: 0).toDouble() }.toInt()), color = actInk, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) },
-                    { if (suspects > 0) Text(stringResource(R.string.data_suspects, suspects), color = c.high, fontSize = 12.sp) },
+                    {
+                        Text(
+                            entries.count {
+                                it.kind == EntryKind.Meter
+                            }.toString(),
+                            color = c.text,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    },
+                    {
+                        Text(
+                            formatAmount(
+                                sum(EntryKind.Rapid) {
+                                    it.insulin ?: 0.0
+                                },
+                                locale
+                            ) + " " + u,
+                            color = rapidInk,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    },
+                    {
+                        Text(
+                            formatAmount(
+                                sum(EntryKind.Basal) {
+                                    it.insulin ?: 0.0
+                                },
+                                locale
+                            ) + " " + u,
+                            color = basalInk,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    },
+                    {
+                        Text(
+                            formatAmount(
+                                sum(EntryKind.Carbs) {
+                                    it.carbs ?: 0.0
+                                },
+                                locale
+                            ) + " " + g,
+                            color = carbsInk,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    },
+                    {
+                        Text(
+                            stringResource(
+                                R.string.data_step_min,
+                                sum(EntryKind.Activity) {
+                                    (it.duration ?: 0).toDouble()
+                                }.toInt()
+                            ),
+                            color = actInk,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    },
+                    { if (suspects > 0) Text(stringResource(R.string.data_suspects, suspects), color = c.high, fontSize = 12.sp) }
                 ),
-                Modifier.background(c.background.copy(alpha = 0.6f)),
+                Modifier.background(c.background.copy(alpha = 0.6f))
             )
         }
     }
@@ -627,4 +956,5 @@ private fun WideTable(
 
 /** The time column: "10:46", or "10:46 AM" on a 12-hour clock, on one line. */
 @Composable
-private fun timeColumn() = if (android.text.format.DateFormat.is24HourFormat(androidx.compose.ui.platform.LocalContext.current)) 50.dp else 68.dp
+private fun timeColumn() =
+    if (android.text.format.DateFormat.is24HourFormat(androidx.compose.ui.platform.LocalContext.current)) 50.dp else 68.dp

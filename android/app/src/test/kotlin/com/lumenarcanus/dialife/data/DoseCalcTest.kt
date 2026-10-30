@@ -20,9 +20,18 @@ class DoseCalcTest {
             Triple("nearest", 0.5, listOf(2.2 to 2.0, 2.25 to 2.5, 2.7 to 2.5, 2.8 to 3.0)),
             Triple("halfDown", 0.5, listOf(2.25 to 2.0, 2.3 to 2.5, 2.75 to 2.5)),
             Triple("down", 0.5, listOf(2.4 to 2.0, 2.9 to 2.5)),
-            Triple("up", 0.5, listOf(2.1 to 2.5, 2.6 to 3.0)),
+            Triple("up", 0.5, listOf(2.1 to 2.5, 2.6 to 3.0))
         )
-        for ((rule, step, pairs) in cases) for ((x, want) in pairs) assertEquals("$rule $step $x", want, DoseCalc.round(x, rule, step), 1e-9)
+        for ((rule, step, pairs) in cases) {
+            for ((x, want) in pairs) {
+                assertEquals(
+                    "$rule $step $x",
+                    want,
+                    DoseCalc.round(x, rule, step),
+                    1e-9
+                )
+            }
+        }
     }
 
     @Test

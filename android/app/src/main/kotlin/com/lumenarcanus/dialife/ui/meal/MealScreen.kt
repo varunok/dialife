@@ -39,16 +39,15 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Switch
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
@@ -141,7 +140,8 @@ fun MealScreen(
     forLow: Boolean = false, // carbs given for a low: no insulin is worked out, no planned dose, no meal draft
     mealRules: com.lumenarcanus.dialife.data.MealRules = com.lumenarcanus.dialife.data.MealRules(), // the server's: what makes one meal
     mbg: com.lumenarcanus.dialife.data.Series = com.lumenarcanus.dialife.data.Series(), // glucometer checks uploaded by xDrip+
-    clock: () -> Long = System::currentTimeMillis, // a fixed moment in the screenshot tests
+    // a fixed moment in the screenshot tests
+    clock: () -> Long = System::currentTimeMillis
 ) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
@@ -176,12 +176,29 @@ fun MealScreen(
     var failed by remember { mutableStateOf(false) }
 
     // the draft follows every change
-    if (keepsDraft) LaunchedEffect(Unit) {
-        snapshotFlow {
-            MealDraft(rows.map { MealDraft.Row(it.name, it.portion, it.carbs, it.source, it.tableId) }, whenIdx, pickedAt, plan, join, meterText, startedAt)
-        }.collect { if (it.isEmpty) MealDrafts.clear(ctx) else MealDrafts.save(ctx, it) }
+    if (keepsDraft) {
+        LaunchedEffect(Unit) {
+            snapshotFlow {
+                MealDraft(
+                    rows.map {
+                        MealDraft.Row(it.name, it.portion, it.carbs, it.source, it.tableId)
+                    },
+                    whenIdx,
+                    pickedAt,
+                    plan,
+                    join,
+                    meterText,
+                    startedAt
+                )
+            }.collect { if (it.isEmpty) MealDrafts.clear(ctx) else MealDrafts.save(ctx, it) }
+        }
     }
-    LaunchedEffect(removed) { if (removed != null) { kotlinx.coroutines.delay(6000); removed = null } }
+    LaunchedEffect(removed) {
+        if (removed != null) {
+            kotlinx.coroutines.delay(6000)
+            removed = null
+        }
+    }
 
     val now = clock()
     val time = if (whenIdx == 3) pickedAt ?: now else now - TimeShifts[whenIdx] * 60_000L
@@ -190,8 +207,11 @@ fun MealScreen(
     // the meal this belongs to: the one being edited, or the one it joins
     val others = treatments.filter { it.id != editing?.id }
     val meal = remember(treatments, editing, time, mealRules) {
-        if (editing != null) Meals.group(treatments, mealRules).firstOrNull { m -> m.foods.any { it.id == editing.id } }
-        else Meals.joining(Meals.group(others, mealRules), time, mealRules.gapMin)
+        if (editing != null) {
+            Meals.group(treatments, mealRules).firstOrNull { m -> m.foods.any { it.id == editing.id } }
+        } else {
+            Meals.joining(Meals.group(others, mealRules), time, mealRules.gapMin)
+        }
     }
     val joined = meal != null && (editing != null || join)
     val earlier = if (!joined) 0 else meal!!.carbs - (editing?.let { (it.carbs ?: 0.0).toInt() } ?: 0)
@@ -240,7 +260,7 @@ fun MealScreen(
             t = time,
             carbs = current.toDouble(),
             notes = editing?.notes,
-            foodItems = foodItemsOf(rows),
+            foodItems = foodItemsOf(rows)
         )
         onSave(food)
         // a fresh glucometer value typed here is a reading of its own
@@ -252,7 +272,7 @@ fun MealScreen(
                 mealId = p?.mealId ?: food.id,
                 dose = m.toGive, food = m.food, corr = m.corr, carbs = m.carbs,
                 meter = if (m.fresh) meter else null, meterAt = if (m.fresh) meterAt else null,
-                createdAt = p?.createdAt ?: now,
+                createdAt = p?.createdAt ?: now
             )
             scope.launch { repo.planDose(pd).onFailure { failed = true } }
         }
@@ -265,7 +285,10 @@ fun MealScreen(
         when {
             planOn && !m.asks -> finish(true)
             !m.canPlan && !m.asks -> finish(false)
-            else -> { okBig = false; asking = true }
+            else -> {
+                okBig = false
+                asking = true
+            }
         }
     }
 
@@ -275,71 +298,155 @@ fun MealScreen(
     Column(Modifier.fillMaxSize().background(c.background).safeDrawingPadding().imePadding()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             val back = stringResource(R.string.meal_close)
-            OutlinedButton(onClick = onClose, shape = RoundedCornerShape(14.dp), modifier = Modifier.size(48.dp).semantics { contentDescription = back },
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) { Text("‹", fontSize = 22.sp, color = c.textMuted) }
+            OutlinedButton(
+                onClick = onClose,
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.size(48.dp).semantics {
+                    contentDescription =
+                        back
+                },
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
+            ) {
+                Text("‹", fontSize = 22.sp, color = c.textMuted)
+            }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(stringResource(if (forLow) R.string.meal_low_title else if (editing != null) R.string.meal_edit_title else R.string.meal_title), color = c.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                Text(
+                    stringResource(
+                        if (forLow) {
+                            R.string.meal_low_title
+                        } else if (editing !=
+                            null
+                        ) {
+                            R.string.meal_edit_title
+                        } else {
+                            R.string.meal_title
+                        }
+                    ),
+                    color = c.text,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
                 if (keepsDraft) Text(stringResource(R.string.meal_draft_note), color = c.textFaint, fontSize = 11.5.sp)
             }
-            if (keepsDraft) TextButton(onClick = { if (rows.any { it.name.isNotBlank() }) closing = true else { MealDrafts.clear(ctx); onClose() } }) {
-                Text(stringResource(R.string.meal_discard), color = c.textMuted)
+            if (keepsDraft) {
+                TextButton(onClick = {
+                    if (rows.any { it.name.isNotBlank() }) {
+                        closing = true
+                    } else {
+                        MealDrafts.clear(ctx)
+                        onClose()
+                    }
+                }) {
+                    Text(stringResource(R.string.meal_discard), color = c.textMuted)
+                }
             }
         }
 
         Column(
             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             if (meal != null && editing == null && !forLow) {
                 Column(
                     Modifier.fillMaxWidth().background(c.surfaceRaised, RoundedCornerShape(16.dp)).padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(stringResource(R.string.meal_join_q, AlarmText.clock(ctx, meal.from), meal.carbs, formatAmount(meal.given, locale)), color = c.text, fontSize = 14.sp)
+                    Text(
+                        stringResource(R.string.meal_join_q, AlarmText.clock(ctx, meal.from), meal.carbs, formatAmount(meal.given, locale)),
+                        color = c.text,
+                        fontSize = 14.sp
+                    )
                     SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                        SegmentedButton(selected = join, onClick = { join = true }, shape = SegmentedButtonDefaults.itemShape(0, 2)) { Text(stringResource(R.string.meal_join_yes), fontSize = 13.sp) }
-                        SegmentedButton(selected = !join, onClick = { join = false }, shape = SegmentedButtonDefaults.itemShape(1, 2)) { Text(stringResource(R.string.meal_join_no), fontSize = 13.sp) }
+                        SegmentedButton(selected = join, onClick = {
+                            join = true
+                        }, shape = SegmentedButtonDefaults.itemShape(0, 2)) {
+                            Text(stringResource(R.string.meal_join_yes), fontSize = 13.sp)
+                        }
+                        SegmentedButton(selected = !join, onClick = {
+                            join = false
+                        }, shape = SegmentedButtonDefaults.itemShape(1, 2)) {
+                            Text(stringResource(R.string.meal_join_no), fontSize = 13.sp)
+                        }
                     }
                 }
             }
 
             Row(verticalAlignment = Alignment.Bottom) {
-                Text(stringResource(R.string.meal_eaten), color = c.text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                Text(
+                    stringResource(R.string.meal_eaten),
+                    color = c.text,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f)
+                )
                 val n = rows.count { it.name.isNotBlank() || it.grams != null }
-                Text(if (n == 0) stringResource(R.string.meal_empty_short) else pluralStringResource(R.plurals.meal_dishes, n, n) + " · $current " + stringResource(R.string.unit_carbs), color = c.textMuted, fontSize = 13.sp)
+                Text(
+                    if (n ==
+                        0
+                    ) {
+                        stringResource(R.string.meal_empty_short)
+                    } else {
+                        pluralStringResource(R.plurals.meal_dishes, n, n) + " · $current " +
+                            stringResource(R.string.unit_carbs)
+                    },
+                    color = c.textMuted,
+                    fontSize = 13.sp
+                )
             }
             if (rows.isNotEmpty()) Text(stringResource(R.string.meal_swipe_hint), color = c.textFaint, fontSize = 11.5.sp)
 
-            Column(Modifier.fillMaxWidth().background(c.surface, RoundedCornerShape(18.dp)).border(1.dp, c.line, RoundedCornerShape(18.dp))) {
-                if (rows.isEmpty()) Text(stringResource(R.string.meal_empty), color = c.textMuted, fontSize = 13.sp, modifier = Modifier.padding(14.dp))
+            Column(
+                Modifier.fillMaxWidth().background(c.surface, RoundedCornerShape(18.dp)).border(1.dp, c.line, RoundedCornerShape(18.dp))
+            ) {
+                if (rows.isEmpty()) {
+                    Text(
+                        stringResource(R.string.meal_empty),
+                        color = c.textMuted,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(14.dp)
+                    )
+                }
                 rows.forEach { row ->
                     key(row.id) {
                         FoodLookup(row, repo) { f -> update(row.id, f) }
                         DishRow(
-                            row, lang, open = open == row.id,
+                            row,
+                            lang,
+                            open = open == row.id,
                             onToggle = { open = if (open == row.id) null else row.id },
                             onChange = { f -> update(row.id, f) },
                             onSplit = { parts ->
                                 val i = rows.indexOfFirst { it.id == row.id }
                                 val made = parts.map { newFoodRow(name = it.replaceFirstChar { ch -> ch.uppercase() }) }
-                                rows.removeAt(i); rows.addAll(i, made); open = made.first().id
+                                rows.removeAt(i)
+                                rows.addAll(i, made)
+                                open = made.first().id
                             },
                             onRemove = { remove(row.id) },
-                            onDone = { open = null },
+                            onDone = { open = null }
                         )
                     }
                 }
                 val addFocus = remember { FocusRequester() }
-                Row(Modifier.fillMaxWidth().padding(10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    Modifier.fillMaxWidth().padding(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     OutlinedTextField(
                         value = newName,
                         onValueChange = { newName = it.replace('\n', ' ').take(80) },
-                        placeholder = { Text(stringResource(if (rows.isEmpty()) R.string.meal_add_first else R.string.meal_add_more), color = c.textFaint) },
+                        placeholder = {
+                            Text(
+                                stringResource(if (rows.isEmpty()) R.string.meal_add_first else R.string.meal_add_more),
+                                color = c.textFaint
+                            )
+                        },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onDone = { addTyped() }),
-                        modifier = Modifier.weight(1f).focusRequester(addFocus),
+                        modifier = Modifier.weight(1f).focusRequester(addFocus)
                     )
                     val add = stringResource(R.string.meal_add)
                     Button(
@@ -347,31 +454,62 @@ fun MealScreen(
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = c.carbs, contentColor = c.background),
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
-                        modifier = Modifier.size(52.dp).semantics { contentDescription = add },
+                        modifier = Modifier.size(52.dp).semantics { contentDescription = add }
                     ) { Text("+", fontSize = 26.sp, fontWeight = FontWeight.SemiBold) }
                 }
             }
             removed?.let { (at, row) ->
-                Row(Modifier.fillMaxWidth().background(c.surfaceRaised, RoundedCornerShape(14.dp)).padding(start = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.meal_removed, row.name.ifBlank { "—" }), color = c.text, fontSize = 13.5.sp, modifier = Modifier.weight(1f))
-                    TextButton(onClick = { rows.add(at.coerceAtMost(rows.size), row); removed = null }) { Text(stringResource(R.string.meal_undo), color = c.carbs, fontWeight = FontWeight.SemiBold) }
+                Row(
+                    Modifier.fillMaxWidth().background(c.surfaceRaised, RoundedCornerShape(14.dp)).padding(start = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        stringResource(
+                            R.string.meal_removed,
+                            row.name.ifBlank {
+                                "—"
+                            }
+                        ),
+                        color = c.text,
+                        fontSize = 13.5.sp,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(onClick = {
+                        rows.add(at.coerceAtMost(rows.size), row)
+                        removed = null
+                    }) { Text(stringResource(R.string.meal_undo), color = c.carbs, fontWeight = FontWeight.SemiBold) }
                 }
             }
 
-            QuickFoods(repo, lang, onAdd = { name, portion -> place(newFoodRow(name = name, portion = portion)) }, onAll = { picking = true })
+            QuickFoods(repo, lang, onAdd = { name, portion ->
+                place(newFoodRow(name = name, portion = portion))
+            }, onAll = { picking = true })
 
-            if (forLow) Text(
-                stringResource(R.string.meal_low_note), color = c.text, fontSize = 13.5.sp,
-                modifier = Modifier.fillMaxWidth().background(c.inRangeContainer, RoundedCornerShape(14.dp)).padding(12.dp),
-            ) else DoseCard(m, dose, units, locale, earlier, given, typedMeter = meterText, onMeter = { meterText = it.filter { ch -> ch.isDigit() || ch == ',' || ch == '.' }.take(5) },
-                plan = planOn, onPlan = { plan = it }, openPlan = openPlan)
+            if (forLow) {
+                Text(
+                    stringResource(R.string.meal_low_note),
+                    color = c.text,
+                    fontSize = 13.5.sp,
+                    modifier = Modifier.fillMaxWidth().background(c.inRangeContainer, RoundedCornerShape(14.dp)).padding(12.dp)
+                )
+            } else {
+                DoseCard(
+                    m, dose, units, locale, earlier, given, typedMeter = meterText, onMeter = {
+                        meterText =
+                            it.filter { ch -> ch.isDigit() || ch == ',' || ch == '.' }.take(5)
+                    },
+                    plan = planOn, onPlan = { plan = it }, openPlan = openPlan
+                )
+            }
 
             Text(stringResource(R.string.meal_when), color = c.textMuted, fontSize = 13.sp)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (editing == null) TimeShifts.forEachIndexed { i, mins ->
-                    FilterChip(selected = whenIdx == i, onClick = { whenIdx = i }, label = {
-                        Text(if (mins == 0) stringResource(R.string.tr_now) else stringResource(R.string.tr_minutes_ago, mins))
-                    })
+                if (editing == null) {
+                    TimeShifts.forEachIndexed { i, mins ->
+                        FilterChip(selected = whenIdx == i, onClick = { whenIdx = i }, label = {
+                            Text(if (mins == 0) stringResource(R.string.tr_now) else stringResource(R.string.tr_minutes_ago, mins))
+                        })
+                    }
                 }
                 FilterChip(selected = whenIdx == 3, onClick = { pickingTime = true }, label = {
                     Text(if (whenIdx == 3) atLabel(time) else stringResource(R.string.tr_other_time))
@@ -380,12 +518,17 @@ fun MealScreen(
             Text(stringResource(R.string.meal_not_advice), color = c.textFaint, fontSize = 11.5.sp)
         }
 
-        Column(Modifier.fillMaxWidth().background(c.surface).padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(
+            Modifier.fillMaxWidth().background(c.surface).padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             val empty = rows.count { it.grams == null && it.name.isNotBlank() }
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
                     if (empty > 0) pluralStringResource(R.plurals.food_empty, empty, empty) else stringResource(R.string.food_total),
-                    color = if (empty > 0) c.high else c.textMuted, fontSize = 12.5.sp, modifier = Modifier.weight(1f),
+                    color = if (empty > 0) c.high else c.textMuted,
+                    fontSize = 12.5.sp,
+                    modifier = Modifier.weight(1f)
                 )
                 Text("$current", style = GlucoseHero.copy(fontSize = 30.sp, lineHeight = 34.sp, color = c.carbs))
                 Text(" " + stringResource(R.string.unit_carbs), color = c.textMuted, fontSize = 14.sp)
@@ -395,39 +538,78 @@ fun MealScreen(
                 enabled = current > 0,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = c.carbs, contentColor = c.background),
+                colors = ButtonDefaults.buttonColors(containerColor = c.carbs, contentColor = c.background)
             ) {
                 Text(
-                    stringResource(R.string.meal_save, current) + if (planOn) " " + stringResource(R.string.meal_save_plan, formatAmount(m.toGive, locale)) else "",
-                    fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
+                    stringResource(R.string.meal_save, current) +
+                        if (planOn) " " + stringResource(R.string.meal_save_plan, formatAmount(m.toGive, locale)) else "",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }
     }
 
-    if (picking) FoodPicker(
-        tables = rememberCatalog(repo)?.tables.orEmpty(), lang = lang,
-        onPick = { f, _ ->
-            picking = false
-            place(newFoodRow(name = f.names.inLang(lang), carbs = f.carbs.toString(), source = "table", portion = f.portions.inLang(lang), tableId = f.id))
-            open = null
-        },
-        onDismiss = { picking = false },
-    )
-    if (pickingTime) TimeDialog(initial = time, onPick = { pickedAt = it; whenIdx = 3; pickingTime = false }, onDismiss = { pickingTime = false })
-    if (closing) AlertDialog(
-        onDismissRequest = { closing = false },
-        title = { Text(stringResource(R.string.meal_discard_title)) },
-        text = { Text(pluralStringResource(R.plurals.meal_discard_text, rows.size, rows.size)) },
-        confirmButton = { TextButton(onClick = { closing = false; MealDrafts.clear(ctx); onClose() }) { Text(stringResource(R.string.meal_discard_yes), color = c.low) } },
-        dismissButton = { TextButton(onClick = { closing = false }) { Text(stringResource(R.string.meal_discard_no)) } },
-    )
-    if (failed) AlertDialog(
-        onDismissRequest = { failed = false },
-        title = { Text(stringResource(R.string.meal_plan_failed)) },
-        confirmButton = { TextButton(onClick = { failed = false }) { Text(stringResource(R.string.tr_ok)) } },
-    )
-    if (asking) SaveSheet(m, dose, units, locale, planOn, okBig, onOkBig = { okBig = it }, onPlan = { finish(true) }, onFoodOnly = { finish(false) }, onBack = { asking = false })
+    if (picking) {
+        FoodPicker(
+            tables = rememberCatalog(repo)?.tables.orEmpty(),
+            lang = lang,
+            onPick = { f, _ ->
+                picking = false
+                place(
+                    newFoodRow(
+                        name = f.names.inLang(lang),
+                        carbs = f.carbs.toString(),
+                        source = "table",
+                        portion = f.portions.inLang(lang),
+                        tableId = f.id
+                    )
+                )
+                open = null
+            },
+            onDismiss = { picking = false }
+        )
+    }
+    if (pickingTime) {
+        TimeDialog(initial = time, onPick = {
+            pickedAt = it
+            whenIdx = 3
+            pickingTime = false
+        }, onDismiss = {
+            pickingTime =
+                false
+        })
+    }
+    if (closing) {
+        AlertDialog(
+            onDismissRequest = { closing = false },
+            title = { Text(stringResource(R.string.meal_discard_title)) },
+            text = { Text(pluralStringResource(R.plurals.meal_discard_text, rows.size, rows.size)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    closing = false
+                    MealDrafts.clear(ctx)
+                    onClose()
+                }) { Text(stringResource(R.string.meal_discard_yes), color = c.low) }
+            },
+            dismissButton = { TextButton(onClick = { closing = false }) { Text(stringResource(R.string.meal_discard_no)) } }
+        )
+    }
+    if (failed) {
+        AlertDialog(
+            onDismissRequest = { failed = false },
+            title = { Text(stringResource(R.string.meal_plan_failed)) },
+            confirmButton = { TextButton(onClick = { failed = false }) { Text(stringResource(R.string.tr_ok)) } }
+        )
+    }
+    if (asking) {
+        SaveSheet(m, dose, units, locale, planOn, okBig, onOkBig = {
+            okBig = it
+        }, onPlan = { finish(true) }, onFoodOnly = { finish(false) }, onBack = {
+            asking =
+                false
+        })
+    }
 }
 
 @Composable
@@ -444,14 +626,26 @@ private fun QuickFoods(repo: LiveRepository?, lang: String, onAdd: (String, Stri
     val c = DiaTheme.colors
     val catalog = rememberCatalog(repo) ?: return
     if (catalog.frequent.isEmpty() && catalog.tables.isEmpty()) return
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp), itemVerticalAlignment = Alignment.CenterVertically) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        itemVerticalAlignment = Alignment.CenterVertically
+    ) {
         if (catalog.frequent.isNotEmpty()) Text(stringResource(R.string.food_often), color = c.textFaint, fontSize = 12.sp)
         catalog.frequent.forEach { f ->
-            OutlinedButton(onClick = { onAdd(f.name, f.portion) }, shape = CircleShape, modifier = Modifier.heightIn(min = 40.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp)) { Text("+ " + f.name, color = c.text, fontSize = 13.sp) }
+            OutlinedButton(
+                onClick = { onAdd(f.name, f.portion) },
+                shape = CircleShape,
+                modifier = Modifier.heightIn(min = 40.dp),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp)
+            ) {
+                Text("+ " + f.name, color = c.text, fontSize = 13.sp)
+            }
         }
-        if (catalog.tables.isNotEmpty()) FilledTonalButton(onClick = onAll, shape = CircleShape, modifier = Modifier.heightIn(min = 40.dp)) {
-            Text(stringResource(R.string.food_all), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        if (catalog.tables.isNotEmpty()) {
+            FilledTonalButton(onClick = onAll, shape = CircleShape, modifier = Modifier.heightIn(min = 40.dp)) {
+                Text(stringResource(R.string.food_all), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            }
         }
     }
 }
@@ -467,12 +661,19 @@ private fun DishRow(
     onChange: ((FoodRow) -> FoodRow) -> Unit,
     onSplit: (List<String>) -> Unit,
     onRemove: () -> Unit,
-    onDone: () -> Unit,
+    onDone: () -> Unit
 ) {
     val c = DiaTheme.colors
     val swipe = rememberSwipeToDismissBoxState(
-        confirmValueChange = { if (it == SwipeToDismissBoxValue.EndToStart) { onRemove(); true } else false },
-        positionalThreshold = { it * 0.35f },
+        confirmValueChange = {
+            if (it == SwipeToDismissBoxValue.EndToStart) {
+                onRemove()
+                true
+            } else {
+                false
+            }
+        },
+        positionalThreshold = { it * 0.35f }
     )
     val hinted = row.source == "mine" || row.source == "table" || row.source == "estimate"
     Column(Modifier.fillMaxWidth().background(if (open) c.surfaceRaised else Color.Transparent)) {
@@ -483,36 +684,63 @@ private fun DishRow(
                 Box(Modifier.fillMaxSize().background(c.lowContainer).padding(end = 18.dp), contentAlignment = Alignment.CenterEnd) {
                     Text(stringResource(R.string.meal_swipe_remove), color = c.low, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                 }
-            },
+            }
         ) {
             Row(
-                Modifier.fillMaxWidth().background(if (open) c.surfaceRaised else c.surface).clickable(onClick = onToggle).heightIn(min = 56.dp).padding(horizontal = 14.dp, vertical = 8.dp),
+                Modifier.fillMaxWidth().background(
+                    if (open) c.surfaceRaised else c.surface
+                ).clickable(onClick = onToggle).heightIn(min = 56.dp).padding(horizontal = 14.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(row.name.ifBlank { "—" }, color = c.text, fontSize = 15.sp, fontWeight = FontWeight.Medium)
                     Text(
                         (row.portion.ifBlank { stringResource(R.string.meal_no_portion) }) +
-                            if (row.grams == null) "" else " · " + stringResource(if (hinted) R.string.meal_from_hint else R.string.meal_by_hand),
-                        color = c.textMuted, fontSize = 12.sp,
+                            if (row.grams ==
+                                null
+                            ) {
+                                ""
+                            } else {
+                                " · " + stringResource(if (hinted) R.string.meal_from_hint else R.string.meal_by_hand)
+                            },
+                        color = c.textMuted,
+                        fontSize = 12.sp
                     )
                     if ((row.grams ?: 0) > 150) Text(stringResource(R.string.meal_dish_check), color = c.high, fontSize = 12.sp)
                 }
                 val empty = row.grams == null
                 Text(
-                    if (empty) "— " + stringResource(R.string.unit_carbs) else (if (hinted) "≈ " else "") + row.carbs + " " + stringResource(R.string.unit_carbs),
+                    if (empty) {
+                        "— " + stringResource(R.string.unit_carbs)
+                    } else {
+                        (if (hinted) "≈ " else "") + row.carbs + " " +
+                            stringResource(R.string.unit_carbs)
+                    },
                     style = GlucoseHero.copy(fontSize = 16.sp, lineHeight = 20.sp, color = if (empty) c.high else c.carbs),
                     modifier = Modifier
-                        .then(if (empty) Modifier.border(BorderStroke(1.dp, c.high), RoundedCornerShape(10.dp)) else Modifier.background(c.carbsContainer, RoundedCornerShape(10.dp)))
-                        .padding(horizontal = 10.dp, vertical = 4.dp),
+                        .then(
+                            if (empty) {
+                                Modifier.border(
+                                    BorderStroke(1.dp, c.high),
+                                    RoundedCornerShape(10.dp)
+                                )
+                            } else {
+                                Modifier.background(c.carbsContainer, RoundedCornerShape(10.dp))
+                            }
+                        )
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
                 )
             }
         }
         splitParts(row.name)?.let { parts ->
             Column(
-                Modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, bottom = 10.dp).background(c.highContainer, RoundedCornerShape(12.dp)).padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
+                Modifier.fillMaxWidth().padding(
+                    start = 14.dp,
+                    end = 14.dp,
+                    bottom = 10.dp
+                ).background(c.highContainer, RoundedCornerShape(12.dp)).padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(stringResource(R.string.meal_split_hint), color = c.text, fontSize = 12.5.sp)
                 FilledTonalButton(onClick = { onSplit(parts) }, shape = RoundedCornerShape(10.dp)) {
@@ -520,40 +748,56 @@ private fun DishRow(
                 }
             }
         }
-        if (open) Column(Modifier.padding(start = 14.dp, end = 14.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Bottom) {
-                OutlinedTextField(
-                    value = row.portion,
-                    onValueChange = { v -> onChange { it.copy(portion = v.take(40)) } },
-                    label = { Text(stringResource(R.string.food_portion)) },
-                    placeholder = { Text(stringResource(R.string.food_portion_hint), color = c.textFaint) },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                )
-                OutlinedTextField(
-                    value = row.carbs,
-                    onValueChange = { v -> onChange { it.copy(carbs = v.filter(Char::isDigit).take(3), source = "manual") } },
-                    label = { Text(stringResource(R.string.food_carbs)) },
-                    singleLine = true,
-                    textStyle = GlucoseHero.copy(fontSize = 20.sp, lineHeight = 24.sp, color = c.carbs),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.width(116.dp),
-                )
-            }
-            FoodSuggestions(row, lang) { f ->
-                onChange(f)
-                // a picked suggestion finishes the line
-                if (f(row).source != "manual") onDone()
-            }
-            Button(
-                onClick = onDone,
-                enabled = row.grams != null,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = c.carbs, contentColor = c.background, disabledContainerColor = Color.Transparent, disabledContentColor = c.textMuted),
-                border = if (row.grams == null) BorderStroke(1.dp, c.textFaint) else null,
-            ) {
-                Text(if (row.grams == null) stringResource(R.string.meal_need_carbs) else stringResource(R.string.meal_done, row.grams!!), fontWeight = FontWeight.SemiBold)
+        if (open) {
+            Column(Modifier.padding(start = 14.dp, end = 14.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Bottom) {
+                    OutlinedTextField(
+                        value = row.portion,
+                        onValueChange = { v -> onChange { it.copy(portion = v.take(40)) } },
+                        label = { Text(stringResource(R.string.food_portion)) },
+                        placeholder = { Text(stringResource(R.string.food_portion_hint), color = c.textFaint) },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = row.carbs,
+                        onValueChange = { v -> onChange { it.copy(carbs = v.filter(Char::isDigit).take(3), source = "manual") } },
+                        label = { Text(stringResource(R.string.food_carbs)) },
+                        singleLine = true,
+                        textStyle = GlucoseHero.copy(fontSize = 20.sp, lineHeight = 24.sp, color = c.carbs),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.width(116.dp)
+                    )
+                }
+                FoodSuggestions(row, lang) { f ->
+                    onChange(f)
+                    // a picked suggestion finishes the line
+                    if (f(row).source != "manual") onDone()
+                }
+                Button(
+                    onClick = onDone,
+                    enabled = row.grams != null,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = c.carbs,
+                        contentColor = c.background,
+                        disabledContainerColor = Color.Transparent,
+                        disabledContentColor = c.textMuted
+                    ),
+                    border = if (row.grams == null) BorderStroke(1.dp, c.textFaint) else null
+                ) {
+                    Text(
+                        if (row.grams ==
+                            null
+                        ) {
+                            stringResource(R.string.meal_need_carbs)
+                        } else {
+                            stringResource(R.string.meal_done, row.grams!!)
+                        },
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(c.line))
@@ -573,48 +817,120 @@ private fun DoseCard(
     onMeter: (String) -> Unit,
     plan: Boolean,
     onPlan: (Boolean) -> Unit,
-    openPlan: PlannedDose?,
+    openPlan: PlannedDose?
 ) {
     val c = DiaTheme.colors
     val u = stringResource(R.string.unit_insulin)
     fun f(x: Double) = formatAmount(x, locale)
     Column(
-        Modifier.fillMaxWidth().background(c.surface, RoundedCornerShape(18.dp)).border(1.dp, c.insulinContainer, RoundedCornerShape(18.dp)).padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        Modifier.fillMaxWidth().background(
+            c.surface,
+            RoundedCornerShape(18.dp)
+        ).border(1.dp, c.insulinContainer, RoundedCornerShape(18.dp)).padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Row {
             Text(stringResource(R.string.meal_dose_title), color = c.textMuted, fontSize = 13.sp, modifier = Modifier.weight(1f))
-            Text(stringResource(R.string.meal_ratio, dose.ratio) + " · " + stringResource(R.string.meal_step, f(dose.step)), color = c.textFaint, fontSize = 11.5.sp)
+            Text(
+                stringResource(R.string.meal_ratio, dose.ratio) + " · " + stringResource(R.string.meal_step, f(dose.step)),
+                color = c.textFaint,
+                fontSize = 11.5.sp
+            )
         }
         Line(
-            (if (earlier > 0) stringResource(R.string.meal_line_carbs_join, earlier, m.carbs - earlier, m.carbs) else "${m.carbs} " + stringResource(R.string.unit_carbs)) + " ÷ ${dose.ratio}",
-            String.format(locale, "%.2f", m.food).trimEnd('0').trimEnd(',', '.') + " $u",
+            (
+                if (earlier >
+                    0
+                ) {
+                    stringResource(R.string.meal_line_carbs_join, earlier, m.carbs - earlier, m.carbs)
+                } else {
+                    "${m.carbs} " +
+                        stringResource(R.string.unit_carbs)
+                }
+                ) +
+                " ÷ ${dose.ratio}",
+            String.format(locale, "%.2f", m.food).trimEnd('0').trimEnd(',', '.') + " $u"
         )
         Line(
-            if (m.fresh) stringResource(R.string.meal_line_corr, formatGlucose(m.meter ?: 0, units, locale), m.meterAgeMin ?: 0) else stringResource(R.string.meal_line_corr_none),
-            if (m.fresh) "+" + f(m.corr) + " $u" else stringResource(R.string.meal_not_counted),
+            if (m.fresh) {
+                stringResource(
+                    R.string.meal_line_corr,
+                    formatGlucose(m.meter ?: 0, units, locale),
+                    m.meterAgeMin ?: 0
+                )
+            } else {
+                stringResource(R.string.meal_line_corr_none)
+            },
+            if (m.fresh) "+" + f(m.corr) + " $u" else stringResource(R.string.meal_not_counted)
         )
         Line(stringResource(R.string.meal_line_total, f(m.raw)), f(m.dose) + " $u")
         if (given > 0) Line(stringResource(R.string.meal_line_given), "−" + f(given) + " $u")
         Text(stringResource(R.string.meal_rule_note, ruleName(dose.rule)), color = c.textFaint, fontSize = 11.5.sp)
         m.alerts.forEach { AlertCard(it, units, locale) }
-        if (!m.fresh) OutlinedTextField(
-            value = typedMeter,
-            onValueChange = onMeter,
-            label = { Text(stringResource(R.string.meal_fresh_meter, if (units == Units.Mmol) stringResource(R.string.unit_mmol) else "mg/dL")) },
-            singleLine = true,
-            textStyle = GlucoseHero.copy(fontSize = 22.sp, lineHeight = 26.sp, color = c.text),
-            keyboardOptions = KeyboardOptions(keyboardType = if (units == Units.Mmol) KeyboardType.Decimal else KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth(),
-        )
+        if (!m.fresh) {
+            OutlinedTextField(
+                value = typedMeter,
+                onValueChange = onMeter,
+                label = {
+                    Text(
+                        stringResource(
+                            R.string.meal_fresh_meter,
+                            if (units ==
+                                Units.Mmol
+                            ) {
+                                stringResource(R.string.unit_mmol)
+                            } else {
+                                "mg/dL"
+                            }
+                        )
+                    )
+                },
+                singleLine = true,
+                textStyle = GlucoseHero.copy(fontSize = 22.sp, lineHeight = 26.sp, color = c.text),
+                keyboardOptions = KeyboardOptions(keyboardType = if (units == Units.Mmol) KeyboardType.Decimal else KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
         Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(if (given > 0) R.string.meal_to_give_more else R.string.meal_to_give), color = c.textMuted, fontSize = 13.sp, modifier = Modifier.weight(1f))
-            Text((if (given > 0 && m.toGive > 0) "+" else "") + f(m.toGive), style = GlucoseHero.copy(fontSize = 44.sp, lineHeight = 48.sp, color = c.insulin))
+            Text(
+                stringResource(
+                    if (given >
+                        0
+                    ) {
+                        R.string.meal_to_give_more
+                    } else {
+                        R.string.meal_to_give
+                    }
+                ),
+                color = c.textMuted,
+                fontSize = 13.sp,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                (
+                    if (given > 0 &&
+                        m.toGive > 0
+                    ) {
+                        "+"
+                    } else {
+                        ""
+                    }
+                    ) + f(m.toGive),
+                style = GlucoseHero.copy(fontSize = 44.sp, lineHeight = 48.sp, color = c.insulin)
+            )
             Text(" $u", color = c.textMuted, fontSize = 16.sp)
         }
         when {
-            m.level == DoseCalc.Level.Absurd && m.carbs > 0 -> Text(stringResource(R.string.meal_cannot_plan), color = c.low, fontSize = 13.sp)
-            openPlan != null -> Text(stringResource(R.string.meal_plan_follows, f(openPlan.dose), f(m.toGive)), color = c.insulin, fontSize = 13.sp)
+            m.level == DoseCalc.Level.Absurd && m.carbs > 0 -> Text(
+                stringResource(R.string.meal_cannot_plan),
+                color = c.low,
+                fontSize = 13.sp
+            )
+            openPlan != null -> Text(
+                stringResource(R.string.meal_plan_follows, f(openPlan.dose), f(m.toGive)),
+                color = c.insulin,
+                fontSize = 13.sp
+            )
             m.canPlan -> Row(
                 Modifier.fillMaxWidth()
                     .border(if (plan) 1.5.dp else 1.dp, if (plan) c.insulin else c.textFaint, RoundedCornerShape(14.dp))
@@ -622,11 +938,16 @@ private fun DoseCard(
                     .clickable { onPlan(!plan) }
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Switch(checked = plan, onCheckedChange = onPlan)
                 Column(Modifier.weight(1f)) {
-                    Text(stringResource(R.string.meal_plan, f(m.toGive)), color = c.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        stringResource(R.string.meal_plan, f(m.toGive)),
+                        color = c.text,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
                     Text(stringResource(R.string.meal_plan_note), color = c.textMuted, fontSize = 12.sp)
                 }
             }
@@ -652,7 +973,7 @@ fun ruleName(rule: String): String = stringResource(
         "down" -> R.string.rule_down
         "up" -> R.string.rule_up
         else -> R.string.rule_half_down
-    },
+    }
 )
 
 /** A bright card: red for what must be seen before injecting, amber for a note, green when all agrees. */
@@ -664,19 +985,29 @@ fun AlertCard(a: DoseCalc.Alert, units: Units, locale: java.util.Locale, title: 
     fun f(x: Double) = formatAmount(x, locale)
     fun g(mg: Int) = formatGlucose(mg, units, locale)
     val (t0, x0) = when (a) {
-        is DoseCalc.Alert.MeterOld -> stringResource(R.string.alert_meter_old) to stringResource(R.string.alert_meter_old_text, ageText(a.ageMin), a.freshMin)
+        is DoseCalc.Alert.MeterOld -> stringResource(R.string.alert_meter_old) to
+            stringResource(R.string.alert_meter_old_text, ageText(a.ageMin), a.freshMin)
         is DoseCalc.Alert.NoMeter -> stringResource(R.string.alert_meter_old) to stringResource(R.string.alert_no_meter_text, a.freshMin)
         is DoseCalc.Alert.Low -> stringResource(R.string.alert_low, g(a.mg)) to stringResource(R.string.alert_low_text)
-        is DoseCalc.Alert.VeryHigh -> stringResource(R.string.alert_very_high, g(a.mg)) to stringResource(R.string.alert_very_high_text, f(a.maxCorr))
-        is DoseCalc.Alert.RecentRapid -> stringResource(R.string.alert_recent, f(a.units), AlarmText.clock(ctx, a.at)) to stringResource(R.string.alert_recent_text)
-        is DoseCalc.Alert.GivenLess -> stringResource(R.string.alert_given_less, f(a.dose - a.given)) to stringResource(R.string.alert_given_text, f(a.given), f(a.dose))
-        is DoseCalc.Alert.GivenMore -> stringResource(R.string.alert_given_more, f(a.given - a.dose)) to stringResource(R.string.alert_given_more_text, f(a.given), f(a.dose))
+        is DoseCalc.Alert.VeryHigh -> stringResource(R.string.alert_very_high, g(a.mg)) to
+            stringResource(R.string.alert_very_high_text, f(a.maxCorr))
+        is DoseCalc.Alert.RecentRapid -> stringResource(R.string.alert_recent, f(a.units), AlarmText.clock(ctx, a.at)) to
+            stringResource(R.string.alert_recent_text)
+        is DoseCalc.Alert.GivenLess -> stringResource(R.string.alert_given_less, f(a.dose - a.given)) to
+            stringResource(R.string.alert_given_text, f(a.given), f(a.dose))
+        is DoseCalc.Alert.GivenMore -> stringResource(R.string.alert_given_more, f(a.given - a.dose)) to
+            stringResource(R.string.alert_given_more_text, f(a.given), f(a.dose))
         is DoseCalc.Alert.GivenSame -> stringResource(R.string.alert_given_same) to "${f(a.given)} $u"
-        is DoseCalc.Alert.CarbsHigh -> stringResource(R.string.alert_carbs_high, a.carbs) to stringResource(R.string.alert_carbs_high_text, a.max)
-        is DoseCalc.Alert.CarbsUnusual -> stringResource(R.string.alert_carbs_unusual, a.carbs) to stringResource(R.string.alert_carbs_unusual_text, a.usual)
-        is DoseCalc.Alert.DoseAbsurd -> stringResource(R.string.alert_dose_absurd, f(a.dose)) to stringResource(R.string.alert_dose_absurd_text, f(a.max))
-        is DoseCalc.Alert.DoseHigh -> stringResource(R.string.alert_dose_high, f(a.dose)) to stringResource(R.string.alert_dose_high_text, f(a.max))
-        is DoseCalc.Alert.DoseUnusual -> stringResource(R.string.alert_dose_unusual, f(a.dose)) to stringResource(R.string.alert_dose_unusual_text, f(a.usual))
+        is DoseCalc.Alert.CarbsHigh -> stringResource(R.string.alert_carbs_high, a.carbs) to
+            stringResource(R.string.alert_carbs_high_text, a.max)
+        is DoseCalc.Alert.CarbsUnusual -> stringResource(R.string.alert_carbs_unusual, a.carbs) to
+            stringResource(R.string.alert_carbs_unusual_text, a.usual)
+        is DoseCalc.Alert.DoseAbsurd -> stringResource(R.string.alert_dose_absurd, f(a.dose)) to
+            stringResource(R.string.alert_dose_absurd_text, f(a.max))
+        is DoseCalc.Alert.DoseHigh -> stringResource(R.string.alert_dose_high, f(a.dose)) to
+            stringResource(R.string.alert_dose_high_text, f(a.max))
+        is DoseCalc.Alert.DoseUnusual -> stringResource(R.string.alert_dose_unusual, f(a.dose)) to
+            stringResource(R.string.alert_dose_unusual_text, f(a.usual))
     }
     val head = title ?: t0
     val body = text ?: x0
@@ -688,7 +1019,7 @@ fun AlertCard(a: DoseCalc.Alert, units: Units, locale: java.util.Locale, title: 
     }
     Row(
         Modifier.fillMaxWidth().background(bg, RoundedCornerShape(14.dp)).border(1.5.dp, line, RoundedCornerShape(14.dp)).padding(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Text(if (ok) "✓" else "!", color = line, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -711,34 +1042,66 @@ private fun SaveSheet(
     onOkBig: (Boolean) -> Unit,
     onPlan: () -> Unit,
     onFoodOnly: () -> Unit,
-    onBack: () -> Unit,
+    onBack: () -> Unit
 ) {
     val c = DiaTheme.colors
     fun f(x: Double) = formatAmount(x, locale)
     val needOk = m.level == DoseCalc.Level.High
-    ModalBottomSheet(onDismissRequest = onBack, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = c.surface) {
+    ModalBottomSheet(
+        onDismissRequest = onBack,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = c.surface
+    ) {
         Column(
             Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(stringResource(if (planOn || !m.canPlan) R.string.meal_check_title else R.string.meal_plan_q), color = c.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Text(
+                stringResource(
+                    if (planOn ||
+                        !m.canPlan
+                    ) {
+                        R.string.meal_check_title
+                    } else {
+                        R.string.meal_plan_q
+                    }
+                ),
+                color = c.text,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold
+            )
             if (m.canPlan) Text(stringResource(R.string.meal_plan_q_text, f(m.toGive)), color = c.textMuted, fontSize = 13.5.sp)
             m.alerts.forEach { AlertCard(it, units, locale) }
-            if (m.canPlan && needOk) Row(
-                Modifier.fillMaxWidth().border(1.5.dp, c.low, RoundedCornerShape(14.dp)).clickable { onOkBig(!okBig) }.padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                androidx.compose.material3.Checkbox(checked = okBig, onCheckedChange = onOkBig)
-                Text(stringResource(R.string.meal_ok_big, f(m.toGive)), color = c.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            if (m.canPlan && needOk) {
+                Row(
+                    Modifier.fillMaxWidth().border(1.5.dp, c.low, RoundedCornerShape(14.dp)).clickable { onOkBig(!okBig) }.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    androidx.compose.material3.Checkbox(checked = okBig, onCheckedChange = onOkBig)
+                    Text(
+                        stringResource(R.string.meal_ok_big, f(m.toGive)),
+                        color = c.text,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
-            if (m.canPlan) Button(
-                onClick = onPlan,
-                enabled = !needOk || okBig,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = c.insulin, contentColor = c.background),
-            ) { Text(stringResource(if (m.asks) R.string.meal_plan_yes_seen else R.string.meal_plan_yes, f(m.toGive)), fontWeight = FontWeight.SemiBold) }
-            else if (m.level == DoseCalc.Level.Absurd) Text(stringResource(R.string.meal_cannot_plan), color = c.low, fontSize = 13.5.sp)
+            if (m.canPlan) {
+                Button(
+                    onClick = onPlan,
+                    enabled = !needOk || okBig,
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = c.insulin, contentColor = c.background)
+                ) {
+                    Text(
+                        stringResource(if (m.asks) R.string.meal_plan_yes_seen else R.string.meal_plan_yes, f(m.toGive)),
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            } else if (m.level == DoseCalc.Level.Absurd) {
+                Text(stringResource(R.string.meal_cannot_plan), color = c.low, fontSize = 13.5.sp)
+            }
             OutlinedButton(onClick = onFoodOnly, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(16.dp)) {
                 Text(stringResource(R.string.meal_food_only), color = c.carbs, fontWeight = FontWeight.SemiBold)
             }

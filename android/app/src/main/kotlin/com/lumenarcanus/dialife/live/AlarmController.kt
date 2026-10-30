@@ -39,7 +39,11 @@ class AlarmController(context: Context, private val repo: LiveRepository, privat
             "alarm" -> ring(a, e, help = false)
             "handled" -> {
                 silence(a.id)
-                if (a.handledById != me) info(a, app.getString(R.string.someone_handles, e.by ?: a.handledBy.orEmpty()), handledBody(a), loud = false)
+                if (a.handledById !=
+                    me
+                ) {
+                    info(a, app.getString(R.string.someone_handles, e.by ?: a.handledBy.orEmpty()), handledBody(a), loud = false)
+                }
             }
             "checkin" -> if (a.handledById == me) checkin(a)
             "checkin_ok" -> nm.cancel(TAG_CHECKIN, a.id.toInt()) // answered, maybe from the ntfy button
@@ -47,13 +51,25 @@ class AlarmController(context: Context, private val repo: LiveRepository, privat
             "coming" -> {
                 silence(a.id)
                 if (a.comingById != me) {
-                    info(a, app.getString(R.string.someone_coming, e.by ?: a.comingBy.orEmpty()), AlarmText.title(app, a, units), loud = a.handledById == me)
+                    info(
+                        a,
+                        app.getString(R.string.someone_coming, e.by ?: a.comingBy.orEmpty()),
+                        AlarmText.title(app, a, units),
+                        loud =
+                        a.handledById == me
+                    )
                 }
             }
             "clear" -> {
                 silence(a.id)
                 nm.cancel(TAG_CHECKIN, a.id.toInt())
-                val title = if (e.summary?.manual == true) app.getString(R.string.clear_manual, AlarmText.kind(app, a)) else AlarmText.clear(app, a)
+                val title = if (e.summary?.manual ==
+                    true
+                ) {
+                    app.getString(R.string.clear_manual, AlarmText.kind(app, a))
+                } else {
+                    AlarmText.clear(app, a)
+                }
                 info(a, title, AlarmText.clearBody(app, e, units), loud = false)
                 rungAt.remove(a.id)
             }
@@ -76,9 +92,11 @@ class AlarmController(context: Context, private val repo: LiveRepository, privat
         }
         // episodes that ended while we were away
         val ids = live.map { it.id }.toSet()
-        for (id in rungAt.keys.toList()) if (id !in ids) {
-            silence(id)
-            rungAt.remove(id)
+        for (id in rungAt.keys.toList()) {
+            if (id !in ids) {
+                silence(id)
+                rungAt.remove(id)
+            }
         }
     }
 
@@ -88,9 +106,10 @@ class AlarmController(context: Context, private val repo: LiveRepository, privat
         val title = if (help) app.getString(R.string.help_title, a.handledBy.orEmpty()) else AlarmText.title(app, a, units)
         val body = if (help) AlarmText.title(app, a, units) else AlarmText.reason(app, e, a)
         val screen = PendingIntent.getActivity(
-            app, a.id.toInt(),
+            app,
+            a.id.toInt(),
             AlarmActivity.intent(app, a.id, help),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         val b = Notification.Builder(app, Notifications.CHANNEL_ALARMS)
             .setSmallIcon(R.drawable.ic_stat_drop)
@@ -170,17 +189,21 @@ class AlarmController(context: Context, private val repo: LiveRepository, privat
 
     private fun action(alarmId: Long, what: String, label: Int): Notification.Action {
         val pi = PendingIntent.getBroadcast(
-            app, (alarmId.toInt() * 8) + what.hashCode().and(7),
+            app,
+            (alarmId.toInt() * 8) + what.hashCode().and(7),
             Intent(app, ActionReceiver::class.java).putExtra(ActionReceiver.EXTRA_ACTION, what).putExtra(ActionReceiver.EXTRA_ID, alarmId),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         return Notification.Action.Builder(null, app.getString(label), pi).build()
     }
 
     private fun openApp(): PendingIntent = PendingIntent.getActivity(
-        app, 0,
-        Intent(app, com.lumenarcanus.dialife.MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
-        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        app,
+        0,
+        Intent(app, com.lumenarcanus.dialife.MainActivity::class.java).addFlags(
+            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        ),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
     )
 
     fun failed() {

@@ -16,10 +16,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** The wait on home: the server's state, ticking for the countdown; a close goes at once here. */
-class WaitViewModel(
-    private val live: LiveRepository,
-    private val repository: WaitRepository = WaitRepository({ live.credentials }),
-) : ViewModel() {
+class WaitViewModel(private val live: LiveRepository, private val repository: WaitRepository = WaitRepository({ live.credentials })) :
+    ViewModel() {
     private val closedHere = MutableStateFlow(emptySet<String>())
     private val userMessage = MutableStateFlow<Int?>(null)
     private val clock = flow {

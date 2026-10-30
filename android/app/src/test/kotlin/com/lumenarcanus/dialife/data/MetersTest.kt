@@ -31,6 +31,8 @@ class MetersTest {
 
     @Test
     fun emptyOrZeroIsNoReading() {
-        assertNull(Meters.latest(listOf(Treatment(id = "i", t = min(100), insulin = 2.0)), Series(listOf(min(100)), listOf(0)), to = min(120)))
+        assertNull(
+            Meters.latest(listOf(Treatment(id = "i", t = min(100), insulin = 2.0)), Series(listOf(min(100)), listOf(0)), to = min(120))
+        )
     }
 }

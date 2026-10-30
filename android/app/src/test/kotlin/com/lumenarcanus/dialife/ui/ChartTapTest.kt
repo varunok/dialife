@@ -33,14 +33,24 @@ class ChartTapTest {
     fun longMealTooltip() {
         val ui = sampleHomeUi()
         val meal = Treatment(
-            "m", ui.now - 30 * 60_000L, eventType = "Carb Correction", carbs = 25.0, enteredBy = "Мама",
-            foodItems = listOf(FoodItem("Смузі зеленесмузі 205 грам, картопля пюре 83 грами", carbs = 25.0, source = "manual")),
+            "m",
+            ui.now - 30 * 60_000L,
+            eventType = "Carb Correction",
+            carbs = 25.0,
+            enteredBy = "Мама",
+            foodItems = listOf(FoodItem("Смузі зеленесмузі 205 грам, картопля пюре 83 грами", carbs = 25.0, source = "manual"))
         )
         compose.setContent {
             DiaLifeTheme(dark = true) {
                 ChartCard(
-                    ui.history!!.copy(treatments = listOf(meal)), null, ui.state!!.thresholds, Units.MgDl, ui.rangeHours, ui.now,
-                    onRange = {}, modifier = Modifier.fillMaxWidth(),
+                    ui.history!!.copy(treatments = listOf(meal)),
+                    null,
+                    ui.state!!.thresholds,
+                    Units.MgDl,
+                    ui.rangeHours,
+                    ui.now,
+                    onRange = {},
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }

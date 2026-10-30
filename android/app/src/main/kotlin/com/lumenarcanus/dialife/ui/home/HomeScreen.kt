@@ -1,40 +1,40 @@
 package com.lumenarcanus.dialife.ui.home
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.togetherWith
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -48,7 +48,9 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -60,34 +62,37 @@ import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.data.AlarmView
 import com.lumenarcanus.dialife.data.Bg
-import com.lumenarcanus.dialife.live.ActionReceiver
-import com.lumenarcanus.dialife.live.AlarmText
-import androidx.compose.ui.platform.LocalContext
 import com.lumenarcanus.dialife.data.ConePoint
 import com.lumenarcanus.dialife.data.Forecast
 import com.lumenarcanus.dialife.data.ForecastPoint
 import com.lumenarcanus.dialife.data.History
+import com.lumenarcanus.dialife.data.Question
 import com.lumenarcanus.dialife.data.Series
 import com.lumenarcanus.dialife.data.StateResponse
 import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.data.Treatment
-import com.lumenarcanus.dialife.data.Question
-import com.lumenarcanus.dialife.ui.treatment.TreatmentKind
-import com.lumenarcanus.dialife.ui.treatment.TreatmentSheet
-import androidx.compose.material3.AlertDialog
 import com.lumenarcanus.dialife.data.Uploader
-import com.lumenarcanus.dialife.ui.theme.DataLabel
+import com.lumenarcanus.dialife.live.ActionReceiver
+import com.lumenarcanus.dialife.live.AlarmText
 import com.lumenarcanus.dialife.ui.theme.DiaLifeTheme
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.ui.theme.GlucoseHero
+import com.lumenarcanus.dialife.ui.treatment.TreatmentKind
+import com.lumenarcanus.dialife.ui.treatment.TreatmentSheet
 import java.util.Locale
 
 enum class Units { MgDl, Mmol }
 
 /** Nightscout trend names, as the server sends them. */
 enum class Trend(val degrees: Float, val double: Boolean = false) {
-    DoubleUp(-90f, true), SingleUp(-90f), FortyFiveUp(-45f), Flat(0f),
-    FortyFiveDown(45f), SingleDown(90f), DoubleDown(90f, true), Unknown(0f),
+    DoubleUp(-90f, true),
+    SingleUp(-90f),
+    FortyFiveUp(-45f),
+    Flat(0f),
+    FortyFiveDown(45f),
+    SingleDown(90f),
+    DoubleDown(90f, true),
+    Unknown(0f)
 }
 
 enum class Range { Low, InRange, High }
@@ -107,7 +112,8 @@ data class HomeState(
     val phoneBattery: Int?,
     val uploaderName: String? = null, // the family's name for the xDrip+ phone, from the server
     val alarms: Int = 0,
-    val timeInRange: Int? = null, // percent over the last 24 h
+    // percent over the last 24 h
+    val timeInRange: Int? = null
 ) {
     val range: Range get() = when {
         sgv < low -> Range.Low
@@ -123,36 +129,63 @@ fun sampleHomeUi(now: Long = 1_761_400_000_000L, dad: String = "Тато", mom: 
     val bg = Bg(sgv = v.last(), mills = t.last(), direction = "Flat", delta = v.last() - v[v.size - 2])
     val ar2 = Forecast(
         predicted = (1..6).map { ForecastPoint(now + it * 300_000L, bg.sgv + it) },
-        cone = (1..6).map { ConePoint(now + it * 300_000L, bg.sgv - it * 4, bg.sgv + it * 5) },
+        cone = (1..6).map { ConePoint(now + it * 300_000L, bg.sgv - it * 4, bg.sgv + it * 5) }
     )
     val treatments = listOf(
         Treatment("d", now - 3 * 3_600_000L - 300_000L, insulin = 18.0, insulinType = "basal", insulinName = "Lantus"),
         Treatment("a", now - 3 * 3_600_000L, insulin = 2.5, insulinType = "rapid", insulinName = "NovoRapid"),
         Treatment("b", now - 3 * 3_600_000L + 600_000L, carbs = 45.0),
         Treatment("m", t[235], glucose = v[235] + 14, eventType = "BG Check", enteredBy = mom),
-        Treatment("x", t[262], duration = 40, intensity = "moderate", eventType = "Exercise", enteredBy = dad),
+        Treatment("x", t[262], duration = 40, intensity = "moderate", eventType = "Exercise", enteredBy = dad)
     )
     val questions = listOf(
         com.lumenarcanus.dialife.data.Question(
-            1, "rise", "unknown", t[218], t[224], v[218], v[224],
+            1,
+            "rise",
+            "unknown",
+            t[218],
+            t[224],
+            v[218],
+            v[224]
         ),
         com.lumenarcanus.dialife.data.Question(
             2, "rise", "open", t[276], t[283], v[276], v[283], round = 2,
             answers = listOf(
                 com.lumenarcanus.dialife.data.QuestionAnswer(dad, "nothing", 1, t[284]),
-                com.lumenarcanus.dialife.data.QuestionAnswer(mom, "food_unknown", 1, t[285]),
+                com.lumenarcanus.dialife.data.QuestionAnswer(mom, "food_unknown", 1, t[285])
             ),
-            waiting = listOf(dad, mom), waitingIds = listOf(8, 9),
-        ),
+            waiting = listOf(dad, mom), waitingIds = listOf(8, 9)
+        )
     )
     return HomeUi(
-        state = StateResponse(now, "mg/dl", Thresholds(55, 80, 250, 300), bg, ar2, Uploader(battery = 69), questions = questions,
-            forecastQuality = com.lumenarcanus.dialife.data.ForecastQuality(19, 74, 560, listOf(com.lumenarcanus.dialife.data.ForecastBlind("food", t[270])), quiet = com.lumenarcanus.dialife.data.ForecastQuality(12, 95, 600), afterFood = com.lumenarcanus.dialife.data.ForecastQuality(23, 87, 414)),
-            iob = com.lumenarcanus.dialife.data.Iob(1.8, 25, 40, listOf(com.lumenarcanus.dialife.data.IobPoint(t[287] + 15 * 60_000L, 176), com.lumenarcanus.dialife.data.IobPoint(t[287] + 30 * 60_000L, 168), com.lumenarcanus.dialife.data.IobPoint(t[287] + 60 * 60_000L, 150))),
-            iobQuality = com.lumenarcanus.dialife.data.ForecastQuality(18, 71, 1900)),
+        state = StateResponse(
+            now, "mg/dl", Thresholds(55, 80, 250, 300), bg, ar2, Uploader(battery = 69), questions = questions,
+            forecastQuality = com.lumenarcanus.dialife.data.ForecastQuality(
+                19,
+                74,
+                560,
+                listOf(com.lumenarcanus.dialife.data.ForecastBlind("food", t[270])),
+                quiet = com.lumenarcanus.dialife.data.ForecastQuality(12, 95, 600),
+                afterFood = com.lumenarcanus.dialife.data.ForecastQuality(23, 87, 414)
+            ),
+            iob = com.lumenarcanus.dialife.data.Iob(
+                1.8,
+                25,
+                40,
+                listOf(
+                    com.lumenarcanus.dialife.data.IobPoint(t[287] + 15 * 60_000L, 176),
+                    com.lumenarcanus.dialife.data.IobPoint(
+                        t[287] + 30 * 60_000L,
+                        168
+                    ),
+                    com.lumenarcanus.dialife.data.IobPoint(t[287] + 60 * 60_000L, 150)
+                )
+            ),
+            iobQuality = com.lumenarcanus.dialife.data.ForecastQuality(18, 71, 1900)
+        ),
         myId = 8,
         history = History(t.first(), now, Series(t, v), mbg = Series(listOf(t[270]), listOf(v[270] - 9)), treatments = treatments),
-        now = now,
+        now = now
     )
 }
 
@@ -181,7 +214,7 @@ fun HomeUi.toHomeState(fallbackUnits: Units): HomeState? {
         phoneBattery = st.uploader?.battery,
         uploaderName = st.uploaderName,
         alarms = st.alarms.count { it.state != "cleared" },
-        timeInRange = inRange,
+        timeInRange = inRange
     )
 }
 
@@ -195,7 +228,13 @@ fun formatGlucose(mgdl: Int, units: Units, locale: Locale): String = when (units
 }
 
 fun formatDelta(mgdl: Int, units: Units, locale: Locale): String {
-    val sign = if (mgdl > 0) "+" else if (mgdl < 0) "−" else "±"
+    val sign = if (mgdl > 0) {
+        "+"
+    } else if (mgdl < 0) {
+        "−"
+    } else {
+        "±"
+    }
     val abs = kotlin.math.abs(mgdl)
     return sign + when (units) {
         Units.MgDl -> abs.toString()
@@ -228,7 +267,8 @@ fun HomeScreen(
     onOpenWebLogin: () -> Unit = {},
     onOpenMeal: (editing: Treatment?, question: Question?) -> Unit = { _, _ -> }, // the food screen
     onPlanned: (com.lumenarcanus.dialife.ui.meal.PlannedAction) -> Unit = {}, // given, changed or not given
-    waitSection: @Composable () -> Unit = {}, // when to eat: a feature with its own state (feature/wait)
+    // when to eat: a feature with its own state (feature/wait)
+    waitSection: @Composable () -> Unit = {}
 ) {
     val c = DiaTheme.colors
     val locale = LocalConfiguration.current.locales[0]
@@ -242,12 +282,14 @@ fun HomeScreen(
     var sheetFor by remember { mutableStateOf<Question?>(null) } // the sheet answers this question
     // food has a screen of its own
     val food = sheet?.let { (kind, editing) ->
-        editing?.let { (it.carbs ?: 0.0) > 0 && (it.insulin ?: 0.0) <= 0 && it.glucose == null && it.duration == null } ?: (kind == TreatmentKind.Food)
+        editing?.let { (it.carbs ?: 0.0) > 0 && (it.insulin ?: 0.0) <= 0 && it.glucose == null && it.duration == null }
+            ?: (kind == TreatmentKind.Food)
     } == true
     androidx.compose.runtime.LaunchedEffect(food) {
         if (food) {
             onOpenMeal(sheet?.second, sheetFor)
-            sheet = null; sheetFor = null
+            sheet = null
+            sheetFor = null
         }
     }
     sheet?.takeIf { !food }?.let { (kind, editing) ->
@@ -257,22 +299,31 @@ fun HomeScreen(
                 haptics.performHapticFeedback(HapticFeedbackType.Confirm)
                 onSaveTreatment(it)
                 sheetFor?.let { q -> onAnswerQuestion(q.id, if (q.kind == "rise") "food" else "insulin", it.id) }
-                sheet = null; sheetFor = null
+                sheet = null
+                sheetFor = null
             },
-            onDismiss = { sheet = null; sheetFor = null },
+            onDismiss = {
+                sheet = null
+                sheetFor = null
+            },
             initialTime = sheetFor?.from,
             recent = ui.history?.treatments.orEmpty(),
             units = state?.units ?: fallbackUnits,
             dose = ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
-            mealRules = ui.state?.mealRules ?: com.lumenarcanus.dialife.data.MealRules(),
+            mealRules = ui.state?.mealRules ?: com.lumenarcanus.dialife.data.MealRules()
         )
     }
     confirmDelete?.let { tr ->
         AlertDialog(
             onDismissRequest = { confirmDelete = null },
             title = { Text(stringResource(R.string.tr_delete_title)) },
-            confirmButton = { TextButton(onClick = { onDeleteTreatment(tr.id); confirmDelete = null }) { Text(stringResource(R.string.tr_delete), color = c.low) } },
-            dismissButton = { TextButton(onClick = { confirmDelete = null }) { Text(stringResource(R.string.tr_cancel)) } },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDeleteTreatment(tr.id)
+                    confirmDelete = null
+                }) { Text(stringResource(R.string.tr_delete), color = c.low) }
+            },
+            dismissButton = { TextButton(onClick = { confirmDelete = null }) { Text(stringResource(R.string.tr_cancel)) } }
         )
     }
     if (fullChart) {
@@ -296,7 +347,7 @@ fun HomeScreen(
                 onDismissSuspect = onDismissQuestion,
                 dose = ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
                 planned = ui.state?.planned.orEmpty(),
-                mealRules = ui.state?.mealRules ?: com.lumenarcanus.dialife.data.MealRules(),
+                mealRules = ui.state?.mealRules ?: com.lumenarcanus.dialife.data.MealRules()
             )
         }
         return
@@ -308,7 +359,7 @@ fun HomeScreen(
             .safeDrawingPadding()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
         val status = when {
             ui.offline -> R.string.status_offline
@@ -343,11 +394,15 @@ fun HomeScreen(
             androidx.compose.runtime.key("p", p.id) {
                 com.lumenarcanus.dialife.ui.meal.PlannedCard(
                     p, ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(), ui.now, ui.history?.treatments.orEmpty(),
-                    question = ui.state?.questions.orEmpty().firstOrNull { it.kind == "planned" && it.plannedId == p.id && it.state == "open" },
+                    question = ui.state?.questions.orEmpty().firstOrNull {
+                        it.kind == "planned" &&
+                            it.plannedId == p.id &&
+                            it.state == "open"
+                    },
                     units = state?.units ?: fallbackUnits,
                     onPlanned = onPlanned,
                     onSaveTreatment = onSaveTreatment,
-                    mealRules = ui.state?.mealRules ?: com.lumenarcanus.dialife.data.MealRules(),
+                    mealRules = ui.state?.mealRules ?: com.lumenarcanus.dialife.data.MealRules()
                 )
             }
         }
@@ -355,10 +410,16 @@ fun HomeScreen(
         ui.state?.questions.orEmpty().filter { it.state == "open" && it.kind != "planned" }.forEach { q ->
             androidx.compose.runtime.key("q", q.id) {
                 QuestionCard(
-                    q, ui.myId, ui.history?.treatments.orEmpty(), state?.units ?: fallbackUnits,
+                    q,
+                    ui.myId,
+                    ui.history?.treatments.orEmpty(),
+                    state?.units ?: fallbackUnits,
                     onAnswer = { answer, tr -> onAnswerQuestion(q.id, answer, tr) },
-                    onLog = { sheetFor = q; sheet = (if (q.kind == "rise") TreatmentKind.Food else TreatmentKind.Insulin) to null },
-                    onLink = onSaveTreatment,
+                    onLog = {
+                        sheetFor = q
+                        sheet = (if (q.kind == "rise") TreatmentKind.Food else TreatmentKind.Insulin) to null
+                    },
+                    onLink = onSaveTreatment
                 )
             }
         }
@@ -382,7 +443,7 @@ fun HomeScreen(
             dose = ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
             planned = ui.state?.planned.orEmpty(),
             mealRules = ui.state?.mealRules ?: com.lumenarcanus.dialife.data.MealRules(),
-            onOpenTable = onOpenData,
+            onOpenTable = onOpenData
         )
         state?.let { Tiles(it, onOpenStats, onOpenLog) }
         // a button for every kind of entry, each with its chart letter; the form opens on that kind
@@ -394,7 +455,9 @@ fun HomeScreen(
             val density = androidx.compose.ui.platform.LocalDensity.current
             val kinds = listOf(TreatmentKind.Insulin, TreatmentKind.Food, TreatmentKind.Meter)
             val labels = kinds.map { stringResource(com.lumenarcanus.dialife.ui.treatment.kindLook(it).name) }
-            val style = androidx.compose.material3.LocalTextStyle.current.merge(androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.SemiBold))
+            val style = androidx.compose.material3.LocalTextStyle.current.merge(
+                androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            )
             val stacked = kinds.zip(labels).any { (k, l) ->
                 // insulin carries two signs, overlapping
                 val inner = ACTION_INNER + if (k == TreatmentKind.Insulin) 15.dp else 0.dp
@@ -426,7 +489,8 @@ private fun QuestionCard(
     units: Units,
     onAnswer: (answer: String, treatmentId: String?) -> Unit,
     onLog: () -> Unit,
-    onLink: (Treatment) -> Unit = {}, // a dose said to be for the meal: saved linked to it
+    // a dose said to be for the meal: saved linked to it
+    onLink: (Treatment) -> Unit = {}
 ) {
     val c = DiaTheme.colors
     val ctx = androidx.compose.ui.platform.LocalContext.current
@@ -438,17 +502,30 @@ private fun QuestionCard(
             .fillMaxWidth()
             .background(c.highContainer, RoundedCornerShape(22.dp))
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text(com.lumenarcanus.dialife.live.QuestionNotifier.questionTitle(ctx, q), color = c.text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+        Text(
+            com.lumenarcanus.dialife.live.QuestionNotifier.questionTitle(ctx, q),
+            color = c.text,
+            fontSize = 17.sp,
+            fontWeight = FontWeight.SemiBold
+        )
         Text(
             com.lumenarcanus.dialife.live.QuestionNotifier.questionBody(ctx, q, units),
-            color = c.text, fontSize = 14.sp,
+            color = c.text,
+            fontSize = 14.sp
         )
         q.previous().takeIf { it.isNotEmpty() }?.let { prev ->
             Text(
-                stringResource(R.string.q_again, prev.joinToString(", ") { ctx.getString(R.string.q_said, it.person, com.lumenarcanus.dialife.live.QuestionNotifier.answerText(ctx, it.answer)) }),
-                color = c.high, fontSize = 13.sp, fontWeight = FontWeight.Medium,
+                stringResource(
+                    R.string.q_again,
+                    prev.joinToString(", ") {
+                        ctx.getString(R.string.q_said, it.person, com.lumenarcanus.dialife.live.QuestionNotifier.answerText(ctx, it.answer))
+                    }
+                ),
+                color = c.high,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium
             )
         }
         val double = q.kind == "double"
@@ -456,16 +533,31 @@ private fun QuestionCard(
         val entry = q.treatmentId?.takeIf { !double }?.let { id -> treatments.firstOrNull { it.id == id } }
         entry?.let { tr ->
             val what = listOfNotNull(
-                tr.carbs?.takeIf { it > 0 }?.let { com.lumenarcanus.dialife.ui.treatment.formatAmount(it, locale) + " " + stringResource(R.string.unit_carbs) },
-                tr.insulin?.takeIf { it > 0 }?.let { com.lumenarcanus.dialife.ui.treatment.formatAmount(it, locale) + " " + stringResource(R.string.unit_insulin) },
+                tr.carbs?.takeIf { it > 0 }?.let {
+                    com.lumenarcanus.dialife.ui.treatment.formatAmount(it, locale) + " " +
+                        stringResource(R.string.unit_carbs)
+                },
+                tr.insulin?.takeIf { it > 0 }?.let {
+                    com.lumenarcanus.dialife.ui.treatment.formatAmount(it, locale) + " " +
+                        stringResource(R.string.unit_insulin)
+                }
             ).joinToString(" · ")
-            Text(stringResource(R.string.q_entered, what, com.lumenarcanus.dialife.live.AlarmText.clock(ctx, tr.t), tr.enteredBy.orEmpty()), color = c.textMuted, fontSize = 13.sp)
+            Text(
+                stringResource(R.string.q_entered, what, com.lumenarcanus.dialife.live.AlarmText.clock(ctx, tr.t), tr.enteredBy.orEmpty()),
+                color = c.textMuted,
+                fontSize = 13.sp
+            )
         }
         if (q.asks(myId)) {
-            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            androidx.compose.foundation.layout.FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 if (double) {
                     Button(onClick = { onAnswer("one", null) }) { Text(stringResource(R.string.q_btn_one)) }
-                    androidx.compose.material3.OutlinedButton(onClick = { onAnswer("two", null) }) { Text(stringResource(R.string.q_btn_two), color = c.text) }
+                    androidx.compose.material3.OutlinedButton(onClick = {
+                        onAnswer("two", null)
+                    }) { Text(stringResource(R.string.q_btn_two), color = c.text) }
                     return@FlowRow
                 }
                 // food with no dose near it: the rapid dose before it may have been for it all the same
@@ -473,7 +565,8 @@ private fun QuestionCard(
                 val foodIds = treatments.filter { (it.carbs ?: 0.0) > 0 }.map { it.id }.toSet()
                 val before = food?.let { f ->
                     treatments.filter {
-                        com.lumenarcanus.dialife.data.Meals.isRapid(it) && it.t in (f.t - 3 * 3_600_000L)..f.t &&
+                        com.lumenarcanus.dialife.data.Meals.isRapid(it) &&
+                            it.t in (f.t - 3 * 3_600_000L)..f.t &&
                             (it.mealId == null || it.mealId == f.id || it.mealId !in foodIds)
                     }.maxByOrNull { it.t }
                 }
@@ -484,17 +577,45 @@ private fun QuestionCard(
                         onLink(before.copy(mealId = food.id, insulinRole = "meal"))
                         onAnswer("insulin", before.id)
                     }) {
-                        Text(stringResource(R.string.q_btn_was_for_it, com.lumenarcanus.dialife.live.AlarmText.clock(ctx, before.t),
-                            com.lumenarcanus.dialife.ui.treatment.formatAmount(before.insulin ?: 0.0, locale)))
+                        Text(
+                            stringResource(
+                                R.string.q_btn_was_for_it,
+                                com.lumenarcanus.dialife.live.AlarmText.clock(ctx, before.t),
+                                com.lumenarcanus.dialife.ui.treatment.formatAmount(before.insulin ?: 0.0, locale)
+                            )
+                        )
                     }
-                    androidx.compose.material3.OutlinedButton(onClick = onLog) { Text(stringResource(R.string.q_btn_insulin), color = c.text) }
+                    androidx.compose.material3.OutlinedButton(onClick = onLog) {
+                        Text(stringResource(R.string.q_btn_insulin), color = c.text)
+                    }
                 } else {
                     Button(onClick = onLog) { Text(stringResource(if (rise) R.string.q_btn_food else R.string.q_btn_insulin)) }
                 }
-                if (rise) androidx.compose.material3.OutlinedButton(onClick = { onAnswer("food_unknown", null) }) { Text(stringResource(R.string.q_btn_food_unknown), color = c.text) }
+                if (rise) {
+                    androidx.compose.material3.OutlinedButton(onClick = {
+                        onAnswer("food_unknown", null)
+                    }) { Text(stringResource(R.string.q_btn_food_unknown), color = c.text) }
+                }
                 // asleep she eats nothing: the rise is not food, and no more questions about it for a while
-                if (rise) androidx.compose.material3.OutlinedButton(onClick = { onAnswer("asleep", null) }) { Text(stringResource(R.string.q_btn_asleep), color = c.text) }
-                androidx.compose.material3.OutlinedButton(onClick = { onAnswer("nothing", null) }) { Text(stringResource(if (q.kind == "bolus") R.string.q_btn_no_insulin else R.string.q_btn_nothing), color = c.text) }
+                if (rise) {
+                    androidx.compose.material3.OutlinedButton(onClick = {
+                        onAnswer("asleep", null)
+                    }) { Text(stringResource(R.string.q_btn_asleep), color = c.text) }
+                }
+                androidx.compose.material3.OutlinedButton(onClick = { onAnswer("nothing", null) }) {
+                    Text(
+                        stringResource(
+                            if (q.kind ==
+                                "bolus"
+                            ) {
+                                R.string.q_btn_no_insulin
+                            } else {
+                                R.string.q_btn_nothing
+                            }
+                        ),
+                        color = c.text
+                    )
+                }
             }
         } else if (q.waiting.isNotEmpty()) {
             Text(stringResource(R.string.q_waiting, q.waiting.joinToString(", ")), color = c.textMuted, fontSize = 13.sp)
@@ -509,7 +630,7 @@ private fun WatchCard(q: Question) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
     Column(
         Modifier.fillMaxWidth().background(c.lowContainer, RoundedCornerShape(22.dp)).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text(stringResource(R.string.watch_title), color = c.low, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
         Text(com.lumenarcanus.dialife.live.QuestionNotifier.watchBody(ctx, q), color = c.text, fontSize = 14.sp)
@@ -541,12 +662,19 @@ private fun FullScreenChart(onClose: () -> Unit, content: @Composable () -> Unit
             .fillMaxSize()
             .background(c.background)
             .displayCutoutPadding()
-            .padding(8.dp),
+            .padding(8.dp)
     ) { content() }
 }
 
 @Composable
-private fun Header(deviceName: String, status: Int, onOpenStats: () -> Unit, onOpenLog: () -> Unit, onOpenSettings: () -> Unit, onOpenWebLogin: () -> Unit) {
+private fun Header(
+    deviceName: String,
+    status: Int,
+    onOpenStats: () -> Unit,
+    onOpenLog: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onOpenWebLogin: () -> Unit
+) {
     val c = DiaTheme.colors
     val live = status == R.string.status_live
     val offline = status == R.string.status_offline
@@ -558,15 +686,43 @@ private fun Header(deviceName: String, status: Int, onOpenStats: () -> Unit, onO
         Spacer(Modifier.size(10.dp))
         Row(
             Modifier
-                .background(if (live) c.inRangeContainer else if (offline) blueBg else c.highContainer, CircleShape)
+                .background(
+                    if (live) {
+                        c.inRangeContainer
+                    } else if (offline) {
+                        blueBg
+                    } else {
+                        c.highContainer
+                    },
+                    CircleShape
+                )
                 .padding(horizontal = 10.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Box(Modifier.size(6.dp).background(if (live) c.inRange else if (offline) blue else c.high, CircleShape))
+            Box(
+                Modifier.size(6.dp).background(
+                    if (live) {
+                        c.inRange
+                    } else if (offline) {
+                        blue
+                    } else {
+                        c.high
+                    },
+                    CircleShape
+                )
+            )
             Text(
                 stringResource(status),
-                color = if (live) c.onInRangeContainer else if (offline) blue else c.high, fontSize = 12.sp, fontWeight = FontWeight.Medium,
+                color = if (live) {
+                    c.onInRangeContainer
+                } else if (offline) {
+                    blue
+                } else {
+                    c.high
+                },
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium
             )
         }
         Spacer(Modifier.weight(1f))
@@ -579,10 +735,22 @@ private fun Header(deviceName: String, status: Int, onOpenStats: () -> Unit, onO
                 if (deviceName.isNotBlank()) {
                     DropdownMenuItem(text = { Text(stringResource(R.string.connected_as, deviceName)) }, onClick = {}, enabled = false)
                 }
-                DropdownMenuItem(text = { Text(stringResource(R.string.stats_title)) }, onClick = { menu = false; onOpenStats() })
-                DropdownMenuItem(text = { Text(stringResource(R.string.log_title)) }, onClick = { menu = false; onOpenLog() })
-                DropdownMenuItem(text = { Text(stringResource(R.string.web_title)) }, onClick = { menu = false; onOpenWebLogin() })
-                DropdownMenuItem(text = { Text(stringResource(R.string.action_settings)) }, onClick = { menu = false; onOpenSettings() })
+                DropdownMenuItem(text = { Text(stringResource(R.string.stats_title)) }, onClick = {
+                    menu = false
+                    onOpenStats()
+                })
+                DropdownMenuItem(text = { Text(stringResource(R.string.log_title)) }, onClick = {
+                    menu = false
+                    onOpenLog()
+                })
+                DropdownMenuItem(text = { Text(stringResource(R.string.web_title)) }, onClick = {
+                    menu = false
+                    onOpenWebLogin()
+                })
+                DropdownMenuItem(text = { Text(stringResource(R.string.action_settings)) }, onClick = {
+                    menu = false
+                    onOpenSettings()
+                })
             }
         }
     }
@@ -598,7 +766,8 @@ private fun Hero(state: HomeState, locale: Locale) {
     }
     val units = if (state.units == Units.MgDl) stringResource(R.string.unit_mgdl) else stringResource(R.string.unit_mmol)
     Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(horizontal = 4.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) { // trend badge centred on the number
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // trend badge centred on the number
             Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.weight(1f)) {
                 // weighted, so the units label is measured first and the number shrinks to what is left
                 // a new reading slides in: up when it rose, down when it fell
@@ -606,27 +775,44 @@ private fun Hero(state: HomeState, locale: Locale) {
                     targetState = state.sgv,
                     transitionSpec = {
                         val up = targetState > initialState
-                        (androidx.compose.animation.slideInVertically { h -> if (up) h / 2 else -h / 2 } + androidx.compose.animation.fadeIn())
-                            .togetherWith(androidx.compose.animation.slideOutVertically { h -> if (up) -h / 2 else h / 2 } + androidx.compose.animation.fadeOut())
+                        (
+                            androidx.compose.animation.slideInVertically { h -> if (up) h / 2 else -h / 2 } +
+                                androidx.compose.animation.fadeIn()
+                            )
+                            .togetherWith(
+                                androidx.compose.animation.slideOutVertically { h -> if (up) -h / 2 else h / 2 } +
+                                    androidx.compose.animation.fadeOut()
+                            )
                     },
                     modifier = Modifier.weight(1f, fill = false),
-                    label = "sgv",
+                    label = "sgv"
                 ) { sgv ->
-                BasicText(
-                    formatGlucose(sgv, state.units, locale),
-                    style = GlucoseHero.copy(
-                        color = if (state.ageMin >= STALE_MIN) c.textFaint else c.text,
-                        // an old number must not be read as the current one
-                        textDecoration = if (state.ageMin >= STALE_MIN) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
-                    ),
-                    maxLines = 1,
-                    autoSize = TextAutoSize.StepBased(minFontSize = 56.sp, maxFontSize = GlucoseHero.fontSize, stepSize = 4.sp),
-                )
+                    BasicText(
+                        formatGlucose(sgv, state.units, locale),
+                        style = GlucoseHero.copy(
+                            color = if (state.ageMin >= STALE_MIN) c.textFaint else c.text,
+                            // an old number must not be read as the current one
+                            textDecoration = if (state.ageMin >=
+                                STALE_MIN
+                            ) {
+                                androidx.compose.ui.text.style.TextDecoration.LineThrough
+                            } else {
+                                null
+                            }
+                        ),
+                        maxLines = 1,
+                        autoSize = TextAutoSize.StepBased(minFontSize = 56.sp, maxFontSize = GlucoseHero.fontSize, stepSize = 4.sp)
+                    )
                 }
                 Spacer(Modifier.size(8.dp))
                 Text(
-                    units, color = c.textMuted, fontSize = 17.sp, fontWeight = FontWeight.Medium,
-                    maxLines = 1, softWrap = false, modifier = Modifier.padding(bottom = 16.dp),
+                    units,
+                    color = c.textMuted,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    softWrap = false,
+                    modifier = Modifier.padding(bottom = 16.dp)
                 )
             }
             TrendBadge(state.trend, stateColor)
@@ -635,19 +821,25 @@ private fun Hero(state: HomeState, locale: Locale) {
             state.deltaMgdl?.let {
                 Text(
                     stringResource(R.string.delta_per_5, formatDelta(it, state.units, locale)),
-                    color = c.text, fontWeight = FontWeight.SemiBold, fontSize = 15.sp,
+                    color = c.text,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 15.sp
                 )
                 Dot()
             }
             val stale = state.ageMin >= STALE_MIN
             Text(
                 pluralStringResource(R.plurals.minutes_ago, state.ageMin, state.ageMin),
-                color = if (stale) c.high else c.textMuted, fontSize = 15.sp,
-                fontWeight = if (stale) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (stale) c.high else c.textMuted,
+                fontSize = 15.sp,
+                fontWeight = if (stale) FontWeight.SemiBold else FontWeight.Normal
             )
         }
         // wraps onto a second line rather than squeezing a chip into a column of words
-        androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        androidx.compose.foundation.layout.FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             val bounds = formatGlucose(state.low, state.units, locale) + "–" + formatGlucose(state.high, state.units, locale)
             val label = when (state.range) {
                 Range.InRange -> stringResource(R.string.state_in_range, bounds)
@@ -655,11 +847,38 @@ private fun Hero(state: HomeState, locale: Locale) {
                 Range.High -> stringResource(R.string.state_high, formatGlucose(state.high, state.units, locale))
             }
             // an old reading says nothing about the range now
-            if (state.ageMin < STALE_MIN) Chip(label, background = if (state.range == Range.InRange) c.inRangeContainer else if (state.range == Range.Low) c.lowContainer else c.highContainer, color = stateColor)
+            if (state.ageMin <
+                STALE_MIN
+            ) {
+                Chip(
+                    label,
+                    background = if (state.range ==
+                        Range.InRange
+                    ) {
+                        c.inRangeContainer
+                    } else if (state.range ==
+                        Range.Low
+                    ) {
+                        c.lowContainer
+                    } else {
+                        c.highContainer
+                    },
+                    color = stateColor
+                )
+            }
             state.forecast30?.let {
                 val q = state.forecastQuality?.takeIf { it.n >= 50 } // a record of fewer forecasts says little
-                val text = if (q != null) stringResource(R.string.forecast_30_err, formatGlucose(it, state.units, locale), formatGlucose(q.err80, state.units, locale))
-                else stringResource(R.string.forecast_30, formatGlucose(it, state.units, locale))
+                val text = if (q !=
+                    null
+                ) {
+                    stringResource(
+                        R.string.forecast_30_err,
+                        formatGlucose(it, state.units, locale),
+                        formatGlucose(q.err80, state.units, locale)
+                    )
+                } else {
+                    stringResource(R.string.forecast_30, formatGlucose(it, state.units, locale))
+                }
                 Chip(text, background = c.surface, color = c.textMuted)
             }
         }
@@ -673,22 +892,41 @@ private fun Hero(state: HomeState, locale: Locale) {
         state.iob?.let { iob ->
             val u = stringResource(R.string.unit_insulin)
             val parts = listOfNotNull(
-                stringResource(R.string.iob_insulin, com.lumenarcanus.dialife.ui.treatment.formatAmount(iob.insulin, locale), u).takeIf { iob.insulin >= 0.05 },
-                stringResource(R.string.iob_carbs, iob.carbs).takeIf { iob.carbs > 0 },
+                stringResource(R.string.iob_insulin, com.lumenarcanus.dialife.ui.treatment.formatAmount(iob.insulin, locale), u).takeIf {
+                    iob.insulin >=
+                        0.05
+                },
+                stringResource(R.string.iob_carbs, iob.carbs).takeIf { iob.carbs > 0 }
             )
             // its forecast is not shown until, tuned to this child, it beats the trend after food
-            if (parts.isNotEmpty()) Text(
-                parts.joinToString(" · "),
-                color = c.insulin, fontSize = 13.sp,
-                modifier = Modifier.background(c.insulinContainer.copy(alpha = 0.5f), RoundedCornerShape(10.dp)).padding(horizontal = 10.dp, vertical = 6.dp),
-            )
+            if (parts.isNotEmpty()) {
+                Text(
+                    parts.joinToString(" · "),
+                    color = c.insulin,
+                    fontSize = 13.sp,
+                    modifier = Modifier.background(
+                        c.insulinContainer.copy(alpha = 0.5f),
+                        RoundedCornerShape(10.dp)
+                    ).padding(horizontal = 10.dp, vertical = 6.dp)
+                )
+            }
         }
         // what the trend cannot see: food or rapid insulin in the last two hours
         state.forecastQuality?.ignores?.maxByOrNull { it.t }?.let { b ->
             val ctx = androidx.compose.ui.platform.LocalContext.current
             Text(
-                stringResource(if (b.kind == "food") R.string.forecast_blind_food else R.string.forecast_blind_insulin, com.lumenarcanus.dialife.live.AlarmText.clock(ctx, b.t)),
-                color = c.textFaint, fontSize = 13.sp,
+                stringResource(
+                    if (b.kind ==
+                        "food"
+                    ) {
+                        R.string.forecast_blind_food
+                    } else {
+                        R.string.forecast_blind_insulin
+                    },
+                    com.lumenarcanus.dialife.live.AlarmText.clock(ctx, b.t)
+                ),
+                color = c.textFaint,
+                fontSize = 13.sp
             )
         }
     }
@@ -702,7 +940,7 @@ private fun TrendBadge(trend: Trend, color: Color) {
             trend.degrees < 0 -> R.string.trend_up
             trend.degrees > 0 -> R.string.trend_down
             else -> R.string.trend_flat
-        },
+        }
     )
     Box(
         Modifier
@@ -710,7 +948,7 @@ private fun TrendBadge(trend: Trend, color: Color) {
             .background(c.inRangeContainer.copy(alpha = if (c.isDark) 1f else 0.9f), CircleShape)
             .border(1.dp, color.copy(alpha = 0.25f), CircleShape)
             .semantics { contentDescription = description },
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.Center
     ) {
         Canvas(Modifier.size(34.dp).rotate(trend.degrees)) {
             val w = size.width
@@ -721,7 +959,8 @@ private fun TrendBadge(trend: Trend, color: Color) {
                 drawLine(color, Offset(w * 0.56f + dx, w * 0.76f), Offset(w * 0.82f + dx, w / 2), stroke, StrokeCap.Round)
             }
             if (trend.double) {
-                arrow(-w * 0.1f); arrow(w * 0.1f)
+                arrow(-w * 0.1f)
+                arrow(w * 0.1f)
             } else if (trend != Trend.Unknown) {
                 arrow(0f)
             }
@@ -736,9 +975,15 @@ private fun Tiles(state: HomeState, onOpenStats: () -> Unit, onOpenLog: () -> Un
         Triple(stringResource(R.string.tile_time_in_range), state.timeInRange?.let { "$it%" } ?: "—", onOpenStats),
         Triple(
             stringResource(R.string.tile_alarms),
-            if (state.alarms == 0) stringResource(R.string.tile_alarms_quiet) else pluralStringResource(R.plurals.tile_alarms_active, state.alarms, state.alarms),
-            onOpenLog,
-        ),
+            if (state.alarms ==
+                0
+            ) {
+                stringResource(R.string.tile_alarms_quiet)
+            } else {
+                pluralStringResource(R.plurals.tile_alarms_active, state.alarms, state.alarms)
+            },
+            onOpenLog
+        )
     )
     // three tiles in a row cut words in half with a large system font: then one per line
     if (androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.3f) {
@@ -765,7 +1010,7 @@ private fun WideTile(label: String, value: String, onClick: (() -> Unit)?) {
             .border(1.dp, c.line, RoundedCornerShape(18.dp))
             .let { if (onClick != null) it.clickable(onClick = onClick) else it }
             .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(label, color = c.textMuted, fontSize = 13.sp, modifier = Modifier.weight(1f))
         Text(value, color = c.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
@@ -781,16 +1026,18 @@ private fun Tile(label: String, value: String, modifier: Modifier) {
             .background(c.surface, RoundedCornerShape(18.dp))
             .border(1.dp, c.line, RoundedCornerShape(18.dp))
             .padding(horizontal = 12.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text(label, color = c.textMuted, fontSize = 12.sp)
         Spacer(Modifier.weight(1f))
         // "Todo tranquilo" stays whole: up to two lines, shrinking rather than being cut
         androidx.compose.foundation.text.BasicText(
             value,
-            style = androidx.compose.material3.LocalTextStyle.current.merge(androidx.compose.ui.text.TextStyle(color = c.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)),
+            style = androidx.compose.material3.LocalTextStyle.current.merge(
+                androidx.compose.ui.text.TextStyle(color = c.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+            ),
             maxLines = 2,
-            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 13.sp, maxFontSize = 20.sp, stepSize = 0.5.sp),
+            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 13.sp, maxFontSize = 20.sp, stepSize = 0.5.sp)
         )
     }
 }
@@ -803,12 +1050,30 @@ private fun StaleBanner(ui: HomeUi, state: HomeState) {
     val bg = ui.state?.bg ?: return
     Column(
         Modifier.fillMaxWidth().background(c.highContainer, RoundedCornerShape(18.dp)).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Text(pluralStringResource(R.plurals.stale_title, state.ageMin, state.ageMin), color = c.high, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+        Text(
+            pluralStringResource(R.plurals.stale_title, state.ageMin, state.ageMin),
+            color = c.high,
+            fontSize = 17.sp,
+            fontWeight = FontWeight.SemiBold
+        )
         Text(stringResource(R.string.stale_last, AlarmText.clock(ctx, bg.mills)), color = c.text, fontSize = 14.sp)
         ui.state.uploader?.let { u ->
-            if (u.mills > 0) Text(stringResource(R.string.stale_phone, AlarmText.uploader(ctx, ui.state), AlarmText.clock(ctx, u.mills), u.battery?.let { "$it%" } ?: "—"), color = c.textMuted, fontSize = 14.sp)
+            if (u.mills >
+                0
+            ) {
+                Text(
+                    stringResource(
+                        R.string.stale_phone,
+                        AlarmText.uploader(ctx, ui.state),
+                        AlarmText.clock(ctx, u.mills),
+                        u.battery?.let { "$it%" } ?: "—"
+                    ),
+                    color = c.textMuted,
+                    fontSize = 14.sp
+                )
+            }
         }
         Text(stringResource(R.string.stale_check), color = c.textMuted, fontSize = 14.sp)
     }
@@ -822,7 +1087,7 @@ private fun OfflineBanner(ui: HomeUi, onRetry: () -> Unit) {
     val blueBg = if (c.isDark) Color(0xFF0E1C33) else Color(0xFFE3EDFF)
     Column(
         Modifier.fillMaxWidth().background(blueBg, RoundedCornerShape(18.dp)).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text(stringResource(R.string.conn_lost_title), color = blue, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
         Text(stringResource(R.string.offline_body), color = c.text, fontSize = 14.sp)
@@ -847,7 +1112,8 @@ private fun EpisodeBanner(a: AlarmView, ui: HomeUi, units: Units, onAction: (Str
     val (container, accent) = when {
         helpAsked -> c.highContainer to c.high
         a.state == "firing" && a.level == "urgent" -> c.urgentBackground to c.urgent
-        a.state == "firing" -> (if (a.kind.endsWith("high")) c.highContainer else c.lowContainer) to (if (a.kind.endsWith("high")) c.high else c.low)
+        a.state == "firing" -> (if (a.kind.endsWith("high")) c.highContainer else c.lowContainer) to
+            (if (a.kind.endsWith("high")) c.high else c.low)
         else -> c.surface to c.text
     }
     Column(
@@ -857,7 +1123,7 @@ private fun EpisodeBanner(a: AlarmView, ui: HomeUi, units: Units, onAction: (Str
             .border(1.dp, accent.copy(alpha = 0.35f), RoundedCornerShape(18.dp))
             .padding(16.dp)
             .semantics(mergeDescendants = false) {},
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         val title = when {
             a.state == "firing" -> AlarmText.title(ctx, a, units)
@@ -872,7 +1138,9 @@ private fun EpisodeBanner(a: AlarmView, ui: HomeUi, units: Units, onAction: (Str
             a.comingById != 0L && a.comingById == myId -> Text(stringResource(R.string.you_are_coming), color = c.text, fontSize = 14.sp)
             !a.comingBy.isNullOrBlank() -> Text(stringResource(R.string.someone_coming, a.comingBy), color = c.text, fontSize = 14.sp)
         }
-        a.quietUntil?.let { Text(stringResource(R.string.quiet_until_short, AlarmText.clock(ctx, it)), color = c.textMuted, fontSize = 14.sp) }
+        a.quietUntil?.let {
+            Text(stringResource(R.string.quiet_until_short, AlarmText.clock(ctx, it)), color = c.textMuted, fontSize = 14.sp)
+        }
         // someone else has it: say exactly when this phone would ring again
         if (a.state == "handled" && !mine) {
             val rules = ui.state?.episode ?: com.lumenarcanus.dialife.data.EpisodeRules()
@@ -880,10 +1148,33 @@ private fun EpisodeBanner(a: AlarmView, ui: HomeUi, units: Units, onAction: (Str
             val reasons = buildList {
                 if (a.handledSgv != null && (a.kind == "low" || a.kind == "high")) {
                     val limit = if (a.kind == "low") a.handledSgv - rules.worseBy else a.handledSgv + rules.worseBy
-                    add(stringResource(if (a.kind == "low") R.string.hd_wake_worse_low else R.string.hd_wake_worse_high, formatGlucose(limit, units, locale)))
+                    add(
+                        stringResource(
+                            if (a.kind ==
+                                "low"
+                            ) {
+                                R.string.hd_wake_worse_low
+                            } else {
+                                R.string.hd_wake_worse_high
+                            },
+                            formatGlucose(limit, units, locale)
+                        )
+                    )
                 }
                 add(stringResource(R.string.wake_if_no_answer, a.handledBy.orEmpty()))
-                if (a.level == "urgent" && a.handledAt != null) add(stringResource(R.string.wake_if_ceiling, AlarmText.clock(ctx, a.handledAt + rules.ceilingMin * 60_000L)))
+                if (a.level == "urgent" &&
+                    a.handledAt != null
+                ) {
+                    add(
+                        stringResource(
+                            R.string.wake_if_ceiling,
+                            AlarmText.clock(
+                                ctx,
+                                a.handledAt + rules.ceilingMin * 60_000L
+                            )
+                        )
+                    )
+                }
             }
             Text(stringResource(R.string.wake_if_title) + " " + reasons.joinToString("; "), color = c.textMuted, fontSize = 13.sp)
         }
@@ -891,13 +1182,19 @@ private fun EpisodeBanner(a: AlarmView, ui: HomeUi, units: Units, onAction: (Str
             a.state == "firing" -> {
                 BannerButton(stringResource(R.string.act_handle), accent, c.background) { onAction(ActionReceiver.HANDLE, a.id) }
                 // "the receiver works": a stale or non-urgent alarm can be quieted for 2 h
-                if (!a.urgentLow) BannerButton(stringResource(R.string.act_quiet), c.surfaceRaised, c.text) { onAction(ActionReceiver.QUIET, a.id) }
+                if (!a.urgentLow) {
+                    BannerButton(stringResource(R.string.act_quiet), c.surfaceRaised, c.text) {
+                        onAction(ActionReceiver.QUIET, a.id)
+                    }
+                }
             }
             mine -> {
                 if (a.checkinPending) BannerButton(stringResource(R.string.checkin_title), c.high, c.background) { onOpen(a.id) }
                 BannerButton(stringResource(R.string.hd_open), c.surfaceRaised, c.text) { onOpen(a.id) }
             }
-            a.comingById != myId -> BannerButton(stringResource(R.string.act_coming), c.surfaceRaised, c.text) { onAction(ActionReceiver.COMING, a.id) }
+            a.comingById != myId -> BannerButton(stringResource(R.string.act_coming), c.surfaceRaised, c.text) {
+                onAction(ActionReceiver.COMING, a.id)
+            }
         }
     }
 }
@@ -906,10 +1203,13 @@ private fun EpisodeBanner(a: AlarmView, ui: HomeUi, units: Units, onAction: (Str
 private fun BannerButton(text: String, container: Color, content: Color, onClick: () -> Unit) {
     val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
     Button(
-        onClick = { haptics.performHapticFeedback(HapticFeedbackType.Confirm); onClick() },
+        onClick = {
+            haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+            onClick()
+        },
         modifier = Modifier.fillMaxWidth().height(48.dp),
         shape = RoundedCornerShape(14.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = container, contentColor = content),
+        colors = ButtonDefaults.buttonColors(containerColor = container, contentColor = content)
     ) {
         Text(text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
     }
@@ -923,7 +1223,7 @@ private fun SetupCard(setup: BackgroundSetup, onNotifications: () -> Unit, onBat
             .fillMaxWidth()
             .background(c.highContainer, RoundedCornerShape(18.dp))
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Text(stringResource(R.string.bg_card_title), color = c.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         Text(stringResource(R.string.bg_card_body), color = c.textMuted, fontSize = 14.sp)
@@ -940,7 +1240,7 @@ private fun SetupButton(text: String, onClick: () -> Unit) {
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().height(48.dp),
         shape = RoundedCornerShape(14.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = c.high, contentColor = c.background),
+        colors = ButtonDefaults.buttonColors(containerColor = c.high, contentColor = c.background)
     ) {
         Text(text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
     }
@@ -951,11 +1251,13 @@ private fun Empty(loading: Boolean) {
     val c = DiaTheme.colors
     Column(
         Modifier.fillMaxWidth().height(180.dp).padding(horizontal = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
+        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically)
     ) {
         Text(
             stringResource(if (loading) R.string.home_loading else R.string.home_no_data),
-            color = c.text, fontSize = 22.sp, fontWeight = FontWeight.SemiBold,
+            color = c.text,
+            fontSize = 22.sp,
+            fontWeight = FontWeight.SemiBold
         )
         if (!loading) Text(stringResource(R.string.home_no_data_hint), color = c.textMuted, fontSize = 15.sp)
     }
@@ -968,7 +1270,7 @@ private fun Chip(text: String, background: Color, color: Color) {
         color = color,
         fontSize = 13.sp,
         fontWeight = FontWeight.Medium,
-        modifier = Modifier.background(background, RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 8.dp),
+        modifier = Modifier.background(background, RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 8.dp)
     )
 }
 
@@ -985,28 +1287,49 @@ private fun ActionButton(kind: TreatmentKind, modifier: Modifier, small: Boolean
     val look = com.lumenarcanus.dialife.ui.treatment.kindLook(kind)
     Button(
         onClick = onClick,
-        modifier = modifier.heightIn(min = if (small) 46.dp else if (stacked) 66.dp else 56.dp),
+        modifier = modifier.heightIn(
+            min = if (small) {
+                46.dp
+            } else if (stacked) {
+                66.dp
+            } else {
+                56.dp
+            }
+        ),
         shape = RoundedCornerShape(if (small) 15.dp else 18.dp),
         colors = ButtonDefaults.buttonColors(containerColor = look.fill, contentColor = look.ink),
-        contentPadding = PaddingValues(horizontal = 4.dp, vertical = if (stacked) 6.dp else 0.dp),
+        contentPadding = PaddingValues(horizontal = 4.dp, vertical = if (stacked) 6.dp else 0.dp)
     ) {
         val sign = 20.dp
         val signs = @Composable {
-            if (kind == TreatmentKind.Insulin) com.lumenarcanus.dialife.ui.treatment.InsulinSigns(sign, look.fill)
-            else com.lumenarcanus.dialife.ui.treatment.KindSign(look.glyph, look.ink, sign)
+            if (kind == TreatmentKind.Insulin) {
+                com.lumenarcanus.dialife.ui.treatment.InsulinSigns(sign, look.fill)
+            } else {
+                com.lumenarcanus.dialife.ui.treatment.KindSign(look.glyph, look.ink, sign)
+            }
         }
         // the label stays whole: past what the layout allows (a very large font), it shrinks rather than being cut
         val label = @Composable { m: Modifier ->
             androidx.compose.foundation.text.BasicText(
-                stringResource(look.name), modifier = m,
-                style = androidx.compose.material3.LocalTextStyle.current.merge(androidx.compose.ui.text.TextStyle(color = look.ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)),
-                maxLines = 1, softWrap = false,
-                autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 14.sp, stepSize = 0.5.sp),
+                stringResource(look.name),
+                modifier = m,
+                style = androidx.compose.material3.LocalTextStyle.current.merge(
+                    androidx.compose.ui.text.TextStyle(color = look.ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                ),
+                maxLines = 1,
+                softWrap = false,
+                autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(
+                    minFontSize = 9.sp,
+                    maxFontSize = 14.sp,
+                    stepSize = 0.5.sp
+                )
             )
         }
-        if (stacked) Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            signs()
-            label(Modifier)
+        if (stacked) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                signs()
+                label(Modifier)
+            }
         } else {
             signs()
             Spacer(Modifier.width(6.dp))
@@ -1021,7 +1344,9 @@ private fun PreviewDarkUk() = DiaLifeTheme(dark = true) { HomeScreen(sampleHomeU
 
 @Preview(name = "Light · en · mmol", locale = "en", widthDp = 412, heightDp = 915)
 @Composable
-private fun PreviewLightEn() = DiaLifeTheme(dark = false) { HomeScreen(sampleHomeUi().let { it.copy(state = it.state?.copy(displayUnits = "mmol")) }) }
+private fun PreviewLightEn() = DiaLifeTheme(dark = false) {
+    HomeScreen(sampleHomeUi().let { it.copy(state = it.state?.copy(displayUnits = "mmol")) })
+}
 
 /** A sensor that reads ~7% low, with enough checks for the "≈ meter" line, for previews. */
 fun sampleMeter(now: Long = 1_761_400_000_000L): com.lumenarcanus.dialife.data.MeterReport {
@@ -1030,9 +1355,15 @@ fun sampleMeter(now: Long = 1_761_400_000_000L): com.lumenarcanus.dialife.data.M
     val pairs = listOf(
         88 to 96, 142 to 150, 205 to 228, 176 to 185, 260 to 291, 120 to 131, 98 to 104, 232 to 255,
         70 to 72, 155 to 170, 199 to 214, 240 to 268, 130 to 136, 110 to 121, 285 to 316,
-        96 to 101, 168 to 172, 212 to 222, 144 to 150,
+        96 to 101, 168 to 172, 212 to 222, 144 to 150
     ).mapIndexed { i, (s, m) ->
-        val k = if (i < 8) 1 else if (i < 15) 2 else 3
+        val k = if (i < 8) {
+            1
+        } else if (i < 15) {
+            2
+        } else {
+            3
+        }
         com.lumenarcanus.dialife.data.MeterPair(now - (24 - i) * day, m, s.toDouble(), k, used = i != 4)
     }
     return com.lumenarcanus.dialife.data.MeterReport(
@@ -1041,9 +1372,9 @@ fun sampleMeter(now: Long = 1_761_400_000_000L): com.lumenarcanus.dialife.data.M
         bands = listOf(
             com.lumenarcanus.dialife.data.MeterBand(0, 100, "mgdl", -4.0, 5),
             com.lumenarcanus.dialife.data.MeterBand(100, 200, "pct", -6.0, 8),
-            com.lumenarcanus.dialife.data.MeterBand(200, 0, "pct", -11.0, 5),
+            com.lumenarcanus.dialife.data.MeterBand(200, 0, "pct", -11.0, 5)
         ),
         model = com.lumenarcanus.dialife.data.MeterModel(a = 2.0, b = 0.07, offset = -0.02, sd = 0.09),
-        pairs = pairs, starts = starts,
+        pairs = pairs, starts = starts
     )
 }

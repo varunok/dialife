@@ -87,11 +87,29 @@ fun DoseSettingsScreen(dose: DoseSettings, units: Units, onSave: suspend (DoseSe
     var waitHighFrom by remember { mutableStateOf(formatGlucose(dose.waitHighFrom, units, locale)) }
     var waitLowBelow by remember { mutableStateOf(formatGlucose(dose.waitLowBelow, units, locale)) }
     // rows as typed: the mg/dL shown in this phone's units
-    val rows = remember { mutableStateListOf<Pair<String, String>>().apply { dose.table.forEach { add(formatGlucose(it.mg, units, locale) to f(it.u)) } } }
+    val rows = remember {
+        mutableStateListOf<Pair<String, String>>().apply {
+            dose.table.forEach {
+                add(
+                    formatGlucose(it.mg, units, locale) to f(it.u)
+                )
+            }
+        }
+    }
     var saving by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf<Boolean?>(null) }
 
-    fun mgOf(text: String): Int? = num(text)?.let { v -> (if (units == Units.Mmol) kotlin.math.round(v * 18.0) else kotlin.math.round(v)).toInt() }
+    fun mgOf(text: String): Int? = num(text)?.let { v ->
+        (
+            if (units ==
+                Units.Mmol
+            ) {
+                kotlin.math.round(v * 18.0)
+            } else {
+                kotlin.math.round(v)
+            }
+            ).toInt()
+    }
     val table = rows.map { (mg, u) -> mgOf(mg) to num(u) }
     val r = ratio.toIntOrNull()
     val problems = buildList {
@@ -101,7 +119,12 @@ fun DoseSettingsScreen(dose: DoseSettings, units: Units, onSave: suspend (DoseSe
         if (mr == null || mr < 0.5 || mr > 100) add(stringResource(R.string.dose_err_max_rapid))
         if (num(maxBasal)?.let { it in 0.5..200.0 } != true) add(stringResource(R.string.dose_err_max_basal))
         if (maxCarbs.toIntOrNull()?.let { it in 20..500 } != true) add(stringResource(R.string.dose_err_max_carbs))
-        if (table.any { (mg, u) -> mg == null || mg !in 40..600 || u == null || u < 0 || u > 50 }) add(stringResource(R.string.dose_err_table))
+        if (table.any { (mg, u) ->
+                mg == null || mg !in 40..600 || u == null || u < 0 || u > 50
+            }
+        ) {
+            add(stringResource(R.string.dose_err_table))
+        }
         val mgs = table.mapNotNull { it.first }
         if (mgs.size != mgs.toSet().size) add(stringResource(R.string.dose_err_twice))
         if (mr != null && table.any { (_, u) -> u != null && u > mr }) add(stringResource(R.string.dose_err_table_max, f(mr)))
@@ -112,8 +135,18 @@ fun DoseSettingsScreen(dose: DoseSettings, units: Units, onSave: suspend (DoseSe
         val whm = waitHighMin.toIntOrNull()
         val low = mgOf(waitLowBelow)
         val high = mgOf(waitHighFrom)
-        if (wm == null || wm !in 0..45 || whm == null || whm !in wm..60 || low == null || low !in 60..120 || high == null || high <= low || high > 300)
+        if (wm == null ||
+            wm !in 0..45 ||
+            whm == null ||
+            whm !in wm..60 ||
+            low == null ||
+            low !in 60..120 ||
+            high == null ||
+            high <= low ||
+            high > 300
+        ) {
             add(stringResource(R.string.dose_err_wait))
+        }
     }
 
     Column(Modifier.fillMaxSize().background(c.background).safeDrawingPadding()) {
@@ -122,16 +155,21 @@ fun DoseSettingsScreen(dose: DoseSettings, units: Units, onSave: suspend (DoseSe
         }
         Column(
             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Text(stringResource(R.string.dose_title), color = c.text, fontSize = 26.sp, fontWeight = FontWeight.SemiBold)
             Text(
-                stringResource(R.string.dose_shared) + if (dose.updatedBy.isNotBlank()) " " + stringResource(R.string.dose_changed_by, dose.updatedBy) else "",
-                color = c.textMuted, fontSize = 13.sp,
+                stringResource(R.string.dose_shared) +
+                    if (dose.updatedBy.isNotBlank()) " " + stringResource(R.string.dose_changed_by, dose.updatedBy) else "",
+                color = c.textMuted,
+                fontSize = 13.sp
             )
 
             Group(stringResource(R.string.dose_carbs)) {
-                NumberRow(stringResource(R.string.dose_ratio_pre), ratio, stringResource(R.string.dose_ratio_post), KeyboardType.Number) { ratio = it.filter(Char::isDigit).take(3) }
+                NumberRow(stringResource(R.string.dose_ratio_pre), ratio, stringResource(R.string.dose_ratio_post), KeyboardType.Number) {
+                    ratio =
+                        it.filter(Char::isDigit).take(3)
+                }
             }
 
             Group(stringResource(R.string.dose_rounding)) {
@@ -140,37 +178,81 @@ fun DoseSettingsScreen(dose: DoseSettings, units: Units, onSave: suspend (DoseSe
                 Text(stringResource(R.string.dose_pen_step), color = c.textMuted, fontSize = 13.sp)
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                     listOf(1.0, 0.5).forEachIndexed { i, s ->
-                        SegmentedButton(selected = step == s, onClick = { step = s }, shape = SegmentedButtonDefaults.itemShape(i, 2)) { Text(f(s) + " " + stringResource(R.string.unit_insulin)) }
+                        SegmentedButton(selected = step == s, onClick = { step = s }, shape = SegmentedButtonDefaults.itemShape(i, 2)) {
+                            Text(
+                                f(s) + " " + stringResource(R.string.unit_insulin)
+                            )
+                        }
                     }
                 }
                 Rules.forEach { id ->
                     val on = rule == id
                     Row(
                         Modifier.fillMaxWidth().selectable(selected = on, role = Role.RadioButton) { rule = id }.padding(vertical = 6.dp),
-                        verticalAlignment = Alignment.Top,
+                        verticalAlignment = Alignment.Top
                     ) {
                         RadioButton(selected = on, onClick = null, modifier = Modifier.padding(top = 2.dp, end = 10.dp))
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(com.lumenarcanus.dialife.ui.meal.ruleName(id).replaceFirstChar { it.uppercase() }, color = c.text, fontSize = 14.5.sp, fontWeight = FontWeight.Medium)
+                            Text(
+                                com.lumenarcanus.dialife.ui.meal.ruleName(id).replaceFirstChar {
+                                    it.uppercase()
+                                },
+                                color = c.text,
+                                fontSize = 14.5.sp,
+                                fontWeight = FontWeight.Medium
+                            )
                             Text(stringResource(ruleDesc(id, step)), color = c.textMuted, fontSize = 12.5.sp)
                             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Samples.getValue(step).forEach { x ->
                                     val o = DoseCalc.round(x, id, step)
                                     Column(
                                         Modifier.weight(1f).background(c.background, RoundedCornerShape(8.dp)).padding(vertical = 4.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
                                         Text(f(x), style = GlucoseHero.copy(fontSize = 12.sp, lineHeight = 14.sp, color = c.textMuted))
-                                        Text(if (o > x + 1e-9) "↑" else if (o < x - 1e-9) "↓" else "=", color = c.textFaint, fontSize = 11.sp)
-                                        Text(f(o), style = GlucoseHero.copy(fontSize = 15.sp, lineHeight = 18.sp, color = if (o > x + 1e-9) c.high else if (o < x - 1e-9) c.inRange else c.text))
+                                        Text(
+                                            if (o >
+                                                x + 1e-9
+                                            ) {
+                                                "↑"
+                                            } else if (o < x - 1e-9) {
+                                                "↓"
+                                            } else {
+                                                "="
+                                            },
+                                            color = c.textFaint,
+                                            fontSize = 11.sp
+                                        )
+                                        Text(
+                                            f(o),
+                                            style = GlucoseHero.copy(
+                                                fontSize = 15.sp,
+                                                lineHeight = 18.sp,
+                                                color = if (o >
+                                                    x + 1e-9
+                                                ) {
+                                                    c.high
+                                                } else if (o < x - 1e-9) {
+                                                    c.inRange
+                                                } else {
+                                                    c.text
+                                                }
+                                            )
+                                        )
                                     }
                                 }
                             }
                             val gU = stringResource(R.string.unit_carbs)
                             val uU = stringResource(R.string.unit_insulin)
                             r?.takeIf { it > 0 }?.let { ratioG ->
-                                Text(listOf(30, 31, 45).joinToString(" · ") { g -> "$g $gU → " + f(DoseCalc.round(g.toDouble() / ratioG, id, step)) + " $uU" },
-                                    style = GlucoseHero.copy(fontSize = 12.sp, lineHeight = 15.sp, color = c.textMuted))
+                                Text(
+                                    listOf(30, 31, 45).joinToString(" · ") { g ->
+                                        "$g $gU → " +
+                                            f(DoseCalc.round(g.toDouble() / ratioG, id, step)) +
+                                            " $uU"
+                                    },
+                                    style = GlucoseHero.copy(fontSize = 12.sp, lineHeight = 15.sp, color = c.textMuted)
+                                )
                             }
                         }
                     }
@@ -179,9 +261,18 @@ fun DoseSettingsScreen(dose: DoseSettings, units: Units, onSave: suspend (DoseSe
             }
 
             Group(stringResource(R.string.dose_limits)) {
-                NumberRow(stringResource(R.string.dose_max_rapid), maxRapid, stringResource(R.string.unit_insulin), KeyboardType.Decimal) { maxRapid = it.take(5) }
-                NumberRow(stringResource(R.string.dose_max_basal), maxBasal, stringResource(R.string.unit_insulin), KeyboardType.Decimal) { maxBasal = it.take(5) }
-                NumberRow(stringResource(R.string.dose_max_carbs), maxCarbs, stringResource(R.string.unit_carbs), KeyboardType.Number) { maxCarbs = it.filter(Char::isDigit).take(3) }
+                NumberRow(stringResource(R.string.dose_max_rapid), maxRapid, stringResource(R.string.unit_insulin), KeyboardType.Decimal) {
+                    maxRapid =
+                        it.take(5)
+                }
+                NumberRow(stringResource(R.string.dose_max_basal), maxBasal, stringResource(R.string.unit_insulin), KeyboardType.Decimal) {
+                    maxBasal =
+                        it.take(5)
+                }
+                NumberRow(stringResource(R.string.dose_max_carbs), maxCarbs, stringResource(R.string.unit_carbs), KeyboardType.Number) {
+                    maxCarbs =
+                        it.filter(Char::isDigit).take(3)
+                }
                 Text(stringResource(R.string.dose_limits_note), color = c.textFaint, fontSize = 12.sp)
             }
 
@@ -190,36 +281,85 @@ fun DoseSettingsScreen(dose: DoseSettings, units: Units, onSave: suspend (DoseSe
                 val unit = if (units == Units.Mmol) stringResource(R.string.unit_mmol) else "mg/dL"
                 rows.forEachIndexed { i, (mg, u) ->
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(mg, { v -> rows[i] = v.filter { it.isDigit() || it == ',' || it == '.' }.take(5) to u }, label = { Text(stringResource(R.string.dose_from, unit)) },
-                            singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.weight(1f))
+                        OutlinedTextField(
+                            mg,
+                            { v ->
+                                rows[i] = v.filter { it.isDigit() || it == ',' || it == '.' }.take(5) to u
+                            },
+                            label = { Text(stringResource(R.string.dose_from, unit)) },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            modifier = Modifier.weight(1f)
+                        )
                         Text("→", color = c.textFaint)
-                        OutlinedTextField(u, { v -> rows[i] = mg to v.filter { it.isDigit() || it == ',' || it == '.' }.take(4) }, label = { Text("+ " + stringResource(R.string.unit_insulin)) },
-                            singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.weight(1f))
+                        OutlinedTextField(
+                            u,
+                            { v -> rows[i] = mg to v.filter { it.isDigit() || it == ',' || it == '.' }.take(4) },
+                            label = {
+                                Text(
+                                    "+ " + stringResource(R.string.unit_insulin)
+                                )
+                            },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            modifier = Modifier.weight(1f)
+                        )
                         val del = stringResource(R.string.dose_row_remove)
-                        IconButton(onClick = { rows.removeAt(i) }, modifier = Modifier.semantics { contentDescription = del }) { Text("×", fontSize = 22.sp, color = c.textMuted) }
+                        IconButton(onClick = {
+                            rows.removeAt(i)
+                        }, modifier = Modifier.semantics { contentDescription = del }) { Text("×", fontSize = 22.sp, color = c.textMuted) }
                     }
                 }
                 OutlinedButton(onClick = { rows.add("" to "") }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
                     Text(stringResource(R.string.dose_row_add), color = c.insulin, fontWeight = FontWeight.SemiBold)
                 }
-                NumberRow(stringResource(R.string.dose_fresh_pre), fresh, stringResource(R.string.unit_min), KeyboardType.Number) { fresh = it.filter(Char::isDigit).take(2) }
+                NumberRow(stringResource(R.string.dose_fresh_pre), fresh, stringResource(R.string.unit_min), KeyboardType.Number) {
+                    fresh =
+                        it.filter(Char::isDigit).take(2)
+                }
                 Text(stringResource(R.string.dose_fresh_note), color = c.textFaint, fontSize = 12.sp)
             }
             Group(stringResource(R.string.dose_forecast)) {
                 Text(stringResource(R.string.dose_forecast_note), color = c.textMuted, fontSize = 13.sp)
                 val unit = if (units == Units.Mmol) stringResource(R.string.unit_mmol) else "mg/dL"
-                NumberRow(stringResource(R.string.dose_isf), isf, unit, KeyboardType.Decimal) { isf = it.filter { ch -> ch.isDigit() || ch == ',' || ch == '.' }.take(5) }
+                NumberRow(stringResource(R.string.dose_isf), isf, unit, KeyboardType.Decimal) {
+                    isf =
+                        it.filter { ch -> ch.isDigit() || ch == ',' || ch == '.' }.take(5)
+                }
                 Text(stringResource(R.string.dose_isf_note), color = c.textFaint, fontSize = 12.sp)
-                NumberRow(stringResource(R.string.dose_dia), dia, stringResource(R.string.unit_min), KeyboardType.Number) { dia = it.filter(Char::isDigit).take(3) }
-                NumberRow(stringResource(R.string.dose_carb_min), carbMin, stringResource(R.string.unit_min), KeyboardType.Number) { carbMin = it.filter(Char::isDigit).take(3) }
+                NumberRow(stringResource(R.string.dose_dia), dia, stringResource(R.string.unit_min), KeyboardType.Number) {
+                    dia =
+                        it.filter(Char::isDigit).take(3)
+                }
+                NumberRow(stringResource(R.string.dose_carb_min), carbMin, stringResource(R.string.unit_min), KeyboardType.Number) {
+                    carbMin =
+                        it.filter(Char::isDigit).take(3)
+                }
             }
             Group(stringResource(R.string.dose_wait)) {
                 Text(stringResource(R.string.dose_wait_note), color = c.textMuted, fontSize = 13.sp)
                 val unit = if (units == Units.Mmol) stringResource(R.string.unit_mmol) else "mg/dL"
-                NumberRow(stringResource(R.string.dose_wait_min), waitMin, stringResource(R.string.unit_min), KeyboardType.Number) { waitMin = it.filter(Char::isDigit).take(2) }
-                NumberRow(stringResource(R.string.dose_wait_high_from), waitHighFrom, unit, KeyboardType.Decimal) { waitHighFrom = it.filter { ch -> ch.isDigit() || ch == ',' || ch == '.' }.take(5) }
-                NumberRow(stringResource(R.string.dose_wait_high_min), waitHighMin, stringResource(R.string.unit_min), KeyboardType.Number) { waitHighMin = it.filter(Char::isDigit).take(2) }
-                NumberRow(stringResource(R.string.dose_wait_low), waitLowBelow, unit, KeyboardType.Decimal) { waitLowBelow = it.filter { ch -> ch.isDigit() || ch == ',' || ch == '.' }.take(5) }
+                NumberRow(stringResource(R.string.dose_wait_min), waitMin, stringResource(R.string.unit_min), KeyboardType.Number) {
+                    waitMin =
+                        it.filter(Char::isDigit).take(2)
+                }
+                NumberRow(stringResource(R.string.dose_wait_high_from), waitHighFrom, unit, KeyboardType.Decimal) {
+                    waitHighFrom =
+                        it.filter { ch -> ch.isDigit() || ch == ',' || ch == '.' }.take(5)
+                }
+                NumberRow(
+                    stringResource(R.string.dose_wait_high_min),
+                    waitHighMin,
+                    stringResource(R.string.unit_min),
+                    KeyboardType.Number
+                ) {
+                    waitHighMin =
+                        it.filter(Char::isDigit).take(2)
+                }
+                NumberRow(stringResource(R.string.dose_wait_low), waitLowBelow, unit, KeyboardType.Decimal) {
+                    waitLowBelow =
+                        it.filter { ch -> ch.isDigit() || ch == ',' || ch == '.' }.take(5)
+                }
                 Text(stringResource(R.string.dose_wait_source), color = c.textFaint, fontSize = 12.sp)
             }
             problems.forEach { Text(it, color = c.low, fontSize = 13.sp) }
@@ -231,20 +371,28 @@ fun DoseSettingsScreen(dose: DoseSettings, units: Units, onSave: suspend (DoseSe
         }
         Button(
             onClick = {
-                saving = true; result = null
+                saving = true
+                result = null
                 val d = DoseSettings(
                     ratio = r!!, rule = rule, step = step, freshMin = fresh.toInt(),
                     maxRapid = num(maxRapid)!!, maxBasal = num(maxBasal)!!, maxCarbs = maxCarbs.toInt(),
                     table = table.map { (mg, u) -> CorrectionRow(mg!!, u!!) }.sortedBy { it.mg },
                     isf = if (isf.isBlank()) 0 else mgOf(isf)!!, diaMin = dia.toInt(), carbMin = carbMin.toInt(),
-                    waitMin = waitMin.toInt(), waitHighMin = waitHighMin.toInt(), waitHighFrom = mgOf(waitHighFrom)!!, waitLowBelow = mgOf(waitLowBelow)!!,
+                    waitMin = waitMin.toInt(), waitHighMin = waitHighMin.toInt(),
+                    waitHighFrom = mgOf(
+                        waitHighFrom
+                    )!!,
+                    waitLowBelow = mgOf(waitLowBelow)!!
                 )
-                scope.launch { result = onSave(d).isSuccess; saving = false }
+                scope.launch {
+                    result = onSave(d).isSuccess
+                    saving = false
+                }
             },
             enabled = problems.isEmpty() && !saving,
             modifier = Modifier.fillMaxWidth().padding(16.dp).height(56.dp),
             shape = RoundedCornerShape(18.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = c.insulin, contentColor = c.background),
+            colors = ButtonDefaults.buttonColors(containerColor = c.insulin, contentColor = c.background)
         ) { Text(stringResource(R.string.dose_save), fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
     }
 }
@@ -260,8 +408,11 @@ private fun ruleDesc(rule: String, step: Double): Int = when (rule) {
 private fun Group(title: String, content: @Composable () -> Unit) {
     val c = DiaTheme.colors
     Column(
-        Modifier.fillMaxWidth().background(c.surface, RoundedCornerShape(22.dp)).border(1.dp, c.line, RoundedCornerShape(22.dp)).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        Modifier.fillMaxWidth().background(
+            c.surface,
+            RoundedCornerShape(22.dp)
+        ).border(1.dp, c.line, RoundedCornerShape(22.dp)).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Text(title, color = c.text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
         content()
@@ -273,8 +424,14 @@ private fun NumberRow(pre: String, value: String, post: String, type: KeyboardTy
     val c = DiaTheme.colors
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(pre, color = c.text, fontSize = 14.5.sp, modifier = Modifier.weight(1f))
-        OutlinedTextField(value, onChange, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = type),
-            textStyle = GlucoseHero.copy(fontSize = 16.sp, lineHeight = 20.sp, color = c.text), modifier = Modifier.width(96.dp))
+        OutlinedTextField(
+            value,
+            onChange,
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = type),
+            textStyle = GlucoseHero.copy(fontSize = 16.sp, lineHeight = 20.sp, color = c.text),
+            modifier = Modifier.width(96.dp)
+        )
         Text(post, color = c.textMuted, fontSize = 14.sp)
     }
 }

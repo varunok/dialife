@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.roborazzi) // screenshot tests: ./gradlew :app:verifyRoborazziDebug
+    alias(libs.plugins.ktlint) // Kotlin style: ./gradlew :app:ktlintCheck (rules in android/.editorconfig)
 }
 
 android {
@@ -26,12 +27,14 @@ android {
     // (storeFile, storePassword, keyAlias, keyPassword); without it no publish build.
     val releaseKey = rootDir.resolve("../.local/keys/release.properties")
     signingConfigs {
-        if (releaseKey.isFile) create("project") {
-            val p = Properties().apply { releaseKey.inputStream().use { load(it) } }
-            storeFile = releaseKey.parentFile.resolve(p.getProperty("storeFile"))
-            storePassword = p.getProperty("storePassword")
-            keyAlias = p.getProperty("keyAlias")
-            keyPassword = p.getProperty("keyPassword")
+        if (releaseKey.isFile) {
+            create("project") {
+                val p = Properties().apply { releaseKey.inputStream().use { load(it) } }
+                storeFile = releaseKey.parentFile.resolve(p.getProperty("storeFile"))
+                storePassword = p.getProperty("storePassword")
+                keyAlias = p.getProperty("keyAlias")
+                keyPassword = p.getProperty("keyPassword")
+            }
         }
     }
 

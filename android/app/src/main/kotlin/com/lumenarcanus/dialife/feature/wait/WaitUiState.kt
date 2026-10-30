@@ -11,7 +11,8 @@ data class WaitUiState(
     val countdown: CountdownUiState? = null,
     val warning: WarningUiState? = null,
     val units: Units = Units.MgDl,
-    @StringRes val userMessage: Int? = null, // shown once, then WaitViewModel.userMessageShown()
+    // shown once, then WaitViewModel.userMessageShown()
+    @StringRes val userMessage: Int? = null
 )
 
 /** The countdown card: the server's wait seen at [now]. */

@@ -10,7 +10,7 @@ data class Thresholds(
     @SerialName("bgLow") val urgentLow: Int = 55,
     @SerialName("bgTargetBottom") val low: Int = 70,
     @SerialName("bgTargetTop") val high: Int = 180,
-    @SerialName("bgHigh") val urgentHigh: Int = 250,
+    @SerialName("bgHigh") val urgentHigh: Int = 250
 )
 
 @Serializable
@@ -22,7 +22,7 @@ data class Bg(
     val direction: String? = null,
     val delta: Int? = null,
     @SerialName("delta_exact") val deltaExact: Double? = null,
-    val interpolated: Boolean = false,
+    val interpolated: Boolean = false
 )
 
 @Serializable
@@ -36,7 +36,7 @@ data class Forecast(
     val predicted: List<ForecastPoint> = emptyList(),
     val cone: List<ConePoint> = emptyList(),
     val level: String? = null,
-    val event: String? = null,
+    val event: String? = null
 )
 
 @Serializable
@@ -62,7 +62,7 @@ data class AlarmView(
     @SerialName("help_at") val helpAt: Long? = null,
     @SerialName("coming_by") val comingBy: String? = null,
     @SerialName("coming_by_id") val comingById: Long = 0,
-    @SerialName("coming_at") val comingAt: Long? = null,
+    @SerialName("coming_at") val comingAt: Long? = null
 ) {
     val urgentLow get() = kind == "low" && level == "urgent"
 }
@@ -72,7 +72,7 @@ data class AlarmSummary(
     @SerialName("duration_min") val durationMin: Int = 0,
     @SerialName("handled_by") val handledBy: String? = null,
     val manual: Boolean = false,
-    @SerialName("resolved_by") val resolvedBy: String? = null,
+    @SerialName("resolved_by") val resolvedBy: String? = null
 )
 
 /** SSE alarm/handled/checkin/help/coming/clear. */
@@ -82,7 +82,7 @@ data class AlarmEvent(
     val reason: String? = null,
     @SerialName("was_handled_by") val wasHandledBy: String? = null,
     val by: String? = null,
-    val summary: AlarmSummary? = null,
+    val summary: AlarmSummary? = null
 )
 
 @Serializable
@@ -107,7 +107,8 @@ data class StateResponse(
     @SerialName("meal_gap_min") val mealGapMin: Int = MealRules().gapMin, // food entries this close are one meal
     @SerialName("bolus_before_min") val bolusBeforeMin: Int = MealRules().beforeMin, // rapid this long before a meal is for it
     @SerialName("bolus_after_min") val bolusAfterMin: Int = MealRules().afterMin, // and this long after
-    val wait: Wait? = null, // a rapid dose with food beside it: when to start eating, a suggestion only
+    // a rapid dose with food beside it: when to start eating, a suggestion only
+    val wait: Wait? = null
 ) {
     val mealRules get() = MealRules(mealGapMin, bolusBeforeMin, bolusAfterMin)
 }
@@ -118,7 +119,8 @@ data class Iob(
     val insulin: Double = 0.0,
     val carbs: Int = 0,
     val isf: Int = 0,
-    val forecast: List<IobPoint> = emptyList(), // +15, +30, +60 min; empty when the reading is old
+    // +15, +30, +60 min; empty when the reading is old
+    val forecast: List<IobPoint> = emptyList()
 )
 
 @Serializable
@@ -134,7 +136,8 @@ data class DoseSettings(
     @SerialName("max_rapid") val maxRapid: Double = 10.0,
     @SerialName("max_basal") val maxBasal: Double = 20.0,
     @SerialName("max_carbs") val maxCarbs: Int = 150,
-    val table: List<CorrectionRow> = listOf(CorrectionRow(140, 1.0), CorrectionRow(180, 2.0), CorrectionRow(220, 3.0), CorrectionRow(260, 4.0), CorrectionRow(300, 5.0)),
+    val table: List<CorrectionRow> =
+        listOf(CorrectionRow(140, 1.0), CorrectionRow(180, 2.0), CorrectionRow(220, 3.0), CorrectionRow(260, 4.0), CorrectionRow(300, 5.0)),
     val isf: Int = 0, // mg/dL one rapid unit lowers; 0: from the correction table's steps
     @SerialName("dia_min") val diaMin: Int = 240, // how long rapid insulin works
     @SerialName("carb_min") val carbMin: Int = 180, // how long carbs take to come in
@@ -144,7 +147,7 @@ data class DoseSettings(
     @SerialName("wait_high_from") val waitHighFrom: Int = 180,
     @SerialName("wait_low_below") val waitLowBelow: Int = 80,
     @SerialName("updated_at") val updatedAt: Long = 0,
-    @SerialName("updated_by") val updatedBy: String = "",
+    @SerialName("updated_by") val updatedBy: String = ""
 )
 
 /** From [mg] mg/dL on the glucometer, add [u] units. */
@@ -165,7 +168,7 @@ data class PlannedDose(
     @SerialName("created_at") val createdAt: Long,
     val by: String = "",
     @SerialName("device_id") val deviceId: Long = 0,
-    val state: String = "planned",
+    val state: String = "planned"
 )
 
 /** "Dad is giving insulin": someone opened the insulin form; it ends when the form closes. */
@@ -175,7 +178,7 @@ data class InsulinIntent(
     val person: String,
     val insulin: String = "rapid", // "rapid" | "basal"
     val since: Long,
-    val until: Long,
+    val until: Long
 )
 
 @Serializable
@@ -189,7 +192,8 @@ data class ForecastQuality(
     val n: Int = 0,
     val ignores: List<ForecastBlind> = emptyList(),
     val quiet: ForecastQuality? = null, // the same, scored apart for the quiet hours
-    @SerialName("after_food") val afterFood: ForecastQuality? = null, // and for the 3 hours after food
+    // and for the 3 hours after food
+    @SerialName("after_food") val afterFood: ForecastQuality? = null
 )
 
 @Serializable
@@ -217,11 +221,14 @@ data class Question(
     val quiet: Boolean = false, // night: no sound
     val doses: List<Dose> = emptyList(), // "double": the two, the one "one injection" removes first
     val insulin: String? = null, // "double": "rapid" | "basal"
-    @SerialName("watch_until") val watchUntil: Long? = null, // "double" answered "two": watch for a low until then
+    // "double" answered "two": watch for a low until then
+    @SerialName("watch_until") val watchUntil: Long? = null
 ) {
     fun asks(deviceId: Long) = state == "open" && deviceId in waitingIds
+
     /** Two doses were given: everyone watches for a low until [watchUntil]. */
     val watch get() = kind == "double" && state == "answered" && outcome == "two"
+
     /** What the others said last round, when they disagreed: shown with the repeated question. */
     fun previous(): List<QuestionAnswer> = if (round > 1) answers.filter { it.round == round - 1 } else emptyList()
 }
@@ -235,7 +242,7 @@ data class QuestionAnswer(
     val answer: String, // "food" | "food_unknown" | "insulin" | "nothing"
     val round: Int,
     val at: Long,
-    @SerialName("treatment_id") val treatmentId: String? = null,
+    @SerialName("treatment_id") val treatmentId: String? = null
 )
 
 @Serializable
@@ -246,14 +253,15 @@ data class Caregiver(val id: Long, val name: String)
 data class EpisodeRules(
     @SerialName("worse_by") val worseBy: Int = 10,
     @SerialName("checkin_timeout_min") val checkinTimeoutMin: Int = 5,
-    @SerialName("ceiling_min") val ceilingMin: Int = 45,
+    @SerialName("ceiling_min") val ceilingMin: Int = 45
 )
 
 @Serializable
 data class Series(
     val t: List<Long> = emptyList(),
     val v: List<Int> = emptyList(),
-    val d: List<String> = emptyList(), // mbg only: where each check came from ("Roche 00:00:5E:…", "manual")
+    // mbg only: where each check came from ("Roche 00:00:5E:…", "manual")
+    val d: List<String> = emptyList()
 )
 
 @Serializable
@@ -274,11 +282,17 @@ data class Treatment(
     @SerialName("confirmed_new") val confirmedNew: String? = null, // saved after the warning about this other dose (sent as confirmedNew)
     @SerialName("food_items") val foodItems: List<FoodItem>? = null, // a meal logged as a list; carbs is their sum
     @SerialName("meal_id") val mealId: String? = null, // insulin: the meal it was given for
-    @SerialName("insulin_role") val insulinRole: String? = null, // insulin: "meal" | "corr"
+    // insulin: "meal" | "corr"
+    @SerialName("insulin_role") val insulinRole: String? = null
 ) {
     /** "борщ 18 ≈ · хліб 22": the meal's lines, "≈" on numbers taken from a suggestion. */
     fun foodText(): String? = foodItems?.takeIf { it.isNotEmpty() }?.joinToString(" · ") { f ->
-        listOfNotNull(f.name.ifBlank { null }, f.carbs?.let { kotlin.math.round(it).toInt().toString() + if (f.suggested) " ≈" else "" }).joinToString(" ")
+        listOfNotNull(
+            f.name.ifBlank {
+                null
+            },
+            f.carbs?.let { kotlin.math.round(it).toInt().toString() + if (f.suggested) " ≈" else "" }
+        ).joinToString(" ")
     }
 }
 
@@ -288,7 +302,8 @@ data class FoodItem(
     val name: String,
     val portion: String? = null,
     val carbs: Double? = null,
-    val source: String? = null, // "mine" (the family's earlier entry) | "table" (a carb table) | "estimate" (models) | "manual"
+    // "mine" (the family's earlier entry) | "table" (a carb table) | "estimate" (models) | "manual"
+    val source: String? = null
 ) {
     val suggested get() = source == "mine" || source == "table" || source == "estimate"
 }
@@ -302,7 +317,8 @@ data class CarbSuggestion(
     val mine: CarbMine? = null,
     val estimate: CarbEstimate? = null,
     val table: List<CarbTableHit> = emptyList(),
-    val similar: List<CarbTableHit> = emptyList(), // table foods that mean the same in other words
+    // table foods that mean the same in other words
+    val similar: List<CarbTableHit> = emptyList()
 )
 
 /** After a rapid dose with food beside it, when to start eating (the server's suggestion, never a rule). */
@@ -317,7 +333,8 @@ data class Wait(
     @SerialName("covers_g") val coversG: Double = 0.0, // carbs the dose covers at the ratio
     @SerialName("food_g") val foodG: Double = 0.0, // carbs logged since half an hour before it
     val closed: Boolean = false, // "already ate", on any phone
-    @SerialName("more_closed") val moreClosed: Boolean = false, // the "more insulin than food" card closed
+    // the "more insulin than food" card closed
+    @SerialName("more_closed") val moreClosed: Boolean = false
 )
 
 /** A portion from an imported carb table: carbs for it, or for the typed portion when scaled. */
@@ -334,7 +351,8 @@ data class CarbTableHit(
     val names: Map<String, String> = emptyMap(),
     val portions: Map<String, String> = emptyMap(),
     val source: String = "",
-    val score: Float = 0f, // a look-alike: how close the names are
+    // a look-alike: how close the names are
+    val score: Float = 0f
 )
 
 /** GET /api/foods: the carb tables to pick from and the family's most logged foods. */
@@ -347,7 +365,7 @@ data class FoodTable(
     val title: String = "",
     val note: Map<String, String> = emptyMap(),
     val categories: List<FoodCategory> = emptyList(),
-    val items: List<TableFood> = emptyList(),
+    val items: List<TableFood> = emptyList()
 )
 
 @Serializable
@@ -359,7 +377,7 @@ data class TableFood(
     val cat: String,
     val carbs: Int,
     val names: Map<String, String> = emptyMap(),
-    val portions: Map<String, String> = emptyMap(),
+    val portions: Map<String, String> = emptyMap()
 )
 
 @Serializable
@@ -375,7 +393,7 @@ data class CarbMine(
     val portion: String = "",
     val times: Int = 1,
     val like: String? = null, // found by meaning: the family's food it came from
-    val score: Float = 0f,
+    val score: Float = 0f
 )
 
 @Serializable
@@ -387,7 +405,7 @@ data class Zones(
     val low: Double = 0.0,
     @SerialName("in_range") val inRange: Double = 0.0,
     val high: Double = 0.0,
-    @SerialName("very_high") val veryHigh: Double = 0.0,
+    @SerialName("very_high") val veryHigh: Double = 0.0
 )
 
 @Serializable
@@ -411,7 +429,7 @@ data class Stats(
     val hypos: Int = 0,
     val agp: List<AgpPoint> = emptyList(),
     val thresholds: Thresholds = Thresholds(),
-    val daily: List<DayTotal> = emptyList(),
+    val daily: List<DayTotal> = emptyList()
 )
 
 /** Insulin and carbs entered on one local day. */
@@ -435,7 +453,7 @@ data class LogEpisode(
     @SerialName("handled_by") val handledBy: String? = null,
     @SerialName("resolved_by") val resolvedBy: String? = null,
     val manual: Boolean = false,
-    val events: List<LogEvent> = emptyList(),
+    val events: List<LogEvent> = emptyList()
 ) {
     fun asView() = AlarmView(id = id, kind = kind, level = level, state = state, startedAt = startedAt, sgv = sgv)
 }
@@ -449,7 +467,7 @@ data class History(
     val to: Long,
     val sgv: Series = Series(),
     val mbg: Series = Series(),
-    val treatments: List<Treatment> = emptyList(),
+    val treatments: List<Treatment> = emptyList()
 )
 
 /** Sensor vs glucometer, from GET /api/meter: all checks ever made. */
@@ -466,7 +484,7 @@ data class MeterReport(
     val bands: List<MeterBand> = emptyList(),
     val model: MeterModel? = null,
     val pairs: List<MeterPair> = emptyList(),
-    val starts: List<Long> = emptyList(),
+    val starts: List<Long> = emptyList()
 )
 
 @Serializable
@@ -481,7 +499,7 @@ data class MeterPair(
     val meter: Int,
     val sensor: Double,
     @SerialName("sensor_no") val sensorNo: Int = 0,
-    val used: Boolean = true,
+    val used: Boolean = true
 )
 
 @Serializable
@@ -502,7 +520,8 @@ data class WebLoginInfo(
     @SerialName("expires_at") val expiresAt: Long,
     @SerialName("max_minutes") val maxMinutes: Int = 90 * 24 * 60,
     val ip: String? = null, // where the browser asked from
-    @SerialName("same_network") val sameNetwork: Boolean = false, // the same address this phone has now: at home, the family's own computer
+    // the same address this phone has now: at home, the family's own computer
+    @SerialName("same_network") val sameNetwork: Boolean = false
 )
 
 /** A browser allowed in: who allowed it, until when, last seen. */
@@ -514,5 +533,5 @@ data class WebSession(
     val by: String = "",
     @SerialName("created_at") val createdAt: Long,
     @SerialName("expires_at") val expiresAt: Long,
-    @SerialName("last_seen_at") val lastSeenAt: Long? = null,
+    @SerialName("last_seen_at") val lastSeenAt: Long? = null
 )

@@ -3,8 +3,8 @@ package com.lumenarcanus.dialife.live
 import com.lumenarcanus.dialife.data.DiaLifeApi
 import com.lumenarcanus.dialife.data.History
 import com.lumenarcanus.dialife.data.StateResponse
-import kotlinx.serialization.Serializable
 import java.io.File
+import kotlinx.serialization.Serializable
 
 /** What the screen showed last, so the app opens with data even before the network answers. */
 @Serializable
@@ -13,7 +13,7 @@ data class LiveSnapshot(
     val device: String,
     val state: StateResponse? = null,
     val history: History? = null,
-    val lastEventId: String? = null,
+    val lastEventId: String? = null
 )
 
 class LiveCache(dir: File) {

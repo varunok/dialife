@@ -31,6 +31,13 @@ class FoodRowsTest {
         assertEquals("23", rows[0].carbs)
         assertEquals("1 шт", rows[0].portion)
         assertEquals("40", foodRowsOf(null, 40.0)[0].carbs) // an older entry with only a total
-        assertEquals("банан 23 ≈ · хліб 11", Treatment("t", 0, foodItems = listOf(FoodItem("банан", carbs = 23.0, source = "estimate"), FoodItem("хліб", carbs = 11.0, source = "manual"))).foodText())
+        assertEquals(
+            "банан 23 ≈ · хліб 11",
+            Treatment(
+                "t",
+                0,
+                foodItems = listOf(FoodItem("банан", carbs = 23.0, source = "estimate"), FoodItem("хліб", carbs = 11.0, source = "manual"))
+            ).foodText()
+        )
     }
 }

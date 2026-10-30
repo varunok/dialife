@@ -33,6 +33,7 @@ import com.lumenarcanus.dialife.ui.theme.DiaLifeTheme
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.ui.treatment.FoodList
 import com.lumenarcanus.dialife.ui.treatment.FoodRow
+import java.util.TimeZone
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -40,7 +41,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import java.util.TimeZone
 
 /**
  * The pictures in the README (docs/screenshots), in English, on made-up data:
@@ -74,15 +74,15 @@ class ReadmeShots {
         val breakfast = listOf(
             Treatment("r", t[276], insulin = 3.0, insulinType = "rapid", insulinName = "NovoRapid", enteredBy = "Mom"),
             Treatment("f", t[277], carbs = 40.0, enteredBy = "Mom"),
-            Treatment("g", t[283], glucose = h.sgv.v[283] + 6, eventType = "BG Check", enteredBy = "Dad"),
+            Treatment("g", t[283], glucose = h.sgv.v[283] + 6, eventType = "BG Check", enteredBy = "Dad")
         )
         return ui.copy(
             state = ui.state!!.copy(
                 questions = emptyList(),
                 forecastQuality = ui.state!!.forecastQuality?.copy(ignores = emptyList()),
-                caregivers = listOf(Caregiver(8, "Dad"), Caregiver(9, "Mom")),
+                caregivers = listOf(Caregiver(8, "Dad"), Caregiver(9, "Mom"))
             ),
-            history = h.copy(treatments = h.treatments + breakfast),
+            history = h.copy(treatments = h.treatments + breakfast)
         )
     }
 
@@ -101,16 +101,25 @@ class ReadmeShots {
         val alarm = AlarmView(
             id = 1, kind = "low", level = "urgent", state = "handled", startedAt = now - 20 * min, sgv = 55,
             handledBy = "Dad", handledById = 8, handledAt = now - 12 * min, handledSgv = 52,
-            checkinPending = true, checkinSentAt = now - min,
+            checkinPending = true, checkinSentAt = now - min
         )
         val st = ui.state!!.copy(bg = ui.state!!.bg!!.copy(sgv = 56, delta = 2), ar2 = null, alarms = listOf(alarm))
         HandlingScreen(
             // no glucometer check from the calm morning in the middle of a low
-            ui.copy(state = st, myId = 8, history = h.copy(
-                sgv = Series(h.sgv.t, v), mbg = Series(emptyList(), emptyList()),
-                treatments = h.treatments.filter { it.glucose == null },
-            )),
-            alarmId = 1, units = Units.MgDl, onAct = { _, _ -> }, onSaveTreatment = {}, onBack = {},
+            ui.copy(
+                state = st,
+                myId = 8,
+                history = h.copy(
+                    sgv = Series(h.sgv.t, v),
+                    mbg = Series(emptyList(), emptyList()),
+                    treatments = h.treatments.filter { it.glucose == null }
+                )
+            ),
+            alarmId = 1,
+            units = Units.MgDl,
+            onAct = { _, _ -> },
+            onSaveTreatment = {},
+            onBack = {}
         )
     }
 
@@ -121,11 +130,11 @@ class ReadmeShots {
         val double = Question(
             3, "double", "open", now - 25 * min, now - 21 * min, 0, 0,
             doses = listOf(Dose("x", now - 21 * min, 2.0, "xDrip+"), Dose("d", now - 25 * min, 2.0, "Dad")),
-            insulin = "rapid", waiting = listOf("Dad", "Mom"), waitingIds = listOf(8, 9),
+            insulin = "rapid", waiting = listOf("Dad", "Mom"), waitingIds = listOf(8, 9)
         )
         val st = ui.state!!.copy(
             intents = listOf(InsulinIntent(9, "Mom", "rapid", now - 2 * min, now + 8 * min)),
-            questions = listOf(double),
+            questions = listOf(double)
         )
         HomeScreen(ui.copy(state = st, myId = 8), deviceName = "Dad")
     }
@@ -138,14 +147,30 @@ class ReadmeShots {
     @Test
     fun food() = shot("app_food") {
         val rows = mutableStateListOf(
-            FoodRow(1, "Pasta", "180 g", "45", "mine", asked = true, models = true,
-                suggestion = CarbSuggestion(CarbMine(45, "180 g", 9), CarbEstimate(48, 40, 56, 2))),
-            FoodRow(2, "Bread", "2 slices", "", null, asked = true, models = true,
-                suggestion = CarbSuggestion(estimate = CarbEstimate(24, 20, 30, 2))),
+            FoodRow(
+                1,
+                "Pasta",
+                "180 g",
+                "45",
+                "mine",
+                asked = true,
+                models = true,
+                suggestion = CarbSuggestion(CarbMine(45, "180 g", 9), CarbEstimate(48, 40, 56, 2))
+            ),
+            FoodRow(
+                2,
+                "Bread",
+                "2 slices",
+                "",
+                null,
+                asked = true,
+                models = true,
+                suggestion = CarbSuggestion(estimate = CarbEstimate(24, 20, 30, 2))
+            )
         )
         Column(
             Modifier.fillMaxSize().background(DiaTheme.colors.surface).padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             FoodList(rows, repo = null)
         }
@@ -157,7 +182,7 @@ class ReadmeShots {
         val ui = day()
         DataScreen(
             ui.history, emptyList(), ui.state!!.thresholds, Units.MgDl, 3, now,
-            loadHistory = { _, _ -> null }, onSaveTreatment = {}, onBack = {},
+            loadHistory = { _, _ -> null }, onSaveTreatment = {}, onBack = {}
         )
     }
 
@@ -167,7 +192,7 @@ class ReadmeShots {
         val ui = day()
         ChartCard(
             ui.history, ui.state?.ar2, ui.state!!.thresholds, Units.MgDl, ui.rangeHours, ui.now, onRange = {},
-            modifier = Modifier.fillMaxSize(), expanded = true, suspects = ui.state!!.questions,
+            modifier = Modifier.fillMaxSize(), expanded = true, suspects = ui.state!!.questions
         )
     }
 }

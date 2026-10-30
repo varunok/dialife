@@ -55,7 +55,7 @@ class Ringer(context: Context) {
                         AudioAttributes.Builder()
                             .setUsage(AudioAttributes.USAGE_ALARM)
                             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                            .build(),
+                            .build()
                     )
                     setDataSource(app, uri)
                     isLooping = true
@@ -72,7 +72,10 @@ class Ringer(context: Context) {
             } else {
                 // Android 12: alarm usage through the audio attributes, so Do Not Disturb lets it through
                 @Suppress("DEPRECATION")
-                vibrator.vibrate(pattern, android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_ALARM).build())
+                vibrator.vibrate(
+                    pattern,
+                    android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_ALARM).build()
+                )
             }
             main.postDelayed(timeout, MAX_RING_MS)
         }
@@ -85,7 +88,10 @@ class Ringer(context: Context) {
 
     private fun stopNow() {
         main.removeCallbacks(timeout)
-        player?.runCatching { stop(); release() }
+        player?.runCatching {
+            stop()
+            release()
+        }
         player = null
         vibrator.cancel()
         restoreVolume?.let { v -> runCatching { audio.setStreamVolume(AudioManager.STREAM_ALARM, v, 0) } }

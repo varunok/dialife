@@ -15,7 +15,8 @@ data class Credentials(
     val deviceName: String,
     val role: String,
     val displayUnits: String,
-    val deviceId: Long = 0, // 0 for phones connected before it was stored: LiveRepository asks /api/me
+    // 0 for phones connected before it was stored: LiveRepository asks /api/me
+    val deviceId: Long = 0
 )
 
 private val Context.store by preferencesDataStore(name = "credentials")

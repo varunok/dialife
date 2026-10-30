@@ -31,7 +31,9 @@ fun kindLook(kind: TreatmentKind, insulin: InsulinType = InsulinType.Rapid): Kin
     return when (kind) {
         TreatmentKind.Insulin -> if (insulin == InsulinType.Basal) {
             KindLook(R.string.tr_insulin, stringResource(R.string.glyph_basal), basalColor(c.isDark), basalContainer(c.isDark))
-        } else KindLook(R.string.tr_insulin, stringResource(R.string.glyph_insulin), c.insulin, c.insulinContainer)
+        } else {
+            KindLook(R.string.tr_insulin, stringResource(R.string.glyph_insulin), c.insulin, c.insulinContainer)
+        }
         TreatmentKind.Food -> KindLook(R.string.tr_food, stringResource(R.string.glyph_carbs), c.carbs, c.carbsContainer)
         TreatmentKind.Meter -> KindLook(R.string.tr_meter, stringResource(R.string.glyph_meter), c.text, c.surfaceRaised)
         TreatmentKind.Activity -> KindLook(R.string.tr_activity, stringResource(R.string.glyph_activity), c.inRange, c.inRangeContainer)
@@ -44,8 +46,16 @@ fun kindLook(kind: TreatmentKind, insulin: InsulinType = InsulinType.Rapid): Kin
 fun KindSign(glyph: String, ink: Color, size: Dp = 22.dp, background: Color = DiaTheme.colors.surface, ring: Color? = null) {
     Box(
         // the letter repeats the button's name: not read out
-        Modifier.size(size).clearAndSetSemantics {}.background(background, CircleShape).then(if (ring != null) Modifier.border(2.dp, ring, CircleShape) else Modifier),
-        contentAlignment = Alignment.Center,
+        Modifier.size(size).clearAndSetSemantics {}.background(background, CircleShape).then(
+            if (ring !=
+                null
+            ) {
+                Modifier.border(2.dp, ring, CircleShape)
+            } else {
+                Modifier
+            }
+        ),
+        contentAlignment = Alignment.Center
     ) {
         Text(glyph, color = ink, fontSize = (size.value * 0.48f).sp, fontWeight = FontWeight.Bold, maxLines = 1)
     }

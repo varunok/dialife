@@ -22,8 +22,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -65,7 +65,14 @@ import com.lumenarcanus.dialife.data.parseWebLoginLink
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import kotlinx.coroutines.launch
 
-private enum class Unit_(val minutes: Int, val label: Int) { Min(1, R.string.web_unit_min), Hour(60, R.string.web_unit_hour), Day(24 * 60, R.string.web_unit_day) }
+private enum class SpanUnit(val minutes: Int, val label: Int) {
+    Min(
+        1,
+        R.string.web_unit_min
+    ),
+    Hour(60, R.string.web_unit_hour),
+    Day(24 * 60, R.string.web_unit_day)
+}
 
 /**
  * "Web login": scan the code a browser shows, see which browser it is, allow
@@ -96,7 +103,8 @@ fun WebLoginScreen(creds: Credentials, onBack: () -> Unit, api: DiaLifeApi = Dia
             kotlinx.coroutines.delay(1500)
         }
     }
-    LaunchedEffect(Unit) { // while the screen is open: last seen, closed elsewhere
+    LaunchedEffect(Unit) {
+        // while the screen is open: last seen, closed elsewhere
         while (true) {
             kotlinx.coroutines.delay(30_000)
             api.webSessions(creds).onSuccess { sessions = it }
@@ -108,11 +116,17 @@ fun WebLoginScreen(creds: Credentials, onBack: () -> Unit, api: DiaLifeApi = Dia
         val options = GmsBarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE).build()
         GmsBarcodeScanning.getClient(ctx, options).startScan().addOnSuccessListener { b ->
             val l = parseWebLoginLink(b.rawValue.orEmpty())
-            if (l == null) { note = notCode; return@addOnSuccessListener }
+            if (l == null) {
+                note = notCode
+                return@addOnSuccessListener
+            }
             note = null
             scope.launch {
                 api.webInspect(creds, l)
-                    .onSuccess { link = l; info = it }
+                    .onSuccess {
+                        link = l
+                        info = it
+                    }
                     .onFailure { e -> note = if ((e as? ApiException)?.error is ApiError.Server) expired else failed }
             }
         }
@@ -120,8 +134,10 @@ fun WebLoginScreen(creds: Credentials, onBack: () -> Unit, api: DiaLifeApi = Dia
     LaunchedEffect(Unit) { scan() } // opened to scan: go straight to the camera
 
     Column(
-        Modifier.fillMaxSize().background(c.background).safeDrawingPadding().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        Modifier.fillMaxSize().background(
+            c.background
+        ).safeDrawingPadding().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         TextButton(onClick = onBack) { Text("‹ " + stringResource(R.string.nav_back), color = c.textMuted) }
         Text(stringResource(R.string.web_title), color = c.text, fontSize = 26.sp, fontWeight = FontWeight.SemiBold)
@@ -133,23 +149,35 @@ fun WebLoginScreen(creds: Credentials, onBack: () -> Unit, api: DiaLifeApi = Dia
                 scope.launch {
                     val r = if (minutes == null) api.webReject(creds, l) else api.webApprove(creds, l, minutes)
                     r.onSuccess {
-                        note = if (minutes == null) ctx.getString(R.string.web_denied)
-                        else ctx.getString(R.string.web_allowed, untilText(ctx, System.currentTimeMillis() + minutes * 60_000L))
-                        link = null; info = null; awaitNew = minutes != null; reload++
+                        note = if (minutes == null) {
+                            ctx.getString(R.string.web_denied)
+                        } else {
+                            ctx.getString(R.string.web_allowed, untilText(ctx, System.currentTimeMillis() + minutes * 60_000L))
+                        }
+                        link = null
+                        info = null
+                        awaitNew = minutes != null
+                        reload++
                     }.onFailure { e -> note = if ((e as? ApiException)?.error is ApiError.Server) expired else failed }
                 }
             })
         } else {
             Text(stringResource(R.string.web_scan_hint), color = c.textMuted, fontSize = 14.sp)
-            Button(onClick = ::scan, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(16.dp)) { Text(stringResource(R.string.web_scan), fontSize = 15.sp) }
+            Button(onClick = ::scan, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(16.dp)) {
+                Text(stringResource(R.string.web_scan), fontSize = 15.sp)
+            }
         }
         Sessions(sessions) { id -> scope.launch { api.webRevoke(creds, id).onSuccess { reload++ } } }
     }
 }
 
-private fun untilText(ctx: android.content.Context, ms: Long): String =
-    android.text.format.DateUtils.formatDateTime(ctx, ms,
-        android.text.format.DateUtils.FORMAT_SHOW_DATE or android.text.format.DateUtils.FORMAT_SHOW_TIME or android.text.format.DateUtils.FORMAT_ABBREV_MONTH or android.text.format.DateUtils.FORMAT_NO_YEAR)
+private fun untilText(ctx: android.content.Context, ms: Long): String = android.text.format.DateUtils.formatDateTime(
+    ctx,
+    ms,
+    android.text.format.DateUtils.FORMAT_SHOW_DATE or android.text.format.DateUtils.FORMAT_SHOW_TIME or
+        android.text.format.DateUtils.FORMAT_ABBREV_MONTH or
+        android.text.format.DateUtils.FORMAT_NO_YEAR
+)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -158,13 +186,20 @@ internal fun Approve(info: WebLoginInfo, now: Long = System.currentTimeMillis(),
     val ctx = LocalContext.current
     var count by remember { mutableIntStateOf(7) }
     var text by remember { mutableStateOf("7") }
-    var unit by remember { mutableStateOf(Unit_.Day) }
+    var unit by remember { mutableStateOf(SpanUnit.Day) }
     val minutes = count * unit.minutes
     val tooLong = minutes > info.maxMinutes
-    fun set(n: Int, u: Unit_ = unit) { count = n.coerceIn(1, 999); text = count.toString(); unit = u }
+    fun set(n: Int, u: SpanUnit = unit) {
+        count = n.coerceIn(1, 999)
+        text = count.toString()
+        unit = u
+    }
     Column(
-        Modifier.fillMaxWidth().background(c.surface, RoundedCornerShape(22.dp)).border(1.dp, c.line, RoundedCornerShape(22.dp)).padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        Modifier.fillMaxWidth().background(
+            c.surface,
+            RoundedCornerShape(22.dp)
+        ).border(1.dp, c.line, RoundedCornerShape(22.dp)).padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Text(stringResource(R.string.web_ask_title), color = c.text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
         Text(stringResource(R.string.web_ask_who, info.browser, info.os), color = c.textMuted, fontSize = 13.sp)
@@ -174,8 +209,10 @@ internal fun Approve(info: WebLoginInfo, now: Long = System.currentTimeMillis(),
         } else {
             Text(
                 stringResource(R.string.web_other_network, info.ip ?: "?"),
-                color = c.high, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.fillMaxWidth().background(c.highContainer, RoundedCornerShape(12.dp)).padding(12.dp),
+                color = c.high,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.fillMaxWidth().background(c.highContainer, RoundedCornerShape(12.dp)).padding(12.dp)
             )
         }
         Text(stringResource(R.string.web_ask_body), color = c.textMuted, fontSize = 14.sp)
@@ -183,45 +220,82 @@ internal fun Approve(info: WebLoginInfo, now: Long = System.currentTimeMillis(),
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             val less = stringResource(R.string.web_less)
             val more = stringResource(R.string.web_more)
-            FilledTonalIconButton(onClick = { set(count - 1) }, modifier = Modifier.size(48.dp).semantics { contentDescription = less }) { Text("−", fontSize = 22.sp, color = c.text) }
+            FilledTonalIconButton(onClick = {
+                set(count - 1)
+            }, modifier = Modifier.size(48.dp).semantics { contentDescription = less }) { Text("−", fontSize = 22.sp, color = c.text) }
             OutlinedTextField(
                 value = text,
-                onValueChange = { v -> text = v.filter(Char::isDigit).take(3); text.toIntOrNull()?.let { count = it.coerceAtLeast(1) } },
+                onValueChange = { v ->
+                    text = v.filter(Char::isDigit).take(3)
+                    text.toIntOrNull()?.let { count = it.coerceAtLeast(1) }
+                },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 20.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, color = c.text),
-                modifier = Modifier.width(76.dp),
+                textStyle = androidx.compose.ui.text.TextStyle(
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                    color = c.text
+                ),
+                modifier = Modifier.width(76.dp)
             )
-            FilledTonalIconButton(onClick = { set(count + 1) }, modifier = Modifier.size(48.dp).semantics { contentDescription = more }) { Text("+", fontSize = 22.sp, color = c.text) }
+            FilledTonalIconButton(onClick = {
+                set(count + 1)
+            }, modifier = Modifier.size(48.dp).semantics { contentDescription = more }) { Text("+", fontSize = 22.sp, color = c.text) }
         }
-        Row(Modifier.fillMaxWidth().background(c.background, RoundedCornerShape(12.dp)).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Unit_.entries.forEach { u ->
+        Row(
+            Modifier.fillMaxWidth().background(c.background, RoundedCornerShape(12.dp)).padding(3.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            SpanUnit.entries.forEach { u ->
                 val on = u == unit
                 Text(
-                    stringResource(u.label), color = if (on) c.text else c.textMuted, fontSize = 13.sp, textAlign = TextAlign.Center,
+                    stringResource(u.label),
+                    color = if (on) c.text else c.textMuted,
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center,
                     fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal,
                     modifier = Modifier.weight(1f).background(if (on) c.surfaceRaised else Color.Transparent, RoundedCornerShape(9.dp))
-                        .selectable(selected = on, role = Role.Tab) { unit = u }.heightIn(min = 40.dp).padding(vertical = 10.dp),
+                        .selectable(selected = on, role = Role.Tab) { unit = u }.heightIn(min = 40.dp).padding(vertical = 10.dp)
                 )
             }
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            listOf(30 to Unit_.Min, 2 to Unit_.Hour, 1 to Unit_.Day, 7 to Unit_.Day, 30 to Unit_.Day).forEach { (n, u) ->
+            listOf(30 to SpanUnit.Min, 2 to SpanUnit.Hour, 1 to SpanUnit.Day, 7 to SpanUnit.Day, 30 to SpanUnit.Day).forEach { (n, u) ->
                 val label = when (u) {
-                    Unit_.Min -> stringResource(R.string.web_quick_min, n)
-                    Unit_.Hour -> stringResource(R.string.web_quick_hour, n)
-                    Unit_.Day -> pluralStringResource(R.plurals.web_quick_day, n, n)
+                    SpanUnit.Min -> stringResource(R.string.web_quick_min, n)
+                    SpanUnit.Hour -> stringResource(R.string.web_quick_hour, n)
+                    SpanUnit.Day -> pluralStringResource(R.plurals.web_quick_day, n, n)
                 }
                 FilterChip(selected = count == n && unit == u, onClick = { set(n, u) }, label = { Text(label) })
             }
         }
         Text(
-            if (tooLong) stringResource(R.string.web_too_long) else stringResource(R.string.web_until, untilText(ctx, now + minutes * 60_000L)),
-            color = if (tooLong) c.high else c.text, fontSize = 13.sp,
+            if (tooLong) {
+                stringResource(R.string.web_too_long)
+            } else {
+                stringResource(
+                    R.string.web_until,
+                    untilText(
+                        ctx,
+                        now + minutes * 60_000L
+                    )
+                )
+            },
+            color = if (tooLong) c.high else c.text,
+            fontSize = 13.sp
         )
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            OutlinedButton(onClick = { onDecide(null) }, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(16.dp)) { Text(stringResource(R.string.web_deny), color = c.text) }
-            Button(onClick = { onDecide(minutes) }, enabled = !tooLong, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(16.dp)) { Text(stringResource(R.string.web_allow)) }
+            OutlinedButton(onClick = {
+                onDecide(null)
+            }, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(16.dp)) {
+                Text(stringResource(R.string.web_deny), color = c.text)
+            }
+            Button(onClick = {
+                onDecide(minutes)
+            }, enabled = !tooLong, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(16.dp)) {
+                Text(stringResource(R.string.web_allow))
+            }
         }
     }
 }
@@ -231,8 +305,11 @@ internal fun Sessions(sessions: List<WebSession>, now: Long = System.currentTime
     val c = DiaTheme.colors
     val ctx = LocalContext.current
     Column(
-        Modifier.fillMaxWidth().background(c.surface, RoundedCornerShape(22.dp)).border(1.dp, c.line, RoundedCornerShape(22.dp)).padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        Modifier.fillMaxWidth().background(
+            c.surface,
+            RoundedCornerShape(22.dp)
+        ).border(1.dp, c.line, RoundedCornerShape(22.dp)).padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Text(stringResource(R.string.web_sessions), color = c.text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
         if (sessions.isEmpty()) Text(stringResource(R.string.web_none), color = c.textMuted, fontSize = 13.sp)
@@ -241,9 +318,20 @@ internal fun Sessions(sessions: List<WebSession>, now: Long = System.currentTime
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(Modifier.weight(1f)) {
                     Text("${s.browser} · ${s.os}", color = c.text, fontSize = 14.sp)
-                    val seen = s.lastSeenAt?.let { android.text.format.DateUtils.getRelativeTimeSpanString(it, now, android.text.format.DateUtils.MINUTE_IN_MILLIS).toString()
-                        .replaceFirstChar { c -> c.lowercase(java.util.Locale.getDefault()) } } ?: never // mid-sentence
-                    Text(stringResource(R.string.web_session_line, s.by, untilText(ctx, s.expiresAt), seen), color = c.textMuted, fontSize = 12.sp)
+                    val seen =
+                        s.lastSeenAt?.let {
+                            android.text.format.DateUtils.getRelativeTimeSpanString(
+                                it,
+                                now,
+                                android.text.format.DateUtils.MINUTE_IN_MILLIS
+                            ).toString()
+                                .replaceFirstChar { c -> c.lowercase(java.util.Locale.getDefault()) }
+                        } ?: never // mid-sentence
+                    Text(
+                        stringResource(R.string.web_session_line, s.by, untilText(ctx, s.expiresAt), seen),
+                        color = c.textMuted,
+                        fontSize = 12.sp
+                    )
                 }
                 OutlinedButton(onClick = { onRevoke(s.id) }) { Text(stringResource(R.string.web_logout), color = c.low) }
             }

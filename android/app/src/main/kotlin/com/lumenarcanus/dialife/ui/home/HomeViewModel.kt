@@ -24,7 +24,7 @@ data class HomeUi(
     val unauthorized: Boolean = false, // token revoked: back to the connect screen
     val myId: Long = 0, // this phone's device id: "you" in the episode banners
     val meter: com.lumenarcanus.dialife.data.MeterReport? = null, // sensor vs glucometer
-    val now: Long = System.currentTimeMillis(),
+    val now: Long = System.currentTimeMillis()
 )
 
 /** The screen's view of the shared live connection, plus a clock for "minutes ago". */
@@ -48,9 +48,13 @@ class HomeViewModel(repo: LiveRepository) : ViewModel() {
             unauthorized = live.unauthorized,
             myId = repo.myId,
             meter = live.meter,
-            now = now,
+            now = now
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUi(state = repo.live.value.state, history = repo.live.value.history))
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5_000),
+        HomeUi(state = repo.live.value.state, history = repo.live.value.history)
+    )
 
     fun setRange(hours: Int) {
         range.value = hours

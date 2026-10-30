@@ -20,10 +20,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
-import androidx.compose.material3.rememberTimePickerState
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilterChip
@@ -34,7 +30,10 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -46,6 +45,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -61,11 +61,10 @@ import com.lumenarcanus.dialife.data.Prefs
 import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.live.AlarmText
 import com.lumenarcanus.dialife.live.TreatmentQueue
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
-import com.lumenarcanus.dialife.ui.theme.GlucoseHero
 import com.lumenarcanus.dialife.ui.home.Units
 import com.lumenarcanus.dialife.ui.home.formatGlucose
-import androidx.compose.ui.focus.focusRequester
+import com.lumenarcanus.dialife.ui.theme.DiaTheme
+import com.lumenarcanus.dialife.ui.theme.GlucoseHero
 
 enum class TreatmentKind { Insulin, Food, Meter, Activity, Note }
 
@@ -80,7 +79,11 @@ fun guessInsulinType(now: Long, recent: List<Treatment>): InsulinType {
     val cal = java.util.Calendar.getInstance().apply { timeInMillis = now }
     val minute = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)
     val near = Prefs.basalTimes.any { kotlin.math.abs(it - minute) <= 90 || kotlin.math.abs(it - minute) >= 1440 - 90 }
-    val givenLately = recent.any { InsulinType.of(it.insulinType) == InsulinType.Basal && (it.insulin ?: 0.0) > 0 && now - it.t < 4 * 3_600_000L }
+    val givenLately = recent.any {
+        InsulinType.of(it.insulinType) == InsulinType.Basal &&
+            (it.insulin ?: 0.0) > 0 &&
+            now - it.t < 4 * 3_600_000L
+    }
     return if (near && !givenLately) InsulinType.Basal else InsulinType.Rapid
 }
 private val MinutesQuick = listOf(15.0, 30.0, 45.0, 60.0, 90.0, 120.0)
@@ -113,7 +116,8 @@ fun TreatmentSheet(
     units: Units = Units.MgDl, // a glucometer value is typed in these
     initialTime: Long? = null, // a question's "log it": when the rise or fall began
     dose: com.lumenarcanus.dialife.data.DoseSettings = com.lumenarcanus.dialife.data.DoseSettings(), // the dose limits
-    mealRules: com.lumenarcanus.dialife.data.MealRules = com.lumenarcanus.dialife.data.MealRules(), // the server's: what makes one meal
+    // the server's: what makes one meal
+    mealRules: com.lumenarcanus.dialife.data.MealRules = com.lumenarcanus.dialife.data.MealRules()
 ) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
@@ -137,7 +141,8 @@ fun TreatmentSheet(
     androidx.compose.runtime.LaunchedEffect(insType) {
         if (editing == null && insType == InsulinType.Basal && insulin == 0.0 && lastBasal != null) insulin = lastBasal
     }
-    val foodRows = remember { androidx.compose.runtime.mutableStateListOf<FoodRow>().apply { addAll(foodRowsOf(editing?.foodItems, editing?.carbs)) } }
+    val foodRows =
+        remember { androidx.compose.runtime.mutableStateListOf<FoodRow>().apply { addAll(foodRowsOf(editing?.foodItems, editing?.carbs)) } }
     val carbs = foodRows.sumOf { it.grams ?: 0 }.toDouble()
     var meter by rememberSaveable { mutableStateOf(editing?.glucose?.let { formatGlucose(it, units, locale) }.orEmpty()) }
     var minutes by rememberSaveable { mutableDoubleStateOf(editing?.duration?.toDouble() ?: 30.0) }
@@ -152,7 +157,11 @@ fun TreatmentSheet(
     val announce = editing == null && kind == TreatmentKind.Insulin
     var announced by remember { mutableStateOf(false) }
     androidx.compose.runtime.LaunchedEffect(announce, insType) {
-        if (announce) repo?.insulinIntent(insType.wire) else if (announced) repo?.insulinIntentEnd()
+        if (announce) {
+            repo?.insulinIntent(insType.wire)
+        } else if (announced) {
+            repo?.insulinIntentEnd()
+        }
         announced = announce
     }
     androidx.compose.runtime.DisposableEffect(Unit) { onDispose { if (announced) repo?.insulinIntentEnd() } }
@@ -169,7 +178,7 @@ fun TreatmentSheet(
                 .padding(horizontal = 20.dp)
                 .navigationBarsPadding()
                 .padding(bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // the kind was chosen by the button that opened the form (or by the entry being edited)
             val look = kindLook(kind, insType)
@@ -183,54 +192,98 @@ fun TreatmentSheet(
 
             when (kind) {
                 TreatmentKind.Insulin -> {
-                if (others.isNotEmpty()) IntentWarning(others, System.currentTimeMillis())
-                if (editing == null) nearDose(recent, insType, time, null)?.takeIf { it.level == DoseLevel.Recent }?.let { RecentDoseNote(it, live) }
-                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    InsulinType.entries.forEachIndexed { i, t ->
-                        SegmentedButton(
-                            selected = insType == t,
-                            onClick = { insType = t },
-                            shape = SegmentedButtonDefaults.itemShape(i, InsulinType.entries.size),
-                            // its chart letter instead of the tick: І or Д, so a wrong one is seen
-                            icon = { kindLook(TreatmentKind.Insulin, t).let { l -> KindSign(l.glyph, l.ink, 20.dp, background = l.fill) } },
-                        ) {
+                    if (others.isNotEmpty()) IntentWarning(others, System.currentTimeMillis())
+                    if (editing ==
+                        null
+                    ) {
+                        nearDose(recent, insType, time, null)?.takeIf { it.level == DoseLevel.Recent }?.let { RecentDoseNote(it, live) }
+                    }
+                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                        InsulinType.entries.forEachIndexed { i, t ->
+                            SegmentedButton(
+                                selected = insType == t,
+                                onClick = { insType = t },
+                                shape = SegmentedButtonDefaults.itemShape(i, InsulinType.entries.size),
+                                // its chart letter instead of the tick: І or Д, so a wrong one is seen
+                                icon = {
+                                    kindLook(TreatmentKind.Insulin, t).let { l -> KindSign(l.glyph, l.ink, 20.dp, background = l.fill) }
+                                }
+                            ) {
+                                Text(
+                                    stringResource(if (t == InsulinType.Basal) R.string.ins_basal else R.string.ins_rapid) +
+                                        (Prefs.nameOf(t)?.let { " · $it" } ?: ""),
+                                    maxLines = 1,
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }
+                    }
+                    val basal = insType == InsulinType.Basal
+                    // rapid: for a meal or a correction; the meal near it chooses, a tap changes it
+                    val nearMeal = remember(recent, time) {
+                        com.lumenarcanus.dialife.data.Meals.group(recent, mealRules).lastOrNull {
+                            time in
+                                (it.from - mealRules.beforeMs)..(it.to + mealRules.afterMs)
+                        }
+                    }
+                    if (!basal) {
+                        val role = insRole ?: if (nearMeal != null) "meal" else "corr"
+                        Text(stringResource(R.string.ins_for), color = c.textMuted, fontSize = 13.sp)
+                        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                            listOf("meal" to R.string.ins_for_meal, "corr" to R.string.ins_for_corr).forEachIndexed { i, (r, label) ->
+                                SegmentedButton(selected = role == r, onClick = {
+                                    insRole = r
+                                }, shape = SegmentedButtonDefaults.itemShape(i, 2)) { Text(stringResource(label)) }
+                            }
+                        }
+                        if (insRole == null) {
                             Text(
-                                stringResource(if (t == InsulinType.Basal) R.string.ins_basal else R.string.ins_rapid) + (Prefs.nameOf(t)?.let { " · $it" } ?: ""),
-                                maxLines = 1, fontSize = 13.sp,
+                                if (nearMeal !=
+                                    null
+                                ) {
+                                    stringResource(R.string.ins_for_auto_meal, AlarmText.clock(ctx, nearMeal.from))
+                                } else {
+                                    stringResource(R.string.ins_for_auto_corr)
+                                },
+                                color = c.textFaint,
+                                fontSize = 12.sp
                             )
                         }
-                    }
-                }
-                val basal = insType == InsulinType.Basal
-                // rapid: for a meal or a correction; the meal near it chooses, a tap changes it
-                val nearMeal = remember(recent, time) {
-                    com.lumenarcanus.dialife.data.Meals.group(recent, mealRules).lastOrNull { time in (it.from - mealRules.beforeMs)..(it.to + mealRules.afterMs) }
-                }
-                if (!basal) {
-                    val role = insRole ?: if (nearMeal != null) "meal" else "corr"
-                    Text(stringResource(R.string.ins_for), color = c.textMuted, fontSize = 13.sp)
-                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                        listOf("meal" to R.string.ins_for_meal, "corr" to R.string.ins_for_corr).forEachIndexed { i, (r, label) ->
-                            SegmentedButton(selected = role == r, onClick = { insRole = r }, shape = SegmentedButtonDefaults.itemShape(i, 2)) { Text(stringResource(label)) }
+                        if (role == "meal" &&
+                            nearMeal == null
+                        ) {
+                            Text(stringResource(R.string.ins_for_meal_none), color = c.high, fontSize = 12.5.sp)
                         }
                     }
-                    if (insRole == null) Text(
-                        if (nearMeal != null) stringResource(R.string.ins_for_auto_meal, AlarmText.clock(ctx, nearMeal.from)) else stringResource(R.string.ins_for_auto_corr),
-                        color = c.textFaint, fontSize = 12.sp,
-                    )
-                    if (role == "meal" && nearMeal == null) Text(stringResource(R.string.ins_for_meal_none), color = c.high, fontSize = 12.5.sp)
-                }
-                Amount(
-                    value = insulin, step = if (basal) 1.0 else 0.5, max = 80.0, unit = stringResource(R.string.unit_insulin),
-                    quick = if (basal) BasalQuick else InsulinQuick,
-                    accent = if (basal) basalColor(c.isDark) else c.insulin, container = if (basal) basalContainer(c.isDark) else c.insulinContainer, locale = locale,
-                    label = stringResource(R.string.tr_insulin),
-                ) { insulin = it; okBig = false }
-                val lv = com.lumenarcanus.dialife.data.DoseCalc.level(insulin, if (basal) dose.maxBasal else dose.maxRapid, null)
-                com.lumenarcanus.dialife.ui.meal.LimitAlert(lv, insulin, if (basal) dose.maxBasal else dose.maxRapid, units, locale)
-                if (lv == com.lumenarcanus.dialife.data.DoseCalc.Level.High || lv == com.lumenarcanus.dialife.data.DoseCalc.Level.Absurd) {
-                    com.lumenarcanus.dialife.ui.meal.Confirm(okBig, stringResource(R.string.planned_ok_given, formatAmount(insulin, locale))) { okBig = it }
-                }
+                    Amount(
+                        value = insulin, step = if (basal) 1.0 else 0.5, max = 80.0, unit = stringResource(R.string.unit_insulin),
+                        quick = if (basal) BasalQuick else InsulinQuick,
+                        accent = if (basal) {
+                            basalColor(
+                                c.isDark
+                            )
+                        } else {
+                            c.insulin
+                        },
+                        container = if (basal) basalContainer(c.isDark) else c.insulinContainer, locale = locale,
+                        label = stringResource(R.string.tr_insulin)
+                    ) {
+                        insulin = it
+                        okBig = false
+                    }
+                    val lv = com.lumenarcanus.dialife.data.DoseCalc.level(insulin, if (basal) dose.maxBasal else dose.maxRapid, null)
+                    com.lumenarcanus.dialife.ui.meal.LimitAlert(lv, insulin, if (basal) dose.maxBasal else dose.maxRapid, units, locale)
+                    if (lv == com.lumenarcanus.dialife.data.DoseCalc.Level.High ||
+                        lv == com.lumenarcanus.dialife.data.DoseCalc.Level.Absurd
+                    ) {
+                        com.lumenarcanus.dialife.ui.meal.Confirm(
+                            okBig,
+                            stringResource(R.string.planned_ok_given, formatAmount(insulin, locale))
+                        ) {
+                            okBig =
+                                it
+                        }
+                    }
                 }
                 TreatmentKind.Food -> FoodList(foodRows, repo)
                 TreatmentKind.Meter -> MeterField(meter, units) { meter = it }
@@ -244,7 +297,7 @@ fun TreatmentSheet(
                     Amount(
                         value = minutes, step = 5.0, max = 600.0, unit = stringResource(R.string.unit_min),
                         quick = MinutesQuick, accent = c.inRange, container = c.inRangeContainer, locale = locale,
-                        label = stringResource(R.string.act_duration),
+                        label = stringResource(R.string.act_duration)
                     ) { minutes = it }
                 }
                 TreatmentKind.Note -> {}
@@ -262,7 +315,7 @@ fun TreatmentSheet(
                             onClick = { time = shifts[i] },
                             label = {
                                 Text(if (m == 0) stringResource(R.string.tr_now) else stringResource(R.string.tr_minutes_ago, m))
-                            },
+                            }
                         )
                     }
                 }
@@ -272,11 +325,14 @@ fun TreatmentSheet(
                     onClick = { picking = true },
                     label = {
                         Text(if (custom) atLabel(time) else stringResource(R.string.tr_other_time))
-                    },
+                    }
                 )
             }
             if (picking) {
-                TimeDialog(initial = time, onPick = { time = it; picking = false }, onDismiss = { picking = false })
+                TimeDialog(initial = time, onPick = {
+                    time = it
+                    picking = false
+                }, onDismiss = { picking = false })
             }
 
             OutlinedTextField(
@@ -285,14 +341,28 @@ fun TreatmentSheet(
                 label = { Text(stringResource(R.string.tr_note_hint)) },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = if (kind == TreatmentKind.Note) 3 else 1,
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
             )
 
             val amountOk = when (kind) {
-                TreatmentKind.Insulin -> insulin > 0 && run {
-                    val lv = com.lumenarcanus.dialife.data.DoseCalc.level(insulin, if (insType == InsulinType.Basal) dose.maxBasal else dose.maxRapid, null)
-                    lv == com.lumenarcanus.dialife.data.DoseCalc.Level.Ok || lv == com.lumenarcanus.dialife.data.DoseCalc.Level.Unusual || okBig
-                }
+                TreatmentKind.Insulin ->
+                    insulin > 0 &&
+                        run {
+                            val lv = com.lumenarcanus.dialife.data.DoseCalc.level(
+                                insulin,
+                                if (insType ==
+                                    InsulinType.Basal
+                                ) {
+                                    dose.maxBasal
+                                } else {
+                                    dose.maxRapid
+                                },
+                                null
+                            )
+                            lv == com.lumenarcanus.dialife.data.DoseCalc.Level.Ok ||
+                                lv == com.lumenarcanus.dialife.data.DoseCalc.Level.Unusual ||
+                                okBig
+                        }
                 TreatmentKind.Food -> carbs > 0
                 TreatmentKind.Meter -> parseMeter(meter, units) != null
                 TreatmentKind.Activity -> minutes > 0
@@ -311,20 +381,47 @@ fun TreatmentSheet(
                 insulinType = if (kind == TreatmentKind.Insulin) insType.wire else editing?.insulinType,
                 insulinName = if (kind == TreatmentKind.Insulin) {
                     editing?.insulinName?.takeIf { InsulinType.of(editing.insulinType) == insType } ?: Prefs.nameOf(insType)
-                } else editing?.insulinName,
+                } else {
+                    editing?.insulinName
+                },
                 confirmedNew = confirmedNew,
-                foodItems = if (kind == TreatmentKind.Food) foodItemsOf(foodRows) else editing?.foodItems?.takeIf { kind == TreatmentKind.Insulin },
+                foodItems = if (kind ==
+                    TreatmentKind.Food
+                ) {
+                    foodItemsOf(foodRows)
+                } else {
+                    editing?.foodItems?.takeIf { kind == TreatmentKind.Insulin }
+                },
                 insulinRole = if (kind == TreatmentKind.Insulin && insType == InsulinType.Rapid) {
-                    insRole ?: if (com.lumenarcanus.dialife.data.Meals.group(recent, mealRules).any { time in (it.from - mealRules.beforeMs)..(it.to + mealRules.afterMs) }) "meal" else "corr"
-                } else editing?.insulinRole,
-                mealId = editing?.mealId,
+                    insRole
+                        ?: if (com.lumenarcanus.dialife.data.Meals.group(recent, mealRules).any {
+                                time in
+                                    (it.from - mealRules.beforeMs)..(it.to + mealRules.afterMs)
+                            }
+                        ) {
+                            "meal"
+                        } else {
+                            "corr"
+                        }
+                } else {
+                    editing?.insulinRole
+                },
+                mealId = editing?.mealId
             )
             confirming?.let { near ->
                 SameDoseDialog(
-                    near, insType, live,
-                    onSame = { confirming = null; onDismiss() }, // the same injection: nothing new to log
-                    onNew = { confirming = null; onSave(build(near.dose.id)) },
-                    onBack = { confirming = null },
+                    near,
+                    insType,
+                    live,
+                    onSame = {
+                        confirming = null
+                        onDismiss()
+                    }, // the same injection: nothing new to log
+                    onNew = {
+                        confirming = null
+                        onSave(build(near.dose.id))
+                    },
+                    onBack = { confirming = null }
                 )
             }
             if (kind == TreatmentKind.Food) FoodTotal(foodRows)
@@ -335,7 +432,7 @@ fun TreatmentSheet(
                 },
                 enabled = amountOk,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(18.dp)
             ) { Text(stringResource(R.string.tr_save), fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
         }
     }
@@ -385,7 +482,7 @@ fun TimeDialog(initial: Long, onPick: (Long) -> Unit, onDismiss: () -> Unit) {
     val state = rememberTimePickerState(
         initialHour = start.get(java.util.Calendar.HOUR_OF_DAY),
         initialMinute = start.get(java.util.Calendar.MINUTE),
-        is24Hour = android.text.format.DateFormat.is24HourFormat(ctx),
+        is24Hour = android.text.format.DateFormat.is24HourFormat(ctx)
     )
     val picked = pickedTime(System.currentTimeMillis(), state.hour, state.minute)
     AlertDialog(
@@ -393,7 +490,7 @@ fun TimeDialog(initial: Long, onPick: (Long) -> Unit, onDismiss: () -> Unit) {
         confirmButton = {
             TextButton(
                 onClick = { pickedTime(System.currentTimeMillis(), state.hour, state.minute)?.let(onPick) },
-                enabled = picked != null,
+                enabled = picked != null
             ) { Text(stringResource(R.string.tr_ok)) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.tr_cancel)) } },
@@ -403,7 +500,7 @@ fun TimeDialog(initial: Long, onPick: (Long) -> Unit, onDismiss: () -> Unit) {
                 TimePicker(state = state)
                 if (picked == null) Text(stringResource(R.string.tr_time_ahead), color = DiaTheme.colors.textMuted, fontSize = 13.sp)
             }
-        },
+        }
     )
 }
 
@@ -419,27 +516,45 @@ private fun Amount(
     container: androidx.compose.ui.graphics.Color,
     locale: java.util.Locale,
     label: String,
-    onChange: (Double) -> Unit,
+    onChange: (Double) -> Unit
 ) {
     val c = DiaTheme.colors
     val shown = formatAmount(value, locale)
     Row(
         Modifier.fillMaxWidth().background(container, RoundedCornerShape(20.dp)).padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         val minus = stringResource(R.string.tr_less)
         val plus = stringResource(R.string.tr_more)
-        FilledTonalIconButton(onClick = { onChange((value - step).coerceAtLeast(0.0)) }, modifier = Modifier.size(56.dp).semantics { contentDescription = minus }) {
+        FilledTonalIconButton(
+            onClick = { onChange((value - step).coerceAtLeast(0.0)) },
+            modifier = Modifier.size(56.dp).semantics {
+                contentDescription =
+                    minus
+            }
+        ) {
             Text("−", fontSize = 28.sp, color = accent)
         }
         Spacer(Modifier.weight(1f))
-        Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = "$label $shown $unit" }) {
+        Row(
+            verticalAlignment = Alignment.Bottom,
+            modifier = Modifier.semantics(mergeDescendants = true) {
+                contentDescription =
+                    "$label $shown $unit"
+            }
+        ) {
             Text(shown, style = GlucoseHero.copy(fontSize = 64.sp, lineHeight = 64.sp, color = c.text))
             Spacer(Modifier.width(6.dp))
             Text(unit, color = c.textMuted, fontSize = 18.sp, modifier = Modifier.padding(bottom = 10.dp))
         }
         Spacer(Modifier.weight(1f))
-        FilledTonalIconButton(onClick = { onChange((value + step).coerceAtMost(max)) }, modifier = Modifier.size(56.dp).semantics { contentDescription = plus }) {
+        FilledTonalIconButton(
+            onClick = { onChange((value + step).coerceAtMost(max)) },
+            modifier = Modifier.size(56.dp).semantics {
+                contentDescription =
+                    plus
+            }
+        ) {
             Text("+", fontSize = 28.sp, color = accent)
         }
     }
@@ -450,7 +565,7 @@ private fun Amount(
                 onClick = { onChange(q) },
                 label = { Text(formatAmount(q, locale) + " " + unit) },
                 colors = FilterChipDefaults.filterChipColors(selectedContainerColor = container, selectedLabelColor = accent),
-                shape = CircleShape,
+                shape = CircleShape
             )
         }
     }
@@ -472,12 +587,19 @@ private fun MeterField(text: String, units: Units, onChange: (String) -> Unit) {
         textStyle = GlucoseHero.copy(fontSize = 48.sp, lineHeight = 52.sp, color = c.text),
         suffix = { Text(unit, color = c.textMuted, fontSize = 18.sp) },
         keyboardOptions = KeyboardOptions(
-            keyboardType = if (units == Units.Mmol) androidx.compose.ui.text.input.KeyboardType.Decimal else androidx.compose.ui.text.input.KeyboardType.Number,
+            keyboardType = if (units ==
+                Units.Mmol
+            ) {
+                androidx.compose.ui.text.input.KeyboardType.Decimal
+            } else {
+                androidx.compose.ui.text.input.KeyboardType.Number
+            }
         ),
-        modifier = Modifier.fillMaxWidth().focusRequester(focus),
+        modifier = Modifier.fillMaxWidth().focusRequester(focus)
     )
 }
 
 /** Long-acting insulin's own colour: blue, so it never reads as the rapid one. */
 fun basalColor(dark: Boolean) = if (dark) androidx.compose.ui.graphics.Color(0xFF7FB2FF) else androidx.compose.ui.graphics.Color(0xFF1F5FCC)
-fun basalContainer(dark: Boolean) = if (dark) androidx.compose.ui.graphics.Color(0xFF0E1C33) else androidx.compose.ui.graphics.Color(0xFFE3EDFF)
+fun basalContainer(dark: Boolean) =
+    if (dark) androidx.compose.ui.graphics.Color(0xFF0E1C33) else androidx.compose.ui.graphics.Color(0xFFE3EDFF)

@@ -2,11 +2,11 @@ package com.lumenarcanus.dialife.ui
 
 import com.lumenarcanus.dialife.ui.treatment.daysAgo
 import com.lumenarcanus.dialife.ui.treatment.pickedTime
+import java.time.LocalDateTime
+import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
-import java.time.LocalDateTime
-import java.time.ZoneId
 
 class PickedTimeTest {
     private fun at(day: Int, h: Int, m: Int) =

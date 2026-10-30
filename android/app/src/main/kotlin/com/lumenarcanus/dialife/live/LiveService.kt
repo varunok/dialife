@@ -7,12 +7,12 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.IBinder
 import android.util.Log
-import com.lumenarcanus.dialife.feature.wait.EatReminder
-import com.lumenarcanus.dialife.data.CredentialStore
 import com.lumenarcanus.dialife.alarmController
+import com.lumenarcanus.dialife.data.CredentialStore
+import com.lumenarcanus.dialife.feature.wait.EatReminder
+import com.lumenarcanus.dialife.liveRepository
 import com.lumenarcanus.dialife.questionNotifier
 import com.lumenarcanus.dialife.ui.home.unitsOf
-import com.lumenarcanus.dialife.liveRepository
 import com.lumenarcanus.dialife.widget.GlucoseWidget
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -39,7 +39,7 @@ class LiveService : Service() {
         startForeground(
             Notifications.ID_LIVE,
             Notifications.live(this, liveRepository.live.value, units),
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
         )
         val nm = getSystemService(NotificationManager::class.java)
         scope.launch {

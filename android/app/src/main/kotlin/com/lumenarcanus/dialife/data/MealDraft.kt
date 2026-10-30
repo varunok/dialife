@@ -17,10 +17,17 @@ data class MealDraft(
     val plan: Boolean = false,
     val join: Boolean = true,
     val meterText: String = "",
-    val startedAt: Long = 0, // "now" for the time chips: when the draft began
+    // "now" for the time chips: when the draft began
+    val startedAt: Long = 0
 ) {
     @Serializable
-    data class Row(val name: String, val portion: String = "", val carbs: String = "", val source: String? = null, val tableId: String? = null)
+    data class Row(
+        val name: String,
+        val portion: String = "",
+        val carbs: String = "",
+        val source: String? = null,
+        val tableId: String? = null
+    )
 
     val isEmpty get() = rows.none { it.name.isNotBlank() || it.carbs.isNotBlank() }
 }

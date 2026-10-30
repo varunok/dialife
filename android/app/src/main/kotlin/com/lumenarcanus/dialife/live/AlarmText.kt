@@ -19,7 +19,7 @@ object AlarmText {
             "predicted_high" -> R.string.kind_predicted_high
             "stale" -> R.string.kind_stale
             else -> R.string.kind_other
-        },
+        }
     )
 
     /** "Низький цукор: 52 mg/dL" */
@@ -57,7 +57,8 @@ object AlarmText {
             "no_response" -> ctx.getString(R.string.reason_no_response, was)
             "quiet_over" -> ctx.getString(R.string.reason_quiet_over)
             else -> if (a.kind == "stale") {
-                val phone = uploaderInSentence(ctx, (ctx.applicationContext as? com.lumenarcanus.dialife.DiaLifeApp)?.live?.live?.value?.state)
+                val phone =
+                    uploaderInSentence(ctx, (ctx.applicationContext as? com.lumenarcanus.dialife.DiaLifeApp)?.live?.live?.value?.state)
                 ctx.getString(if (a.level == "urgent") R.string.reason_stale_30 else R.string.reason_stale_15, phone)
             } else {
                 ctx.getString(R.string.reason_since, since)
@@ -73,7 +74,7 @@ object AlarmText {
             "predicted_high" -> R.string.clear_predicted_high
             "stale" -> R.string.clear_stale
             else -> R.string.clear_other
-        },
+        }
     )
 
     /** "Зараз 88 mg/dL · тривало 34 хв · вів(ла) Тато" */
@@ -92,7 +93,18 @@ object AlarmText {
     fun progress(ctx: Context, a: AlarmView, units: Units, now: Long = System.currentTimeMillis()): String {
         val locale = ctx.resources.configuration.locales[0]
         val parts = buildList {
-            a.handledAt?.let { add(ctx.resources.getQuantityString(R.plurals.minutes_short, ((now - it) / 60_000).toInt(), ((now - it) / 60_000).toInt())) }
+            a.handledAt?.let {
+                add(
+                    ctx.resources.getQuantityString(
+                        R.plurals.minutes_short,
+                        ((now - it) / 60_000).toInt(),
+                        (
+                            (now - it) /
+                                60_000
+                            ).toInt()
+                    )
+                )
+            }
             if (a.handledSgv != null && a.sgv != null) {
                 add(formatGlucose(a.handledSgv, units, locale) + " → " + formatGlucose(a.sgv, units, locale))
             }

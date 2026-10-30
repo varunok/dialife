@@ -71,7 +71,7 @@ fun AlarmLogScreen(creds: Credentials, units: Units, onBack: () -> Unit, api: Di
     }
     LazyColumn(
         Modifier.fillMaxSize().background(c.background).safeDrawingPadding().padding(horizontal = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(top = 12.dp)) {
@@ -100,7 +100,7 @@ private fun PeriodChips(days: Int, onPick: (Int) -> Unit) {
     val c = DiaTheme.colors
     Row(
         Modifier.fillMaxWidth().background(c.surface, RoundedCornerShape(12.dp)).padding(3.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Periods.forEach { d ->
             val selected = d == days
@@ -115,7 +115,7 @@ private fun PeriodChips(days: Int, onPick: (Int) -> Unit) {
                     .background(if (selected) c.surfaceRaised else Color.Transparent, RoundedCornerShape(9.dp))
                     .selectable(selected = selected, role = Role.Tab, onClick = { onPick(d) })
                     .heightIn(min = 40.dp)
-                    .padding(vertical = 11.dp),
+                    .padding(vertical = 11.dp)
             )
         }
     }
@@ -139,24 +139,44 @@ private fun EpisodeCard(e: LogEpisode, units: Units) {
             .border(1.dp, c.line, RoundedCornerShape(18.dp))
             .clickable(enabled = e.events.isNotEmpty(), onClickLabel = stringResource(R.string.log_details)) { open = !open }
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(10.dp).background(accent, CircleShape))
             Spacer(Modifier.width(10.dp))
             Text(
-                AlarmText.kind(ctx, e.asView()) + (e.triggerSgv?.takeIf { e.kind != "stale" }?.let { " · " + formatGlucose(it, units, ctx.resources.configuration.locales[0]) } ?: ""),
-                color = c.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f),
+                AlarmText.kind(ctx, e.asView()) +
+                    (
+                        e.triggerSgv?.takeIf { e.kind != "stale" }?.let {
+                            " · " +
+                                formatGlucose(it, units, ctx.resources.configuration.locales[0])
+                        }
+                            ?: ""
+                        ),
+                color = c.text,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f)
             )
-            if (e.state != "cleared") Text(stringResource(R.string.log_live), color = accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            if (e.state !=
+                "cleared"
+            ) {
+                Text(stringResource(R.string.log_live), color = accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            }
         }
-        Text(when_(ctx, e), color = c.textMuted, fontSize = 14.sp)
+        Text(episodeSpan(ctx, e), color = c.textMuted, fontSize = 14.sp)
         summary(ctx, e).takeIf { it.isNotBlank() }?.let { Text(it, color = c.text, fontSize = 14.sp) }
         if (open) {
             Spacer(Modifier.heightIn(min = 4.dp))
             e.events.forEach { ev ->
                 Row {
-                    Text(AlarmText.clock(ctx, ev.t), color = c.textFaint, fontSize = 13.sp, fontFamily = PlexMono, modifier = Modifier.width(56.dp))
+                    Text(
+                        AlarmText.clock(ctx, ev.t),
+                        color = c.textFaint,
+                        fontSize = 13.sp,
+                        fontFamily = PlexMono,
+                        modifier = Modifier.width(56.dp)
+                    )
                     Text(step(ctx, ev, units), color = c.text, fontSize = 14.sp)
                 }
             }
@@ -167,8 +187,13 @@ private fun EpisodeCard(e: LogEpisode, units: Units) {
 }
 
 /** "сьогодні 02:14–02:48 · 34 хв" */
-private fun when_(ctx: Context, e: LogEpisode): String {
-    val day = DateUtils.getRelativeTimeSpanString(e.startedAt, System.currentTimeMillis(), DateUtils.DAY_IN_MILLIS, DateUtils.FORMAT_ABBREV_MONTH)
+private fun episodeSpan(ctx: Context, e: LogEpisode): String {
+    val day = DateUtils.getRelativeTimeSpanString(
+        e.startedAt,
+        System.currentTimeMillis(),
+        DateUtils.DAY_IN_MILLIS,
+        DateUtils.FORMAT_ABBREV_MONTH
+    )
     val start = AlarmText.clock(ctx, e.startedAt)
     val end = e.clearedAt ?: return ctx.getString(R.string.log_since, day, start)
     val min = ((end - e.startedAt) / 60_000).toInt()
@@ -209,7 +234,7 @@ private fun step(ctx: Context, ev: LogEvent, units: Units): String {
                 "quiet_over" -> R.string.log_alarm_quiet_over
                 else -> R.string.log_alarm_new
             },
-            who,
+            who
         ) + v
         "handled" -> ctx.getString(R.string.log_handled, who) + v
         "checkin" -> ctx.getString(R.string.checkin_title) + v

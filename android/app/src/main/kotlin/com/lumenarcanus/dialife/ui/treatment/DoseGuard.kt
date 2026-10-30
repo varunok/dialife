@@ -91,7 +91,7 @@ fun IntentWarning(others: List<InsulinIntent>, now: Long) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
     Column(
-        Modifier.fillMaxWidth().background(c.highContainer, RoundedCornerShape(16.dp)).padding(12.dp),
+        Modifier.fillMaxWidth().background(c.highContainer, RoundedCornerShape(16.dp)).padding(12.dp)
     ) {
         others.forEach { o ->
             Text(intentText(ctx, o, now), color = c.high, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
@@ -112,12 +112,23 @@ fun RecentDoseNote(near: NearDose, st: StateResponse?) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
     Column(
-        Modifier.fillMaxWidth().background(c.highContainer, RoundedCornerShape(16.dp)).padding(12.dp),
+        Modifier.fillMaxWidth().background(c.highContainer, RoundedCornerShape(16.dp)).padding(12.dp)
     ) {
-        Text(stringResource(R.string.dose_recent_head, gapText(ctx, near.gapMs)), color = c.high, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
         Text(
-            stringResource(R.string.dose_recent, doseText(ctx, near.dose), AlarmText.clock(ctx, near.dose.t), whoLogged(ctx, near.dose, st)),
-            color = c.text, fontSize = 14.sp,
+            stringResource(R.string.dose_recent_head, gapText(ctx, near.gapMs)),
+            color = c.high,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Text(
+            stringResource(
+                R.string.dose_recent,
+                doseText(ctx, near.dose),
+                AlarmText.clock(ctx, near.dose.t),
+                whoLogged(ctx, near.dose, st)
+            ),
+            color = c.text,
+            fontSize = 14.sp
         )
     }
 }
@@ -134,10 +145,18 @@ fun SameDoseDialog(near: NearDose, type: InsulinType, st: StateResponse?, onSame
             onDismissRequest = onBack,
             title = { Text(stringResource(R.string.dose_recent_title)) },
             text = {
-                Text(stringResource(R.string.dose_recent_body, doseText(ctx, d), AlarmText.clock(ctx, d.t), whoLogged(ctx, d, st), gapText(ctx, near.gapMs)))
+                Text(
+                    stringResource(
+                        R.string.dose_recent_body,
+                        doseText(ctx, d),
+                        AlarmText.clock(ctx, d.t),
+                        whoLogged(ctx, d, st),
+                        gapText(ctx, near.gapMs)
+                    )
+                )
             },
             confirmButton = { TextButton(onClick = onNew) { Text(stringResource(R.string.dose_recent_yes)) } },
-            dismissButton = { TextButton(onClick = onBack) { Text(stringResource(R.string.dose_recent_back)) } },
+            dismissButton = { TextButton(onClick = onBack) { Text(stringResource(R.string.dose_recent_back)) } }
         )
         return
     }
@@ -148,11 +167,17 @@ fun SameDoseDialog(near: NearDose, type: InsulinType, st: StateResponse?, onSame
             Text(
                 stringResource(
                     if (basal) R.string.dose_basal_body else R.string.dose_same_body,
-                    insulinLabel(ctx, type), doseText(ctx, d), AlarmText.clock(ctx, d.t), whoLogged(ctx, d, st), gapText(ctx, near.gapMs),
-                ),
+                    insulinLabel(ctx, type),
+                    doseText(ctx, d),
+                    AlarmText.clock(ctx, d.t),
+                    whoLogged(ctx, d, st),
+                    gapText(ctx, near.gapMs)
+                )
             )
         },
         confirmButton = { TextButton(onClick = onNew) { Text(stringResource(if (basal) R.string.dose_basal_new else R.string.dose_new)) } },
-        dismissButton = { TextButton(onClick = onSame) { Text(stringResource(if (basal) R.string.dose_basal_skip else R.string.dose_same)) } },
+        dismissButton = {
+            TextButton(onClick = onSame) { Text(stringResource(if (basal) R.string.dose_basal_skip else R.string.dose_same)) }
+        }
     )
 }

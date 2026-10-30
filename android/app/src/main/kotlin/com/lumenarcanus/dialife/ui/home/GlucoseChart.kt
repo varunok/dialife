@@ -5,15 +5,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateCentroid
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
@@ -35,13 +36,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.gestures.calculateCentroid
-import androidx.compose.foundation.gestures.calculatePan
-import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -52,8 +50,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
@@ -84,8 +82,7 @@ private const val MAX_SPAN = 24 * HOUR + FORECAST_SPAN // the history the screen
  * A window pushed against "now" keeps following it as new readings arrive.
  */
 data class ChartWindow(val start: Long, val end: Long, val followsNow: Boolean = false) {
-    fun at(now: Long): ChartWindow =
-        if (followsNow) ChartWindow(now + FORECAST_SPAN - (end - start), now + FORECAST_SPAN, true) else this
+    fun at(now: Long): ChartWindow = if (followsNow) ChartWindow(now + FORECAST_SPAN - (end - start), now + FORECAST_SPAN, true) else this
 }
 
 private sealed interface Pick {
@@ -141,7 +138,8 @@ fun ChartCard(
     onOpenTable: (() -> Unit)? = null, // the same data as a table
     dose: com.lumenarcanus.dialife.data.DoseSettings = com.lumenarcanus.dialife.data.DoseSettings(), // for a meal's worked-out dose
     planned: List<com.lumenarcanus.dialife.data.PlannedDose> = emptyList(),
-    mealRules: com.lumenarcanus.dialife.data.MealRules = com.lumenarcanus.dialife.data.MealRules(), // the server's: what makes one meal
+    // the server's: what makes one meal
+    mealRules: com.lumenarcanus.dialife.data.MealRules = com.lumenarcanus.dialife.data.MealRules()
 ) {
     val c = DiaTheme.colors
     val context = LocalContext.current
@@ -155,7 +153,7 @@ fun ChartCard(
             .background(c.surface, RoundedCornerShape(22.dp))
             .border(1.dp, c.line, RoundedCornerShape(22.dp))
             .padding(start = 14.dp, end = 14.dp, top = if (expanded) 8.dp else 14.dp, bottom = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(if (expanded) 6.dp else 10.dp),
+        verticalArrangement = Arrangement.spacedBy(if (expanded) 6.dp else 10.dp)
     ) {
         val title = window?.at(now)?.let { w ->
             val f = android.text.format.DateFormat.getTimeFormat(context)
@@ -164,22 +162,34 @@ fun ChartCard(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(title, color = c.text, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, modifier = Modifier.weight(1f))
             // wide enough when expanded (landscape): the ranges share the title's row
-            if (expanded) RangeTabs(window == null, rangeHours, Modifier.width(320.dp)) { window = null; onRange(it) }
+            if (expanded) {
+                RangeTabs(window == null, rangeHours, Modifier.width(320.dp)) {
+                    window = null
+                    onRange(it)
+                }
+            }
             MeterSwitch(on = estimate != null, ready = meter?.ready == true) {
                 if (meter?.ready == true) {
                     com.lumenarcanus.dialife.data.Prefs.chooseMeterLine(!com.lumenarcanus.dialife.data.Prefs.meterLine)
-                } else whyNot = !whyNot
+                } else {
+                    whyNot = !whyNot
+                }
             }
             onOpenTable?.let { open ->
                 androidx.compose.material3.IconButton(onClick = open, modifier = Modifier.size(40.dp)) {
-                    androidx.compose.material3.Icon(androidx.compose.ui.res.painterResource(R.drawable.ic_table), stringResource(R.string.chart_table), tint = c.textMuted)
+                    androidx.compose.material3.Icon(
+                        androidx.compose.ui.res.painterResource(R.drawable.ic_table),
+                        stringResource(R.string.chart_table),
+                        tint = c.textMuted
+                    )
                 }
             }
             val what = stringResource(if (expanded) R.string.chart_close else R.string.chart_expand)
             androidx.compose.material3.IconButton(onClick = onExpand, modifier = Modifier.size(40.dp)) {
                 androidx.compose.material3.Icon(
                     androidx.compose.ui.res.painterResource(if (expanded) R.drawable.ic_close else R.drawable.ic_fullscreen),
-                    contentDescription = what, tint = c.textMuted,
+                    contentDescription = what,
+                    tint = c.textMuted
                 )
             }
         }
@@ -188,12 +198,21 @@ fun ChartCard(
             val need = meter?.need ?: 8
             Text(
                 stringResource(R.string.meter_not_ready, used, need, (need - used).coerceAtLeast(1)),
-                color = c.textMuted, fontSize = 12.5.sp,
-                modifier = Modifier.fillMaxWidth().background(c.surfaceRaised, RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 10.dp),
+                color = c.textMuted,
+                fontSize = 12.5.sp,
+                modifier = Modifier.fillMaxWidth().background(
+                    c.surfaceRaised,
+                    RoundedCornerShape(12.dp)
+                ).padding(horizontal = 12.dp, vertical = 10.dp)
             )
         }
         // own full-width row: "Останні 24 год" plus four "N год" chips do not fit side by side
-        if (!expanded) RangeTabs(window == null, rangeHours, Modifier.fillMaxWidth()) { window = null; onRange(it) }
+        if (!expanded) {
+            RangeTabs(window == null, rangeHours, Modifier.fillMaxWidth()) {
+                window = null
+                onRange(it)
+            }
+        }
         GlucoseChart(
             history, forecast, thresholds, units, rangeHours, now,
             window = window, onWindow = { window = it },
@@ -204,23 +223,37 @@ fun ChartCard(
             estimate = estimate,
             planned = planned,
             entryTooltip = expanded,
-            modifier = if (expanded) Modifier.fillMaxWidth().weight(1f) else Modifier.fillMaxWidth().height(230.dp),
+            modifier = if (expanded) Modifier.fillMaxWidth().weight(1f) else Modifier.fillMaxWidth().height(230.dp)
         )
         // the tapped marker's actions: the canvas tooltip says what it is, these say what to do
         // a suspect mark: anyone may clear it, no questions asked
         suspect?.let { q ->
-            androidx.compose.material3.OutlinedButton(onClick = { suspect = null; onDismissSuspect(q.id) }, modifier = Modifier.fillMaxWidth()) {
+            androidx.compose.material3.OutlinedButton(onClick = {
+                suspect = null
+                onDismissSuspect(q.id)
+            }, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.q_dismiss), color = c.text)
             }
         }
         // full screen: the entry says what it is over the chart, like a reading; no editing there
         selected?.takeIf { !expanded }?.let { tr ->
-            com.lumenarcanus.dialife.ui.meal.EntryDetail(tr, history?.treatments.orEmpty(), dose, units, mealRules, mbg = history?.mbg ?: com.lumenarcanus.dialife.data.Series())
+            com.lumenarcanus.dialife.ui.meal.EntryDetail(
+                tr,
+                history?.treatments.orEmpty(),
+                dose,
+                units,
+                mealRules,
+                mbg =
+                history?.mbg ?: com.lumenarcanus.dialife.data.Series()
+            )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 androidx.compose.material3.OutlinedButton(onClick = { onEdit(tr) }, modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.tr_edit), color = c.text)
                 }
-                androidx.compose.material3.OutlinedButton(onClick = { selected = null; onDelete(tr) }, modifier = Modifier.weight(1f)) {
+                androidx.compose.material3.OutlinedButton(onClick = {
+                    selected = null
+                    onDelete(tr)
+                }, modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.tr_delete), color = c.low)
                 }
             }
@@ -242,10 +275,19 @@ private fun MeterSwitch(on: Boolean, ready: Boolean, onClick: () -> Unit) {
             .padding(horizontal = 10.dp, vertical = 6.dp)
             .then(if (ready) Modifier else Modifier.alpha(0.55f)),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Canvas(Modifier.size(10.dp)) {
-            val d = Path().apply { moveTo(size.width / 2, 0f); lineTo(size.width, size.height / 2); lineTo(size.width / 2, size.height); lineTo(0f, size.height / 2); close() }
+            val d = Path().apply {
+                moveTo(size.width / 2, 0f)
+                lineTo(size.width, size.height / 2)
+                lineTo(size.width / 2, size.height)
+                lineTo(
+                    0f,
+                    size.height / 2
+                )
+                close()
+            }
             if (on) drawPath(d, ink) else drawPath(d, ink, style = Stroke(1.4.dp.toPx()))
         }
         Text(stringResource(R.string.meter_toggle), color = ink, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1)
@@ -260,7 +302,7 @@ private fun RangeTabs(followsRange: Boolean, rangeHours: Int, modifier: Modifier
     val c = DiaTheme.colors
     Row(
         modifier.background(c.background, RoundedCornerShape(12.dp)).padding(3.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         ChartRanges.forEach { h ->
             val selected = followsRange && h == rangeHours
@@ -276,7 +318,7 @@ private fun RangeTabs(followsRange: Boolean, rangeHours: Int, modifier: Modifier
                     .background(if (selected) c.surfaceRaised else Color.Transparent, RoundedCornerShape(9.dp))
                     .selectable(selected = selected, role = Role.Tab, onClick = { onRange(h) })
                     .heightIn(min = 36.dp)
-                    .padding(horizontal = 4.dp, vertical = 9.dp),
+                    .padding(horizontal = 4.dp, vertical = 9.dp)
             )
         }
     }
@@ -299,7 +341,7 @@ fun GlucoseChart(
     estimate: com.lumenarcanus.dialife.data.MeterModel? = null, // draw "≈ meter" from it; null: off
     planned: List<com.lumenarcanus.dialife.data.PlannedDose> = emptyList(), // not given yet: a dashed mark
     entryTooltip: Boolean = false, // a tapped entry is told over the chart; false: the card under it does
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     val c = DiaTheme.colors
     val context = LocalContext.current
@@ -320,7 +362,11 @@ fun GlucoseChart(
     // glucometer checks sit on the glucose scale; everything else is a marker along the bottom
     val treatments = inView.filter { it.glucose == null && it.duration == null }
     // activity lasts: one that began before the window still shows its part
-    val activities = history?.treatments.orEmpty().filter { a -> a.duration != null && a.t <= min(end, now) && a.t + a.duration * 60_000L >= start }
+    val activities = history?.treatments.orEmpty().filter { a ->
+        a.duration != null &&
+            a.t <= min(end, now) &&
+            a.t + a.duration * 60_000L >= start
+    }
     val marks = suspects.filter { it.state == "unknown" && it.from in start..min(end, now) }
     val mbg = history?.mbg ?: com.lumenarcanus.dialife.data.Series()
     val meters = inView.mapNotNull { tr -> tr.glucose?.let { MeterPoint(tr.t, it, tr) } } +
@@ -331,10 +377,16 @@ fun GlucoseChart(
 
     val insulinGlyph = stringResource(R.string.glyph_insulin)
     val carbsGlyph = stringResource(R.string.glyph_carbs)
-    val a11y = if (visible.isEmpty()) stringResource(R.string.chart_a11y_empty, rangeHours) else stringResource(
-        R.string.chart_a11y, rangeHours,
-        formatGlucose(vs[visible.first()], units, locale), formatGlucose(vs[visible.last()], units, locale),
-    )
+    val a11y = if (visible.isEmpty()) {
+        stringResource(R.string.chart_a11y_empty, rangeHours)
+    } else {
+        stringResource(
+            R.string.chart_a11y,
+            rangeHours,
+            formatGlucose(vs[visible.first()], units, locale),
+            formatGlucose(vs[visible.last()], units, locale)
+        )
+    }
     val insulinLabel = stringResource(R.string.event_insulin)
     val carbsLabel = stringResource(R.string.event_carbs)
     val noteLabel = stringResource(R.string.tr_note)
@@ -358,7 +410,9 @@ fun GlucoseChart(
     val activityGlyph = stringResource(R.string.glyph_activity)
     val activityLabel = stringResource(R.string.event_activity)
     val intensities = mapOf(
-        "light" to stringResource(R.string.act_light), "moderate" to stringResource(R.string.act_moderate), "vigorous" to stringResource(R.string.act_vigorous),
+        "light" to stringResource(R.string.act_light),
+        "moderate" to stringResource(R.string.act_moderate),
+        "vigorous" to stringResource(R.string.act_vigorous)
     )
     fun intensityLabel(i: String?) = intensities[i] ?: intensities.getValue("moderate")
     val typedBy = stringResource(R.string.origin_typed)
@@ -380,32 +434,45 @@ fun GlucoseChart(
     Canvas(
         modifier
             .semantics { contentDescription = a11y }
-            .pointerInput(history, rangeHours) { // same keys as `pick`, or taps write to a forgotten state
+            .pointerInput(history, rangeHours) {
+                // same keys as `pick`, or taps write to a forgotten state
                 val labelW = 34.dp.toPx()
                 val plotW = size.width - labelW
                 val plotH = size.height - 24.dp.toPx()
                 fun xOf(t: Long) = (t - view.start).toFloat() / (view.end - view.start) * plotW
                 fun nearestReading(x: Float): Int? = view.visible.minByOrNull { abs(xOf(ts[it]) - x) }
                 fun yOf(v: Int) = plotH - (v - view.lo) / (view.hi - view.lo) * plotH
+
                 // a glucometer diamond under the finger: a bigger target than one sensor dot
                 fun meterAt(o: Offset): MeterPoint? = view.meters
                     .filter { abs(xOf(it.t) - o.x) < 16.dp.toPx() && abs(yOf(it.v) - o.y) < 16.dp.toPx() }
                     .minByOrNull { abs(xOf(it.t) - o.x) + abs(yOf(it.v) - o.y) }
                 fun rowY(t: Treatment): Float {
                     val ins = (t.insulin ?: 0.0) > 0
-                    val basal = ins && com.lumenarcanus.dialife.data.InsulinType.of(t.insulinType) == com.lumenarcanus.dialife.data.InsulinType.Basal
-                    return plotH - if (basal) 48.dp.toPx() else if (ins) 30.dp.toPx() else 12.dp.toPx()
+                    val basal =
+                        ins &&
+                            com.lumenarcanus.dialife.data.InsulinType.of(t.insulinType) == com.lumenarcanus.dialife.data.InsulinType.Basal
+                    return plotH - if (basal) {
+                        48.dp.toPx()
+                    } else if (ins) {
+                        30.dp.toPx()
+                    } else {
+                        12.dp.toPx()
+                    }
                 }
+
                 // the marker under the finger: same row, nearest in time; an activity bar along the top
                 fun markerAt(o: Offset): Treatment? = view.treatments
                     .filter { abs(xOf(it.t) - o.x) < 18.dp.toPx() && abs(rowY(it) - o.y) < 11.dp.toPx() }
                     .minByOrNull { abs(xOf(it.t) - o.x) }
                     ?: view.activities.firstOrNull {
                         o.y < ACT_TOP.toPx() + ACT_H.toPx() + 6.dp.toPx() &&
-                            o.x >= xOf(it.t) - 8.dp.toPx() && o.x <= xOf(it.t + (it.duration ?: 0) * 60_000L) + 8.dp.toPx()
+                            o.x >= xOf(it.t) - 8.dp.toPx() &&
+                            o.x <= xOf(it.t + (it.duration ?: 0) * 60_000L) + 8.dp.toPx()
                     }
                 fun suspectAt(o: Offset) = view.suspects.firstOrNull {
-                    abs(xOf(it.from) - o.x) < 16.dp.toPx() && abs(plotH - (if (it.kind == "rise") 12.dp else 30.dp).toPx() - o.y) < 12.dp.toPx()
+                    abs(xOf(it.from) - o.x) < 16.dp.toPx() &&
+                        abs(plotH - (if (it.kind == "rise") 12.dp else 30.dp).toPx() - o.y) < 12.dp.toPx()
                 }
                 awaitEachGesture {
                     val down = awaitFirstDown()
@@ -467,9 +534,8 @@ fun GlucoseChart(
                         before is Pick.Reading && before.index == last -> pick = null
                         else -> pick = last?.let { Pick.Reading(it) }
                     }
-
                 }
-            },
+            }
     ) {
         val labelW = 34.dp.toPx()
         val plotW = size.width - labelW
@@ -485,8 +551,21 @@ fun GlucoseChart(
         }
         // target band and threshold lines
         val nowX = x(now)
-        drawRect(c.inRange.copy(alpha = 0.07f), Offset(0f, y(thresholds.high)), Size(nowX.coerceIn(0f, plotW), y(thresholds.low) - y(thresholds.high)))
-        drawLine(c.high.copy(alpha = 0.5f), Offset(0f, y(thresholds.high)), Offset(plotW, y(thresholds.high)), 1.dp.toPx(), pathEffect = dash)
+        drawRect(
+            c.inRange.copy(alpha = 0.07f),
+            Offset(0f, y(thresholds.high)),
+            Size(
+                nowX.coerceIn(0f, plotW),
+                y(thresholds.low) - y(thresholds.high)
+            )
+        )
+        drawLine(
+            c.high.copy(alpha = 0.5f),
+            Offset(0f, y(thresholds.high)),
+            Offset(plotW, y(thresholds.high)),
+            1.dp.toPx(),
+            pathEffect = dash
+        )
         drawLine(c.low.copy(alpha = 0.55f), Offset(0f, y(thresholds.low)), Offset(plotW, y(thresholds.low)), 1.dp.toPx(), pathEffect = dash)
         for (v in listOf(thresholds.high, thresholds.low)) {
             val m = measurer.measure(formatGlucose(v, units, locale), label)
@@ -518,148 +597,255 @@ fun GlucoseChart(
 
         // everything time-based stays inside the plot when the window is pinched into the past
         clipRect(right = plotW, bottom = plotH + 1f) {
-        // forecast: cone and line from the last reading
-        forecast?.takeIf { it.cone.isNotEmpty() && visible.isNotEmpty() && visible.last() == ts.lastIndex }?.let { f ->
-            val lastT = ts[visible.last()]
-            val lastV = vs[visible.last()]
-            val cone = Path().apply {
-                moveTo(x(lastT), y(lastV))
-                f.cone.forEach { lineTo(x(it.t).coerceAtMost(plotW), y(it.hi.coerceAtMost(hi.toInt()))) }
-                f.cone.asReversed().forEach { lineTo(x(it.t).coerceAtMost(plotW), y(it.lo.coerceAtLeast(lo.toInt()))) }
-                close()
-            }
-            drawPath(cone, c.inRange.copy(alpha = 0.12f))
-            val line = Path().apply {
-                moveTo(x(lastT), y(lastV))
-                f.predicted.forEach { lineTo(x(it.t), y(it.sgv)) }
-            }
-            drawPath(line, c.inRange.copy(alpha = 0.7f), style = Stroke(1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(2.dp.toPx(), 4.dp.toPx()))))
-        }
-        drawLine(c.textFaint, Offset(nowX, 0f), Offset(nowX, plotH), 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(2.dp.toPx(), 3.dp.toPx())))
-
-        // "≈ meter": a faint band and a dashed line under the sensor dots, broken where the sensor is
-        estimate?.let { m ->
-            val ink = meterInk(c.isDark)
-            var run = mutableListOf<Int>()
-            fun flushRun() {
-                if (run.size >= 2) {
-                    val band = Path().apply {
-                        run.forEachIndexed { k, i -> val (e, s) = m.estimate(vs[i]); val px = x(ts[i]); val py = y((e + s).coerceAtMost(hi.toInt())); if (k == 0) moveTo(px, py) else lineTo(px, py) }
-                        run.asReversed().forEach { i -> val (e, s) = m.estimate(vs[i]); lineTo(x(ts[i]), y((e - s).coerceAtLeast(lo.toInt()))) }
-                        close()
-                    }
-                    drawPath(band, ink.copy(alpha = 0.10f))
-                    val line = Path().apply {
-                        run.forEachIndexed { k, i -> val e = m.estimate(vs[i]).first.coerceIn(lo.toInt(), hi.toInt()); if (k == 0) moveTo(x(ts[i]), y(e)) else lineTo(x(ts[i]), y(e)) }
-                    }
-                    drawPath(line, ink.copy(alpha = 0.75f), style = Stroke(1.4.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 4.dp.toPx()))))
+            // forecast: cone and line from the last reading
+            forecast?.takeIf { it.cone.isNotEmpty() && visible.isNotEmpty() && visible.last() == ts.lastIndex }?.let { f ->
+                val lastT = ts[visible.last()]
+                val lastV = vs[visible.last()]
+                val cone = Path().apply {
+                    moveTo(x(lastT), y(lastV))
+                    f.cone.forEach { lineTo(x(it.t).coerceAtMost(plotW), y(it.hi.coerceAtMost(hi.toInt()))) }
+                    f.cone.asReversed().forEach { lineTo(x(it.t).coerceAtMost(plotW), y(it.lo.coerceAtLeast(lo.toInt()))) }
+                    close()
                 }
-                run = mutableListOf()
+                drawPath(cone, c.inRange.copy(alpha = 0.12f))
+                val line = Path().apply {
+                    moveTo(x(lastT), y(lastV))
+                    f.predicted.forEach { lineTo(x(it.t), y(it.sgv)) }
+                }
+                drawPath(
+                    line,
+                    c.inRange.copy(alpha = 0.7f),
+                    style = Stroke(1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(2.dp.toPx(), 4.dp.toPx())))
+                )
             }
-            visible.forEach { i ->
-                if (run.isNotEmpty() && ts[i] - ts[run.last()] > 12 * 60_000L) flushRun()
-                run.add(i)
+            drawLine(
+                c.textFaint,
+                Offset(nowX, 0f),
+                Offset(nowX, plotH),
+                1.dp.toPx(),
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(2.dp.toPx(), 3.dp.toPx()))
+            )
+
+            // "≈ meter": a faint band and a dashed line under the sensor dots, broken where the sensor is
+            estimate?.let { m ->
+                val ink = meterInk(c.isDark)
+                var run = mutableListOf<Int>()
+                fun flushRun() {
+                    if (run.size >= 2) {
+                        val band = Path().apply {
+                            run.forEachIndexed { k, i ->
+                                val (e, s) = m.estimate(vs[i])
+                                val px = x(ts[i])
+                                val py = y((e + s).coerceAtMost(hi.toInt()))
+                                if (k ==
+                                    0
+                                ) {
+                                    moveTo(px, py)
+                                } else {
+                                    lineTo(px, py)
+                                }
+                            }
+                            run.asReversed().forEach { i ->
+                                val (e, s) = m.estimate(vs[i])
+                                lineTo(x(ts[i]), y((e - s).coerceAtLeast(lo.toInt())))
+                            }
+                            close()
+                        }
+                        drawPath(band, ink.copy(alpha = 0.10f))
+                        val line = Path().apply {
+                            run.forEachIndexed { k, i ->
+                                val e = m.estimate(vs[i]).first.coerceIn(lo.toInt(), hi.toInt())
+                                if (k ==
+                                    0
+                                ) {
+                                    moveTo(x(ts[i]), y(e))
+                                } else {
+                                    lineTo(x(ts[i]), y(e))
+                                }
+                            }
+                        }
+                        drawPath(
+                            line,
+                            ink.copy(alpha = 0.75f),
+                            style = Stroke(1.4.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 4.dp.toPx())))
+                        )
+                    }
+                    run = mutableListOf()
+                }
+                visible.forEach { i ->
+                    if (run.isNotEmpty() && ts[i] - ts[run.last()] > 12 * 60_000L) flushRun()
+                    run.add(i)
+                }
+                flushRun()
             }
-            flushRun()
-        }
 
-        // readings
-        val r = when {
-            spanHours <= 3.6f -> 3.2f
-            spanHours <= 7f -> 2.4f
-            spanHours <= 13f -> 1.8f
-            else -> 1.4f
-        }.dp.toPx()
-        visible.forEach { i -> drawCircle(colorFor(vs[i], thresholds, c.low, c.inRange, c.high), r, Offset(x(ts[i]), y(vs[i]))) }
-        visible.lastOrNull()?.takeIf { it == ts.lastIndex }?.let { i -> // ring only on the current reading
-            drawCircle(c.background, r + 4.dp.toPx(), Offset(x(ts[i]), y(vs[i])))
-            drawCircle(colorFor(vs[i], thresholds, c.low, c.inRange, c.high), r + 2.dp.toPx(), Offset(x(ts[i]), y(vs[i])))
-        }
-
-        // treatment markers along the bottom
-        val glyph = TextStyle(fontFamily = Onest, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-        treatments.forEach { tr ->
-            val isInsulin = (tr.insulin ?: 0.0) > 0
-            val isBasal = isInsulin && com.lumenarcanus.dialife.data.InsulinType.of(tr.insulinType) == com.lumenarcanus.dialife.data.InsulinType.Basal
-            // long-acting gets its own colour and letter: it never reads as a meal dose
-            val ink = if (isBasal) basalInk else if (isInsulin) c.insulin else c.carbs
-            val fill = if (isBasal) basalFill else if (isInsulin) c.insulinContainer else c.carbsContainer
-            // three rows, so a dose given minutes after another stays visible: carbs, rapid, long
-            val cy = plotH - if (isBasal) 48.dp.toPx() else if (isInsulin) 30.dp.toPx() else 12.dp.toPx()
-            val selected = (pick as? Pick.Event)?.treatment == tr
-            if (tr.pending) { // not on the server yet: an outline until it is
-                drawCircle(c.surface, 10.dp.toPx(), Offset(x(tr.t), cy))
-                drawCircle(ink, 9.dp.toPx(), Offset(x(tr.t), cy), style = Stroke(1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx()))))
-            } else {
-                drawCircle(fill, 10.dp.toPx(), Offset(x(tr.t), cy))
+            // readings
+            val r = when {
+                spanHours <= 3.6f -> 3.2f
+                spanHours <= 7f -> 2.4f
+                spanHours <= 13f -> 1.8f
+                else -> 1.4f
+            }.dp.toPx()
+            visible.forEach { i -> drawCircle(colorFor(vs[i], thresholds, c.low, c.inRange, c.high), r, Offset(x(ts[i]), y(vs[i]))) }
+            visible.lastOrNull()?.takeIf { it == ts.lastIndex }?.let { i ->
+                // ring only on the current reading
+                drawCircle(c.background, r + 4.dp.toPx(), Offset(x(ts[i]), y(vs[i])))
+                drawCircle(colorFor(vs[i], thresholds, c.low, c.inRange, c.high), r + 2.dp.toPx(), Offset(x(ts[i]), y(vs[i])))
             }
-            if (selected) drawCircle(c.text, 10.dp.toPx(), Offset(x(tr.t), cy), style = Stroke(2.dp.toPx()))
-            val isNote = !isInsulin && (tr.carbs ?: 0.0) <= 0
-            val m = measurer.measure(if (isBasal) basalGlyph else if (isInsulin) insulinGlyph else if (isNote) noteGlyph else carbsGlyph, glyph.copy(color = ink))
-            drawText(m, topLeft = Offset(x(tr.t) - m.size.width / 2f, cy - m.size.height / 2f))
-            if (originOf(tr) !is Origin.Here) syncedDot(Offset(x(tr.t) + 8.dp.toPx(), cy - 8.dp.toPx()), c.textMuted, c.surface)
-        }
 
-        // a planned dose: a dashed ring in the rapid row, at the meal it is for; it is not insulin yet
-        planned.filter { it.state == "planned" }.forEach { p ->
-            val at = treatments.firstOrNull { it.id == p.mealId }?.t ?: p.createdAt
-            val cy = plotH - 30.dp.toPx()
-            drawCircle(c.surface, 10.dp.toPx(), Offset(x(at), cy))
-            drawCircle(c.insulin, 9.dp.toPx(), Offset(x(at), cy), style = Stroke(1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx()))))
-            val m = measurer.measure(insulinGlyph, glyph.copy(color = c.insulin.copy(alpha = 0.7f)))
-            drawText(m, topLeft = Offset(x(at) - m.size.width / 2f, cy - m.size.height / 2f))
-        }
-
-        // activity: a bar along the top, as long as it lasted, darker the harder it was
-        activities.forEach { a ->
-            val x0 = x(a.t).coerceAtLeast(0f)
-            val x1 = max(x0 + 6.dp.toPx(), x(a.t + (a.duration ?: 0) * 60_000L).coerceAtMost(plotW))
-            val alpha = when (a.intensity) { "vigorous" -> 0.85f; "moderate" -> 0.55f; else -> 0.3f }
-            val top = ACT_TOP.toPx()
-            drawRoundRect(c.inRange.copy(alpha = alpha), Offset(x0, top), Size(x1 - x0, ACT_H.toPx()), CornerRadius(ACT_H.toPx() / 2))
-            if ((pick as? Pick.Event)?.treatment == a) {
-                drawRoundRect(c.text, Offset(x0, top), Size(x1 - x0, ACT_H.toPx()), CornerRadius(ACT_H.toPx() / 2), style = Stroke(1.5.dp.toPx()))
+            // treatment markers along the bottom
+            val glyph = TextStyle(fontFamily = Onest, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            treatments.forEach { tr ->
+                val isInsulin = (tr.insulin ?: 0.0) > 0
+                val isBasal =
+                    isInsulin &&
+                        com.lumenarcanus.dialife.data.InsulinType.of(tr.insulinType) == com.lumenarcanus.dialife.data.InsulinType.Basal
+                // long-acting gets its own colour and letter: it never reads as a meal dose
+                val ink = if (isBasal) {
+                    basalInk
+                } else if (isInsulin) {
+                    c.insulin
+                } else {
+                    c.carbs
+                }
+                val fill = if (isBasal) {
+                    basalFill
+                } else if (isInsulin) {
+                    c.insulinContainer
+                } else {
+                    c.carbsContainer
+                }
+                // three rows, so a dose given minutes after another stays visible: carbs, rapid, long
+                val cy = plotH - if (isBasal) {
+                    48.dp.toPx()
+                } else if (isInsulin) {
+                    30.dp.toPx()
+                } else {
+                    12.dp.toPx()
+                }
+                val selected = (pick as? Pick.Event)?.treatment == tr
+                if (tr.pending) { // not on the server yet: an outline until it is
+                    drawCircle(c.surface, 10.dp.toPx(), Offset(x(tr.t), cy))
+                    drawCircle(
+                        ink,
+                        9.dp.toPx(),
+                        Offset(x(tr.t), cy),
+                        style = Stroke(1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx())))
+                    )
+                } else {
+                    drawCircle(fill, 10.dp.toPx(), Offset(x(tr.t), cy))
+                }
+                if (selected) drawCircle(c.text, 10.dp.toPx(), Offset(x(tr.t), cy), style = Stroke(2.dp.toPx()))
+                val isNote = !isInsulin && (tr.carbs ?: 0.0) <= 0
+                val m = measurer.measure(
+                    if (isBasal) {
+                        basalGlyph
+                    } else if (isInsulin) {
+                        insulinGlyph
+                    } else if (isNote) {
+                        noteGlyph
+                    } else {
+                        carbsGlyph
+                    },
+                    glyph.copy(color = ink)
+                )
+                drawText(m, topLeft = Offset(x(tr.t) - m.size.width / 2f, cy - m.size.height / 2f))
+                if (originOf(tr) !is Origin.Here) syncedDot(Offset(x(tr.t) + 8.dp.toPx(), cy - 8.dp.toPx()), c.textMuted, c.surface)
             }
-            val m = measurer.measure(activityGlyph, glyph.copy(color = if (alpha > 0.5f) c.background else c.text, fontSize = 9.sp))
-            if (x1 - x0 > m.size.width + 6.dp.toPx()) drawText(m, topLeft = Offset(x0 + 4.dp.toPx(), top + (ACT_H.toPx() - m.size.height) / 2))
-            if (originOf(a) !is Origin.Here) syncedDot(Offset(x1, top), c.textMuted, c.surface)
-        }
 
-        // suspect marks: nobody answered "did you forget to log?" in time
-        marks.forEach { q ->
-            val cy = plotH - (if (q.kind == "rise") 12.dp else 30.dp).toPx()
-            val at = Offset(x(q.from), cy)
-            drawCircle(c.surface, 10.dp.toPx(), at)
-            drawCircle(c.high, 9.dp.toPx(), at, style = Stroke(1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx()))))
-            if ((pick as? Pick.Suspect)?.question == q) drawCircle(c.text, 10.dp.toPx(), at, style = Stroke(2.dp.toPx()))
-            val m = measurer.measure(suspectGlyph, glyph.copy(color = c.high))
-            drawText(m, topLeft = Offset(at.x - m.size.width / 2f, cy - m.size.height / 2f))
-        }
-
-        // glucometer readings: a diamond, so they never pass for a sensor dot; over the markers, a low one sits among them
-        meters.forEach { m ->
-            val cx = x(m.t); val cy = y(m.v)
-            fun diamond(half: Float) = Path().apply {
-                moveTo(cx, cy - half); lineTo(cx + half, cy); lineTo(cx, cy + half); lineTo(cx - half, cy); close()
+            // a planned dose: a dashed ring in the rapid row, at the meal it is for; it is not insulin yet
+            planned.filter { it.state == "planned" }.forEach { p ->
+                val at = treatments.firstOrNull { it.id == p.mealId }?.t ?: p.createdAt
+                val cy = plotH - 30.dp.toPx()
+                drawCircle(c.surface, 10.dp.toPx(), Offset(x(at), cy))
+                drawCircle(
+                    c.insulin,
+                    9.dp.toPx(),
+                    Offset(x(at), cy),
+                    style = Stroke(1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx())))
+                )
+                val m = measurer.measure(insulinGlyph, glyph.copy(color = c.insulin.copy(alpha = 0.7f)))
+                drawText(m, topLeft = Offset(x(at) - m.size.width / 2f, cy - m.size.height / 2f))
             }
-            val selected = (pick as? Pick.Meter)?.point == m
-            drawPath(diamond(9.dp.toPx()), c.background)
-            if (m.treatment?.pending == true) {
-                drawPath(diamond(7.dp.toPx()), c.text, style = Stroke(1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx()))))
-            } else {
-                drawPath(diamond(7.dp.toPx()), c.text)
-            }
-            drawPath(diamond(3.5.dp.toPx()), colorFor(m.v, thresholds, c.low, c.inRange, c.high))
-            if (selected) drawPath(diamond(11.dp.toPx()), c.text, style = Stroke(1.5.dp.toPx()))
-            if (m.origin !is Origin.Here) syncedDot(Offset(cx + 7.dp.toPx(), cy - 7.dp.toPx()), c.textMuted, c.surface)
-        }
 
+            // activity: a bar along the top, as long as it lasted, darker the harder it was
+            activities.forEach { a ->
+                val x0 = x(a.t).coerceAtLeast(0f)
+                val x1 = max(x0 + 6.dp.toPx(), x(a.t + (a.duration ?: 0) * 60_000L).coerceAtMost(plotW))
+                val alpha = when (a.intensity) {
+                    "vigorous" -> 0.85f
+                    "moderate" -> 0.55f
+                    else -> 0.3f
+                }
+                val top = ACT_TOP.toPx()
+                drawRoundRect(c.inRange.copy(alpha = alpha), Offset(x0, top), Size(x1 - x0, ACT_H.toPx()), CornerRadius(ACT_H.toPx() / 2))
+                if ((pick as? Pick.Event)?.treatment == a) {
+                    drawRoundRect(
+                        c.text,
+                        Offset(x0, top),
+                        Size(x1 - x0, ACT_H.toPx()),
+                        CornerRadius(ACT_H.toPx() / 2),
+                        style = Stroke(1.5.dp.toPx())
+                    )
+                }
+                val m = measurer.measure(activityGlyph, glyph.copy(color = if (alpha > 0.5f) c.background else c.text, fontSize = 9.sp))
+                if (x1 - x0 >
+                    m.size.width + 6.dp.toPx()
+                ) {
+                    drawText(m, topLeft = Offset(x0 + 4.dp.toPx(), top + (ACT_H.toPx() - m.size.height) / 2))
+                }
+                if (originOf(a) !is Origin.Here) syncedDot(Offset(x1, top), c.textMuted, c.surface)
+            }
+
+            // suspect marks: nobody answered "did you forget to log?" in time
+            marks.forEach { q ->
+                val cy = plotH - (if (q.kind == "rise") 12.dp else 30.dp).toPx()
+                val at = Offset(x(q.from), cy)
+                drawCircle(c.surface, 10.dp.toPx(), at)
+                drawCircle(
+                    c.high,
+                    9.dp.toPx(),
+                    at,
+                    style = Stroke(1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx())))
+                )
+                if ((pick as? Pick.Suspect)?.question == q) drawCircle(c.text, 10.dp.toPx(), at, style = Stroke(2.dp.toPx()))
+                val m = measurer.measure(suspectGlyph, glyph.copy(color = c.high))
+                drawText(m, topLeft = Offset(at.x - m.size.width / 2f, cy - m.size.height / 2f))
+            }
+
+            // glucometer readings: a diamond, so they never pass for a sensor dot; over the markers, a low one sits among them
+            meters.forEach { m ->
+                val cx = x(m.t)
+                val cy = y(m.v)
+                fun diamond(half: Float) = Path().apply {
+                    moveTo(cx, cy - half)
+                    lineTo(cx + half, cy)
+                    lineTo(cx, cy + half)
+                    lineTo(cx - half, cy)
+                    close()
+                }
+                val selected = (pick as? Pick.Meter)?.point == m
+                drawPath(diamond(9.dp.toPx()), c.background)
+                if (m.treatment?.pending == true) {
+                    drawPath(
+                        diamond(7.dp.toPx()),
+                        c.text,
+                        style = Stroke(1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx())))
+                    )
+                } else {
+                    drawPath(diamond(7.dp.toPx()), c.text)
+                }
+                drawPath(diamond(3.5.dp.toPx()), colorFor(m.v, thresholds, c.low, c.inRange, c.high))
+                if (selected) drawPath(diamond(11.dp.toPx()), c.text, style = Stroke(1.5.dp.toPx()))
+                if (m.origin !is Origin.Here) syncedDot(Offset(cx + 7.dp.toPx(), cy - 7.dp.toPx()), c.textMuted, c.surface)
+            }
         }
 
         // selection: crosshair + tooltip
         when (val p = pick) {
             is Pick.Reading -> if (p.index in ts.indices) {
-                val px = x(ts[p.index]); val v = vs[p.index]
+                val px = x(ts[p.index])
+                val v = vs[p.index]
                 val col = colorFor(v, thresholds, c.low, c.inRange, c.high)
                 drawLine(c.textMuted, Offset(px, 0f), Offset(px, plotH), 1.dp.toPx())
                 drawCircle(c.background, 8.dp.toPx(), Offset(px, y(v)))
@@ -670,9 +856,19 @@ fun GlucoseChart(
                     estimate?.estimate(v)?.let { (e, s) ->
                         meterEstimate.format(locale, formatGlucose(e, units, locale), formatGlucose(s, units, locale))
                     },
-                    delta?.let { "$it · ${clock(ts[p.index])}" } ?: clock(ts[p.index]),
+                    delta?.let { "$it · ${clock(ts[p.index])}" } ?: clock(ts[p.index])
                 )
-                tooltip(measurer, lines, px, y(v), plotW, plotH, c.background, if (v < thresholds.low || v > thresholds.high) col else c.line, c.text, c.textMuted)
+                tooltip(
+                    measurer, lines, px, y(v), plotW, plotH, c.background,
+                    if (v < thresholds.low ||
+                        v > thresholds.high
+                    ) {
+                        col
+                    } else {
+                        c.line
+                    },
+                    c.text, c.textMuted
+                )
             }
             is Pick.Meter -> {
                 val m = p.point
@@ -686,19 +882,40 @@ fun GlucoseChart(
                         clock(m.t),
                         near?.let { meterSensor.format(locale, formatGlucose(vs[it], units, locale)) },
                         who,
-                        pendingLabel.takeIf { m.treatment?.pending == true },
+                        pendingLabel.takeIf { m.treatment?.pending == true }
                     ).joinToString(" · "),
-                    m.treatment?.notes?.takeIf { it.isNotBlank() },
+                    m.treatment?.notes?.takeIf { it.isNotBlank() }
                 )
                 tooltip(measurer, lines, x(m.t), y(m.v), plotW, plotH, c.background, c.line, c.text, c.textMuted)
             }
             is Pick.Suspect -> {
                 val q = p.question
                 val lines = listOf(
-                    if (q.kind == "double") suspectDouble.format(locale, com.lumenarcanus.dialife.live.QuestionNotifier.doubleInsulin(context, q), com.lumenarcanus.dialife.ui.treatment.gapText(context, q.to - q.from))
-                    else if (q.kind == "bolus") suspectBolus.format(locale, clock(q.from))
-                    else (if (q.kind == "rise") suspectRise else suspectFall).format(locale, formatGlucose(q.sgvFrom, units, locale), formatGlucose(q.sgvTo, units, locale)),
-                    clock(q.from) + " · " + suspectHint,
+                    if (q.kind ==
+                        "double"
+                    ) {
+                        suspectDouble.format(
+                            locale,
+                            com.lumenarcanus.dialife.live.QuestionNotifier.doubleInsulin(context, q),
+                            com.lumenarcanus.dialife.ui.treatment.gapText(
+                                context,
+                                q.to - q.from
+                            )
+                        )
+                    } else if (q.kind == "bolus") {
+                        suspectBolus.format(locale, clock(q.from))
+                    } else {
+                        (
+                            if (q.kind ==
+                                "rise"
+                            ) {
+                                suspectRise
+                            } else {
+                                suspectFall
+                            }
+                            ).format(locale, formatGlucose(q.sgvFrom, units, locale), formatGlucose(q.sgvTo, units, locale))
+                    },
+                    clock(q.from) + " · " + suspectHint
                 )
                 tooltip(measurer, lines, x(q.from), plotH - 40.dp.toPx(), plotW, plotH, c.background, c.high, c.text, c.textMuted)
             }
@@ -708,10 +925,13 @@ fun GlucoseChart(
                 val amounts = listOfNotNull(
                     tr.insulin?.takeIf { it > 0 }?.let { u ->
                         // "Lantus 10 од" when the brand is known, else "Інсулін 10 од"
-                        tr.insulinName?.let { "$it " + String.format(locale, "%s %s", com.lumenarcanus.dialife.ui.treatment.formatAmount(u, locale), unitInsulin) }
+                        tr.insulinName?.let {
+                            "$it " +
+                                String.format(locale, "%s %s", com.lumenarcanus.dialife.ui.treatment.formatAmount(u, locale), unitInsulin)
+                        }
                             ?: insulinLabel.format(locale, u)
                     },
-                    tr.carbs?.takeIf { it > 0 }?.let { carbsLabel.format(locale, it.toInt()) },
+                    tr.carbs?.takeIf { it > 0 }?.let { carbsLabel.format(locale, it.toInt()) }
                 ).joinToString(" · ")
                 val what = tr.duration?.let { d -> activityLabel.format(locale, intensityLabel(tr.intensity), d) }
                     ?: amounts.ifBlank { tr.notes ?: noteLabel }
@@ -722,7 +942,7 @@ fun GlucoseChart(
                 val lines = listOfNotNull(what) + dishes + listOfNotNull(
                     corrLabel.takeIf { tr.insulinRole == "corr" && (tr.insulin ?: 0.0) > 0 },
                     tr.notes?.takeIf { amounts.isNotBlank() && it.isNotBlank() },
-                    listOfNotNull(clock(tr.t), originText(originOf(tr)), pendingLabel.takeIf { tr.pending }).joinToString(" · "),
+                    listOfNotNull(clock(tr.t), originText(originOf(tr)), pendingLabel.takeIf { tr.pending }).joinToString(" · ")
                 )
                 val ty = if (tr.duration != null) ACT_TOP.toPx() + ACT_H.toPx() else plotH - 40.dp.toPx()
                 tooltip(measurer, lines, x(tr.t), ty, plotW, plotH, c.background, c.line, c.text, c.textMuted)
@@ -743,7 +963,7 @@ private data class ChartView(
     val lo: Float,
     val hi: Float,
     val activities: List<Treatment>,
-    val suspects: List<com.lumenarcanus.dialife.data.Question>,
+    val suspects: List<com.lumenarcanus.dialife.data.Question>
 )
 
 /** The small dot on a mark that came in from xDrip+ rather than typed in DiaLife. */
@@ -755,8 +975,14 @@ private fun DrawScope.syncedDot(at: Offset, ink: Color, halo: Color) {
 private fun DrawScope.tooltip(
     measurer: androidx.compose.ui.text.TextMeasurer,
     lines: List<String>,
-    ax: Float, ay: Float, plotW: Float, plotH: Float,
-    bg: Color, border: Color, text: Color, muted: Color,
+    ax: Float,
+    ay: Float,
+    plotW: Float,
+    plotH: Float,
+    bg: Color,
+    border: Color,
+    text: Color,
+    muted: Color
 ) {
     val first = TextStyle(fontFamily = Onest, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = text)
     val rest = TextStyle(fontFamily = PlexMono, fontSize = 11.sp, color = muted)
@@ -771,7 +997,10 @@ private fun DrawScope.tooltip(
     drawRoundRect(bg, Offset(left, top), Size(w, h), CornerRadius(12.dp.toPx()))
     drawRoundRect(border, Offset(left, top), Size(w, h), CornerRadius(12.dp.toPx()), style = Stroke(1.dp.toPx()))
     var yy = top + pad
-    ms.forEach { m -> drawText(m, topLeft = Offset(left + pad, yy)); yy += m.size.height + 2.dp.toPx() }
+    ms.forEach { m ->
+        drawText(m, topLeft = Offset(left + pad, yy))
+        yy += m.size.height + 2.dp.toPx()
+    }
 }
 
 private fun band(v: Int, th: Thresholds) = when {
@@ -787,5 +1016,4 @@ private fun colorFor(v: Int, th: Thresholds, low: Color, ok: Color, high: Color)
 }
 
 /** The reading just before index, if it is within 10 minutes. */
-private fun previous(ts: List<Long>, vs: List<Int>, i: Int): Int? =
-    if (i > 0 && ts[i] - ts[i - 1] <= 10 * 60_000L) vs[i - 1] else null
+private fun previous(ts: List<Long>, vs: List<Int>, i: Int): Int? = if (i > 0 && ts[i] - ts[i - 1] <= 10 * 60_000L) vs[i - 1] else null

@@ -9,10 +9,10 @@ import android.content.Intent
 import com.lumenarcanus.dialife.MainActivity
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.ui.home.Trend
+import com.lumenarcanus.dialife.ui.home.Units
 import com.lumenarcanus.dialife.ui.home.formatDelta
 import com.lumenarcanus.dialife.ui.home.formatGlucose
 import com.lumenarcanus.dialife.ui.home.unitsOf
-import com.lumenarcanus.dialife.ui.home.Units
 
 object Notifications {
     const val CHANNEL_LIVE = "live"
@@ -34,12 +34,16 @@ object Notifications {
             NotificationChannel(CHANNEL_LIVE, context.getString(R.string.channel_live), NotificationManager.IMPORTANCE_LOW).apply {
                 description = context.getString(R.string.channel_live_desc)
                 setShowBadge(false)
-            },
+            }
         )
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_CONNECTION, context.getString(R.string.channel_connection), NotificationManager.IMPORTANCE_HIGH).apply {
+            NotificationChannel(
+                CHANNEL_CONNECTION,
+                context.getString(R.string.channel_connection),
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
                 description = context.getString(R.string.channel_connection_desc)
-            },
+            }
         )
         nm.createNotificationChannel(
             // silent channel: the Ringer plays the sound on the alarm stream, which DND lets through
@@ -48,44 +52,57 @@ object Notifications {
                 setSound(null, null)
                 enableVibration(false)
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-            },
+            }
         )
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL_CHECKIN, context.getString(R.string.channel_checkin), NotificationManager.IMPORTANCE_HIGH).apply {
                 description = context.getString(R.string.channel_checkin_desc)
-            },
+            }
         )
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_REMINDERS, context.getString(R.string.channel_reminders), NotificationManager.IMPORTANCE_DEFAULT).apply {
+            NotificationChannel(
+                CHANNEL_REMINDERS,
+                context.getString(R.string.channel_reminders),
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
                 description = context.getString(R.string.channel_reminders_desc)
-            },
+            }
         )
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL_EAT, context.getString(R.string.channel_eat), NotificationManager.IMPORTANCE_DEFAULT).apply {
                 description = context.getString(R.string.channel_eat_desc)
-            },
+            }
         )
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_QUESTIONS, context.getString(R.string.channel_questions), NotificationManager.IMPORTANCE_HIGH).apply {
+            NotificationChannel(
+                CHANNEL_QUESTIONS,
+                context.getString(R.string.channel_questions),
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
                 description = context.getString(R.string.channel_questions_desc)
-            },
+            }
         )
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_QUESTIONS_NIGHT, context.getString(R.string.channel_questions_night), NotificationManager.IMPORTANCE_LOW).apply {
+            NotificationChannel(
+                CHANNEL_QUESTIONS_NIGHT,
+                context.getString(R.string.channel_questions_night),
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
                 description = context.getString(R.string.channel_questions_night_desc)
-            },
+            }
         )
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL_EPISODES, context.getString(R.string.channel_episodes), NotificationManager.IMPORTANCE_LOW).apply {
                 description = context.getString(R.string.channel_episodes_desc)
-            },
+            }
         )
     }
 
     private fun openApp(context: Context): PendingIntent = PendingIntent.getActivity(
-        context, 0,
+        context,
+        0,
         Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
-        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
     )
 
     /** The quiet ongoing notification: the current number, like a watch face in the shade. */

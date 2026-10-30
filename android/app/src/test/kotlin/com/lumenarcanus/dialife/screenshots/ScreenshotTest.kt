@@ -2,18 +2,19 @@ package com.lumenarcanus.dialife.screenshots
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.lumenarcanus.dialife.data.AlarmView
+import com.lumenarcanus.dialife.data.Caregiver
+import com.lumenarcanus.dialife.data.Credentials
+import com.lumenarcanus.dialife.data.Question
 import com.lumenarcanus.dialife.feature.wait.CountdownCard
 import com.lumenarcanus.dialife.feature.wait.CountdownUiState
 import com.lumenarcanus.dialife.feature.wait.WarningCard
 import com.lumenarcanus.dialife.feature.wait.warningUiState
-import com.lumenarcanus.dialife.data.Caregiver
-import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.ui.handling.HandlingScreen
 import com.lumenarcanus.dialife.ui.home.BackgroundSetup
 import com.lumenarcanus.dialife.ui.home.HomeScreen
@@ -21,6 +22,7 @@ import com.lumenarcanus.dialife.ui.home.Units
 import com.lumenarcanus.dialife.ui.home.sampleHomeUi
 import com.lumenarcanus.dialife.ui.settings.SettingsScreen
 import com.lumenarcanus.dialife.ui.theme.DiaLifeTheme
+import java.util.TimeZone
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -28,7 +30,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import java.util.TimeZone
 
 /**
  * The main screens as pictures, compared with the ones in src/test/screenshots.
@@ -63,16 +64,33 @@ class ScreenshotTest {
     @Config(qualifiers = "uk-w412dp-h915dp-xxhdpi")
     fun foodOtherPortionUk() = shot("food_other_portion_dark_uk", dark = true) {
         val hit = com.lumenarcanus.dialife.data.CarbTableHit(
-            "fruit-frutillas-1-taza", 15, names = mapOf("uk" to "Полуниця"), portions = mapOf("uk" to "1 чашка (250 мл)"),
+            "fruit-frutillas-1-taza",
+            15,
+            names = mapOf("uk" to "Полуниця"),
+            portions = mapOf("uk" to "1 чашка (250 мл)")
         )
         val row = com.lumenarcanus.dialife.ui.treatment.newFoodRow("Полуниця", portion = "100 грам").copy(
-            asked = true, models = true,
-            suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(table = listOf(hit), estimate = com.lumenarcanus.dialife.data.CarbEstimate(8, 7, 9, 1)),
+            asked = true,
+            models = true,
+            suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(
+                table = listOf(hit),
+                estimate = com.lumenarcanus.dialife.data.CarbEstimate(8, 7, 9, 1)
+            )
         )
-        androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+        androidx.compose.foundation.layout.Column(
+            androidx.compose.ui.Modifier.padding(16.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+        ) {
             com.lumenarcanus.dialife.ui.treatment.FoodSuggestions(row, "uk") {}
             com.lumenarcanus.dialife.ui.treatment.FoodSuggestions(
-                row.copy(suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(table = listOf(hit.copy(carbs = 8, scaled = true, per100 = 7.7, per100Src = "SARA 2 (AR)", fiber100 = 2.0, avail100 = 5.7)))), "uk",
+                row.copy(
+                    suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(
+                        table = listOf(
+                            hit.copy(carbs = 8, scaled = true, per100 = 7.7, per100Src = "SARA 2 (AR)", fiber100 = 2.0, avail100 = 5.7)
+                        )
+                    )
+                ),
+                "uk"
             ) {}
         }
     }
@@ -82,7 +100,10 @@ class ScreenshotTest {
     fun waitCardsUk() = shot("wait_cards_dark_uk", dark = true) {
         val dose = now - 10 * 60_000
         val w = com.lumenarcanus.dialife.data.Wait("d", dose, 3.0, dose + 15 * 60_000, "range", 142, 60.0, 0.0)
-        androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+        androidx.compose.foundation.layout.Column(
+            androidx.compose.ui.Modifier.padding(16.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)
+        ) {
             CountdownCard(CountdownUiState(w, now), Units.MgDl) {}
             CountdownCard(CountdownUiState(w.copy(reason = "high", sgv = 214, eatFrom = dose + 20 * 60_000), now), Units.MgDl) {}
             WarningCard(warningUiState(w.copy(foodG = 20.0), 20)!!) {}
@@ -123,7 +144,7 @@ class ScreenshotTest {
         com.lumenarcanus.dialife.ui.home.ChartCard(
             ui.history, ui.state?.ar2, ui.state!!.thresholds, Units.MgDl, ui.rangeHours, ui.now, onRange = {},
             modifier = androidx.compose.ui.Modifier.fillMaxSize(), expanded = true,
-            suspects = ui.state!!.questions,
+            suspects = ui.state!!.questions
         )
     }
 
@@ -134,7 +155,7 @@ class ScreenshotTest {
         com.lumenarcanus.dialife.ui.home.ChartCard(
             ui.history, ui.state?.ar2, ui.state!!.thresholds, Units.MgDl, ui.rangeHours, ui.now, onRange = {},
             modifier = androidx.compose.ui.Modifier.fillMaxSize(), expanded = true,
-            meter = com.lumenarcanus.dialife.ui.home.sampleMeter(now), meterLine = true,
+            meter = com.lumenarcanus.dialife.ui.home.sampleMeter(now), meterLine = true
         )
     }
 
@@ -152,7 +173,7 @@ class ScreenshotTest {
         val ui = sampleHomeUi(now)
         com.lumenarcanus.dialife.ui.data.DataScreen(
             ui.history, ui.state!!.questions, ui.state!!.thresholds, Units.MgDl, 3, now,
-            loadHistory = { _, _ -> null }, onSaveTreatment = {}, onBack = {},
+            loadHistory = { _, _ -> null }, onSaveTreatment = {}, onBack = {}
         )
     }
 
@@ -165,12 +186,26 @@ class ScreenshotTest {
     fun webLoginUk() = shot("web_login_uk", dark = true) {
         androidx.compose.foundation.layout.Column(
             androidx.compose.ui.Modifier.padding(20.dp),
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
         ) {
-            com.lumenarcanus.dialife.ui.web.Approve(com.lumenarcanus.dialife.data.WebLoginInfo("x", "Firefox", "Linux", now + 120_000, ip = "198.51.100.9"), now = now) {}
+            com.lumenarcanus.dialife.ui.web.Approve(
+                com.lumenarcanus.dialife.data.WebLoginInfo("x", "Firefox", "Linux", now + 120_000, ip = "198.51.100.9"),
+                now = now
+            ) {
+            }
             com.lumenarcanus.dialife.ui.web.Sessions(
-                listOf(com.lumenarcanus.dialife.data.WebSession(1, "Chrome", "Windows", "Тато", now - 86_400_000, now + 6 * 86_400_000, now - 600_000)),
-                now = now,
+                listOf(
+                    com.lumenarcanus.dialife.data.WebSession(
+                        1,
+                        "Chrome",
+                        "Windows",
+                        "Тато",
+                        now - 86_400_000,
+                        now + 6 * 86_400_000,
+                        now - 600_000
+                    )
+                ),
+                now = now
             ) {}
         }
     }
@@ -196,14 +231,15 @@ class ScreenshotTest {
         val alarm = AlarmView(
             id = 1, kind = "low", level = "urgent", state = "handled", startedAt = taken, sgv = 56,
             handledBy = "Тато", handledById = 8, handledAt = taken, handledSgv = 52,
-            checkinPending = true, checkinSentAt = now - 60_000L,
+            checkinPending = true, checkinSentAt = now - 60_000L
         )
         val st = ui.state!!.copy(
             bg = ui.state.bg!!.copy(sgv = 56),
             alarms = listOf(alarm),
-            caregivers = listOf(Caregiver(8, "Тато"), Caregiver(9, "Мама")),
+            caregivers = listOf(Caregiver(8, "Тато"), Caregiver(9, "Мама"))
         )
-        HandlingScreen(ui.copy(state = st, myId = 8), alarmId = 1, units = Units.MgDl, onAct = { _, _ -> }, onSaveTreatment = {}, onBack = {})
+        HandlingScreen(ui.copy(state = st, myId = 8), alarmId = 1, units = Units.MgDl, onAct = { _, _ ->
+        }, onSaveTreatment = {}, onBack = {})
     }
 
     @Test
@@ -211,12 +247,21 @@ class ScreenshotTest {
     fun settingsUk() = shot("settings_uk", dark = true) {
         SettingsScreen(
             creds = creds, state = sampleHomeUi(now).state, setup = BackgroundSetup(battery = true),
-            onFixNotifications = {}, onFixBattery = {}, onFixFullScreen = {}, onTestSound = {}, onDisconnect = {}, onBack = {}, version = "0.0.0",
+            onFixNotifications = {
+            }, onFixBattery = {}, onFixFullScreen = {}, onTestSound = {}, onDisconnect = {}, onBack = {}, version = "0.0.0"
         )
     }
 
-    private fun meal(now: Long) = com.lumenarcanus.dialife.data.Treatment(id = "m1", t = now - 25 * 60_000L, carbs = 45.0,
-        foodItems = listOf(com.lumenarcanus.dialife.data.FoodItem("Борщ", "тарілка", 18.0, "mine"), com.lumenarcanus.dialife.data.FoodItem("Хліб чорний", "2 скибки", 22.0, "table"), com.lumenarcanus.dialife.data.FoodItem("Салат", null, 5.0, "manual")))
+    private fun meal(now: Long) = com.lumenarcanus.dialife.data.Treatment(
+        id = "m1",
+        t = now - 25 * 60_000L,
+        carbs = 45.0,
+        foodItems = listOf(
+            com.lumenarcanus.dialife.data.FoodItem("Борщ", "тарілка", 18.0, "mine"),
+            com.lumenarcanus.dialife.data.FoodItem("Хліб чорний", "2 скибки", 22.0, "table"),
+            com.lumenarcanus.dialife.data.FoodItem("Салат", null, 5.0, "manual")
+        )
+    )
 
     @Test
     @Config(qualifiers = "+uk")
@@ -225,44 +270,126 @@ class ScreenshotTest {
             com.lumenarcanus.dialife.data.Treatment(id = "g1", t = now - 6 * 60_000L, glucose = 186)
         com.lumenarcanus.dialife.ui.meal.MealScreen(
             repo = null, treatments = t, dose = com.lumenarcanus.dialife.data.DoseSettings(), planned = emptyList(), units = Units.MgDl,
-            editing = meal(now).copy(foodItems = meal(now).foodItems!! + com.lumenarcanus.dialife.data.FoodItem("Гречка з котлетою", null, null, null)),
-            initialTime = null, onSave = {}, onSaved = {}, onClose = {}, clock = { now },
+            editing = meal(now).copy(
+                foodItems =
+                meal(now).foodItems!! + com.lumenarcanus.dialife.data.FoodItem("Гречка з котлетою", null, null, null)
+            ),
+            initialTime = null, onSave = {}, onSaved = {}, onClose = {}, clock = { now }
         )
     }
 
     @Test
     @Config(qualifiers = "+uk")
     fun plannedUk() = shot("planned_dark_uk", dark = true) {
-        androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
-            val p = com.lumenarcanus.dialife.data.PlannedDose(id = "p1", mealId = "m1", dose = 4.0, food = 2.25, corr = 2.0, carbs = 45, meter = 186, meterAt = now - 30 * 60_000L, createdAt = now - 10 * 60_000L, by = "Мама")
-            com.lumenarcanus.dialife.ui.meal.PlannedCard(p, com.lumenarcanus.dialife.data.DoseSettings(), now, listOf(meal(now)), null, Units.MgDl, {}, {})
-            com.lumenarcanus.dialife.ui.meal.PlannedCard(p.copy(id = "p2", createdAt = now - 65 * 60_000L), com.lumenarcanus.dialife.data.DoseSettings(), now, listOf(meal(now)),
-                com.lumenarcanus.dialife.data.Question(id = 9, kind = "planned", state = "open", from = now - 25 * 60_000L, to = now, sgvFrom = 0, sgvTo = 0, plannedId = "p2", dose = 4.0), Units.MgDl, {}, {})
-            com.lumenarcanus.dialife.ui.meal.EntryDetail(meal(now), listOf(meal(now),
-                com.lumenarcanus.dialife.data.Treatment(id = "i1", t = now - 30 * 60_000L, insulin = 2.0, insulinType = "rapid", insulinName = "Rapilog One", enteredBy = "Тато")),
-                com.lumenarcanus.dialife.data.DoseSettings(), Units.MgDl)
+        androidx.compose.foundation.layout.Column(
+            androidx.compose.ui.Modifier.padding(16.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
+        ) {
+            val p = com.lumenarcanus.dialife.data.PlannedDose(
+                id = "p1", mealId = "m1", dose = 4.0, food = 2.25, corr = 2.0, carbs = 45, meter = 186,
+                meterAt =
+                now - 30 * 60_000L,
+                createdAt = now - 10 * 60_000L, by = "Мама"
+            )
+            com.lumenarcanus.dialife.ui.meal.PlannedCard(
+                p,
+                com.lumenarcanus.dialife.data.DoseSettings(),
+                now,
+                listOf(
+                    meal(now)
+                ),
+                null,
+                Units.MgDl,
+                {
+                },
+                {}
+            )
+            com.lumenarcanus.dialife.ui.meal.PlannedCard(
+                p.copy(id = "p2", createdAt = now - 65 * 60_000L),
+                com.lumenarcanus.dialife.data.DoseSettings(),
+                now,
+                listOf(meal(now)),
+                Question(
+                    id = 9,
+                    kind = "planned",
+                    state = "open",
+                    from = now - 25 * 60_000L,
+                    to = now,
+                    sgvFrom = 0,
+                    sgvTo = 0,
+                    plannedId = "p2",
+                    dose = 4.0,
+                ),
+                Units.MgDl,
+                {
+                },
+                {}
+            )
+            com.lumenarcanus.dialife.ui.meal.EntryDetail(
+                meal(now),
+                listOf(
+                    meal(now),
+                    com.lumenarcanus.dialife.data.Treatment(
+                        id = "i1",
+                        t = now - 30 * 60_000L,
+                        insulin = 2.0,
+                        insulinType = "rapid",
+                        insulinName = "Rapilog One",
+                        enteredBy = "Тато"
+                    )
+                ),
+                com.lumenarcanus.dialife.data.DoseSettings(),
+                Units.MgDl
+            )
         }
     }
 
     @Test
     @Config(qualifiers = "uk-w412dp-h3500dp-xxhdpi")
     fun doseSettingsUk() = shot("dose_settings_dark_uk", dark = true) {
-        com.lumenarcanus.dialife.ui.settings.DoseSettingsScreen(com.lumenarcanus.dialife.data.DoseSettings(updatedBy = "Тато"), Units.MgDl, onSave = { Result.success(it) }, onBack = {})
+        com.lumenarcanus.dialife.ui.settings.DoseSettingsScreen(
+            com.lumenarcanus.dialife.data.DoseSettings(
+                updatedBy = "Тато"
+            ),
+            Units.MgDl,
+            onSave = {
+                Result.success(it)
+            },
+            onBack = {}
+        )
     }
+
     @Test
     @Config(qualifiers = "en-w412dp-h915dp-xxhdpi")
     fun foodOtherPortionEnAll() = shot("food_other_portion_dark_en_all", dark = true) {
         val hit = com.lumenarcanus.dialife.data.CarbTableHit(
-            "fruit-frutillas-1-taza", 15, names = mapOf("uk" to "Полуниця"), portions = mapOf("uk" to "1 чашка (250 мл)"),
+            "fruit-frutillas-1-taza",
+            15,
+            names = mapOf("uk" to "Полуниця"),
+            portions = mapOf("uk" to "1 чашка (250 мл)")
         )
         val row = com.lumenarcanus.dialife.ui.treatment.newFoodRow("Полуниця", portion = "100 грам").copy(
-            asked = true, models = true,
-            suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(table = listOf(hit), estimate = com.lumenarcanus.dialife.data.CarbEstimate(8, 7, 9, 1)),
+            asked = true,
+            models = true,
+            suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(
+                table = listOf(hit),
+                estimate = com.lumenarcanus.dialife.data.CarbEstimate(8, 7, 9, 1)
+            )
         )
-        androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+        androidx.compose.foundation.layout.Column(
+            androidx.compose.ui.Modifier.padding(16.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+        ) {
             com.lumenarcanus.dialife.ui.treatment.FoodSuggestions(row, "uk") {}
             com.lumenarcanus.dialife.ui.treatment.FoodSuggestions(
-                row.copy(suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(table = listOf(hit.copy(carbs = 8, scaled = true, per100 = 7.7, per100Src = "SARA 2 (AR)", fiber100 = 2.0, avail100 = 5.7)))), "uk",
+                row.copy(
+                    suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(
+                        table = listOf(
+                            hit.copy(carbs = 8, scaled = true, per100 = 7.7, per100Src = "SARA 2 (AR)", fiber100 = 2.0, avail100 = 5.7)
+                        )
+                    )
+                ),
+                "uk"
             ) {}
         }
     }
@@ -271,16 +398,33 @@ class ScreenshotTest {
     @Config(qualifiers = "es-w412dp-h915dp-xxhdpi")
     fun foodOtherPortionEsAll() = shot("food_other_portion_dark_es_all", dark = true) {
         val hit = com.lumenarcanus.dialife.data.CarbTableHit(
-            "fruit-frutillas-1-taza", 15, names = mapOf("uk" to "Полуниця"), portions = mapOf("uk" to "1 чашка (250 мл)"),
+            "fruit-frutillas-1-taza",
+            15,
+            names = mapOf("uk" to "Полуниця"),
+            portions = mapOf("uk" to "1 чашка (250 мл)")
         )
         val row = com.lumenarcanus.dialife.ui.treatment.newFoodRow("Полуниця", portion = "100 грам").copy(
-            asked = true, models = true,
-            suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(table = listOf(hit), estimate = com.lumenarcanus.dialife.data.CarbEstimate(8, 7, 9, 1)),
+            asked = true,
+            models = true,
+            suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(
+                table = listOf(hit),
+                estimate = com.lumenarcanus.dialife.data.CarbEstimate(8, 7, 9, 1)
+            )
         )
-        androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+        androidx.compose.foundation.layout.Column(
+            androidx.compose.ui.Modifier.padding(16.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+        ) {
             com.lumenarcanus.dialife.ui.treatment.FoodSuggestions(row, "uk") {}
             com.lumenarcanus.dialife.ui.treatment.FoodSuggestions(
-                row.copy(suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(table = listOf(hit.copy(carbs = 8, scaled = true, per100 = 7.7, per100Src = "SARA 2 (AR)", fiber100 = 2.0, avail100 = 5.7)))), "uk",
+                row.copy(
+                    suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(
+                        table = listOf(
+                            hit.copy(carbs = 8, scaled = true, per100 = 7.7, per100Src = "SARA 2 (AR)", fiber100 = 2.0, avail100 = 5.7)
+                        )
+                    )
+                ),
+                "uk"
             ) {}
         }
     }
@@ -290,7 +434,10 @@ class ScreenshotTest {
     fun waitCardsEnAll() = shot("wait_cards_dark_en_all", dark = true) {
         val dose = now - 10 * 60_000
         val w = com.lumenarcanus.dialife.data.Wait("d", dose, 3.0, dose + 15 * 60_000, "range", 142, 60.0, 0.0)
-        androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+        androidx.compose.foundation.layout.Column(
+            androidx.compose.ui.Modifier.padding(16.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)
+        ) {
             CountdownCard(CountdownUiState(w, now), Units.MgDl) {}
             CountdownCard(CountdownUiState(w.copy(reason = "high", sgv = 214, eatFrom = dose + 20 * 60_000), now), Units.MgDl) {}
             WarningCard(warningUiState(w.copy(foodG = 20.0), 20)!!) {}
@@ -305,7 +452,10 @@ class ScreenshotTest {
     fun waitCardsEsAll() = shot("wait_cards_dark_es_all", dark = true) {
         val dose = now - 10 * 60_000
         val w = com.lumenarcanus.dialife.data.Wait("d", dose, 3.0, dose + 15 * 60_000, "range", 142, 60.0, 0.0)
-        androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+        androidx.compose.foundation.layout.Column(
+            androidx.compose.ui.Modifier.padding(16.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)
+        ) {
             CountdownCard(CountdownUiState(w, now), Units.MgDl) {}
             CountdownCard(CountdownUiState(w.copy(reason = "high", sgv = 214, eatFrom = dose + 20 * 60_000), now), Units.MgDl) {}
             WarningCard(warningUiState(w.copy(foodG = 20.0), 20)!!) {}
@@ -337,7 +487,7 @@ class ScreenshotTest {
         val ui = sampleHomeUi(now)
         com.lumenarcanus.dialife.ui.data.DataScreen(
             ui.history, ui.state!!.questions, ui.state!!.thresholds, Units.MgDl, 3, now,
-            loadHistory = { _, _ -> null }, onSaveTreatment = {}, onBack = {},
+            loadHistory = { _, _ -> null }, onSaveTreatment = {}, onBack = {}
         )
     }
 
@@ -347,7 +497,7 @@ class ScreenshotTest {
         val ui = sampleHomeUi(now)
         com.lumenarcanus.dialife.ui.data.DataScreen(
             ui.history, ui.state!!.questions, ui.state!!.thresholds, Units.MgDl, 3, now,
-            loadHistory = { _, _ -> null }, onSaveTreatment = {}, onBack = {},
+            loadHistory = { _, _ -> null }, onSaveTreatment = {}, onBack = {}
         )
     }
 
@@ -359,14 +509,15 @@ class ScreenshotTest {
         val alarm = AlarmView(
             id = 1, kind = "low", level = "urgent", state = "handled", startedAt = taken, sgv = 56,
             handledBy = "Тато", handledById = 8, handledAt = taken, handledSgv = 52,
-            checkinPending = true, checkinSentAt = now - 60_000L,
+            checkinPending = true, checkinSentAt = now - 60_000L
         )
         val st = ui.state!!.copy(
             bg = ui.state.bg!!.copy(sgv = 56),
             alarms = listOf(alarm),
-            caregivers = listOf(Caregiver(8, "Тато"), Caregiver(9, "Мама")),
+            caregivers = listOf(Caregiver(8, "Тато"), Caregiver(9, "Мама"))
         )
-        HandlingScreen(ui.copy(state = st, myId = 8), alarmId = 1, units = Units.MgDl, onAct = { _, _ -> }, onSaveTreatment = {}, onBack = {})
+        HandlingScreen(ui.copy(state = st, myId = 8), alarmId = 1, units = Units.MgDl, onAct = { _, _ ->
+        }, onSaveTreatment = {}, onBack = {})
     }
 
     @Test
@@ -377,14 +528,15 @@ class ScreenshotTest {
         val alarm = AlarmView(
             id = 1, kind = "low", level = "urgent", state = "handled", startedAt = taken, sgv = 56,
             handledBy = "Тато", handledById = 8, handledAt = taken, handledSgv = 52,
-            checkinPending = true, checkinSentAt = now - 60_000L,
+            checkinPending = true, checkinSentAt = now - 60_000L
         )
         val st = ui.state!!.copy(
             bg = ui.state.bg!!.copy(sgv = 56),
             alarms = listOf(alarm),
-            caregivers = listOf(Caregiver(8, "Тато"), Caregiver(9, "Мама")),
+            caregivers = listOf(Caregiver(8, "Тато"), Caregiver(9, "Мама"))
         )
-        HandlingScreen(ui.copy(state = st, myId = 8), alarmId = 1, units = Units.MgDl, onAct = { _, _ -> }, onSaveTreatment = {}, onBack = {})
+        HandlingScreen(ui.copy(state = st, myId = 8), alarmId = 1, units = Units.MgDl, onAct = { _, _ ->
+        }, onSaveTreatment = {}, onBack = {})
     }
 
     @Test
@@ -392,7 +544,8 @@ class ScreenshotTest {
     fun settingsEnAll() = shot("settings_en_all", dark = true) {
         SettingsScreen(
             creds = creds, state = sampleHomeUi(now).state, setup = BackgroundSetup(battery = true),
-            onFixNotifications = {}, onFixBattery = {}, onFixFullScreen = {}, onTestSound = {}, onDisconnect = {}, onBack = {}, version = "0.0.0",
+            onFixNotifications = {
+            }, onFixBattery = {}, onFixFullScreen = {}, onTestSound = {}, onDisconnect = {}, onBack = {}, version = "0.0.0"
         )
     }
 
@@ -401,7 +554,8 @@ class ScreenshotTest {
     fun settingsEsAll() = shot("settings_es_all", dark = true) {
         SettingsScreen(
             creds = creds, state = sampleHomeUi(now).state, setup = BackgroundSetup(battery = true),
-            onFixNotifications = {}, onFixBattery = {}, onFixFullScreen = {}, onTestSound = {}, onDisconnect = {}, onBack = {}, version = "0.0.0",
+            onFixNotifications = {
+            }, onFixBattery = {}, onFixFullScreen = {}, onTestSound = {}, onDisconnect = {}, onBack = {}, version = "0.0.0"
         )
     }
 
@@ -412,8 +566,11 @@ class ScreenshotTest {
             com.lumenarcanus.dialife.data.Treatment(id = "g1", t = now - 6 * 60_000L, glucose = 186)
         com.lumenarcanus.dialife.ui.meal.MealScreen(
             repo = null, treatments = t, dose = com.lumenarcanus.dialife.data.DoseSettings(), planned = emptyList(), units = Units.MgDl,
-            editing = meal(now).copy(foodItems = meal(now).foodItems!! + com.lumenarcanus.dialife.data.FoodItem("Гречка з котлетою", null, null, null)),
-            initialTime = null, onSave = {}, onSaved = {}, onClose = {}, clock = { now },
+            editing = meal(now).copy(
+                foodItems =
+                meal(now).foodItems!! + com.lumenarcanus.dialife.data.FoodItem("Гречка з котлетою", null, null, null)
+            ),
+            initialTime = null, onSave = {}, onSaved = {}, onClose = {}, clock = { now }
         )
     }
 
@@ -424,36 +581,143 @@ class ScreenshotTest {
             com.lumenarcanus.dialife.data.Treatment(id = "g1", t = now - 6 * 60_000L, glucose = 186)
         com.lumenarcanus.dialife.ui.meal.MealScreen(
             repo = null, treatments = t, dose = com.lumenarcanus.dialife.data.DoseSettings(), planned = emptyList(), units = Units.MgDl,
-            editing = meal(now).copy(foodItems = meal(now).foodItems!! + com.lumenarcanus.dialife.data.FoodItem("Гречка з котлетою", null, null, null)),
-            initialTime = null, onSave = {}, onSaved = {}, onClose = {}, clock = { now },
+            editing = meal(now).copy(
+                foodItems =
+                meal(now).foodItems!! + com.lumenarcanus.dialife.data.FoodItem("Гречка з котлетою", null, null, null)
+            ),
+            initialTime = null, onSave = {}, onSaved = {}, onClose = {}, clock = { now }
         )
     }
 
     @Test
     @Config(qualifiers = "en-w412dp-h2600dp-xxhdpi")
     fun plannedEnAll() = shot("planned_dark_en_all", dark = true) {
-        androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
-            val p = com.lumenarcanus.dialife.data.PlannedDose(id = "p1", mealId = "m1", dose = 4.0, food = 2.25, corr = 2.0, carbs = 45, meter = 186, meterAt = now - 30 * 60_000L, createdAt = now - 10 * 60_000L, by = "Мама")
-            com.lumenarcanus.dialife.ui.meal.PlannedCard(p, com.lumenarcanus.dialife.data.DoseSettings(), now, listOf(meal(now)), null, Units.MgDl, {}, {})
-            com.lumenarcanus.dialife.ui.meal.PlannedCard(p.copy(id = "p2", createdAt = now - 65 * 60_000L), com.lumenarcanus.dialife.data.DoseSettings(), now, listOf(meal(now)),
-                com.lumenarcanus.dialife.data.Question(id = 9, kind = "planned", state = "open", from = now - 25 * 60_000L, to = now, sgvFrom = 0, sgvTo = 0, plannedId = "p2", dose = 4.0), Units.MgDl, {}, {})
-            com.lumenarcanus.dialife.ui.meal.EntryDetail(meal(now), listOf(meal(now),
-                com.lumenarcanus.dialife.data.Treatment(id = "i1", t = now - 30 * 60_000L, insulin = 2.0, insulinType = "rapid", insulinName = "Rapilog One", enteredBy = "Тато")),
-                com.lumenarcanus.dialife.data.DoseSettings(), Units.MgDl)
+        androidx.compose.foundation.layout.Column(
+            androidx.compose.ui.Modifier.padding(16.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
+        ) {
+            val p = com.lumenarcanus.dialife.data.PlannedDose(
+                id = "p1", mealId = "m1", dose = 4.0, food = 2.25, corr = 2.0, carbs = 45, meter = 186,
+                meterAt =
+                now - 30 * 60_000L,
+                createdAt = now - 10 * 60_000L, by = "Мама"
+            )
+            com.lumenarcanus.dialife.ui.meal.PlannedCard(
+                p,
+                com.lumenarcanus.dialife.data.DoseSettings(),
+                now,
+                listOf(
+                    meal(now)
+                ),
+                null,
+                Units.MgDl,
+                {
+                },
+                {}
+            )
+            com.lumenarcanus.dialife.ui.meal.PlannedCard(
+                p.copy(id = "p2", createdAt = now - 65 * 60_000L),
+                com.lumenarcanus.dialife.data.DoseSettings(),
+                now,
+                listOf(meal(now)),
+                Question(
+                    id = 9,
+                    kind = "planned",
+                    state = "open",
+                    from = now - 25 * 60_000L,
+                    to = now,
+                    sgvFrom = 0,
+                    sgvTo = 0,
+                    plannedId = "p2",
+                    dose = 4.0,
+                ),
+                Units.MgDl,
+                {
+                },
+                {}
+            )
+            com.lumenarcanus.dialife.ui.meal.EntryDetail(
+                meal(now),
+                listOf(
+                    meal(now),
+                    com.lumenarcanus.dialife.data.Treatment(
+                        id = "i1",
+                        t = now - 30 * 60_000L,
+                        insulin = 2.0,
+                        insulinType = "rapid",
+                        insulinName = "Rapilog One",
+                        enteredBy = "Тато"
+                    )
+                ),
+                com.lumenarcanus.dialife.data.DoseSettings(),
+                Units.MgDl
+            )
         }
     }
 
     @Test
     @Config(qualifiers = "es-w412dp-h2600dp-xxhdpi")
     fun plannedEsAll() = shot("planned_dark_es_all", dark = true) {
-        androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
-            val p = com.lumenarcanus.dialife.data.PlannedDose(id = "p1", mealId = "m1", dose = 4.0, food = 2.25, corr = 2.0, carbs = 45, meter = 186, meterAt = now - 30 * 60_000L, createdAt = now - 10 * 60_000L, by = "Мама")
-            com.lumenarcanus.dialife.ui.meal.PlannedCard(p, com.lumenarcanus.dialife.data.DoseSettings(), now, listOf(meal(now)), null, Units.MgDl, {}, {})
-            com.lumenarcanus.dialife.ui.meal.PlannedCard(p.copy(id = "p2", createdAt = now - 65 * 60_000L), com.lumenarcanus.dialife.data.DoseSettings(), now, listOf(meal(now)),
-                com.lumenarcanus.dialife.data.Question(id = 9, kind = "planned", state = "open", from = now - 25 * 60_000L, to = now, sgvFrom = 0, sgvTo = 0, plannedId = "p2", dose = 4.0), Units.MgDl, {}, {})
-            com.lumenarcanus.dialife.ui.meal.EntryDetail(meal(now), listOf(meal(now),
-                com.lumenarcanus.dialife.data.Treatment(id = "i1", t = now - 30 * 60_000L, insulin = 2.0, insulinType = "rapid", insulinName = "Rapilog One", enteredBy = "Тато")),
-                com.lumenarcanus.dialife.data.DoseSettings(), Units.MgDl)
+        androidx.compose.foundation.layout.Column(
+            androidx.compose.ui.Modifier.padding(16.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
+        ) {
+            val p = com.lumenarcanus.dialife.data.PlannedDose(
+                id = "p1", mealId = "m1", dose = 4.0, food = 2.25, corr = 2.0, carbs = 45, meter = 186,
+                meterAt =
+                now - 30 * 60_000L,
+                createdAt = now - 10 * 60_000L, by = "Мама"
+            )
+            com.lumenarcanus.dialife.ui.meal.PlannedCard(
+                p,
+                com.lumenarcanus.dialife.data.DoseSettings(),
+                now,
+                listOf(
+                    meal(now)
+                ),
+                null,
+                Units.MgDl,
+                {
+                },
+                {}
+            )
+            com.lumenarcanus.dialife.ui.meal.PlannedCard(
+                p.copy(id = "p2", createdAt = now - 65 * 60_000L),
+                com.lumenarcanus.dialife.data.DoseSettings(),
+                now,
+                listOf(meal(now)),
+                Question(
+                    id = 9,
+                    kind = "planned",
+                    state = "open",
+                    from = now - 25 * 60_000L,
+                    to = now,
+                    sgvFrom = 0,
+                    sgvTo = 0,
+                    plannedId = "p2",
+                    dose = 4.0,
+                ),
+                Units.MgDl,
+                {
+                },
+                {}
+            )
+            com.lumenarcanus.dialife.ui.meal.EntryDetail(
+                meal(now),
+                listOf(
+                    meal(now),
+                    com.lumenarcanus.dialife.data.Treatment(
+                        id = "i1",
+                        t = now - 30 * 60_000L,
+                        insulin = 2.0,
+                        insulinType = "rapid",
+                        insulinName = "Rapilog One",
+                        enteredBy = "Тато"
+                    )
+                ),
+                com.lumenarcanus.dialife.data.DoseSettings(),
+                Units.MgDl
+            )
         }
     }
 
@@ -462,12 +726,26 @@ class ScreenshotTest {
     fun webLoginEnAll() = shot("web_login_en_all", dark = true) {
         androidx.compose.foundation.layout.Column(
             androidx.compose.ui.Modifier.padding(20.dp),
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
         ) {
-            com.lumenarcanus.dialife.ui.web.Approve(com.lumenarcanus.dialife.data.WebLoginInfo("x", "Firefox", "Linux", now + 120_000, ip = "198.51.100.9"), now = now) {}
+            com.lumenarcanus.dialife.ui.web.Approve(
+                com.lumenarcanus.dialife.data.WebLoginInfo("x", "Firefox", "Linux", now + 120_000, ip = "198.51.100.9"),
+                now = now
+            ) {
+            }
             com.lumenarcanus.dialife.ui.web.Sessions(
-                listOf(com.lumenarcanus.dialife.data.WebSession(1, "Chrome", "Windows", "Тато", now - 86_400_000, now + 6 * 86_400_000, now - 600_000)),
-                now = now,
+                listOf(
+                    com.lumenarcanus.dialife.data.WebSession(
+                        1,
+                        "Chrome",
+                        "Windows",
+                        "Тато",
+                        now - 86_400_000,
+                        now + 6 * 86_400_000,
+                        now - 600_000
+                    )
+                ),
+                now = now
             ) {}
         }
     }
@@ -477,12 +755,26 @@ class ScreenshotTest {
     fun webLoginEsAll() = shot("web_login_es_all", dark = true) {
         androidx.compose.foundation.layout.Column(
             androidx.compose.ui.Modifier.padding(20.dp),
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
         ) {
-            com.lumenarcanus.dialife.ui.web.Approve(com.lumenarcanus.dialife.data.WebLoginInfo("x", "Firefox", "Linux", now + 120_000, ip = "198.51.100.9"), now = now) {}
+            com.lumenarcanus.dialife.ui.web.Approve(
+                com.lumenarcanus.dialife.data.WebLoginInfo("x", "Firefox", "Linux", now + 120_000, ip = "198.51.100.9"),
+                now = now
+            ) {
+            }
             com.lumenarcanus.dialife.ui.web.Sessions(
-                listOf(com.lumenarcanus.dialife.data.WebSession(1, "Chrome", "Windows", "Тато", now - 86_400_000, now + 6 * 86_400_000, now - 600_000)),
-                now = now,
+                listOf(
+                    com.lumenarcanus.dialife.data.WebSession(
+                        1,
+                        "Chrome",
+                        "Windows",
+                        "Тато",
+                        now - 86_400_000,
+                        now + 6 * 86_400_000,
+                        now - 600_000
+                    )
+                ),
+                now = now
             ) {}
         }
     }
@@ -495,16 +787,33 @@ class ScreenshotTest {
     @Config(qualifiers = "es-w412dp-h2600dp-xxhdpi")
     fun homeDarkEsAll() = shot("home_dark_es_all", dark = true) { HomeScreen(sampleHomeUi(now), deviceName = "Тато") }
 
-
     @Test
     @Config(qualifiers = "en-w412dp-h3500dp-xxhdpi")
     fun doseSettingsEnAll() = shot("dose_settings_dark_en_all", dark = true) {
-        com.lumenarcanus.dialife.ui.settings.DoseSettingsScreen(com.lumenarcanus.dialife.data.DoseSettings(updatedBy = "Тато"), Units.MgDl, onSave = { Result.success(it) }, onBack = {})
+        com.lumenarcanus.dialife.ui.settings.DoseSettingsScreen(
+            com.lumenarcanus.dialife.data.DoseSettings(
+                updatedBy = "Тато"
+            ),
+            Units.MgDl,
+            onSave = {
+                Result.success(it)
+            },
+            onBack = {}
+        )
     }
 
     @Test
     @Config(qualifiers = "es-w412dp-h3500dp-xxhdpi")
     fun doseSettingsEsAll() = shot("dose_settings_dark_es_all", dark = true) {
-        com.lumenarcanus.dialife.ui.settings.DoseSettingsScreen(com.lumenarcanus.dialife.data.DoseSettings(updatedBy = "Тато"), Units.MgDl, onSave = { Result.success(it) }, onBack = {})
+        com.lumenarcanus.dialife.ui.settings.DoseSettingsScreen(
+            com.lumenarcanus.dialife.data.DoseSettings(
+                updatedBy = "Тато"
+            ),
+            Units.MgDl,
+            onSave = {
+                Result.success(it)
+            },
+            onBack = {}
+        )
     }
 }

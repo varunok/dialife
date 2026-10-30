@@ -27,7 +27,7 @@ object Watchdog {
         context.getSystemService(AlarmManager::class.java).setAndAllowWhileIdle(
             AlarmManager.ELAPSED_REALTIME_WAKEUP,
             SystemClock.elapsedRealtime() + EVERY_MS,
-            pending(context),
+            pending(context)
         )
     }
 
@@ -36,8 +36,10 @@ object Watchdog {
     }
 
     private fun pending(context: Context) = PendingIntent.getBroadcast(
-        context, 0, Intent(context, WatchdogReceiver::class.java),
-        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        context,
+        0,
+        Intent(context, WatchdogReceiver::class.java),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
     )
 
     internal fun check(context: Context) {

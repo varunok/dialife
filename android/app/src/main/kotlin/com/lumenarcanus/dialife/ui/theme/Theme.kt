@@ -14,13 +14,23 @@ fun DiaLifeTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () 
     // Material components read the scheme; our screens read DiaTheme.colors directly.
     val scheme = if (dark) {
         darkColorScheme(
-            primary = dia.inRange, background = dia.background, surface = dia.surface,
-            onBackground = dia.text, onSurface = dia.text, outline = dia.line, error = dia.low,
+            primary = dia.inRange,
+            background = dia.background,
+            surface = dia.surface,
+            onBackground = dia.text,
+            onSurface = dia.text,
+            outline = dia.line,
+            error = dia.low
         )
     } else {
         lightColorScheme(
-            primary = dia.inRange, background = dia.background, surface = dia.surface,
-            onBackground = dia.text, onSurface = dia.text, outline = dia.line, error = dia.low,
+            primary = dia.inRange,
+            background = dia.background,
+            surface = dia.surface,
+            onBackground = dia.text,
+            onSurface = dia.text,
+            outline = dia.line,
+            error = dia.low
         )
     }
     CompositionLocalProvider(LocalDiaColors provides dia) {
@@ -30,5 +40,6 @@ fun DiaLifeTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () 
 
 object DiaTheme {
     val colors: DiaColors
-        @Composable @ReadOnlyComposable get() = LocalDiaColors.current
+        @Composable @ReadOnlyComposable
+        get() = LocalDiaColors.current
 }

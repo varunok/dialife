@@ -31,7 +31,7 @@ data class DiaColors(
     val insulinContainer: Color,
     val carbs: Color,
     val carbsContainer: Color,
-    val isDark: Boolean,
+    val isDark: Boolean
 )
 
 val DarkDiaColors = DiaColors(
@@ -55,7 +55,7 @@ val DarkDiaColors = DiaColors(
     insulinContainer = Color(0xFF2B2147),
     carbs = Color(0xFFF5C46B),
     carbsContainer = Color(0xFF3A2A12),
-    isDark = true,
+    isDark = true
 )
 
 val LightDiaColors = DiaColors(
@@ -79,7 +79,7 @@ val LightDiaColors = DiaColors(
     insulinContainer = Color(0xFFF1EDFF),
     carbs = Color(0xFF7A4800),
     carbsContainer = Color(0xFFFDF3E2),
-    isDark = false,
+    isDark = false
 )
 
 val LocalDiaColors = staticCompositionLocalOf { DarkDiaColors }

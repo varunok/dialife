@@ -38,8 +38,10 @@ object BasalReminder {
                 val cal = Calendar.getInstance().apply {
                     timeInMillis = now
                     add(Calendar.DAY_OF_YEAR, day)
-                    set(Calendar.HOUR_OF_DAY, m / 60); set(Calendar.MINUTE, m % 60)
-                    set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                    set(Calendar.HOUR_OF_DAY, m / 60)
+                    set(Calendar.MINUTE, m % 60)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
                 }
                 cal.timeInMillis to m
             }
@@ -48,26 +50,34 @@ object BasalReminder {
     }
 
     private fun pending(context: Context) = PendingIntent.getBroadcast(
-        context, 1, Intent(context, BasalReminderReceiver::class.java),
-        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        context,
+        1,
+        Intent(context, BasalReminderReceiver::class.java),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
     )
 
     internal fun fire(context: Context) {
         val now = System.currentTimeMillis()
-        val due = (Prefs.basalTimes.map { m ->
-            Calendar.getInstance().apply {
-                timeInMillis = now
-                set(Calendar.HOUR_OF_DAY, m / 60); set(Calendar.MINUTE, m % 60)
-                set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-            }.timeInMillis
-        } + Prefs.basalTimes.map { m ->
-            Calendar.getInstance().apply {
-                timeInMillis = now
-                add(Calendar.DAY_OF_YEAR, 1)
-                set(Calendar.HOUR_OF_DAY, m / 60); set(Calendar.MINUTE, m % 60)
-                set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-            }.timeInMillis
-        }).filter { it >= now - 10 * 60_000L }.minOrNull() ?: return
+        val due = (
+            Prefs.basalTimes.map { m ->
+                Calendar.getInstance().apply {
+                    timeInMillis = now
+                    set(Calendar.HOUR_OF_DAY, m / 60)
+                    set(Calendar.MINUTE, m % 60)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+            } + Prefs.basalTimes.map { m ->
+                Calendar.getInstance().apply {
+                    timeInMillis = now
+                    add(Calendar.DAY_OF_YEAR, 1)
+                    set(Calendar.HOUR_OF_DAY, m / 60)
+                    set(Calendar.MINUTE, m % 60)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+            }
+            ).filter { it >= now - 10 * 60_000L }.minOrNull() ?: return
         // already given (early, or someone entered it): nothing to remind
         // the process may have been started just for this: fall back to the saved day
         val history = context.liveRepository.live.value.history ?: LiveCache(context.filesDir).loadAny()?.history
@@ -81,12 +91,16 @@ object BasalReminder {
 
     internal fun show(context: Context, due: Long) {
         val open = PendingIntent.getActivity(
-            context, 3, Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            context,
+            3,
+            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         val n = Notification.Builder(context, Notifications.CHANNEL_REMINDERS)
             .setSmallIcon(R.drawable.ic_stat_drop)
-            .setContentTitle(Prefs.basalName?.let { context.getString(R.string.rem_title, it) } ?: context.getString(R.string.rem_title_plain))
+            .setContentTitle(
+                Prefs.basalName?.let { context.getString(R.string.rem_title, it) } ?: context.getString(R.string.rem_title_plain)
+            )
             .setContentText(context.getString(R.string.rem_body, AlarmText.clock(context, due)))
             .setAutoCancel(true)
             .setContentIntent(open)

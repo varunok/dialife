@@ -41,7 +41,9 @@ object Meals {
         val ids = runs.map { r -> r.map { it.id }.toSet() }
         val taken = mutableSetOf<String>()
         // linked first: a dose says which meal it was for
-        val linked = runs.indices.map { i -> rapid.filter { it.mealId != null && it.mealId in ids[i] }.also { l -> taken += l.map { it.id } } }
+        val linked = runs.indices.map { i ->
+            rapid.filter { it.mealId != null && it.mealId in ids[i] }.also { l -> taken += l.map { it.id } }
+        }
         val known = foods.map { it.id }.toSet()
         return runs.mapIndexed { i, r ->
             val from = r.first().t - rules.beforeMs

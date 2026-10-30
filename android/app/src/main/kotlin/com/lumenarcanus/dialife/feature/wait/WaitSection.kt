@@ -82,7 +82,7 @@ fun CountdownCard(ui: CountdownUiState, units: Units, onEaten: () -> Unit) {
 
     Column(
         Modifier.fillMaxWidth().background(fill, RoundedCornerShape(18.dp)).border(1.dp, ink, RoundedCornerShape(18.dp)).padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Ring(ui, ink)
@@ -93,7 +93,7 @@ fun CountdownCard(ui: CountdownUiState, units: Units, onEaten: () -> Unit) {
         }
         val facts = listOfNotNull(
             stringResource(R.string.wait_fact_dose, formatUnits(w.units, locale), AlarmText.clock(ctx, w.doseAt)),
-            sgv?.let { stringResource(R.string.wait_fact_sugar, it) },
+            sgv?.let { stringResource(R.string.wait_fact_sugar, it) }
         )
         Text(facts.joinToString("  ·  "), color = c.textMuted, fontSize = 12.sp)
         Text(stringResource(R.string.wait_note), color = c.textFaint, fontSize = 11.5.sp)
@@ -109,8 +109,11 @@ fun WarningCard(ui: WarningUiState, onClose: () -> Unit) {
     val locale = LocalConfiguration.current.locales[0]
     val dose = stringResource(R.string.wait_fact_dose, formatUnits(ui.units, locale), AlarmText.clock(ctx, ui.doseAt))
     Column(
-        Modifier.fillMaxWidth().background(c.highContainer, RoundedCornerShape(18.dp)).border(1.dp, c.high, RoundedCornerShape(18.dp)).padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        Modifier.fillMaxWidth().background(
+            c.highContainer,
+            RoundedCornerShape(18.dp)
+        ).border(1.dp, c.high, RoundedCornerShape(18.dp)).padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text(stringResource(R.string.wait_more, ui.covers, ui.food), color = c.high, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         Text(stringResource(R.string.wait_more_check), color = c.textMuted, fontSize = 13.sp)
@@ -166,5 +169,4 @@ private fun CardButton(label: String, onClick: () -> Unit) {
     }
 }
 
-internal fun formatUnits(u: Double, locale: Locale): String =
-    if (u % 1.0 == 0.0) u.toInt().toString() else String.format(locale, "%.1f", u)
+internal fun formatUnits(u: Double, locale: Locale): String = if (u % 1.0 == 0.0) u.toInt().toString() else String.format(locale, "%.1f", u)

@@ -30,8 +30,11 @@ class QuestionNotifier(private val app: Context) {
     /** A single change from the stream; a reminder re-shows it even when nothing changed. */
     fun onEvent(q: Question, myId: Long, units: Units) {
         if (q.watch) showWatch(q)
-        if (!q.asks(myId)) cancel(q.id)
-        else if (q.remind || shown[q.id] != q.round) show(q, units)
+        if (!q.asks(myId)) {
+            cancel(q.id)
+        } else if (q.remind || shown[q.id] != q.round) {
+            show(q, units)
+        }
     }
 
     fun cancel(id: Long) {
@@ -45,22 +48,35 @@ class QuestionNotifier(private val app: Context) {
         val rise = q.kind == "rise"
         var body = questionBody(app, q, units)
         q.previous().takeIf { it.isNotEmpty() }?.let { prev ->
-            body += " " + app.getString(R.string.q_again, prev.joinToString(", ") { app.getString(R.string.q_said, it.person, answerText(app, it.answer)) })
+            body +=
+                " " +
+                app.getString(
+                    R.string.q_again,
+                    prev.joinToString(", ") {
+                        app.getString(R.string.q_said, it.person, answerText(app, it.answer))
+                    }
+                )
         }
         val open = PendingIntent.getActivity(
-            app, q.id.toInt(), Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            app,
+            q.id.toInt(),
+            Intent(app, MainActivity::class.java).addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            ),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         fun action(answer: String, label: Int) = Notification.Action.Builder(
-            null, app.getString(label),
+            null,
+            app.getString(label),
             PendingIntent.getBroadcast(
-                app, (q.id * 10 + answer.hashCode() % 10).toInt(),
+                app,
+                (q.id * 10 + answer.hashCode() % 10).toInt(),
                 Intent(app, ActionReceiver::class.java)
                     .putExtra(ActionReceiver.EXTRA_ACTION, ActionReceiver.ANSWER)
                     .putExtra(ActionReceiver.EXTRA_ID, q.id)
                     .putExtra(ActionReceiver.EXTRA_ANSWER, answer),
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-            ),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
         ).build()
         // at night it waits quietly in the shade; by day it sounds like any message
         val b = Notification.Builder(app, if (q.quiet) Notifications.CHANNEL_QUESTIONS_NIGHT else Notifications.CHANNEL_QUESTIONS)
@@ -92,8 +108,12 @@ class QuestionNotifier(private val app: Context) {
     private fun showWatch(q: Question) {
         if (!watched.add(q.id)) return
         val open = PendingIntent.getActivity(
-            app, q.id.toInt(), Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            app,
+            q.id.toInt(),
+            Intent(app, MainActivity::class.java).addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            ),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         val body = watchBody(app, q)
         val n = Notification.Builder(app, Notifications.CHANNEL_QUESTIONS)
@@ -115,22 +135,37 @@ class QuestionNotifier(private val app: Context) {
         fun watchBody(ctx: Context, q: Question): String {
             val doses = q.doses.sortedBy { it.t }
             return ctx.getString(
-                R.string.watch_body, doubleInsulin(ctx, q),
-                doses.getOrNull(0)?.let { units(ctx, it.units) }.orEmpty(), doses.getOrNull(1)?.let { units(ctx, it.units) }.orEmpty(),
-                AlarmText.clock(ctx, q.watchUntil ?: q.to),
+                R.string.watch_body,
+                doubleInsulin(ctx, q),
+                doses.getOrNull(0)?.let { units(ctx, it.units) }.orEmpty(),
+                doses.getOrNull(1)?.let { units(ctx, it.units) }.orEmpty(),
+                AlarmText.clock(ctx, q.watchUntil ?: q.to)
             )
         }
 
         fun doubleInsulin(ctx: Context, q: Question): String = com.lumenarcanus.dialife.ui.treatment.insulinLabel(
-            ctx, com.lumenarcanus.dialife.data.InsulinType.of(q.insulin),
+            ctx,
+            com.lumenarcanus.dialife.data.InsulinType.of(q.insulin)
         )
 
         private fun units(ctx: Context, u: Double) =
-            com.lumenarcanus.dialife.ui.treatment.formatAmount(u, ctx.resources.configuration.locales[0]) + " " + ctx.getString(R.string.unit_insulin)
+            com.lumenarcanus.dialife.ui.treatment.formatAmount(u, ctx.resources.configuration.locales[0]) + " " +
+                ctx.getString(R.string.unit_insulin)
 
-        fun questionTitle(ctx: Context, q: Question): String = if (q.kind == "planned") ctx.getString(R.string.q_planned_title, AlarmText.clock(ctx, q.from)) else ctx.getString(
-            when (q.kind) { "rise" -> R.string.q_rise_title; "bolus" -> R.string.q_bolus_title; "double" -> R.string.q_double_title; else -> R.string.q_fall_title },
-        )
+        fun questionTitle(ctx: Context, q: Question): String = if (q.kind ==
+            "planned"
+        ) {
+            ctx.getString(R.string.q_planned_title, AlarmText.clock(ctx, q.from))
+        } else {
+            ctx.getString(
+                when (q.kind) {
+                    "rise" -> R.string.q_rise_title
+                    "bolus" -> R.string.q_bolus_title
+                    "double" -> R.string.q_double_title
+                    else -> R.string.q_fall_title
+                }
+            )
+        }
 
         /** "Glucose rose from 118 to 171 since 13:20", or for a meal without insulin "Food was logged at 19:10…". */
         fun questionBody(ctx: Context, q: Question, units: Units): String {
@@ -140,8 +175,14 @@ class QuestionNotifier(private val app: Context) {
                 "double" -> {
                     val (a, b) = q.doses.sortedBy { it.t }.let { (it.getOrNull(0) ?: return "") to (it.getOrNull(1) ?: it[0]) }
                     ctx.getString(
-                        R.string.q_double_body, doubleInsulin(ctx, q),
-                        units(ctx, a.units), AlarmText.clock(ctx, a.t), a.by, units(ctx, b.units), AlarmText.clock(ctx, b.t), b.by,
+                        R.string.q_double_body,
+                        doubleInsulin(ctx, q),
+                        units(ctx, a.units),
+                        AlarmText.clock(ctx, a.t),
+                        a.by,
+                        units(ctx, b.units),
+                        AlarmText.clock(ctx, b.t),
+                        b.by
                     )
                 }
                 "bolus" -> ctx.getString(R.string.q_bolus_body, AlarmText.clock(ctx, q.from))
@@ -160,7 +201,7 @@ class QuestionNotifier(private val app: Context) {
                 "one" -> R.string.q_ans_one
                 "two" -> R.string.q_ans_two
                 else -> R.string.q_ans_nothing
-            },
+            }
         )
     }
 }

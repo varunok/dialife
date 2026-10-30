@@ -1,10 +1,10 @@
 package com.lumenarcanus.dialife
 
 import android.app.Application
-import kotlinx.coroutines.launch
 import com.lumenarcanus.dialife.live.AlarmController
 import com.lumenarcanus.dialife.live.LiveRepository
 import com.lumenarcanus.dialife.live.Notifications
+import kotlinx.coroutines.launch
 
 class DiaLifeApp : Application() {
     /** One connection per process: the screen and the foreground service share it. */

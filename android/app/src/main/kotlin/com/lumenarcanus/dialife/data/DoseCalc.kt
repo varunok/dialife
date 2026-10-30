@@ -68,10 +68,11 @@ object DoseCalc {
         val given: Double, // rapid already given for this meal
         val toGive: Double, // what is still to give (dose - given)
         val level: Level, // of toGive
-        val alerts: List<Alert>,
+        val alerts: List<Alert>
     ) {
         /** May go in as a planned dose: something to give, and not a mistake. */
         val canPlan get() = toGive > 0 && carbs > 0 && level != Level.Absurd
+
         /** Saving asks first: a red card or a note that matters. */
         val asks get() = alerts.any { it.bad || it is Alert.RecentRapid || it is Alert.DoseUnusual || it is Alert.CarbsUnusual }
     }
@@ -92,7 +93,7 @@ object DoseCalc {
         given: Double = 0.0,
         recentRapid: Pair<Double, Long>? = null,
         usualDose: Double? = null,
-        usualCarbs: Int? = null,
+        usualCarbs: Int? = null
     ): Meal {
         val food = carbs.toDouble() / s.ratio.coerceAtLeast(1)
         val age = meterAt?.let { ((now - it) / 60_000L).toInt().coerceAtLeast(0) }
@@ -103,8 +104,11 @@ object DoseCalc {
         val toGive = round(dose - given, "nearest", 0.1)
         val level = level(toGive, s.maxRapid, usualDose)
         val alerts = buildList {
-            if (carbs > s.maxCarbs) add(Alert.CarbsHigh(carbs, s.maxCarbs))
-            else if (usualCarbs != null && usualCarbs > 0 && carbs > usualCarbs * 1.5) add(Alert.CarbsUnusual(carbs, usualCarbs))
+            if (carbs > s.maxCarbs) {
+                add(Alert.CarbsHigh(carbs, s.maxCarbs))
+            } else if (usualCarbs != null && usualCarbs > 0 && carbs > usualCarbs * 1.5) {
+                add(Alert.CarbsUnusual(carbs, usualCarbs))
+            }
             when (level) {
                 Level.Absurd -> add(Alert.DoseAbsurd(toGive, s.maxRapid))
                 Level.High -> add(Alert.DoseHigh(toGive, s.maxRapid))
@@ -118,10 +122,12 @@ object DoseCalc {
                 meter > 350 -> add(Alert.VeryHigh(meter, s.table.maxOfOrNull { it.u } ?: 0.0))
             }
             recentRapid?.let { add(Alert.RecentRapid(it.first, it.second)) }
-            if (given > 0) when {
-                toGive > 0 -> add(Alert.GivenLess(given, dose))
-                toGive < 0 -> add(Alert.GivenMore(given, dose))
-                else -> add(Alert.GivenSame(given))
+            if (given > 0) {
+                when {
+                    toGive > 0 -> add(Alert.GivenLess(given, dose))
+                    toGive < 0 -> add(Alert.GivenMore(given, dose))
+                    else -> add(Alert.GivenSame(given))
+                }
             }
         }
         return Meal(carbs, food, meter, age, fresh, corr, raw, dose, given, toGive, level, alerts)

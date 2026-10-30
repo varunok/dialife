@@ -16,11 +16,11 @@ import com.lumenarcanus.dialife.live.AlarmText
 import com.lumenarcanus.dialife.live.LiveRepository
 import com.lumenarcanus.dialife.live.Notifications
 import com.lumenarcanus.dialife.liveRepository
+import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import java.util.Locale
 
 /**
  * "You can eat": an ordinary notification when the wait on home runs out, on
@@ -80,17 +80,23 @@ object EatReminder {
 
     private fun show(context: Context, w: Wait) {
         val open = PendingIntent.getActivity(
-            context, 5, Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            context,
+            5,
+            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         val eaten = PendingIntent.getBroadcast(
-            context, 6, Intent(context, EatenReceiver::class.java).putExtra(EXTRA_DOSE, w.doseId),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            context,
+            6,
+            Intent(context, EatenReceiver::class.java).putExtra(EXTRA_DOSE, w.doseId),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         val n = Notification.Builder(context, Notifications.CHANNEL_EAT)
             .setSmallIcon(R.drawable.ic_stat_drop)
             .setContentTitle(context.getString(R.string.wait_go))
-            .setContentText(context.getString(R.string.wait_fact_dose, formatUnits(w.units, Locale.getDefault()), AlarmText.clock(context, w.doseAt)))
+            .setContentText(
+                context.getString(R.string.wait_fact_dose, formatUnits(w.units, Locale.getDefault()), AlarmText.clock(context, w.doseAt))
+            )
             .setAutoCancel(true)
             .setContentIntent(open)
             .addAction(Notification.Action.Builder(null, context.getString(R.string.wait_eaten), eaten).build())
@@ -104,8 +110,10 @@ object EatReminder {
     private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     private fun timer(context: Context, doseId: String?) = PendingIntent.getBroadcast(
-        context, 4, Intent(context, EatReminderReceiver::class.java).apply { doseId?.let { putExtra(EXTRA_DOSE, it) } },
-        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        context,
+        4,
+        Intent(context, EatReminderReceiver::class.java).apply { doseId?.let { putExtra(EXTRA_DOSE, it) } },
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
     )
 }
 

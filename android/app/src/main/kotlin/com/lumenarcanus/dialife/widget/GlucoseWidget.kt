@@ -2,18 +2,22 @@ package com.lumenarcanus.dialife.widget
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.Image
+import androidx.glance.ImageProvider
 import androidx.glance.LocalSize
+import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
-import androidx.glance.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.appwidget.updateAll
@@ -21,16 +25,14 @@ import androidx.glance.background
 import androidx.glance.color.ColorProvider
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
+import androidx.glance.layout.ContentScale
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
+import androidx.glance.layout.fillMaxWidth
+import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.width
-import androidx.glance.layout.height
-import androidx.glance.layout.fillMaxWidth
-import androidx.glance.Image
-import androidx.glance.ImageProvider
-import androidx.glance.layout.ContentScale
 import androidx.glance.semantics.contentDescription
 import androidx.glance.semantics.semantics
 import androidx.glance.text.FontWeight
@@ -42,8 +44,6 @@ import com.lumenarcanus.dialife.data.AlarmView
 import com.lumenarcanus.dialife.data.CredentialStore
 import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.data.StateResponse
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import com.lumenarcanus.dialife.live.AlarmText
 import com.lumenarcanus.dialife.live.LiveCache
 import com.lumenarcanus.dialife.live.Notifications
@@ -68,7 +68,8 @@ private data class WidgetData(
     val alarm: String?, // a ringing episode: "Низький цукор"
     val description: String,
     val forecast: String? = null, // "за 30 хв ≈ 243"
-    val chart: android.graphics.Bitmap? = null, // the last 3 h
+    // the last 3 h
+    val chart: android.graphics.Bitmap? = null
 )
 
 /**
@@ -100,12 +101,17 @@ class GlucoseWidget : GlanceAppWidget() {
         val sample = WidgetData(
             value = "183", unit = unit, arrow = "→", delta = "+4", time = context.getString(R.string.widget_at, "22:47"),
             state = context.getString(R.string.state_in_range, "80–250"), band = 0, stale = false, alarm = null,
-            description = context.getString(R.string.widget_description),
+            description = context.getString(R.string.widget_description)
         )
         provideContent { Content(sample) }
     }
 
-    private fun build(context: Context, state: StateResponse?, creds: Credentials?, history: com.lumenarcanus.dialife.data.History? = null): WidgetData {
+    private fun build(
+        context: Context,
+        state: StateResponse?,
+        creds: Credentials?,
+        history: com.lumenarcanus.dialife.data.History? = null
+    ): WidgetData {
         val units = unitsOf(state?.displayUnits ?: creds?.displayUnits)
         val unit = context.getString(if (units == Units.MgDl) R.string.unit_mgdl else R.string.unit_mmol)
         val bg = state?.bg
@@ -133,13 +139,17 @@ class GlucoseWidget : GlanceAppWidget() {
         val ringing: AlarmView? = state.alarms.firstOrNull { it.state == "firing" }
         val alarm = ringing?.let { AlarmText.kind(context, it) }
         val delta = bg.delta?.let { formatDelta(it, units, locale) }
-        val forecast = state.ar2?.predicted?.lastOrNull()?.let { context.getString(R.string.forecast_30, formatGlucose(it.sgv, units, locale)) }
-        val dark = (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        val forecast = state.ar2?.predicted?.lastOrNull()?.let {
+            context.getString(R.string.forecast_30, formatGlucose(it.sgv, units, locale))
+        }
+        val dark =
+            (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+                android.content.res.Configuration.UI_MODE_NIGHT_YES
         return WidgetData(
             value, unit, Notifications.arrowOf(bg.direction), delta, time, stateText, band, stale, alarm,
             description = listOfNotNull(alarm, "$value $unit", delta, time, stateText, forecast).joinToString(", "),
             forecast = forecast,
-            chart = Sparkline.render(history, th, System.currentTimeMillis(), dark),
+            chart = Sparkline.render(history, th, System.currentTimeMillis(), dark)
         )
     }
 
@@ -195,7 +205,7 @@ private fun Content(d: WidgetData) {
             .padding(horizontal = 14.dp, vertical = if (square) 12.dp else 6.dp)
             .clickable(actionStartActivity<MainActivity>())
             .semantics { contentDescription = d.description },
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         if (d.value == null) {
             Text(d.state.orEmpty(), style = TextStyle(color = TextMuted, fontSize = 14.sp))
@@ -203,9 +213,26 @@ private fun Content(d: WidgetData) {
         }
         if (large) {
             // big enough to read from across the room or half asleep
-            Text(d.alarm ?: d.state.orEmpty(), maxLines = 1, style = TextStyle(color = if (d.alarm != null) Low else accent, fontSize = 18.sp, fontWeight = FontWeight.Medium))
+            Text(
+                d.alarm ?: d.state.orEmpty(),
+                maxLines = 1,
+                style = TextStyle(
+                    color = if (d.alarm !=
+                        null
+                    ) {
+                        Low
+                    } else {
+                        accent
+                    },
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            )
             Row(verticalAlignment = Alignment.CenterVertically, modifier = GlanceModifier.fillMaxWidth()) {
-                Text(d.value, style = TextStyle(color = if (d.stale) TextMuted else TextMain, fontSize = 84.sp, fontWeight = FontWeight.Medium))
+                Text(
+                    d.value,
+                    style = TextStyle(color = if (d.stale) TextMuted else TextMain, fontSize = 84.sp, fontWeight = FontWeight.Medium)
+                )
                 Spacer(GlanceModifier.width(8.dp))
                 Text(d.arrow, style = TextStyle(color = accent, fontSize = 52.sp, fontWeight = FontWeight.Bold))
                 Spacer(GlanceModifier.defaultWeight())
@@ -217,12 +244,34 @@ private fun Content(d: WidgetData) {
             }
             d.chart?.let {
                 Spacer(GlanceModifier.height(6.dp))
-                Image(ImageProvider(it), null, contentScale = ContentScale.FillBounds, modifier = GlanceModifier.fillMaxWidth().defaultWeight())
+                Image(
+                    ImageProvider(it),
+                    null,
+                    contentScale = ContentScale.FillBounds,
+                    modifier = GlanceModifier.fillMaxWidth().defaultWeight()
+                )
             }
         } else if (square) {
-            Text(d.alarm ?: d.state.orEmpty(), maxLines = 1, style = TextStyle(color = if (d.alarm != null) Low else accent, fontSize = 13.sp, fontWeight = FontWeight.Medium))
+            Text(
+                d.alarm ?: d.state.orEmpty(),
+                maxLines = 1,
+                style = TextStyle(
+                    color = if (d.alarm !=
+                        null
+                    ) {
+                        Low
+                    } else {
+                        accent
+                    },
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            )
             Row(verticalAlignment = Alignment.Bottom) {
-                Text(d.value, style = TextStyle(color = if (d.stale) TextMuted else TextMain, fontSize = 52.sp, fontWeight = FontWeight.Medium))
+                Text(
+                    d.value,
+                    style = TextStyle(color = if (d.stale) TextMuted else TextMain, fontSize = 52.sp, fontWeight = FontWeight.Medium)
+                )
                 Spacer(GlanceModifier.width(6.dp))
                 Text(d.arrow, style = TextStyle(color = accent, fontSize = 34.sp, fontWeight = FontWeight.Bold))
             }
@@ -234,22 +283,50 @@ private fun Content(d: WidgetData) {
                     provider = ImageProvider(it),
                     contentDescription = null, // the description above already says it all
                     contentScale = ContentScale.FillBounds,
-                    modifier = GlanceModifier.fillMaxWidth().defaultWeight(),
+                    modifier = GlanceModifier.fillMaxWidth().defaultWeight()
                 )
             }
         } else {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(d.value, style = TextStyle(color = if (d.stale) TextMuted else TextMain, fontSize = 28.sp, fontWeight = FontWeight.Medium))
+                Text(
+                    d.value,
+                    style = TextStyle(color = if (d.stale) TextMuted else TextMain, fontSize = 28.sp, fontWeight = FontWeight.Medium)
+                )
                 Spacer(GlanceModifier.width(4.dp))
                 Text(d.arrow, style = TextStyle(color = accent, fontSize = 22.sp, fontWeight = FontWeight.Bold))
                 Spacer(GlanceModifier.width(10.dp))
                 Column(GlanceModifier.defaultWeight()) {
-                    Text(d.alarm ?: d.state.orEmpty(), maxLines = 1, style = TextStyle(color = if (d.alarm != null) Low else accent, fontSize = 12.sp, fontWeight = FontWeight.Medium))
-                    Text(listOfNotNull(d.delta, d.time).joinToString(" · "), maxLines = 1, style = TextStyle(color = TextMuted, fontSize = 12.sp))
+                    Text(
+                        d.alarm ?: d.state.orEmpty(),
+                        maxLines = 1,
+                        style = TextStyle(
+                            color = if (d.alarm !=
+                                null
+                            ) {
+                                Low
+                            } else {
+                                accent
+                            },
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+                    Text(
+                        listOfNotNull(d.delta, d.time).joinToString(" · "),
+                        maxLines = 1,
+                        style = TextStyle(color = TextMuted, fontSize = 12.sp)
+                    )
                 }
-                if (wide) d.chart?.let {
-                    Spacer(GlanceModifier.width(8.dp))
-                    Image(ImageProvider(it), null, contentScale = ContentScale.FillBounds, modifier = GlanceModifier.width(110.dp).height(36.dp))
+                if (wide) {
+                    d.chart?.let {
+                        Spacer(GlanceModifier.width(8.dp))
+                        Image(
+                            ImageProvider(it),
+                            null,
+                            contentScale = ContentScale.FillBounds,
+                            modifier = GlanceModifier.width(110.dp).height(36.dp)
+                        )
+                    }
                 }
             }
         }

@@ -1,62 +1,62 @@
 package com.lumenarcanus.dialife
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.app.NotificationManager
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.lumenarcanus.dialife.ui.connect.ConnectScreen
-import com.lumenarcanus.dialife.ui.home.HomeScreen
-import com.lumenarcanus.dialife.ui.home.HomeViewModel
-import com.lumenarcanus.dialife.ui.data.DataScreen
-import com.lumenarcanus.dialife.data.Thresholds
-import com.lumenarcanus.dialife.data.DiaLifeApi
-import com.lumenarcanus.dialife.R
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.ui.res.stringResource
-import com.lumenarcanus.dialife.ui.home.BackgroundSetup
-import com.lumenarcanus.dialife.live.LiveService
-import android.Manifest
-import androidx.activity.compose.BackHandler
-import androidx.compose.runtime.saveable.rememberSaveable
-import com.lumenarcanus.dialife.ui.stats.StatsScreen
-import com.lumenarcanus.dialife.ui.log.AlarmLogScreen
-import com.lumenarcanus.dialife.ui.settings.SettingsScreen
-import com.lumenarcanus.dialife.ui.handling.HandlingScreen
-import com.lumenarcanus.dialife.live.ActionReceiver
-import android.app.NotificationManager
-import android.os.Build
-import android.widget.Toast
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
-import android.annotation.SuppressLint
-import android.content.pm.PackageManager
-import android.net.Uri
-import android.os.PowerManager
-import android.provider.Settings
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import com.lumenarcanus.dialife.ui.home.unitsOf
-import com.lumenarcanus.dialife.data.Credentials
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.data.Credentials
+import com.lumenarcanus.dialife.data.DiaLifeApi
+import com.lumenarcanus.dialife.data.Thresholds
+import com.lumenarcanus.dialife.live.ActionReceiver
+import com.lumenarcanus.dialife.live.LiveService
+import com.lumenarcanus.dialife.ui.connect.ConnectScreen
+import com.lumenarcanus.dialife.ui.data.DataScreen
+import com.lumenarcanus.dialife.ui.handling.HandlingScreen
+import com.lumenarcanus.dialife.ui.home.BackgroundSetup
+import com.lumenarcanus.dialife.ui.home.HomeScreen
+import com.lumenarcanus.dialife.ui.home.HomeViewModel
+import com.lumenarcanus.dialife.ui.home.unitsOf
+import com.lumenarcanus.dialife.ui.log.AlarmLogScreen
+import com.lumenarcanus.dialife.ui.settings.SettingsScreen
+import com.lumenarcanus.dialife.ui.stats.StatsScreen
 import com.lumenarcanus.dialife.ui.theme.DiaLifeTheme
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
+import kotlinx.coroutines.launch
 
 private enum class Screen { Home, Stats, Log, Settings, Handling, Data, WebLogin, Meal, DoseSettings }
 
@@ -87,12 +87,15 @@ class MainActivity : AppCompatActivity() {
                         title = { Text(stringResource(R.string.replace_title)) },
                         text = {
                             Text(
-                                if (p.incoming.isNullOrBlank()) stringResource(R.string.replace_body_unnamed, p.current)
-                                else stringResource(R.string.replace_body, p.current, p.incoming),
+                                if (p.incoming.isNullOrBlank()) {
+                                    stringResource(R.string.replace_body_unnamed, p.current)
+                                } else {
+                                    stringResource(R.string.replace_body, p.current, p.incoming)
+                                }
                             )
                         },
                         confirmButton = { TextButton(onClick = vm::confirmReplace) { Text(stringResource(R.string.replace_confirm)) } },
-                        dismissButton = { TextButton(onClick = vm::cancelReplace) { Text(stringResource(R.string.replace_keep)) } },
+                        dismissButton = { TextButton(onClick = vm::cancelReplace) { Text(stringResource(R.string.replace_keep)) } }
                     )
                 }
                 when (val s = session) {
@@ -101,7 +104,7 @@ class MainActivity : AppCompatActivity() {
                         state = connect,
                         onScanned = vm::onLink,
                         onScannerFailed = vm::onScannerFailed,
-                        onManual = vm::onManual,
+                        onManual = vm::onManual
                     )
                     is Session.Connected -> {
                         var screen by rememberSaveable { mutableStateOf(Screen.Home) }
@@ -112,15 +115,27 @@ class MainActivity : AppCompatActivity() {
                         var mealFrom by rememberSaveable { mutableStateOf(0L) }
                         var mealLow by rememberSaveable { mutableStateOf(false) } // carbs for a low: no dose
                         var mealBack by rememberSaveable { mutableStateOf(Screen.Home) } // where the food screen returns
-                        var mealEntry by remember { mutableStateOf<com.lumenarcanus.dialife.data.Treatment?>(null) } // an older entry, from "Data"
+                        // an older entry, from "Data"
+                        var mealEntry by remember { mutableStateOf<com.lumenarcanus.dialife.data.Treatment?>(null) }
                         // "I'm on it" from the alarm screen or a notification lands here
                         LaunchedEffect(openHandling) {
-                            if (openHandling != 0L) { handling = openHandling; screen = Screen.Handling; openHandling = 0L }
+                            if (openHandling != 0L) {
+                                handling = openHandling
+                                screen = Screen.Handling
+                                openHandling = 0L
+                            }
                         }
                         BackHandler(enabled = screen != Screen.Home) { screen = Screen.Home }
                         when (screen) {
                             Screen.Home -> Home(s.credentials, onMeal = { tr, q ->
-                                mealEdit = tr?.id; mealEntry = tr; mealQuestion = q?.id ?: 0L; mealFrom = q?.from ?: 0L; mealLow = false; mealBack = Screen.Home; screen = Screen.Meal
+                                mealEdit = tr?.id
+                                mealEntry = tr
+                                mealQuestion = q?.id ?: 0L
+                                mealFrom = q?.from ?: 0L
+                                mealLow = false
+                                mealBack =
+                                    Screen.Home
+                                screen = Screen.Meal
                             }) { screen = it }
                             Screen.Meal -> {
                                 val home = viewModel { HomeViewModel(liveRepository) }
@@ -140,10 +155,28 @@ class MainActivity : AppCompatActivity() {
                                     onSave = liveRepository::saveTreatment,
                                     onSaved = { food ->
                                         val q = mealQuestion
-                                        if (q != 0L) lifecycleScope.launch { liveRepository.answerQuestion(q, "food", food.id).onSuccess { questionNotifier.cancel(q) } }
-                                        mealEdit = null; mealEntry = null; mealQuestion = 0L; mealFrom = 0L; screen = mealBack
+                                        if (q !=
+                                            0L
+                                        ) {
+                                            lifecycleScope.launch {
+                                                liveRepository.answerQuestion(q, "food", food.id).onSuccess {
+                                                    questionNotifier.cancel(q)
+                                                }
+                                            }
+                                        }
+                                        mealEdit = null
+                                        mealEntry = null
+                                        mealQuestion = 0L
+                                        mealFrom = 0L
+                                        screen = mealBack
                                     },
-                                    onClose = { mealEdit = null; mealEntry = null; mealQuestion = 0L; mealFrom = 0L; screen = mealBack },
+                                    onClose = {
+                                        mealEdit = null
+                                        mealEntry = null
+                                        mealQuestion = 0L
+                                        mealFrom = 0L
+                                        screen = mealBack
+                                    }
                                 )
                             }
                             Screen.DoseSettings -> {
@@ -152,18 +185,22 @@ class MainActivity : AppCompatActivity() {
                                     dose = live.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
                                     units = unitsOf(live.state?.displayUnits ?: s.credentials.displayUnits),
                                     onSave = { d -> liveRepository.putDose(d) },
-                                    onBack = { screen = Screen.Settings },
+                                    onBack = { screen = Screen.Settings }
                                 )
                             }
                             Screen.Stats -> StatsScreen(
                                 creds = s.credentials,
                                 units = unitsOf(liveRepository.live.value.state?.displayUnits ?: s.credentials.displayUnits),
-                                onBack = { screen = Screen.Home },
+                                onBack = { screen = Screen.Home }
                             )
                             Screen.Settings -> {
                                 var setup by remember { mutableStateOf(backgroundSetup()) }
                                 LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { setup = backgroundSetup() }
-                                val askNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { setup = backgroundSetup() }
+                                val askNotifications =
+                                    rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+                                        setup =
+                                            backgroundSetup()
+                                    }
                                 val live by liveRepository.live.collectAsStateWithLifecycle()
                                 SettingsScreen(
                                     creds = s.credentials,
@@ -173,9 +210,12 @@ class MainActivity : AppCompatActivity() {
                                     onFixBattery = ::askBatteryExemption,
                                     onFixFullScreen = ::askFullScreen,
                                     onTestSound = { on -> if (on) alarmController.ringer.start(-1) else alarmController.ringer.stop(-1) },
-                                    onDisconnect = { screen = Screen.Home; vm.disconnect() },
+                                    onDisconnect = {
+                                        screen = Screen.Home
+                                        vm.disconnect()
+                                    },
                                     onOpenDose = { screen = Screen.DoseSettings },
-                                    onBack = { screen = Screen.Home },
+                                    onBack = { screen = Screen.Home }
                                 )
                             }
                             Screen.Handling -> {
@@ -188,7 +228,16 @@ class MainActivity : AppCompatActivity() {
                                     onAct = ::act,
                                     onSaveTreatment = liveRepository::saveTreatment,
                                     onBack = { screen = Screen.Home },
-                                    onOpenMeal = { mealEdit = null; mealEntry = null; mealQuestion = 0L; mealFrom = 0L; mealLow = true; mealBack = Screen.Handling; screen = Screen.Meal },
+                                    onOpenMeal = {
+                                        mealEdit = null
+                                        mealEntry = null
+                                        mealQuestion = 0L
+                                        mealFrom = 0L
+                                        mealLow = true
+                                        mealBack =
+                                            Screen.Handling
+                                        screen = Screen.Meal
+                                    }
                                 )
                             }
                             Screen.Data -> {
@@ -204,17 +253,26 @@ class MainActivity : AppCompatActivity() {
                                     loadHistory = { from, to -> DiaLifeApi().history(s.credentials, from, to).getOrNull() },
                                     onSaveTreatment = liveRepository::saveTreatment,
                                     onBack = { screen = Screen.Home },
-                                    onOpenMeal = { tr -> mealEdit = tr.id; mealEntry = tr; mealQuestion = 0L; mealFrom = 0L; mealLow = false; mealBack = Screen.Data; screen = Screen.Meal },
+                                    onOpenMeal = { tr ->
+                                        mealEdit = tr.id
+                                        mealEntry = tr
+                                        mealQuestion = 0L
+                                        mealFrom = 0L
+                                        mealLow = false
+                                        mealBack =
+                                            Screen.Data
+                                        screen = Screen.Meal
+                                    }
                                 )
                             }
                             Screen.WebLogin -> com.lumenarcanus.dialife.ui.web.WebLoginScreen(
                                 creds = s.credentials,
-                                onBack = { screen = Screen.Home },
+                                onBack = { screen = Screen.Home }
                             )
                             Screen.Log -> AlarmLogScreen(
                                 creds = s.credentials,
                                 units = unitsOf(liveRepository.live.value.state?.displayUnits ?: s.credentials.displayUnits),
-                                onBack = { screen = Screen.Home },
+                                onBack = { screen = Screen.Home }
                             )
                         }
                     }
@@ -224,7 +282,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     @Composable
-    private fun Home(creds: Credentials, onMeal: (com.lumenarcanus.dialife.data.Treatment?, com.lumenarcanus.dialife.data.Question?) -> Unit, onOpen: (Screen) -> Unit) {
+    private fun Home(
+        creds: Credentials,
+        onMeal: (com.lumenarcanus.dialife.data.Treatment?, com.lumenarcanus.dialife.data.Question?) -> Unit,
+        onOpen: (Screen) -> Unit
+    ) {
         val home = viewModel { HomeViewModel(liveRepository) }
         LaunchedEffect(creds) {
             liveRepository.start(creds) // the screen works even if the service cannot start
@@ -277,10 +339,12 @@ class MainActivity : AppCompatActivity() {
             },
             onDismissQuestion = { id ->
                 lifecycleScope.launch {
-                    liveRepository.dismissQuestion(id).onFailure { Toast.makeText(this@MainActivity, R.string.q_failed, Toast.LENGTH_LONG).show() }
+                    liveRepository.dismissQuestion(id).onFailure {
+                        Toast.makeText(this@MainActivity, R.string.q_failed, Toast.LENGTH_LONG).show()
+                    }
                 }
             },
-            onDisconnect = vm::disconnect,
+            onDisconnect = vm::disconnect
         )
     }
 
@@ -289,8 +353,13 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val r = when (act) {
                 is com.lumenarcanus.dialife.ui.meal.PlannedAction.Given -> {
-                    if (act.isNew) liveRepository.saveTreatment(act.insulin)
-                    else if (act.insulin.mealId == null) liveRepository.saveTreatment(act.insulin.copy(mealId = act.planned.mealId, insulinRole = "meal"))
+                    if (act.isNew) {
+                        liveRepository.saveTreatment(act.insulin)
+                    } else if (act.insulin.mealId ==
+                        null
+                    ) {
+                        liveRepository.saveTreatment(act.insulin.copy(mealId = act.planned.mealId, insulinRole = "meal"))
+                    }
                     liveRepository.plannedGiven(act.planned.id, act.insulin.id)
                 }
                 is com.lumenarcanus.dialife.ui.meal.PlannedAction.Change -> liveRepository.planDose(act.planned.copy(dose = act.dose))
@@ -305,7 +374,7 @@ class MainActivity : AppCompatActivity() {
         notifications = checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED,
         battery = !getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName),
         // Android 14+ grants full-screen alarms only to apps the user allowed
-        fullScreen = Build.VERSION.SDK_INT >= 34 && !getSystemService(NotificationManager::class.java).canUseFullScreenIntent(),
+        fullScreen = Build.VERSION.SDK_INT >= 34 && !getSystemService(NotificationManager::class.java).canUseFullScreenIntent()
     )
 
     private fun act(action: String, id: Long) {
