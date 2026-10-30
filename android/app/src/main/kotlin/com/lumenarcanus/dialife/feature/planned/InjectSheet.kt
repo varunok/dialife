@@ -63,14 +63,16 @@ internal fun InjectSheet(
     treatments: List<Treatment>,
     units: Units,
     onDone: (Treatment, isNew: Boolean) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    // a fixed moment in the screenshot tests
+    clock: () -> Long = System::currentTimeMillis
 ) {
     val c = DiaTheme.colors
     val locale = LocalConfiguration.current.locales[0]
     val ctx = LocalContext.current
     fun f(x: Double) = formatAmount(x, locale)
     val u = stringResource(R.string.unit_insulin)
-    val opened = remember { System.currentTimeMillis() }
+    val opened = remember { clock() }
     var amount by remember { mutableStateOf(p.dose) }
     var whenIdx by remember { mutableStateOf(0) }
     var picked by remember { mutableStateOf<Long?>(null) }
