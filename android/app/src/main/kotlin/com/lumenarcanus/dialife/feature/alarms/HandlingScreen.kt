@@ -51,6 +51,8 @@ import com.lumenarcanus.dialife.core.ui.formatDelta
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.core.ui.theme.GlucoseHero
+import com.lumenarcanus.dialife.data.AlarmView
+import com.lumenarcanus.dialife.data.Bg
 import com.lumenarcanus.dialife.data.EpisodeRules
 import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.feature.alarms.ActionReceiver
@@ -135,126 +137,17 @@ fun HandlingScreen(
             fontWeight = FontWeight.SemiBold
         )
 
-        // now, and how it moved since you took it
-        val now = bg?.sgv ?: a.sgv
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(
-                now?.let {
-                    formatGlucose(it, units, locale)
-                } ?: "—",
-                style = GlucoseHero.copy(fontSize = 88.sp, lineHeight = 88.sp, color = c.text)
-            )
-            Spacer(Modifier.width(10.dp))
-            Text(Notifications.arrowOf(bg?.direction), color = c.textMuted, fontSize = 40.sp, modifier = Modifier.padding(bottom = 12.dp))
-        }
-        if (a.handledSgv != null && now != null) {
-            Text(
-                stringResource(
-                    R.string.hd_since_taken,
-                    formatGlucose(a.handledSgv, units, locale),
-                    formatDelta(now - a.handledSgv, units, locale)
-                ),
-                color = c.text,
-                fontSize = 16.sp
-            )
-        }
-        a.handledAt?.let {
-            val min = ((ui.now - it) / 60_000).toInt().coerceAtLeast(0)
-            Text(
-                stringResource(
-                    R.string.hd_taken_at,
-                    formatClock(ctx, it),
-                    ctx.resources.getQuantityString(R.plurals.minutes_short, min, min)
-                ),
-                color = c.textMuted,
-                fontSize = 14.sp
-            )
-        }
-        when {
-            a.comingAt != null -> Text(
-                stringResource(R.string.someone_coming, a.comingBy.orEmpty()),
-                color = c.inRange,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-            a.helpAt != null -> Text(stringResource(R.string.hd_help_asked), color = c.high, fontSize = 15.sp)
-        }
+        HandlingReading(a, bg, units, ui.now)
 
         // the question, when it is asked; otherwise when it will be
-        if (a.checkinPending) {
-            Column(
-                Modifier.fillMaxWidth().background(c.highContainer, RoundedCornerShape(20.dp)).padding(16.dp).semantics {
-                    liveRegion = LiveRegionMode.Assertive
-                },
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Text(stringResource(R.string.checkin_title), color = c.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                a.checkinSentAt?.let {
-                    Text(
-                        stringResource(R.string.hd_checkin_deadline, formatClock(ctx, it + rules.checkinTimeoutMin * 60_000L)),
-                        color = c.high,
-                        fontSize = 14.sp
-                    )
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Button(
-                        onClick = {
-                            haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-                            onAct(ActionReceiver.OK, a.id)
-                        },
-                        modifier = Modifier.weight(1f).height(56.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = c.inRange, contentColor = c.background)
-                    ) { Text(stringResource(R.string.act_ok), fontWeight = FontWeight.SemiBold) }
-                    Button(
-                        onClick = {
-                            haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-                            onAct(ActionReceiver.HELP, a.id)
-                        },
-                        modifier = Modifier.weight(1f).height(56.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = c.high, contentColor = c.background)
-                    ) { Text(stringResource(R.string.act_help), fontWeight = FontWeight.SemiBold) }
-                }
-            }
-        } else {
-            a.nextCheckinAt?.takeIf { it > ui.now }?.let {
-                Text(stringResource(R.string.hd_next_checkin, formatClock(ctx, it)), color = c.textMuted, fontSize = 14.sp)
-            }
-        }
+        CheckIn(a, rules, ui.now, onAct)
 
         // carbs in one tap: the most common thing during a hypo
         if (a.kind == "low" || a.kind == "predicted_low") {
-            Card {
-                Text(stringResource(R.string.hd_carbs_title), color = c.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    QuickCarbs.forEach { g ->
-                        AssistChip(
-                            onClick = {
-                                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-                                onSaveTreatment(Treatment(TreatmentQueue.newId(), System.currentTimeMillis(), carbs = g))
-                                lastCarbs = g
-                            },
-                            label = { Text(stringResource(R.string.hd_carbs_g, g.toInt()), fontSize = 15.sp) },
-                            colors = AssistChipDefaults.assistChipColors(containerColor = c.carbsContainer, labelColor = c.carbs),
-                            modifier = Modifier.heightIn(min = 48.dp)
-                        )
-                    }
-                    AssistChip(onClick = {
-                        sheet = true
-                    }, label = { Text(stringResource(R.string.hd_carbs_other)) }, modifier = Modifier.heightIn(min = 48.dp))
-                }
-                lastCarbs?.let {
-                    Text(
-                        stringResource(R.string.hd_carbs_saved, it.toInt()),
-                        color = c.inRange,
-                        fontSize = 14.sp,
-                        modifier = Modifier.semantics {
-                            liveRegion = LiveRegionMode.Polite
-                        }
-                    )
-                }
-            }
+            QuickCarbsCard(lastCarbs, onCarbs = { g ->
+                onSaveTreatment(Treatment(TreatmentQueue.newId(), System.currentTimeMillis(), carbs = g))
+                lastCarbs = g
+            }, onOther = { sheet = true })
         }
 
         // the episode on a chart, from a little before you took it
@@ -274,56 +167,209 @@ fun HandlingScreen(
 
         // exactly what wakes the others, so nobody is surprised
         Card {
-            Text(stringResource(R.string.hd_wake_title), color = c.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-            if (a.handledSgv != null && (a.kind == "low" || a.kind == "high")) {
-                val limit = if (a.kind == "low") a.handledSgv - rules.worseBy else a.handledSgv + rules.worseBy
-                Bullet(
-                    stringResource(
-                        if (a.kind == "low") {
-                            R.string.hd_wake_worse_low
-                        } else {
-                            R.string.hd_wake_worse_high
-                        },
-                        formatGlucose(limit, units, locale)
-                    )
-                )
-            }
-            if (a.level == "urgent" && a.handledAt != null) {
-                Bullet(
-                    stringResource(
-                        R.string.hd_wake_ceiling,
-                        formatClock(ctx, a.handledAt + rules.ceilingMin * 60_000L),
-                        rules.ceilingMin
-                    )
-                )
-            }
-            Bullet(stringResource(R.string.hd_wake_no_answer, rules.checkinTimeoutMin))
-            val others = ui.state.caregivers.filter { it.id != ui.myId }.map { it.name }
-            if (others.isNotEmpty()) {
-                Text(
-                    stringResource(R.string.hd_wake_who, others.joinToString(", ")),
-                    color = c.textMuted,
-                    fontSize = 13.sp
-                )
-            }
+            WhatWakesOthers(a, rules, units, others = ui.state.caregivers.filter { it.id != ui.myId }.map { it.name })
         }
 
-        if (a.helpAt == null) {
-            OutlinedButton(onClick = {
-                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-                onAct(ActionReceiver.HELP, a.id)
-            }, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-                Text(stringResource(R.string.act_help), color = c.high)
-            }
-        }
-        Button(
-            onClick = { confirmEnd = true },
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = RoundedCornerShape(18.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = c.surfaceRaised, contentColor = c.text)
-        ) { Text(stringResource(R.string.act_resolve), fontSize = 15.sp, fontWeight = FontWeight.SemiBold) }
+        HandlingButtons(helpAsked = a.helpAt != null, onHelp = { onAct(ActionReceiver.HELP, a.id) }, onEnd = { confirmEnd = true })
         Spacer(Modifier.height(8.dp))
     }
+}
+
+/** Now, the arrow, how far it moved since it was taken, when, and who is coming or asked for. */
+@Composable
+private fun HandlingReading(a: AlarmView, bg: Bg?, units: Units, nowMs: Long) {
+    val c = DiaTheme.colors
+    val ctx = LocalContext.current
+    val locale = ctx.resources.configuration.locales[0]
+    val now = bg?.sgv ?: a.sgv
+    Row(verticalAlignment = Alignment.Bottom) {
+        Text(
+            now?.let {
+                formatGlucose(it, units, locale)
+            } ?: "—",
+            style = GlucoseHero.copy(fontSize = 88.sp, lineHeight = 88.sp, color = c.text)
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(Notifications.arrowOf(bg?.direction), color = c.textMuted, fontSize = 40.sp, modifier = Modifier.padding(bottom = 12.dp))
+    }
+    if (a.handledSgv != null && now != null) {
+        Text(
+            stringResource(
+                R.string.hd_since_taken,
+                formatGlucose(a.handledSgv, units, locale),
+                formatDelta(now - a.handledSgv, units, locale)
+            ),
+            color = c.text,
+            fontSize = 16.sp
+        )
+    }
+    a.handledAt?.let {
+        val min = ((nowMs - it) / 60_000).toInt().coerceAtLeast(0)
+        Text(
+            stringResource(
+                R.string.hd_taken_at,
+                formatClock(ctx, it),
+                ctx.resources.getQuantityString(R.plurals.minutes_short, min, min)
+            ),
+            color = c.textMuted,
+            fontSize = 14.sp
+        )
+    }
+    when {
+        a.comingAt != null -> Text(
+            stringResource(R.string.someone_coming, a.comingBy.orEmpty()),
+            color = c.inRange,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        a.helpAt != null -> Text(stringResource(R.string.hd_help_asked), color = c.high, fontSize = 15.sp)
+    }
+}
+
+/** "Are you with the child?" with its deadline; otherwise when it will be asked. */
+@Composable
+private fun CheckIn(a: AlarmView, rules: EpisodeRules, now: Long, onAct: (action: String, alarmId: Long) -> Unit) {
+    val c = DiaTheme.colors
+    val ctx = LocalContext.current
+    val haptics = LocalHapticFeedback.current
+    if (a.checkinPending) {
+        Column(
+            Modifier.fillMaxWidth().background(c.highContainer, RoundedCornerShape(20.dp)).padding(16.dp).semantics {
+                liveRegion = LiveRegionMode.Assertive
+            },
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(stringResource(R.string.checkin_title), color = c.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            a.checkinSentAt?.let {
+                Text(
+                    stringResource(R.string.hd_checkin_deadline, formatClock(ctx, it + rules.checkinTimeoutMin * 60_000L)),
+                    color = c.high,
+                    fontSize = 14.sp
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Button(
+                    onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                        onAct(ActionReceiver.OK, a.id)
+                    },
+                    modifier = Modifier.weight(1f).height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = c.inRange, contentColor = c.background)
+                ) { Text(stringResource(R.string.act_ok), fontWeight = FontWeight.SemiBold) }
+                Button(
+                    onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                        onAct(ActionReceiver.HELP, a.id)
+                    },
+                    modifier = Modifier.weight(1f).height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = c.high, contentColor = c.background)
+                ) { Text(stringResource(R.string.act_help), fontWeight = FontWeight.SemiBold) }
+            }
+        }
+    } else {
+        a.nextCheckinAt?.takeIf { it > now }?.let {
+            Text(stringResource(R.string.hd_next_checkin, formatClock(ctx, it)), color = c.textMuted, fontSize = 14.sp)
+        }
+    }
+}
+
+/** 10, 15 or 20 g in one tap, or another amount on the food screen; the last one saved is said. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun QuickCarbsCard(lastCarbs: Double?, onCarbs: (Double) -> Unit, onOther: () -> Unit) {
+    val c = DiaTheme.colors
+    val haptics = LocalHapticFeedback.current
+    Card {
+        Text(stringResource(R.string.hd_carbs_title), color = c.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            QuickCarbs.forEach { g ->
+                AssistChip(
+                    onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                        onCarbs(g)
+                    },
+                    label = { Text(stringResource(R.string.hd_carbs_g, g.toInt()), fontSize = 15.sp) },
+                    colors = AssistChipDefaults.assistChipColors(containerColor = c.carbsContainer, labelColor = c.carbs),
+                    modifier = Modifier.heightIn(min = 48.dp)
+                )
+            }
+            AssistChip(onClick = onOther, label = {
+                Text(stringResource(R.string.hd_carbs_other))
+            }, modifier = Modifier.heightIn(min = 48.dp))
+        }
+        lastCarbs?.let {
+            Text(
+                stringResource(R.string.hd_carbs_saved, it.toInt()),
+                color = c.inRange,
+                fontSize = 14.sp,
+                modifier = Modifier.semantics {
+                    liveRegion = LiveRegionMode.Polite
+                }
+            )
+        }
+    }
+}
+
+/** Exactly what wakes the others, so nobody is surprised. */
+@Composable
+private fun WhatWakesOthers(a: AlarmView, rules: EpisodeRules, units: Units, others: List<String>) {
+    val c = DiaTheme.colors
+    val ctx = LocalContext.current
+    val locale = ctx.resources.configuration.locales[0]
+    Text(stringResource(R.string.hd_wake_title), color = c.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+    if (a.handledSgv != null && (a.kind == "low" || a.kind == "high")) {
+        val limit = if (a.kind == "low") a.handledSgv - rules.worseBy else a.handledSgv + rules.worseBy
+        Bullet(
+            stringResource(
+                if (a.kind == "low") {
+                    R.string.hd_wake_worse_low
+                } else {
+                    R.string.hd_wake_worse_high
+                },
+                formatGlucose(limit, units, locale)
+            )
+        )
+    }
+    if (a.level == "urgent" && a.handledAt != null) {
+        Bullet(
+            stringResource(
+                R.string.hd_wake_ceiling,
+                formatClock(ctx, a.handledAt + rules.ceilingMin * 60_000L),
+                rules.ceilingMin
+            )
+        )
+    }
+    Bullet(stringResource(R.string.hd_wake_no_answer, rules.checkinTimeoutMin))
+    if (others.isNotEmpty()) {
+        Text(
+            stringResource(R.string.hd_wake_who, others.joinToString(", ")),
+            color = c.textMuted,
+            fontSize = 13.sp
+        )
+    }
+}
+
+/** "Ask for help" (until asked) and "End". */
+@Composable
+private fun HandlingButtons(helpAsked: Boolean, onHelp: () -> Unit, onEnd: () -> Unit) {
+    val c = DiaTheme.colors
+    val haptics = LocalHapticFeedback.current
+    if (!helpAsked) {
+        OutlinedButton(onClick = {
+            haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+            onHelp()
+        }, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+            Text(stringResource(R.string.act_help), color = c.high)
+        }
+    }
+    Button(
+        onClick = onEnd,
+        modifier = Modifier.fillMaxWidth().height(56.dp),
+        shape = RoundedCornerShape(18.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = c.surfaceRaised, contentColor = c.text)
+    ) { Text(stringResource(R.string.act_resolve), fontSize = 15.sp, fontWeight = FontWeight.SemiBold) }
 }
 
 @Composable
