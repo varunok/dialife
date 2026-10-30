@@ -57,111 +57,132 @@ internal fun Hero(state: HomeState, locale: Locale) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(horizontal = 4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             // trend badge centred on the number
-            Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.weight(1f)) {
-                // weighted, so the units label is measured first and the number shrinks to what is left
-                // a new reading slides in: up when it rose, down when it fell
-                androidx.compose.animation.AnimatedContent(
-                    targetState = state.sgv,
-                    transitionSpec = {
-                        val up = targetState > initialState
-                        (
-                            androidx.compose.animation.slideInVertically { h -> if (up) h / 2 else -h / 2 } +
-                                androidx.compose.animation.fadeIn()
-                            )
-                            .togetherWith(
-                                androidx.compose.animation.slideOutVertically { h -> if (up) -h / 2 else h / 2 } +
-                                    androidx.compose.animation.fadeOut()
-                            )
-                    },
-                    modifier = Modifier.weight(1f, fill = false),
-                    label = "sgv"
-                ) { sgv ->
-                    BasicText(
-                        formatGlucose(sgv, state.units, locale),
-                        style = GlucoseHero.copy(
-                            color = if (state.ageMin >= STALE_MIN) c.textFaint else c.text,
-                            // an old number must not be read as the current one
-                            textDecoration = if (state.ageMin >= STALE_MIN) {
-                                androidx.compose.ui.text.style.TextDecoration.LineThrough
-                            } else {
-                                null
-                            }
-                        ),
-                        maxLines = 1,
-                        autoSize = TextAutoSize.StepBased(minFontSize = 56.sp, maxFontSize = GlucoseHero.fontSize, stepSize = 4.sp)
-                    )
-                }
-                Spacer(Modifier.size(8.dp))
-                Text(
-                    units,
-                    color = c.textMuted,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    softWrap = false,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-            }
+            BigValue(state, units, locale, Modifier.weight(1f))
             TrendBadge(state.trend, stateColor)
         }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            state.deltaMgdl?.let {
-                Text(
-                    stringResource(R.string.delta_per_5, formatDelta(it, state.units, locale)),
-                    color = c.text,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 15.sp
-                )
-                Dot()
-            }
-            val stale = state.ageMin >= STALE_MIN
-            Text(
-                pluralStringResource(R.plurals.minutes_ago, state.ageMin, state.ageMin),
-                color = if (stale) c.high else c.textMuted,
-                fontSize = 15.sp,
-                fontWeight = if (stale) FontWeight.SemiBold else FontWeight.Normal
+        ChangeAndAge(state, locale)
+        RangeAndForecast(state, stateColor, locale)
+        ForecastNotes(state, locale)
+    }
+}
+
+/** The value, struck through when old, sliding in as it rises or falls, and its units. */
+@Composable
+private fun BigValue(state: HomeState, units: String, locale: Locale, modifier: Modifier) {
+    val c = DiaTheme.colors
+    Row(verticalAlignment = Alignment.Bottom, modifier = modifier) {
+        // weighted, so the units label is measured first and the number shrinks to what is left
+        // a new reading slides in: up when it rose, down when it fell
+        androidx.compose.animation.AnimatedContent(
+            targetState = state.sgv,
+            transitionSpec = {
+                val up = targetState > initialState
+                (
+                    androidx.compose.animation.slideInVertically { h -> if (up) h / 2 else -h / 2 } +
+                        androidx.compose.animation.fadeIn()
+                    )
+                    .togetherWith(
+                        androidx.compose.animation.slideOutVertically { h -> if (up) -h / 2 else h / 2 } +
+                            androidx.compose.animation.fadeOut()
+                    )
+            },
+            modifier = Modifier.weight(1f, fill = false),
+            label = "sgv"
+        ) { sgv ->
+            BasicText(
+                formatGlucose(sgv, state.units, locale),
+                style = GlucoseHero.copy(
+                    color = if (state.ageMin >= STALE_MIN) c.textFaint else c.text,
+                    // an old number must not be read as the current one
+                    textDecoration = if (state.ageMin >= STALE_MIN) {
+                        androidx.compose.ui.text.style.TextDecoration.LineThrough
+                    } else {
+                        null
+                    }
+                ),
+                maxLines = 1,
+                autoSize = TextAutoSize.StepBased(minFontSize = 56.sp, maxFontSize = GlucoseHero.fontSize, stepSize = 4.sp)
             )
         }
-        // wraps onto a second line rather than squeezing a chip into a column of words
-        androidx.compose.foundation.layout.FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            val bounds = formatGlucose(state.low, state.units, locale) + "–" + formatGlucose(state.high, state.units, locale)
-            val label = when (state.range) {
-                Range.InRange -> stringResource(R.string.state_in_range, bounds)
-                Range.Low -> stringResource(R.string.state_low, formatGlucose(state.low, state.units, locale))
-                Range.High -> stringResource(R.string.state_high, formatGlucose(state.high, state.units, locale))
-            }
-            // an old reading says nothing about the range now
-            if (state.ageMin < STALE_MIN) {
-                Chip(
-                    label,
-                    background = if (state.range == Range.InRange) {
-                        c.inRangeContainer
-                    } else if (state.range == Range.Low) {
-                        c.lowContainer
-                    } else {
-                        c.highContainer
-                    },
-                    color = stateColor
-                )
-            }
-            state.forecast30?.let {
-                val q = state.forecastQuality?.takeIf { it.n >= 50 } // a record of fewer forecasts says little
-                val text = if (q != null) {
-                    stringResource(
-                        R.string.forecast_30_err,
-                        formatGlucose(it, state.units, locale),
-                        formatGlucose(q.err80, state.units, locale)
-                    )
-                } else {
-                    stringResource(R.string.forecast_30, formatGlucose(it, state.units, locale))
-                }
-                Chip(text, background = c.surface, color = c.textMuted)
-            }
+        Spacer(Modifier.size(8.dp))
+        Text(
+            units,
+            color = c.textMuted,
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            softWrap = false,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+    }
+}
+
+/** The change over 5 minutes and how old the reading is (in colour once it is stale). */
+@Composable
+private fun ChangeAndAge(state: HomeState, locale: Locale) {
+    val c = DiaTheme.colors
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        state.deltaMgdl?.let {
+            Text(
+                stringResource(R.string.delta_per_5, formatDelta(it, state.units, locale)),
+                color = c.text,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 15.sp
+            )
+            Dot()
         }
-        ForecastNotes(state, locale)
+        val stale = state.ageMin >= STALE_MIN
+        Text(
+            pluralStringResource(R.plurals.minutes_ago, state.ageMin, state.ageMin),
+            color = if (stale) c.high else c.textMuted,
+            fontSize = 15.sp,
+            fontWeight = if (stale) FontWeight.SemiBold else FontWeight.Normal
+        )
+    }
+}
+
+/** In range or not (only for a fresh reading), and the 30-minute forecast with its usual error. */
+@Composable
+private fun RangeAndForecast(state: HomeState, stateColor: androidx.compose.ui.graphics.Color, locale: Locale) {
+    val c = DiaTheme.colors
+    // wraps onto a second line rather than squeezing a chip into a column of words
+    androidx.compose.foundation.layout.FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        val bounds = formatGlucose(state.low, state.units, locale) + "–" + formatGlucose(state.high, state.units, locale)
+        val label = when (state.range) {
+            Range.InRange -> stringResource(R.string.state_in_range, bounds)
+            Range.Low -> stringResource(R.string.state_low, formatGlucose(state.low, state.units, locale))
+            Range.High -> stringResource(R.string.state_high, formatGlucose(state.high, state.units, locale))
+        }
+        // an old reading says nothing about the range now
+        if (state.ageMin < STALE_MIN) {
+            Chip(
+                label,
+                background = if (state.range == Range.InRange) {
+                    c.inRangeContainer
+                } else if (state.range == Range.Low) {
+                    c.lowContainer
+                } else {
+                    c.highContainer
+                },
+                color = stateColor
+            )
+        }
+        state.forecast30?.let {
+            val q = state.forecastQuality?.takeIf { it.n >= 50 } // a record of fewer forecasts says little
+            val text = if (q != null) {
+                stringResource(
+                    R.string.forecast_30_err,
+                    formatGlucose(it, state.units, locale),
+                    formatGlucose(q.err80, state.units, locale)
+                )
+            } else {
+                stringResource(R.string.forecast_30, formatGlucose(it, state.units, locale))
+            }
+            Chip(text, background = c.surface, color = c.textMuted)
+        }
     }
 }
 

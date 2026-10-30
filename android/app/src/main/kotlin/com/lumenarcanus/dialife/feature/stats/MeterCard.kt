@@ -40,127 +40,155 @@ import com.lumenarcanus.dialife.feature.home.meterInk
 @Composable
 internal fun MeterCard(m: MeterReport, units: Units) {
     val c = DiaTheme.colors
-    val ctx = androidx.compose.ui.platform.LocalContext.current
-    val locale = LocalConfiguration.current.locales[0]
-    fun g(v: Int) = formatGlucose(v, units, locale)
-    fun signed(v: Double, unit: String) = (
-        if (v > 0) {
-            "+"
-        } else if (v < 0) {
-            "\u2212"
-        } else {
-            ""
-        }
-        ) + String.format(locale, "%.0f", kotlin.math.abs(v)) + unit
-    fun date(t: Long) = android.text.format.DateUtils.formatDateTime(
-        ctx,
-        t,
-        android.text.format.DateUtils.FORMAT_SHOW_DATE or android.text.format.DateUtils.FORMAT_NO_YEAR or
-            android.text.format.DateUtils.FORMAT_ABBREV_MONTH
-    )
     Card {
         Text(stringResource(R.string.meter_title), color = c.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         if (m.used == 0) {
             Text(stringResource(R.string.meter_empty), color = c.textMuted, fontSize = 14.sp)
             return@Card
         }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(signed(m.biasPct, "%"), color = c.text, fontSize = 40.sp, fontWeight = FontWeight.Light)
-            Column {
-                Text(
-                    stringResource(
-                        if (m.biasPct < 0) {
-                            R.string.meter_lower
-                        } else {
-                            R.string.meter_higher
-                        }
-                    ),
-                    color = c.textMuted,
-                    fontSize = 13.sp
-                )
-                Text(stringResource(R.string.meter_counts, m.used, m.sensors), color = c.textFaint, fontSize = 12.sp)
-            }
-        }
-        @Composable
-        fun Line(label: String, sub: String?, value: String, valueSub: String?) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(label, color = c.text, fontSize = 14.sp)
-                    sub?.let { Text(it, color = c.textFaint, fontSize = 12.sp) }
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(value, color = c.text, fontSize = 14.sp, fontFamily = PlexMono)
-                    valueSub?.let { Text(it, color = c.textFaint, fontSize = 12.sp) }
-                }
-            }
-        }
-        m.current?.let { cur ->
-            Line(
-                stringResource(R.string.meter_current),
-                stringResource(R.string.meter_current_sub, date(cur.since), cur.day),
-                if (cur.n > 0) signed(cur.biasPct, "%") else "—",
-                stringResource(R.string.meter_n, cur.n)
-            )
-        }
-        m.bands.forEach { b ->
-            val label = when {
-                b.from == 0 -> stringResource(R.string.meter_band_low, g(b.to) + if (units == Units.MgDl) " mg/dL" else "")
-                b.to == 0 -> stringResource(R.string.meter_band_high, g(b.from))
-                else -> stringResource(R.string.meter_band_mid, g(b.from), g(b.to))
-            }
-            val value = if (b.unit == "mgdl") {
-                (
-                    if (b.bias > 0) {
-                        "+"
-                    } else if (b.bias < 0) {
-                        "\u2212"
-                    } else {
-                        ""
-                    }
-                    ) +
-                    formatGlucose(kotlin.math.round(kotlin.math.abs(b.bias)).toInt(), units, locale) +
-                    (if (units == Units.MgDl) " mg/dL" else "")
-            } else {
-                signed(b.bias, "%")
-            }
-            Line(label, null, value, stringResource(R.string.meter_n, b.n))
-        }
-        Line(stringResource(R.string.meter_mard), stringResource(R.string.meter_mard_sub), String.format(locale, "%.1f%%", m.mard), null)
+        Bias(m)
+        MeterLines(m, units)
         if (m.total > m.used) Text(stringResource(R.string.meter_fast, m.total - m.used), color = c.textFaint, fontSize = 12.sp)
         if (!m.ready) Text(stringResource(R.string.meter_wait, m.need, m.used), color = c.textMuted, fontSize = 13.sp)
         MeterScatter(m, units, Modifier.fillMaxWidth().height(240.dp))
         // which colour is which sensor
-        val inks = sensorInks()
-        val current = m.starts.size
-        androidx.compose.foundation.layout.FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            m.pairs.map { it.sensorNo }.distinct().sorted().forEach { k ->
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    androidx.compose.foundation.Canvas(Modifier.size(8.dp)) {
-                        drawPath(
-                            diamondPath(center, size.width / 2),
-                            inks[
-                                k %
-                                    inks.size
-                            ]
-                        )
+        SensorLegend(m)
+    }
+}
+
+/** "+6%" with whether the sensor reads higher or lower, from how many checks and sensors. */
+@Composable
+private fun Bias(m: MeterReport) {
+    val c = DiaTheme.colors
+    val locale = LocalConfiguration.current.locales[0]
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(signed(m.biasPct, "%", locale), color = c.text, fontSize = 40.sp, fontWeight = FontWeight.Light)
+        Column {
+            Text(
+                stringResource(
+                    if (m.biasPct < 0) {
+                        R.string.meter_lower
+                    } else {
+                        R.string.meter_higher
                     }
-                    Text(
-                        when {
-                            k == 0 -> stringResource(R.string.meter_legend_before)
-                            k == current -> stringResource(R.string.meter_legend_current, date(m.starts[k - 1]))
-                            else -> stringResource(R.string.meter_legend, k, date(m.starts[k - 1]))
-                        },
-                        color = c.textMuted,
-                        fontSize = 12.sp
+                ),
+                color = c.textMuted,
+                fontSize = 13.sp
+            )
+            Text(stringResource(R.string.meter_counts, m.used, m.sensors), color = c.textFaint, fontSize = 12.sp)
+        }
+    }
+}
+
+/** The current sensor, each range of values, and the typical difference (MARD). */
+@Composable
+private fun MeterLines(m: MeterReport, units: Units) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val locale = LocalConfiguration.current.locales[0]
+    fun g(v: Int) = formatGlucose(v, units, locale)
+    m.current?.let { cur ->
+        Line(
+            stringResource(R.string.meter_current),
+            stringResource(R.string.meter_current_sub, shortDate(ctx, cur.since), cur.day),
+            if (cur.n > 0) signed(cur.biasPct, "%", locale) else "—",
+            stringResource(R.string.meter_n, cur.n)
+        )
+    }
+    m.bands.forEach { b ->
+        val label = when {
+            b.from == 0 -> stringResource(R.string.meter_band_low, g(b.to) + if (units == Units.MgDl) " mg/dL" else "")
+            b.to == 0 -> stringResource(R.string.meter_band_high, g(b.from))
+            else -> stringResource(R.string.meter_band_mid, g(b.from), g(b.to))
+        }
+        val value = if (b.unit == "mgdl") {
+            (
+                if (b.bias > 0) {
+                    "+"
+                } else if (b.bias < 0) {
+                    "\u2212"
+                } else {
+                    ""
+                }
+                ) +
+                formatGlucose(kotlin.math.round(kotlin.math.abs(b.bias)).toInt(), units, locale) +
+                (if (units == Units.MgDl) " mg/dL" else "")
+        } else {
+            signed(b.bias, "%", locale)
+        }
+        Line(label, null, value, stringResource(R.string.meter_n, b.n))
+    }
+    Line(stringResource(R.string.meter_mard), stringResource(R.string.meter_mard_sub), String.format(locale, "%.1f%%", m.mard), null)
+}
+
+@Composable
+private fun Line(label: String, sub: String?, value: String, valueSub: String?) {
+    val c = DiaTheme.colors
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(label, color = c.text, fontSize = 14.sp)
+            sub?.let { Text(it, color = c.textFaint, fontSize = 12.sp) }
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text(value, color = c.text, fontSize = 14.sp, fontFamily = PlexMono)
+            valueSub?.let { Text(it, color = c.textFaint, fontSize = 12.sp) }
+        }
+    }
+}
+
+/** Which colour is which sensor. */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun SensorLegend(m: MeterReport) {
+    val c = DiaTheme.colors
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val inks = sensorInks()
+    val current = m.starts.size
+    androidx.compose.foundation.layout.FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        m.pairs.map { it.sensorNo }.distinct().sorted().forEach { k ->
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                androidx.compose.foundation.Canvas(Modifier.size(8.dp)) {
+                    drawPath(
+                        diamondPath(center, size.width / 2),
+                        inks[
+                            k %
+                                inks.size
+                        ]
                     )
                 }
+                Text(
+                    when {
+                        k == 0 -> stringResource(R.string.meter_legend_before)
+                        k == current -> stringResource(R.string.meter_legend_current, shortDate(ctx, m.starts[k - 1]))
+                        else -> stringResource(R.string.meter_legend, k, shortDate(ctx, m.starts[k - 1]))
+                    },
+                    color = c.textMuted,
+                    fontSize = 12.sp
+                )
             }
         }
     }
 }
+
+/** "+6%", "−3 mg/dL": with its sign, no decimals. */
+private fun signed(v: Double, unit: String, locale: java.util.Locale) = (
+    if (v > 0) {
+        "+"
+    } else if (v < 0) {
+        "\u2212"
+    } else {
+        ""
+    }
+    ) + String.format(locale, "%.0f", kotlin.math.abs(v)) + unit
+
+private fun shortDate(ctx: android.content.Context, t: Long) = android.text.format.DateUtils.formatDateTime(
+    ctx,
+    t,
+    android.text.format.DateUtils.FORMAT_SHOW_DATE or android.text.format.DateUtils.FORMAT_NO_YEAR or
+        android.text.format.DateUtils.FORMAT_ABBREV_MONTH
+)
 
 @Composable
 internal fun sensorInks(): List<Color> {
