@@ -180,8 +180,10 @@ class ReadmeShots {
     fun table() = shot("app_table") {
         val ui = day()
         DataScreen(
-            ui.history, emptyList(), ui.state!!.thresholds, Units.MgDl, 3, now,
-            loadHistory = { _, _ -> null }, onSaveTreatment = {}, onBack = {}
+            com.lumenarcanus.dialife.feature.data.dataUiState(ui.history, null, emptyList(), ui.state!!.thresholds, Units.MgDl, 3, now),
+            onAction = {},
+            onSaveTreatment = {},
+            onBack = {}
         )
     }
 

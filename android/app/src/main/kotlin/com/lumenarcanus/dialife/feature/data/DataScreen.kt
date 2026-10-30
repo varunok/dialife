@@ -35,10 +35,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,127 +63,10 @@ import com.lumenarcanus.dialife.core.ui.theme.PlexMono
 import com.lumenarcanus.dialife.data.History
 import com.lumenarcanus.dialife.data.InsulinType
 import com.lumenarcanus.dialife.data.Prefs
-import com.lumenarcanus.dialife.data.Question
 import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.feature.entry.basalColor
 import com.lumenarcanus.dialife.feature.entry.basalContainer
-
-enum class EntryKind { Rapid, Basal, Carbs, Meter, Activity, Note, Suspect }
-
-/** One thing logged or measured, as the table shows it. */
-data class Entry(
-    val t: Long,
-    val kind: EntryKind,
-    val treatment: Treatment? = null, // editable when set
-    val meter: Int? = null,
-    val src: String? = null, // a glucometer reading from xDrip+: "Roche 00:00:5E:…" or "manual"
-    val question: Question? = null
-)
-
-/**
- * A row: one reading (5 minutes), or a clock-aligned interval from [t] to [end]
- * with the mean of its readings and their range. [span]: a suspect rise or
- * fall that began earlier runs on through it.
- */
-data class DataRow(
-    val t: Long,
-    val sgv: Int?,
-    val delta: Int?,
-    val entries: List<Entry>,
-    val end: Long? = null,
-    val min: Int? = null,
-    val max: Int? = null,
-    val span: Boolean = false
-)
-
-private const val MIN = 60_000L
-private const val HOUR = 60 * MIN
-
-/** Everything in [from, to], one entry per treatment part, glucometer check and suspect mark, oldest first. */
-fun entriesOf(h: History?, questions: List<Question>, from: Long, to: Long): List<Entry> {
-    val out = mutableListOf<Entry>()
-    h?.treatments.orEmpty().filter { it.t in from..to }.forEach { tr ->
-        val ins = (tr.insulin ?: 0.0) > 0
-        when {
-            tr.glucose != null -> out += Entry(tr.t, EntryKind.Meter, tr, meter = tr.glucose)
-            tr.duration != null -> out += Entry(tr.t, EntryKind.Activity, tr)
-            else -> {
-                if (ins) {
-                    out +=
-                        Entry(tr.t, if (InsulinType.of(tr.insulinType) == InsulinType.Basal) EntryKind.Basal else EntryKind.Rapid, tr)
-                }
-                if ((tr.carbs ?: 0.0) > 0) out += Entry(tr.t, EntryKind.Carbs, tr)
-                if (!ins && (tr.carbs ?: 0.0) <= 0 && !tr.notes.isNullOrBlank()) out += Entry(tr.t, EntryKind.Note, tr)
-            }
-        }
-    }
-    h?.mbg?.let { m ->
-        m.t.indices.filter { m.t[it] in from..to }.forEach {
-            out +=
-                Entry(m.t[it], EntryKind.Meter, meter = m.v[it], src = m.d.getOrNull(it))
-        }
-    }
-    questions.filter { it.from in from..to && (it.state == "unknown" || it.state == "open") }.forEach {
-        out +=
-            Entry(it.from, EntryKind.Suspect, question = it)
-    }
-    return out.sortedBy { it.t }
-}
-
-/**
- * Rows newest first. 5 minutes: every reading, each with the entries since the
- * one before. Longer: intervals on the clock (10:00–10:15…), every reading in
- * them averaged, every entry in the interval it falls in.
- */
-fun rowsOf(
-    h: History?,
-    entries: List<Entry>,
-    from: Long,
-    to: Long,
-    stepMin: Int,
-    zone: java.util.TimeZone = java.util.TimeZone.getDefault()
-): List<DataRow> {
-    val ts = h?.sgv?.t.orEmpty()
-    val vs = h?.sgv?.v.orEmpty()
-    val idx = ts.indices.filter { ts[it] in from..to }
-    val suspects = entries.filter { it.kind == EntryKind.Suspect }.mapNotNull { it.question }
-    if (stepMin <= 5) {
-        if (idx.isEmpty()) return entries.reversed().map { DataRow(it.t, null, null, listOf(it)) }
-        val rows = idx.reversed().map { i ->
-            val delta = if (i > 0 && ts[i] - ts[i - 1] <= 10 * MIN) vs[i] - vs[i - 1] else null
-            DataRow(ts[i], vs[i], delta, emptyList(), span = suspects.any { q -> q.from < ts[i] && q.to >= ts[i] })
-        }.toMutableList()
-        for (e in entries) {
-            // the oldest row at or after the entry; past the newest reading: the newest row
-            val k = rows.indexOfLast { it.t >= e.t }.takeIf { it >= 0 } ?: 0
-            rows[k] = rows[k].copy(entries = rows[k].entries + e)
-        }
-        return rows
-    }
-    val step = stepMin * MIN
-    fun bucket(t: Long): Long {
-        val off = zone.getOffset(t)
-        return Math.floorDiv(t + off, step) * step - off
-    }
-    val values = idx.groupBy({ bucket(ts[it]) }, { vs[it] })
-    val logged = entries.groupBy { bucket(it.t) }
-    return (values.keys + logged.keys).distinct().sortedDescending().map { b ->
-        val v = values[b].orEmpty()
-        DataRow(
-            t = b,
-            end = b + step,
-            sgv = if (v.isEmpty()) null else Math.round(v.average()).toInt(),
-            min = v.minOrNull(),
-            max = v.maxOrNull(),
-            delta = if (v.size > 1) v.last() - v.first() else null,
-            entries = logged[b].orEmpty(),
-            span = suspects.any { q -> q.from < b && q.to >= b }
-        )
-    }
-}
-
-enum class DataFilter { All, Entries, Out }
 
 /**
  * The chart as a table: every reading (or one per step) with what was logged
@@ -194,19 +75,16 @@ enum class DataFilter { All, Entries, Out }
  */
 @Composable
 fun DataScreen(
-    history: History?, // the live day, with unsent entries
-    questions: List<Question>,
-    thresholds: Thresholds,
-    units: Units,
-    spanHours: Int, // the chart's range when opened: the window this screen pages by
-    now: Long,
-    loadHistory: suspend (from: Long, to: Long) -> History?, // for windows older than the live day
+    uiState: DataUiState,
+    onAction: (DataAction) -> Unit,
     onSaveTreatment: (Treatment) -> Unit,
     onBack: () -> Unit,
     // food has a screen of its own
     onOpenMeal: (Treatment) -> Unit = {}
 ) {
     val c = DiaTheme.colors
+    val units = uiState.units
+    val thresholds = uiState.thresholds
     // a tapped entry opens the same sheet as on the chart; food its own screen
     var editing by remember { mutableStateOf<Treatment?>(null) }
     editing?.takeIf { (it.carbs ?: 0.0) > 0 && (it.insulin ?: 0.0) <= 0 && it.glucose == null && it.duration == null }?.let { tr ->
@@ -224,39 +102,19 @@ fun DataScreen(
                 editing = null
             },
             onDismiss = { editing = null },
-            recent = history?.treatments.orEmpty(),
+            recent = uiState.recent,
             units = units
         )
     }
     val onEdit: (Treatment) -> Unit = { editing = it }
-    var page by rememberSaveable { mutableIntStateOf(0) } // 0: ending now; 1: the span before; …
-    var filter by rememberSaveable { mutableStateOf(DataFilter.All) }
-    var step by rememberSaveable { mutableIntStateOf(5) }
-    var wide by rememberSaveable { mutableStateOf(false) }
-    val span = spanHours * HOUR
-    val to = now - page * span
-    val from = to - span
-    var older by remember { mutableStateOf<History?>(null) }
-    var loading by remember { mutableStateOf(false) }
-    LaunchedEffect(page, spanHours) {
-        older = null
-        if (from < now - 24 * HOUR) {
-            loading = true
-            older = loadHistory(from, to)
-            loading = false
-        }
-    }
-    val h = if (from < now - 24 * HOUR) older else history
-    val entries = entriesOf(h, questions, from, to)
-    val rows = rowsOf(h, entries, from, to, step).filter { r ->
-        when (filter) {
-            DataFilter.All -> true
-            DataFilter.Entries -> r.entries.isNotEmpty()
-            DataFilter.Out ->
-                (r.min ?: r.sgv)?.let { it < thresholds.low } == true ||
-                    (r.max ?: r.sgv)?.let { it > thresholds.high } == true
-        }
-    }
+    val page = uiState.page
+    val from = uiState.from
+    val to = uiState.to
+    val h = uiState.history
+    val entries = uiState.entries
+    val rows = uiState.rows
+    val step = uiState.step
+    val loading = uiState.loading
     val ctx = LocalContext.current
     val day = if (android.text.format.DateUtils.isToday(to)) {
         stringResource(R.string.data_today)
@@ -270,10 +128,10 @@ fun DataScreen(
     }
     val window = stringResource(R.string.data_window, day, formatClock(ctx, from), formatClock(ctx, to))
 
-    if (wide) {
+    if (uiState.wide) {
         WideTable(rows, entries, h, from, to, window, units, thresholds, step, {
-            step = it
-        }, onEdit, onClose = { wide = false }, onChart = onBack)
+            onAction(DataAction.Step(it))
+        }, onEdit, onClose = { onAction(DataAction.Wide(false)) }, onChart = onBack)
         return
     }
     BackHandler(onBack = onBack)
@@ -288,12 +146,12 @@ fun DataScreen(
                 Icon(painterResource(R.drawable.ic_chart), stringResource(R.string.data_chart), tint = c.textMuted)
             }
             IconButton(onClick = {
-                wide = true
+                onAction(DataAction.Wide(true))
             }) { Icon(painterResource(R.drawable.ic_fullscreen), stringResource(R.string.data_wide), tint = c.textMuted) }
         }
         Text(stringResource(R.string.data_title), color = c.text, fontSize = 26.sp, fontWeight = FontWeight.SemiBold)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = { page++ }) { Text("‹ " + stringResource(R.string.data_prev), color = c.textMuted) }
+            TextButton(onClick = { onAction(DataAction.Older) }) { Text("‹ " + stringResource(R.string.data_prev), color = c.textMuted) }
             Text(
                 window,
                 color = c.text,
@@ -303,13 +161,7 @@ fun DataScreen(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            TextButton(onClick = {
-                if (page >
-                    0
-                ) {
-                    page--
-                }
-            }, enabled = page > 0) {
+            TextButton(onClick = { onAction(DataAction.Newer) }, enabled = page > 0) {
                 Text(
                     stringResource(R.string.data_next) + " ›",
                     color = if (page >
@@ -329,11 +181,11 @@ fun DataScreen(
                 DataFilter.Entries to stringResource(R.string.data_events),
                 DataFilter.Out to stringResource(R.string.data_out)
             ),
-            filter,
+            uiState.filter,
             Modifier.fillMaxWidth(),
             fill = true
-        ) { filter = it }
-        StepSegments(step) { step = it }
+        ) { onAction(DataAction.Filter(it)) }
+        StepSegments(step) { onAction(DataAction.Step(it)) }
         Column(
             Modifier.fillMaxWidth().weight(1f)
                 .background(c.surface, RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))

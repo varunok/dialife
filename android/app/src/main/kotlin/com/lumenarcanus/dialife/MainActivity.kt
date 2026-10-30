@@ -11,13 +11,14 @@ import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
 import android.widget.Toast
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,7 +30,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -40,24 +40,25 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.theme.DiaLifeTheme
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.data.Credentials
-import com.lumenarcanus.dialife.data.DiaLifeApi
-import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.feature.alarms.AlarmLogScreen
 import com.lumenarcanus.dialife.feature.connect.ConnectRoute
 import com.lumenarcanus.dialife.feature.connect.ConnectViewModel
-import com.lumenarcanus.dialife.feature.data.DataScreen
+import com.lumenarcanus.dialife.feature.data.DataRoute
 import com.lumenarcanus.dialife.feature.home.BackgroundSetup
 import com.lumenarcanus.dialife.feature.home.HomeScreen
 import com.lumenarcanus.dialife.feature.home.HomeViewModel
 import com.lumenarcanus.dialife.live.LiveService
+import com.lumenarcanus.dialife.navigation.Destination
 import kotlinx.coroutines.launch
-
-private enum class Screen { Home, Stats, Log, Settings, Handling, Data, WebLogin, Meal, DoseSettings }
 
 // AppCompatActivity (not plain ComponentActivity) so the in-app language works on Android 12 too.
 class MainActivity : AppCompatActivity() {
@@ -104,132 +105,96 @@ class MainActivity : AppCompatActivity() {
                 when (val s = session) {
                     Session.Loading -> Box(Modifier.fillMaxSize().background(DiaTheme.colors.background))
                     Session.Disconnected -> ConnectRoute(connectVm)
-                    is Session.Connected -> {
-                        var screen by rememberSaveable { mutableStateOf(Screen.Home) }
-                        var handling by rememberSaveable { mutableStateOf(0L) }
-                        // the food screen: what it edits, and the question it answers
-                        var mealEdit by rememberSaveable { mutableStateOf<String?>(null) }
-                        var mealQuestion by rememberSaveable { mutableStateOf(0L) }
-                        var mealFrom by rememberSaveable { mutableStateOf(0L) }
-                        var mealLow by rememberSaveable { mutableStateOf(false) } // carbs for a low: no dose
-                        var mealBack by rememberSaveable { mutableStateOf(Screen.Home) } // where the food screen returns
-                        // an older entry, from "Data"
-                        var mealEntry by remember { mutableStateOf<com.lumenarcanus.dialife.data.Treatment?>(null) }
-                        // "I'm on it" from the alarm screen or a notification lands here
-                        LaunchedEffect(openHandling) {
-                            if (openHandling != 0L) {
-                                handling = openHandling
-                                screen = Screen.Handling
-                                openHandling = 0L
-                            }
-                        }
-                        BackHandler(enabled = screen != Screen.Home) { screen = Screen.Home }
-                        when (screen) {
-                            Screen.Home -> Home(s.credentials, onMeal = { tr, q ->
-                                mealEdit = tr?.id
-                                mealEntry = tr
-                                mealQuestion = q?.id ?: 0L
-                                mealFrom = q?.from ?: 0L
-                                mealLow = false
-                                mealBack =
-                                    Screen.Home
-                                screen = Screen.Meal
-                            }) { screen = it }
-                            Screen.Meal -> com.lumenarcanus.dialife.feature.meal.MealRoute(
-                                editingId = mealEdit,
-                                entry = mealEntry,
-                                initialTime = mealFrom.takeIf { it > 0 },
-                                forLow = mealLow,
-                                questionId = mealQuestion,
-                                onDone = {
-                                    mealEdit = null
-                                    mealEntry = null
-                                    mealQuestion = 0L
-                                    mealFrom = 0L
-                                    screen = mealBack
-                                }
-                            )
-                            Screen.DoseSettings -> {
-                                val live by liveRepository.live.collectAsStateWithLifecycle()
-                                com.lumenarcanus.dialife.feature.settings.DoseSettingsRoute(onBack = { screen = Screen.Settings })
-                            }
-                            Screen.Stats -> com.lumenarcanus.dialife.feature.stats.StatsRoute(onBack = { screen = Screen.Home })
-                            Screen.Settings -> {
-                                var setup by remember { mutableStateOf(backgroundSetup()) }
-                                LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { setup = backgroundSetup() }
-                                val askNotifications =
-                                    rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-                                        setup =
-                                            backgroundSetup()
-                                    }
-                                com.lumenarcanus.dialife.feature.settings.SettingsRoute(
-                                    creds = s.credentials,
-                                    setup = setup,
-                                    onFixNotifications = { askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS) },
-                                    onFixBattery = ::askBatteryExemption,
-                                    onFixFullScreen = ::askFullScreen,
-                                    onDisconnected = { screen = Screen.Home },
-                                    onOpenDose = { screen = Screen.DoseSettings },
-                                    onBack = { screen = Screen.Home }
-                                )
-                            }
-                            Screen.Handling -> com.lumenarcanus.dialife.feature.alarms.HandlingRoute(
-                                alarmId = handling,
-                                onBack = { screen = Screen.Home },
-                                onOpenMeal = {
-                                    mealEdit = null
-                                    mealEntry = null
-                                    mealQuestion = 0L
-                                    mealFrom = 0L
-                                    mealLow = true
-                                    mealBack = Screen.Handling
-                                    screen = Screen.Meal
-                                }
-                            )
-                            Screen.Data -> {
-                                val home = viewModel { HomeViewModel(liveRepository) }
-                                val ui by home.ui.collectAsStateWithLifecycle()
-                                DataScreen(
-                                    history = ui.history,
-                                    questions = ui.state?.questions.orEmpty(),
-                                    thresholds = ui.state?.thresholds ?: Thresholds(),
-                                    units = unitsOf(ui.state?.displayUnits ?: s.credentials.displayUnits),
-                                    spanHours = ui.rangeHours,
-                                    now = ui.now,
-                                    loadHistory = { from, to -> DiaLifeApi().history(s.credentials, from, to).getOrNull() },
-                                    onSaveTreatment = liveRepository::saveTreatment,
-                                    onBack = { screen = Screen.Home },
-                                    onOpenMeal = { tr ->
-                                        mealEdit = tr.id
-                                        mealEntry = tr
-                                        mealQuestion = 0L
-                                        mealFrom = 0L
-                                        mealLow = false
-                                        mealBack =
-                                            Screen.Data
-                                        screen = Screen.Meal
-                                    }
-                                )
-                            }
-                            Screen.WebLogin -> com.lumenarcanus.dialife.feature.weblogin.WebLoginRoute(onBack = { screen = Screen.Home })
-                            Screen.Log -> AlarmLogScreen(
-                                creds = s.credentials,
-                                units = unitsOf(liveRepository.live.value.state?.displayUnits ?: s.credentials.displayUnits),
-                                onBack = { screen = Screen.Home }
-                            )
-                        }
-                    }
+                    is Session.Connected -> Connected(s.credentials)
                 }
             }
         }
     }
 
+    /** The app once connected: one back-stack entry per screen, home at the bottom. */
     @Composable
-    private fun Home(
-        creds: Credentials,
-        onMeal: (com.lumenarcanus.dialife.data.Treatment?, com.lumenarcanus.dialife.data.Question?) -> Unit,
-        onOpen: (Screen) -> Unit
-    ) {
+    private fun Connected(creds: Credentials) {
+        val nav = rememberNavController()
+        fun open(d: Destination) = nav.navigate(d) { launchSingleTop = true }
+        val back: () -> Unit = { if (nav.previousBackStackEntry != null) nav.popBackStack() }
+        // "I'm on it" from the alarm screen or a notification lands here, over home
+        LaunchedEffect(openHandling) {
+            if (openHandling != 0L) {
+                nav.navigate(Destination.Handling(openHandling)) {
+                    popUpTo<Destination.Home>()
+                    launchSingleTop = true
+                }
+                openHandling = 0L
+            }
+        }
+        // screens switch at once, as they always have
+        NavHost(
+            nav,
+            startDestination = Destination.Home,
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None },
+            popEnterTransition = { EnterTransition.None },
+            popExitTransition = { ExitTransition.None }
+        ) {
+            composable<Destination.Home> { Home(creds, onOpen = ::open) }
+            composable<Destination.Meal>(typeMap = Destination.Meal.typeMap) { entry ->
+                val m = entry.toRoute<Destination.Meal>()
+                com.lumenarcanus.dialife.feature.meal.MealRoute(
+                    editingId = m.editingId,
+                    entry = m.entry,
+                    initialTime = m.initialTime,
+                    forLow = m.forLow,
+                    questionId = m.questionId,
+                    onDone = back
+                )
+            }
+            composable<Destination.DoseSettings> { com.lumenarcanus.dialife.feature.settings.DoseSettingsRoute(onBack = back) }
+            composable<Destination.Stats> { com.lumenarcanus.dialife.feature.stats.StatsRoute(onBack = back) }
+            composable<Destination.Settings> {
+                var setup by remember { mutableStateOf(backgroundSetup()) }
+                LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { setup = backgroundSetup() }
+                val askNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+                    setup =
+                        backgroundSetup()
+                }
+                com.lumenarcanus.dialife.feature.settings.SettingsRoute(
+                    creds = creds,
+                    setup = setup,
+                    onFixNotifications = { askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS) },
+                    onFixBattery = ::askBatteryExemption,
+                    onFixFullScreen = ::askFullScreen,
+                    onDisconnected = { nav.popBackStack(Destination.Home, inclusive = false) },
+                    onOpenDose = { open(Destination.DoseSettings) },
+                    onBack = back
+                )
+            }
+            composable<Destination.Handling> { entry ->
+                com.lumenarcanus.dialife.feature.alarms.HandlingRoute(
+                    alarmId = entry.toRoute<Destination.Handling>().alarmId,
+                    onBack = back,
+                    onOpenMeal = { open(Destination.Meal(forLow = true)) }
+                )
+            }
+            composable<Destination.Data> { entry ->
+                DataRoute(
+                    spanHours = entry.toRoute<Destination.Data>().spanHours,
+                    onBack = back,
+                    onOpenMeal = { tr -> open(Destination.Meal(editingId = tr.id, entry = tr)) }
+                )
+            }
+            composable<Destination.WebLogin> { com.lumenarcanus.dialife.feature.weblogin.WebLoginRoute(onBack = back) }
+            composable<Destination.Log> {
+                AlarmLogScreen(
+                    creds = creds,
+                    units = unitsOf(liveRepository.live.value.state?.displayUnits ?: creds.displayUnits),
+                    onBack = back
+                )
+            }
+        }
+    }
+
+    @Composable
+    private fun Home(creds: Credentials, onOpen: (Destination) -> Unit) {
         val home = viewModel { HomeViewModel(liveRepository) }
         LaunchedEffect(creds) {
             liveRepository.start(creds) // the screen works even if the service cannot start
@@ -258,16 +223,18 @@ class MainActivity : AppCompatActivity() {
             onAllowFullScreen = ::askFullScreen,
             alarmsSection = { com.lumenarcanus.dialife.feature.alarms.AlarmsSection(onOpenHandling = { id -> openHandling = id }) },
             onRange = home::setRange,
-            onOpenStats = { onOpen(Screen.Stats) },
-            onOpenLog = { onOpen(Screen.Log) },
-            onOpenData = { onOpen(Screen.Data) },
-            onOpenWebLogin = { onOpen(Screen.WebLogin) },
-            onOpenMeal = onMeal,
+            onOpenStats = { onOpen(Destination.Stats) },
+            onOpenLog = { onOpen(Destination.Log) },
+            onOpenData = { onOpen(Destination.Data(ui.rangeHours)) },
+            onOpenWebLogin = { onOpen(Destination.WebLogin) },
+            onOpenMeal = { tr, q ->
+                onOpen(Destination.Meal(editingId = tr?.id, entry = tr, initialTime = q?.from, questionId = q?.id ?: 0L))
+            },
             plannedSection = { com.lumenarcanus.dialife.feature.planned.PlannedSection() },
             questionsSection = { onLog -> com.lumenarcanus.dialife.feature.questions.QuestionsSection(onLog) },
             watchSection = { com.lumenarcanus.dialife.feature.questions.WatchSection() },
             waitSection = { com.lumenarcanus.dialife.feature.wait.WaitSection() },
-            onOpenSettings = { onOpen(Screen.Settings) },
+            onOpenSettings = { onOpen(Destination.Settings) },
             onRetry = liveRepository::reconnectNow,
             onSaveTreatment = liveRepository::saveTreatment,
             onDeleteTreatment = liveRepository::deleteTreatment,

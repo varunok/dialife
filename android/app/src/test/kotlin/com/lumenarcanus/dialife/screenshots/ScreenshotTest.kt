@@ -175,8 +175,18 @@ class ScreenshotTest {
     fun dataListUk() = shot("data_list_dark_uk", dark = true) {
         val ui = sampleHomeUi(now)
         com.lumenarcanus.dialife.feature.data.DataScreen(
-            ui.history, ui.state!!.questions, ui.state!!.thresholds, Units.MgDl, 3, now,
-            loadHistory = { _, _ -> null }, onSaveTreatment = {}, onBack = {}
+            com.lumenarcanus.dialife.feature.data.dataUiState(
+                ui.history,
+                null,
+                ui.state!!.questions,
+                ui.state!!.thresholds,
+                Units.MgDl,
+                3,
+                now
+            ),
+            onAction = {},
+            onSaveTreatment = {},
+            onBack = {}
         )
     }
 
@@ -492,8 +502,18 @@ class ScreenshotTest {
     fun dataListEnAll() = shot("data_list_dark_en_all", dark = true) {
         val ui = sampleHomeUi(now)
         com.lumenarcanus.dialife.feature.data.DataScreen(
-            ui.history, ui.state!!.questions, ui.state!!.thresholds, Units.MgDl, 3, now,
-            loadHistory = { _, _ -> null }, onSaveTreatment = {}, onBack = {}
+            com.lumenarcanus.dialife.feature.data.dataUiState(
+                ui.history,
+                null,
+                ui.state!!.questions,
+                ui.state!!.thresholds,
+                Units.MgDl,
+                3,
+                now
+            ),
+            onAction = {},
+            onSaveTreatment = {},
+            onBack = {}
         )
     }
 
@@ -502,8 +522,18 @@ class ScreenshotTest {
     fun dataListEsAll() = shot("data_list_dark_es_all", dark = true) {
         val ui = sampleHomeUi(now)
         com.lumenarcanus.dialife.feature.data.DataScreen(
-            ui.history, ui.state!!.questions, ui.state!!.thresholds, Units.MgDl, 3, now,
-            loadHistory = { _, _ -> null }, onSaveTreatment = {}, onBack = {}
+            com.lumenarcanus.dialife.feature.data.dataUiState(
+                ui.history,
+                null,
+                ui.state!!.questions,
+                ui.state!!.thresholds,
+                Units.MgDl,
+                3,
+                now
+            ),
+            onAction = {},
+            onSaveTreatment = {},
+            onBack = {}
         )
     }
 
