@@ -86,6 +86,12 @@ class MealFormState(draft: MealDraft?, editing: Treatment?, initialTime: Long?, 
         if (open == id) open = null
     }
 
+    /** "Undo": the dish taken away goes back where it was. */
+    fun undoRemove(at: Int, row: FoodRow) {
+        rows.add(at.coerceAtMost(rows.size), row)
+        removed = null
+    }
+
     /** "гречка 150 г" typed in the field: a dish with its portion. */
     fun addTyped() {
         val (name, portion) = parseEntry(newName)
