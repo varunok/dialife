@@ -25,6 +25,7 @@ import (
 	"dialife/internal/store"
 	"dialife/internal/wait"
 	"dialife/internal/web"
+	"dialife/internal/weblogin"
 )
 
 type Deps struct {
@@ -45,6 +46,7 @@ type Deps struct {
 // watchdog (Alarms.Run) the caller must start.
 type App struct {
 	api       *app.Handlers
+	webLogin  *weblogin.HTTP
 	Handler   http.Handler
 	Alarms    *alarms.Engine
 	Questions *questions.Engine // its Run (timeouts, reminders) the caller starts too
@@ -98,21 +100,14 @@ func New(d Deps) *App {
 	mux.Handle("GET /api/stream", anyRole(http.HandlerFunc(api.Stream)))
 	caregiver := d.Auth.Require(auth.RoleCaregiver)
 	// the web viewer: logging in by a QR code a parent scans, then read-only like a reader
-	mux.Handle("POST /api/web/login", http.HandlerFunc(api.WebLoginStart))
-	mux.Handle("GET /api/web/login/{id}/qr.svg", http.HandlerFunc(api.WebLoginQR))
-	mux.Handle("POST /api/web/login/{id}/poll", http.HandlerFunc(api.WebLoginPoll))
-	mux.Handle("POST /api/web/inspect", caregiver(http.HandlerFunc(api.WebLoginInspect)))
-	mux.Handle("POST /api/web/approve", caregiver(http.HandlerFunc(api.WebLoginApprove)))
-	mux.Handle("POST /api/web/reject", caregiver(http.HandlerFunc(api.WebLoginReject)))
-	mux.Handle("GET /api/web/sessions", caregiver(http.HandlerFunc(api.WebSessions)))
-	mux.Handle("POST /api/web/sessions/{id}/revoke", caregiver(http.HandlerFunc(api.WebSessionRevoke)))
-	mux.Handle("POST /api/web/logout", anyRole(http.HandlerFunc(api.WebLogout)))
 	mux.Handle("PUT /api/dose", caregiver(http.HandlerFunc(api.PutDose)))
 	planned.HTTP{Service: api.Planned}.Routes(mux, caregiver)
 	wait.HTTP{Service: api.Wait}.Routes(mux, caregiver)
 	questions.HTTP{Engine: api.Questions}.Routes(mux, caregiver)
 	carbs.HTTP{Service: api.Carbs}.Routes(mux, caregiver)
 	intent.HTTP{Board: api.Intents}.Routes(mux, caregiver)
+	webLogin := &weblogin.HTTP{Store: d.Store, Bus: d.Bus, Now: d.Now}
+	webLogin.Routes(mux, anyRole, caregiver)
 	stats.HTTP{Store: d.Store, Now: d.Now, Loc: d.Loc, Thresholds: api.CurrentThresholds}.Routes(mux, anyRole)
 	meter.HTTP{Store: d.Store, Now: d.Now}.Routes(mux, anyRole)
 	alarms.HTTP{Engine: api.Alarms, Store: d.Store, Links: d.Links, Now: d.Now}.Routes(mux, anyRole, caregiver)
@@ -125,7 +120,7 @@ func New(d Deps) *App {
 		httpx.Error(w, http.StatusNotFound)
 	})
 
-	return &App{Handler: httpx.Recover(httpx.Log(httpx.Body(mux))), Alarms: api.Alarms, Questions: api.Questions, api: api}
+	return &App{Handler: httpx.Recover(httpx.Log(httpx.Body(mux))), Alarms: api.Alarms, Questions: api.Questions, api: api, webLogin: webLogin}
 }
 
 func healthz(s *store.Store) http.HandlerFunc {

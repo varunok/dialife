@@ -68,7 +68,6 @@ type Handlers struct {
 	Forecast   *forecast.Service // the trend forecast for the chart, what is on board, how both did
 	Intents    *intent.Board     // who has the insulin form open
 
-	webCodes webCodes     // web login codes, in memory for their QR pictures
 	mealGapQ mealGapCache // how far apart a meal's entries may be
 }
 

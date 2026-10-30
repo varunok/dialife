@@ -1,10 +1,17 @@
-package app
+// Package weblogin is logging into the web viewer. The browser asks for a
+// code and shows it as a QR code; a parent scans it in the app and allows it
+// for a chosen time; the browser, polling with the secret only it got, then
+// receives a read-only session token. Nothing is ever stored in the browser
+// by the server.
+package weblogin
 
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -15,14 +22,37 @@ import (
 	"rsc.io/qr"
 
 	"dialife/internal/auth"
+	"dialife/internal/bus"
 	"dialife/internal/httpx"
 	"dialife/internal/store"
 )
 
-// Logging into the web viewer. The browser asks for a code and shows it as a
-// QR code; a parent scans it in the app and allows it for a chosen time; the
-// browser, polling with the secret only it got, then receives a read-only
-// session token. Nothing is ever stored in the browser by the server.
+// EventLogout is the SSE event for a closed web session: {session}.
+const EventLogout = "logout"
+
+// HTTP is the web viewer's login: codes, the parent's decision, sessions.
+type HTTP struct {
+	Store *store.Store
+	Bus   *bus.Bus
+	Now   func() time.Time
+
+	codes webCodes // the codes, in memory for their QR pictures
+}
+
+// Routes adds the requests: the browser's (no token yet), the parent's
+// (caregiver) and the viewer's own logout (any role).
+func (h *HTTP) Routes(mux *http.ServeMux, anyRole, caregiver func(http.Handler) http.Handler) {
+	mux.Handle("POST /api/web/login", http.HandlerFunc(h.start))
+	mux.Handle("GET /api/web/login/{id}/qr.svg", http.HandlerFunc(h.qr))
+	mux.Handle("POST /api/web/login/{id}/poll", http.HandlerFunc(h.poll))
+	mux.Handle("POST /api/web/inspect", caregiver(http.HandlerFunc(h.inspect)))
+	mux.Handle("POST /api/web/approve", caregiver(http.HandlerFunc(h.approve)))
+	mux.Handle("POST /api/web/reject", caregiver(http.HandlerFunc(h.reject)))
+	mux.Handle("GET /api/web/sessions", caregiver(http.HandlerFunc(h.sessions)))
+	mux.Handle("POST /api/web/sessions/{id}/revoke", caregiver(http.HandlerFunc(h.revoke)))
+	mux.Handle("POST /api/web/logout", anyRole(http.HandlerFunc(h.logout)))
+}
+
 const (
 	webCodeTTL        = 2 * time.Minute
 	webScannedTTL     = 5 * time.Minute // once scanned, the parent has this long to choose and allow
@@ -36,8 +66,8 @@ type webLoginStarted struct {
 	ExpiresAt int64  `json:"expires_at"`
 }
 
-// WebLoginStart serves POST /api/web/login: a new code for this browser.
-func (h *Handlers) WebLoginStart(w http.ResponseWriter, r *http.Request) {
+// start serves POST /api/web/login: a new code for this browser.
+func (h *HTTP) start(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	now := h.Now()
 	if n, err := h.Store.CountPendingWebLogins(ctx, now); err != nil {
@@ -60,15 +90,15 @@ func (h *Handlers) WebLoginStart(w http.ResponseWriter, r *http.Request) {
 		fail(w, "web login insert", err)
 		return
 	}
-	h.webCodes.put(l.ID, code, now.Add(webCodeTTL))
+	h.codes.put(l.ID, code, now.Add(webCodeTTL))
 	httpx.WriteJSON(w, http.StatusOK, webLoginStarted{ID: l.ID, Secret: secret, ExpiresAt: l.ExpiresAt})
 }
 
-// WebLoginQR serves GET /api/web/login/{id}/qr.svg: the code to scan, while it lives.
+// qr serves GET /api/web/login/{id}/qr.svg: the code to scan, while it lives.
 // The code itself never reaches the browser's script, only this picture.
-func (h *Handlers) WebLoginQR(w http.ResponseWriter, r *http.Request) {
+func (h *HTTP) qr(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	code, ok := h.webCodes.get(id, h.Now())
+	code, ok := h.codes.get(id, h.Now())
 	if !ok {
 		httpx.Error(w, http.StatusNotFound)
 		return
@@ -94,10 +124,10 @@ type webPollResponse struct {
 	By        string `json:"by,omitempty"` // who allowed it
 }
 
-// WebLoginPoll serves POST /api/web/login/{id}/poll: has a parent answered yet?
-func (h *Handlers) WebLoginPoll(w http.ResponseWriter, r *http.Request) {
+// poll serves POST /api/web/login/{id}/poll: has a parent answered yet?
+func (h *HTTP) poll(w http.ResponseWriter, r *http.Request) {
 	var req webPollRequest
-	if !decodeOptional(w, r, &req) {
+	if !decode(w, r, &req) {
 		return
 	}
 	ctx := r.Context()
@@ -124,7 +154,7 @@ func (h *Handlers) WebLoginPoll(w http.ResponseWriter, r *http.Request) {
 			fail(w, "web session", err)
 			return
 		}
-		h.webCodes.drop(l.ID)
+		h.codes.drop(l.ID)
 		by := ""
 		if d, err := h.Store.ActiveDeviceByID(ctx, l.ApprovedBy); err == nil {
 			by = d.Person
@@ -160,8 +190,8 @@ type webLoginInfo struct {
 	SameNetwork bool   `json:"same_network"`
 }
 
-// WebLoginInspect serves POST /api/web/inspect {id, code}: which browser asks, before a parent decides.
-func (h *Handlers) WebLoginInspect(w http.ResponseWriter, r *http.Request) {
+// inspect serves POST /api/web/inspect {id, code}: which browser asks, before a parent decides.
+func (h *HTTP) inspect(w http.ResponseWriter, r *http.Request) {
 	l, ok := h.pendingLogin(w, r, nil)
 	if !ok {
 		return
@@ -172,14 +202,14 @@ func (h *Handlers) WebLoginInspect(w http.ResponseWriter, r *http.Request) {
 		fail(w, "web login scan", err)
 		return
 	}
-	h.webCodes.extend(l.ID, time.UnixMilli(exp))
+	h.codes.extend(l.ID, time.UnixMilli(exp))
 	b, o := describeAgent(l.UserAgent)
 	httpx.WriteJSON(w, http.StatusOK, webLoginInfo{ID: l.ID, Browser: b, OS: o, ExpiresAt: max(l.ExpiresAt, exp), MaxMin: webMaxSessionMins,
 		IP: l.IP, SameNetwork: l.IP != "" && l.IP == httpx.ClientIP(r)})
 }
 
-// WebLoginApprove serves POST /api/web/approve {id, code, minutes}.
-func (h *Handlers) WebLoginApprove(w http.ResponseWriter, r *http.Request) {
+// approve serves POST /api/web/approve {id, code, minutes}.
+func (h *HTTP) approve(w http.ResponseWriter, r *http.Request) {
 	var req webCodeRequest
 	l, ok := h.pendingLogin(w, r, &req)
 	if !ok {
@@ -193,8 +223,8 @@ func (h *Handlers) WebLoginApprove(w http.ResponseWriter, r *http.Request) {
 	h.decideLogin(w, r, l, true, dev, req.Minutes)
 }
 
-// WebLoginReject serves POST /api/web/reject {id, code}.
-func (h *Handlers) WebLoginReject(w http.ResponseWriter, r *http.Request) {
+// reject serves POST /api/web/reject {id, code}.
+func (h *HTTP) reject(w http.ResponseWriter, r *http.Request) {
 	l, ok := h.pendingLogin(w, r, nil)
 	if !ok {
 		return
@@ -203,7 +233,7 @@ func (h *Handlers) WebLoginReject(w http.ResponseWriter, r *http.Request) {
 	h.decideLogin(w, r, l, false, dev, 0)
 }
 
-func (h *Handlers) decideLogin(w http.ResponseWriter, r *http.Request, l store.WebLogin, approve bool, dev store.Device, minutes int) {
+func (h *HTTP) decideLogin(w http.ResponseWriter, r *http.Request, l store.WebLogin, approve bool, dev store.Device, minutes int) {
 	done, err := h.Store.DecideWebLogin(r.Context(), l.ID, approve, dev.ID, minutes)
 	if err != nil {
 		fail(w, "web login decide", err)
@@ -218,12 +248,12 @@ func (h *Handlers) decideLogin(w http.ResponseWriter, r *http.Request, l store.W
 }
 
 // pendingLogin finds the unexpired, unanswered code a scanned QR carries.
-func (h *Handlers) pendingLogin(w http.ResponseWriter, r *http.Request, into *webCodeRequest) (store.WebLogin, bool) {
+func (h *HTTP) pendingLogin(w http.ResponseWriter, r *http.Request, into *webCodeRequest) (store.WebLogin, bool) {
 	var req webCodeRequest
 	if into == nil {
 		into = &req
 	}
-	if !decodeOptional(w, r, into) {
+	if !decode(w, r, into) {
 		return store.WebLogin{}, false
 	}
 	l, err := h.Store.WebLoginByCode(r.Context(), auth.Hash(into.Code))
@@ -242,7 +272,8 @@ func (h *Handlers) pendingLogin(w http.ResponseWriter, r *http.Request, into *we
 	return l, true
 }
 
-type logoutEvent struct {
+// LogoutEvent goes out when a web session is closed; its own stream ends with it.
+type LogoutEvent struct {
 	Session int64 `json:"session"`
 }
 
@@ -256,8 +287,8 @@ type webSessionView struct {
 	LastSeenAt *int64 `json:"last_seen_at,omitempty"`
 }
 
-// WebSessions serves GET /api/web/sessions: the browsers allowed in now.
-func (h *Handlers) WebSessions(w http.ResponseWriter, r *http.Request) {
+// sessions serves GET /api/web/sessions: the browsers allowed in now.
+func (h *HTTP) sessions(w http.ResponseWriter, r *http.Request) {
 	ss, err := h.Store.ActiveWebSessions(r.Context(), h.Now())
 	if err != nil {
 		fail(w, "web sessions", err)
@@ -271,8 +302,8 @@ func (h *Handlers) WebSessions(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, out)
 }
 
-// WebSessionRevoke serves POST /api/web/sessions/{id}/revoke: any parent closes any browser.
-func (h *Handlers) WebSessionRevoke(w http.ResponseWriter, r *http.Request) {
+// revoke serves POST /api/web/sessions/{id}/revoke: any parent closes any browser.
+func (h *HTTP) revoke(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathID(w, r) // a positive integer id, same parsing
 	if !ok {
 		return
@@ -283,13 +314,13 @@ func (h *Handlers) WebSessionRevoke(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// the browser's open stream ends at once, not at its next request
-	h.Bus.Publish(EventLogout, logoutEvent{Session: id}, h.Now())
+	h.Bus.Publish(EventLogout, LogoutEvent{Session: id}, h.Now())
 	slog.Info("web session revoked", "id", id, "by", dev.Person)
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// WebLogout serves POST /api/web/logout: the browser ends its own session.
-func (h *Handlers) WebLogout(w http.ResponseWriter, r *http.Request) {
+// logout serves POST /api/web/logout: the browser ends its own session.
+func (h *HTTP) logout(w http.ResponseWriter, r *http.Request) {
 	dev, _ := auth.DeviceFrom(r.Context())
 	if dev.WebSessionID == 0 {
 		httpx.Error(w, http.StatusBadRequest)
@@ -419,8 +450,8 @@ func (c *webCodes) drop(id string) {
 }
 
 // WebCode is the code behind a login id, for tests that play the scanning app.
-func (h *Handlers) WebCode(id string) string {
-	c, _ := h.webCodes.get(id, time.Time{})
+func (h *HTTP) WebCode(id string) string {
+	c, _ := h.codes.get(id, time.Time{})
 	return c
 }
 
@@ -432,4 +463,18 @@ func pathID(w http.ResponseWriter, r *http.Request) (int64, bool) {
 		return 0, false
 	}
 	return id, true
+}
+
+func fail(w http.ResponseWriter, what string, err error) {
+	slog.Error(what, "err", err)
+	httpx.Error(w, http.StatusInternalServerError)
+}
+
+// decode accepts an empty body; false means it already answered 400.
+func decode(w http.ResponseWriter, r *http.Request, v any) bool {
+	if err := json.NewDecoder(r.Body).Decode(v); err != nil && !errors.Is(err, io.EOF) {
+		httpx.Error(w, http.StatusBadRequest)
+		return false
+	}
+	return true
 }

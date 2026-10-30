@@ -15,6 +15,7 @@ import (
 	"dialife/internal/bus"
 	"dialife/internal/httpx"
 	"dialife/internal/questions"
+	"dialife/internal/weblogin"
 )
 
 const retryMs = 5000
@@ -80,10 +81,10 @@ func (h *Handlers) Stream(w http.ResponseWriter, r *http.Request) {
 			if !ok { // too slow or server shutting down: client reconnects and resyncs
 				return
 			}
-			if ev.Type == EventLogout {
-				var lo logoutEvent
+			if ev.Type == weblogin.EventLogout {
+				var lo weblogin.LogoutEvent
 				if json.Unmarshal(ev.Data, &lo) == nil && web && lo.Session == dev.WebSessionID {
-					h.send(w, bus.Event{ID: ev.ID, Type: EventLogout, Data: []byte("{}")})
+					h.send(w, bus.Event{ID: ev.ID, Type: weblogin.EventLogout, Data: []byte("{}")})
 					rc.Flush()
 					return
 				}
@@ -103,7 +104,7 @@ func (h *Handlers) Stream(w http.ResponseWriter, r *http.Request) {
 		case <-ping.C:
 			// a browser whose session expired or was closed elsewhere stops here
 			if web && !h.webSessionActive(ctx, dev.WebSessionID) {
-				h.send(w, bus.Event{ID: h.Bus.NextID(h.Now()), Type: EventLogout, Data: []byte("{}")})
+				h.send(w, bus.Event{ID: h.Bus.NextID(h.Now()), Type: weblogin.EventLogout, Data: []byte("{}")})
 				rc.Flush()
 				return
 			}

@@ -126,7 +126,7 @@ func TestWebSessionExpires(t *testing.T) {
 
 func (a *App) webCode(t *testing.T, id string) string {
 	t.Helper()
-	c := a.api.WebCode(id)
+	c := a.webLogin.WebCode(id)
 	if c == "" {
 		t.Fatalf("no code for %s", id)
 	}
