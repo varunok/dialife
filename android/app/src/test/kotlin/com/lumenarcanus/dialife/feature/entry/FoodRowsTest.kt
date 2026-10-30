@@ -37,4 +37,33 @@ class FoodRowsTest {
             ).foodText()
         )
     }
+
+    private val answer = com.lumenarcanus.dialife.data.CarbSuggestions(
+        items = listOf(
+            com.lumenarcanus.dialife.data.CarbSuggestion(
+                mine = com.lumenarcanus.dialife.data.CarbMine(30),
+                table = listOf(com.lumenarcanus.dialife.data.CarbTableHit("t1", 25))
+            )
+        )
+    )
+
+    @Test
+    fun aPickedSuggestionFollowsANewPortion() {
+        assertEquals("30", newFoodRow("Борщ", "18", "mine").withSuggestions(Result.success(answer)).carbs)
+        assertEquals("25", newFoodRow("Борщ", "20", "table", tableId = "t1").withSuggestions(Result.success(answer)).carbs)
+    }
+
+    @Test
+    fun typedCarbsStay() {
+        val r = newFoodRow("Борщ", "18", "manual").withSuggestions(Result.success(answer))
+        assertEquals("18", r.carbs)
+        assertEquals(30, r.suggestion?.mine?.carbs) // offered, not put in
+    }
+
+    @Test
+    fun noAnswerIsNotAsked() {
+        val r = newFoodRow("Борщ").copy(loading = true).withSuggestions(Result.failure(RuntimeException()))
+        assertEquals(false, r.asked)
+        assertEquals(false, r.loading)
+    }
 }

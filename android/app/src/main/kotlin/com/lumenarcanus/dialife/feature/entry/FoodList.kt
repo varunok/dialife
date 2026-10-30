@@ -109,24 +109,31 @@ fun FoodLookup(row: FoodRow, repo: FoodRepository?, update: ((FoodRow) -> FoodRo
         kotlinx.coroutines.delay(700)
         update { it.copy(loading = true) }
         val r = repo.suggest(name, row.portion.trim())
-        update { cur ->
-            val res = r.getOrNull()
-            val s = res?.items?.firstOrNull()
-            val follow = when (cur.source) {
-                "mine" -> s?.mine?.carbs
-                "table" -> (s?.table.orEmpty() + s?.similar.orEmpty()).firstOrNull { it.id == cur.tableId }?.carbs
-                "estimate" -> s?.estimate?.carbs
-                else -> null
-            }
-            cur.copy(
-                loading = false,
-                asked = r.isSuccess,
-                suggestion = s,
-                models = res?.models ?: false,
-                carbs = follow?.toString() ?: cur.carbs
-            )
-        }
+        update { it.withSuggestions(r) }
     }
+}
+
+/**
+ * The row once the server answered: the suggestion to offer, and the carbs
+ * following it when a suggestion of the same source was picked before (a new
+ * portion changes them); a carb value typed in stays as it is.
+ */
+fun FoodRow.withSuggestions(r: Result<com.lumenarcanus.dialife.data.CarbSuggestions>): FoodRow {
+    val res = r.getOrNull()
+    val s = res?.items?.firstOrNull()
+    val follow = when (source) {
+        "mine" -> s?.mine?.carbs
+        "table" -> (s?.table.orEmpty() + s?.similar.orEmpty()).firstOrNull { it.id == tableId }?.carbs
+        "estimate" -> s?.estimate?.carbs
+        else -> null
+    }
+    return copy(
+        loading = false,
+        asked = r.isSuccess,
+        suggestion = s,
+        models = res?.models ?: false,
+        carbs = follow?.toString() ?: carbs
+    )
 }
 
 /** The rows of a saved meal, or one row for an entry logged with only a total. */
