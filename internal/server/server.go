@@ -15,6 +15,7 @@ import (
 	"dialife/internal/bus"
 	"dialife/internal/carbs"
 	"dialife/internal/config"
+	"dialife/internal/forecast"
 	"dialife/internal/httpx"
 	"dialife/internal/planned"
 	"dialife/internal/questions"
@@ -64,6 +65,7 @@ func New(d Deps) *App {
 	api.Questions = &questions.Engine{Store: d.Store, Bus: d.Bus, Now: d.Now, Loc: d.Loc, Uploader: d.Uploader}
 	api.Questions.OnPlanned = func() { api.PublishState(context.Background()) }
 	api.Wait = &wait.Service{Store: d.Store, Now: d.Now, OnChange: api.PublishState}
+	api.Forecast = &forecast.Service{Store: d.Store}
 	api.Planned = &planned.Service{Store: d.Store, Now: d.Now, OnChange: api.PublishState, Settle: api.Questions.SettlePlanned}
 	status := nsv1.Status(d.Version, func(ctx context.Context) config.Thresholds { return api.Alarms.CurrentRules(ctx).Thresholds }, d.Now)
 	ns := &nsv1.Handlers{Store: d.Store, Now: d.Now, Events: api}

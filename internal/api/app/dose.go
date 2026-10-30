@@ -7,8 +7,10 @@ import (
 	"log/slog"
 	"net/http"
 	"slices"
+	"time"
 
 	"dialife/internal/auth"
+	"dialife/internal/forecast"
 	"dialife/internal/httpx"
 	"dialife/internal/store"
 	"dialife/internal/wait"
@@ -182,4 +184,12 @@ func (h *Handlers) PublishState(ctx context.Context) {
 		return
 	}
 	h.Bus.Publish(EventBG, snap, now)
+}
+
+// params is what the on-board forecast takes from the dose settings.
+func (d doseSettings) params() forecast.Params {
+	return forecast.Params{
+		ISF: d.isf(), Ratio: d.Ratio,
+		DIA: time.Duration(d.DIAMin) * time.Minute, CarbFor: time.Duration(d.CarbMin) * time.Minute,
+	}
 }

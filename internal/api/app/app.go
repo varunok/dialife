@@ -13,7 +13,6 @@ import (
 	"math"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"dialife/internal/acklink"
@@ -40,7 +39,7 @@ const (
 	// the 4 buckets span 20 minutes back from the newest reading
 	stateWindow = 25 * time.Minute
 	// an AR2 forecast from older data would be misleading
-	forecastMaxAge = 15 * time.Minute
+	forecastMaxAge = forecast.MaxAge
 	// readings handed to the alarm rules: the 240 min max high_for_min plus slack
 	alarmHistory = 250 * time.Minute
 
@@ -66,36 +65,35 @@ type Handlers struct {
 	Carbs      *carbs.Service    // carb suggestions for the food form
 	Wait       *wait.Service     // when to eat after rapid insulin with food
 	Planned    *planned.Service  // doses worked out for a meal, not given yet
+	Forecast   *forecast.Service // the trend forecast for the chart, what is on board, how both did
 
 	webCodes webCodes     // web login codes, in memory for their QR pictures
 	intents  intentBoard  // who has the insulin form open
-	quality  qualityCache // how the chart's forecast did lately
-	iobQ     iobQualityCache
 	mealGapQ mealGapCache // how far apart a meal's entries may be
 }
 
 type stateResponse struct {
-	Now          int64               `json:"now"`
-	DisplayUnits string              `json:"display_units,omitempty"` // absent in SSE bg events
-	Thresholds   config.Thresholds   `json:"thresholds"`
-	BG           *bgState            `json:"bg"`
-	AR2          *glucose.Forecast   `json:"ar2"`                        // the chart's forecast: a damped trend (the name is historic; alarms use AR2 itself)
-	ForecastInfo *forecastInfo       `json:"forecast_quality,omitempty"` // how often that forecast came true, and what it cannot see
-	Uploader     *uploaderState      `json:"uploader"`
-	Alarms       []alarms.View       `json:"alarms"`                  // live alarms, oldest first
-	Episode      *alarms.EpisodeView `json:"episode,omitempty"`       // rules behind "we wake everyone if…"
-	Caregivers   []caregiver         `json:"caregivers"`              // who an alarm wakes, for "Notified: Dad, Mom"
-	Questions    []questions.View    `json:"questions,omitempty"`     // open ones and the last day's suspect marks; never to the web viewer
-	UploaderName string              `json:"uploader_name,omitempty"` // what the family calls the xDrip+ phone
-	Intents      []insulinIntent     `json:"intents"`                 // parents with the insulin form open now
-	Dose         doseSettings        `json:"dose"`                    // the family's dose calculation
-	Planned      []planned.Dose      `json:"planned"`                 // doses worked out for a meal, not given yet
-	IOB          *iobState           `json:"iob,omitempty"`           // what logged food and rapid insulin will still do; not for alarms
-	IOBQuality   *forecast.Quality   `json:"iob_quality,omitempty"`   // how often its "in 30 min" came true
-	Wait         *wait.State         `json:"wait,omitempty"`          // a rapid dose with food beside it: when to start eating, a suggestion
-	MealGapMin   int                 `json:"meal_gap_min"`            // food entries this close (minutes) are one meal
-	BolusBefore  int                 `json:"bolus_before_min"`        // rapid this long before a meal's first food is for it
-	BolusAfter   int                 `json:"bolus_after_min"`         // and this long after its last
+	Now          int64                  `json:"now"`
+	DisplayUnits string                 `json:"display_units,omitempty"` // absent in SSE bg events
+	Thresholds   config.Thresholds      `json:"thresholds"`
+	BG           *bgState               `json:"bg"`
+	AR2          *glucose.Forecast      `json:"ar2"`                        // the chart's forecast: a damped trend (the name is historic; alarms use AR2 itself)
+	ForecastInfo *forecast.Info         `json:"forecast_quality,omitempty"` // how often that forecast came true, and what it cannot see
+	Uploader     *uploaderState         `json:"uploader"`
+	Alarms       []alarms.View          `json:"alarms"`                  // live alarms, oldest first
+	Episode      *alarms.EpisodeView    `json:"episode,omitempty"`       // rules behind "we wake everyone if…"
+	Caregivers   []caregiver            `json:"caregivers"`              // who an alarm wakes, for "Notified: Dad, Mom"
+	Questions    []questions.View       `json:"questions,omitempty"`     // open ones and the last day's suspect marks; never to the web viewer
+	UploaderName string                 `json:"uploader_name,omitempty"` // what the family calls the xDrip+ phone
+	Intents      []insulinIntent        `json:"intents"`                 // parents with the insulin form open now
+	Dose         doseSettings           `json:"dose"`                    // the family's dose calculation
+	Planned      []planned.Dose         `json:"planned"`                 // doses worked out for a meal, not given yet
+	IOB          *forecast.OnBoardState `json:"iob,omitempty"`           // what logged food and rapid insulin will still do; not for alarms
+	IOBQuality   *forecast.Quality      `json:"iob_quality,omitempty"`   // how often its "in 30 min" came true
+	Wait         *wait.State            `json:"wait,omitempty"`          // a rapid dose with food beside it: when to start eating, a suggestion
+	MealGapMin   int                    `json:"meal_gap_min"`            // food entries this close (minutes) are one meal
+	BolusBefore  int                    `json:"bolus_before_min"`        // rapid this long before a meal's first food is for it
+	BolusAfter   int                    `json:"bolus_after_min"`         // and this long after its last
 }
 
 type caregiver struct {
@@ -157,7 +155,7 @@ func (h *Handlers) snapshot(ctx context.Context, now time.Time) (stateResponse, 
 	}
 	if ok {
 		resp.BG, _ = h.describe(st, now, th)
-		resp.AR2, resp.ForecastInfo = h.chartForecast(ctx, st, now)
+		resp.AR2, resp.ForecastInfo = h.Forecast.Chart(ctx, st, now)
 	}
 
 	ds, err := h.Store.LatestDeviceStatus(ctx)
@@ -193,8 +191,8 @@ func (h *Handlers) snapshot(ctx context.Context, now time.Time) (stateResponse, 
 	if h.Wait != nil {
 		resp.Wait = h.Wait.State(ctx, wait.ReadingFrom(st, fresh, resp.AR2), resp.Dose.wait())
 	}
-	if resp.IOB = h.iob(ctx, st, fresh, resp.Dose, now); resp.IOB != nil {
-		if q := h.iobQuality(ctx, resp.Dose, now); q.N > 0 {
+	if resp.IOB = h.Forecast.OnBoard(ctx, st, fresh, resp.Dose.params(), now); resp.IOB != nil {
+		if q := h.Forecast.OnBoardQuality(ctx, resp.Dose.params(), now); q.N > 0 {
 			resp.IOBQuality = &q
 		}
 	}
@@ -656,109 +654,6 @@ type meResponse struct {
 func (h *Handlers) Me(w http.ResponseWriter, r *http.Request) {
 	dev, _ := auth.DeviceFrom(r.Context())
 	httpx.WriteJSON(w, http.StatusOK, meResponse{ID: dev.ID, Name: dev.Name, Role: dev.Role, DisplayUnits: dev.DisplayUnits})
-}
-
-type forecastInfo struct {
-	forecast.Quality
-	// the same, scored apart: the quiet hours and the 3 hours after food
-	Quiet     forecast.Quality `json:"quiet"`
-	AfterFood forecast.Quality `json:"after_food"`
-	Ignores   []ignored        `json:"ignores,omitempty"` // food or rapid insulin of the last 2 hours: the trend does not see them
-}
-
-type ignored struct {
-	Kind string `json:"kind"` // "food" | "insulin"
-	T    int64  `json:"t"`
-}
-
-// quality is measured on the last week once an hour, not on every reading.
-type qualityCache struct {
-	mu               sync.Mutex
-	at               time.Time
-	last             forecast.Quality
-	quiet, afterFood forecast.Quality
-}
-
-const (
-	qualityEvery = time.Hour
-	qualityOver  = 7 * 24 * time.Hour
-	blindAfter   = 2 * time.Hour
-)
-
-// chartForecast is the "in 30 min ≈" with its measured accuracy, from the readings of the last half hour.
-func (h *Handlers) chartForecast(ctx context.Context, st glucose.State, now time.Time) (*glucose.Forecast, *forecastInfo) {
-	if st.Error || now.UnixMilli()-st.Last.Date > forecastMaxAge.Milliseconds() {
-		return nil, nil
-	}
-	q, quiet, fed := h.forecastQuality(ctx, now)
-	from := st.Last.Date - 35*time.Minute.Milliseconds()
-	es, err := h.Store.QueryEntries(ctx, store.EntryQuery{Type: "sgv", Gte: &from, Lte: &st.Last.Date, Count: 50, Asc: true})
-	if err != nil {
-		slog.Error("forecast readings", "err", err)
-		return nil, nil
-	}
-	f, ok := forecast.Trend(points(es), q)
-	if !ok {
-		return nil, nil
-	}
-	info := &forecastInfo{Quality: q, Quiet: quiet, AfterFood: fed}
-	since := now.Add(-blindAfter).UnixMilli()
-	nowMs := now.UnixMilli()
-	if ts, err := h.Store.ListTreatments(ctx, store.TreatmentQuery{Gte: &since, Lte: &nowMs, Count: 50}); err == nil {
-		for _, t := range ts {
-			typ, _ := insulin.Kind(t.Raw)
-			switch {
-			case t.Carbs != nil && *t.Carbs > 0:
-				info.Ignores = append(info.Ignores, ignored{Kind: "food", T: t.CreatedAt})
-			case t.Insulin != nil && *t.Insulin > 0 && typ != "basal":
-				info.Ignores = append(info.Ignores, ignored{Kind: "insulin", T: t.CreatedAt})
-			}
-		}
-	}
-	return &f, info
-}
-
-// forecastQuality: how the trend did over the last week, overall and apart
-// for the quiet hours and the hours after food.
-func (h *Handlers) forecastQuality(ctx context.Context, now time.Time) (all, quiet, afterFood forecast.Quality) {
-	c := &h.quality
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if !c.at.IsZero() && now.Sub(c.at) < qualityEvery {
-		return c.last, c.quiet, c.afterFood
-	}
-	from, to := now.Add(-qualityOver).UnixMilli(), now.UnixMilli()
-	es, err := h.Store.QueryEntries(ctx, store.EntryQuery{Type: "sgv", Gte: &from, Lte: &to, Count: maxHistoryRows, Asc: true})
-	if err != nil {
-		slog.Error("forecast quality", "err", err)
-		return c.last, c.quiet, c.afterFood
-	}
-	fedFrom := from - forecast.AfterFood.Milliseconds()
-	ts, err := h.Store.ListTreatments(ctx, store.TreatmentQuery{Gte: &fedFrom, Lte: &to, Count: maxHistoryRows})
-	if err != nil {
-		slog.Error("forecast quality food", "err", err)
-		return c.last, c.quiet, c.afterFood
-	}
-	var foods []int64
-	for _, t := range ts {
-		if t.Carbs != nil && *t.Carbs > 0 {
-			foods = append(foods, t.CreatedAt)
-		}
-	}
-	rs := points(es)
-	c.last, c.at = forecast.Backtest(rs), now
-	c.quiet, c.afterFood = forecast.BacktestSplit(rs, foods)
-	return c.last, c.quiet, c.afterFood
-}
-
-func points(es []store.Entry) []forecast.Point {
-	out := make([]forecast.Point, 0, len(es))
-	for _, e := range es {
-		if e.SGV != nil && *e.SGV > glucose.MaxErrorCode {
-			out = append(out, forecast.Point{T: e.Date, V: *e.SGV})
-		}
-	}
-	return out
 }
 
 // decodeOptional accepts an empty body; false means it already answered 400.

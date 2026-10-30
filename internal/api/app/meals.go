@@ -43,11 +43,14 @@ func mealGap(foods []int64) int {
 	return min(max(gaps[len(gaps)*3/4]+10, mealGapMin), mealGapMax)
 }
 
+// mealGapEvery: the family's meal gap is measured again once an hour.
+const mealGapEvery = time.Hour
+
 func (h *Handlers) mealGap(ctx context.Context, now time.Time) int {
 	c := &h.mealGapQ
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if !c.at.IsZero() && now.Sub(c.at) < qualityEvery {
+	if !c.at.IsZero() && now.Sub(c.at) < mealGapEvery {
 		return c.last
 	}
 	from, to := now.Add(-mealGapOver).UnixMilli(), now.UnixMilli()
