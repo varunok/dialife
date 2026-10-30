@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"math"
 	"net/http"
@@ -20,6 +19,7 @@ import (
 	"dialife/internal/bus"
 	"dialife/internal/carbs"
 	"dialife/internal/config"
+	"dialife/internal/dose"
 	"dialife/internal/forecast"
 	"dialife/internal/glucose"
 	"dialife/internal/httpx"
@@ -67,6 +67,7 @@ type Handlers struct {
 	Planned    *planned.Service  // doses worked out for a meal, not given yet
 	Forecast   *forecast.Service // the trend forecast for the chart, what is on board, how both did
 	Intents    *intent.Board     // who has the insulin form open
+	Dose       *dose.Service     // the family's dose calculation
 
 	mealGapQ mealGapCache // how far apart a meal's entries may be
 }
@@ -85,7 +86,7 @@ type stateResponse struct {
 	Questions    []questions.View       `json:"questions,omitempty"`     // open ones and the last day's suspect marks; never to the web viewer
 	UploaderName string                 `json:"uploader_name,omitempty"` // what the family calls the xDrip+ phone
 	Intents      []intent.Intent        `json:"intents"`                 // parents with the insulin form open now
-	Dose         doseSettings           `json:"dose"`                    // the family's dose calculation
+	Dose         dose.Settings          `json:"dose"`                    // the family's dose calculation
 	Planned      []planned.Dose         `json:"planned"`                 // doses worked out for a meal, not given yet
 	IOB          *forecast.OnBoardState `json:"iob,omitempty"`           // what logged food and rapid insulin will still do; not for alarms
 	IOBQuality   *forecast.Quality      `json:"iob_quality,omitempty"`   // how often its "in 30 min" came true
@@ -183,15 +184,15 @@ func (h *Handlers) snapshot(ctx context.Context, now time.Time) (stateResponse, 
 			return resp, err
 		}
 	}
-	resp.Dose = h.dose(ctx)
+	resp.Dose = h.Dose.Get(ctx)
 	resp.MealGapMin = h.mealGap(ctx, now)
 	resp.BolusBefore, resp.BolusAfter = int(questions.BolusBefore.Minutes()), int(questions.BolusAfter.Minutes())
 	fresh := ok && !st.Error && now.UnixMilli()-st.Last.Date <= forecastMaxAge.Milliseconds()
 	if h.Wait != nil {
-		resp.Wait = h.Wait.State(ctx, wait.ReadingFrom(st, fresh, resp.AR2), resp.Dose.wait())
+		resp.Wait = h.Wait.State(ctx, wait.ReadingFrom(st, fresh, resp.AR2), waitSettings(resp.Dose))
 	}
-	if resp.IOB = h.Forecast.OnBoard(ctx, st, fresh, resp.Dose.params(), now); resp.IOB != nil {
-		if q := h.Forecast.OnBoardQuality(ctx, resp.Dose.params(), now); q.N > 0 {
+	if resp.IOB = h.Forecast.OnBoard(ctx, st, fresh, forecastParams(resp.Dose), now); resp.IOB != nil {
+		if q := h.Forecast.OnBoardQuality(ctx, forecastParams(resp.Dose), now); q.N > 0 {
 			resp.IOBQuality = &q
 		}
 	}
@@ -636,13 +637,4 @@ type meResponse struct {
 func (h *Handlers) Me(w http.ResponseWriter, r *http.Request) {
 	dev, _ := auth.DeviceFrom(r.Context())
 	httpx.WriteJSON(w, http.StatusOK, meResponse{ID: dev.ID, Name: dev.Name, Role: dev.Role, DisplayUnits: dev.DisplayUnits})
-}
-
-// decodeOptional accepts an empty body; false means it already answered 400.
-func decodeOptional(w http.ResponseWriter, r *http.Request, v any) bool {
-	if err := json.NewDecoder(r.Body).Decode(v); err != nil && !errors.Is(err, io.EOF) {
-		httpx.Error(w, http.StatusBadRequest)
-		return false
-	}
-	return true
 }

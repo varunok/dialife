@@ -15,6 +15,7 @@ import (
 	"dialife/internal/bus"
 	"dialife/internal/carbs"
 	"dialife/internal/config"
+	dosecalc "dialife/internal/dose" // "dose" is a test helper here
 	"dialife/internal/forecast"
 	"dialife/internal/httpx"
 	"dialife/internal/intent"
@@ -72,6 +73,7 @@ func New(d Deps) *App {
 	api.Wait = &wait.Service{Store: d.Store, Now: d.Now, OnChange: api.PublishState}
 	api.Forecast = &forecast.Service{Store: d.Store}
 	api.Intents = &intent.Board{Bus: d.Bus, Now: d.Now}
+	api.Dose = &dosecalc.Service{Store: d.Store, Now: d.Now, OnChange: api.PublishState}
 	api.Planned = &planned.Service{Store: d.Store, Now: d.Now, OnChange: api.PublishState, Settle: api.Questions.SettlePlanned}
 	status := nsv1.Status(d.Version, func(ctx context.Context) config.Thresholds { return api.Alarms.CurrentRules(ctx).Thresholds }, d.Now)
 	ns := &nsv1.Handlers{Store: d.Store, Now: d.Now, Events: api}
@@ -100,12 +102,12 @@ func New(d Deps) *App {
 	mux.Handle("GET /api/stream", anyRole(http.HandlerFunc(api.Stream)))
 	caregiver := d.Auth.Require(auth.RoleCaregiver)
 	// the web viewer: logging in by a QR code a parent scans, then read-only like a reader
-	mux.Handle("PUT /api/dose", caregiver(http.HandlerFunc(api.PutDose)))
 	planned.HTTP{Service: api.Planned}.Routes(mux, caregiver)
 	wait.HTTP{Service: api.Wait}.Routes(mux, caregiver)
 	questions.HTTP{Engine: api.Questions}.Routes(mux, caregiver)
 	carbs.HTTP{Service: api.Carbs}.Routes(mux, caregiver)
 	intent.HTTP{Board: api.Intents}.Routes(mux, caregiver)
+	dosecalc.HTTP{Service: api.Dose}.Routes(mux, caregiver)
 	webLogin := &weblogin.HTTP{Store: d.Store, Bus: d.Bus, Now: d.Now}
 	webLogin.Routes(mux, anyRole, caregiver)
 	stats.HTTP{Store: d.Store, Now: d.Now, Loc: d.Loc, Thresholds: api.CurrentThresholds}.Routes(mux, anyRole)
