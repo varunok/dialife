@@ -25,6 +25,7 @@ import androidx.glance.background
 import androidx.glance.color.ColorProvider
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
+import androidx.glance.layout.ColumnScope
 import androidx.glance.layout.ContentScale
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
@@ -38,6 +39,7 @@ import androidx.glance.semantics.semantics
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import androidx.glance.unit.ColorProvider as WidgetColor
 import com.lumenarcanus.dialife.MainActivity
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
@@ -208,8 +210,107 @@ private fun Content(d: WidgetData) {
             Text(d.state.orEmpty(), style = TextStyle(color = TextMuted, fontSize = 14.sp))
             return@Column
         }
-        if (large) {
-            // big enough to read from across the room or half asleep
+        when {
+            large -> Large(d, accent)
+            square -> Square(d, accent)
+            else -> Strip(d, accent, wide)
+        }
+    }
+}
+
+/** Big enough to read from across the room or half asleep: the state, the value with its arrow, change, time, forecast, the chart. */
+@Composable
+private fun ColumnScope.Large(d: WidgetData, accent: WidgetColor) {
+    val value = d.value ?: return
+    Text(
+        d.alarm ?: d.state.orEmpty(),
+        maxLines = 1,
+        style = TextStyle(
+            color = if (d.alarm != null) {
+                Low
+            } else {
+                accent
+            },
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Medium
+        )
+    )
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = GlanceModifier.fillMaxWidth()) {
+        Text(
+            value,
+            style = TextStyle(color = if (d.stale) TextMuted else TextMain, fontSize = 84.sp, fontWeight = FontWeight.Medium)
+        )
+        Spacer(GlanceModifier.width(8.dp))
+        Text(d.arrow, style = TextStyle(color = accent, fontSize = 52.sp, fontWeight = FontWeight.Bold))
+        Spacer(GlanceModifier.defaultWeight())
+        Column(horizontalAlignment = Alignment.End) {
+            d.delta?.let { Text(it, style = TextStyle(color = TextMain, fontSize = 22.sp, fontWeight = FontWeight.Medium)) }
+            d.time?.let { Text(it, style = TextStyle(color = TextMuted, fontSize = 15.sp)) }
+            d.forecast?.let { Text(it, maxLines = 1, style = TextStyle(color = TextMuted, fontSize = 15.sp)) }
+        }
+    }
+    d.chart?.let {
+        Spacer(GlanceModifier.height(6.dp))
+        Image(
+            ImageProvider(it),
+            null,
+            contentScale = ContentScale.FillBounds,
+            modifier = GlanceModifier.fillMaxWidth().defaultWeight()
+        )
+    }
+}
+
+/** A square: the state, the value with its arrow, change and time, forecast, the chart. */
+@Composable
+private fun ColumnScope.Square(d: WidgetData, accent: WidgetColor) {
+    val value = d.value ?: return
+    Text(
+        d.alarm ?: d.state.orEmpty(),
+        maxLines = 1,
+        style = TextStyle(
+            color = if (d.alarm != null) {
+                Low
+            } else {
+                accent
+            },
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium
+        )
+    )
+    Row(verticalAlignment = Alignment.Bottom) {
+        Text(
+            value,
+            style = TextStyle(color = if (d.stale) TextMuted else TextMain, fontSize = 52.sp, fontWeight = FontWeight.Medium)
+        )
+        Spacer(GlanceModifier.width(6.dp))
+        Text(d.arrow, style = TextStyle(color = accent, fontSize = 34.sp, fontWeight = FontWeight.Bold))
+    }
+    Text(listOfNotNull(d.delta, d.time).joinToString(" · "), maxLines = 1, style = TextStyle(color = TextMuted, fontSize = 13.sp))
+    d.forecast?.let { Text(it, maxLines = 1, style = TextStyle(color = TextMuted, fontSize = 12.sp)) }
+    d.chart?.let {
+        Spacer(GlanceModifier.height(6.dp))
+        Image(
+            provider = ImageProvider(it),
+            contentDescription = null, // the description above already says it all
+            contentScale = ContentScale.FillBounds,
+            modifier = GlanceModifier.fillMaxWidth().defaultWeight()
+        )
+    }
+}
+
+/** A strip: the value with its arrow, the state, change and time; a mini chart when [wide]. */
+@Composable
+private fun Strip(d: WidgetData, accent: WidgetColor, wide: Boolean) {
+    val value = d.value ?: return
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            value,
+            style = TextStyle(color = if (d.stale) TextMuted else TextMain, fontSize = 28.sp, fontWeight = FontWeight.Medium)
+        )
+        Spacer(GlanceModifier.width(4.dp))
+        Text(d.arrow, style = TextStyle(color = accent, fontSize = 22.sp, fontWeight = FontWeight.Bold))
+        Spacer(GlanceModifier.width(10.dp))
+        Column(GlanceModifier.defaultWeight()) {
             Text(
                 d.alarm ?: d.state.orEmpty(),
                 maxLines = 1,
@@ -219,106 +320,25 @@ private fun Content(d: WidgetData) {
                     } else {
                         accent
                     },
-                    fontSize = 18.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Medium
                 )
             )
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = GlanceModifier.fillMaxWidth()) {
-                Text(
-                    d.value,
-                    style = TextStyle(color = if (d.stale) TextMuted else TextMain, fontSize = 84.sp, fontWeight = FontWeight.Medium)
-                )
-                Spacer(GlanceModifier.width(8.dp))
-                Text(d.arrow, style = TextStyle(color = accent, fontSize = 52.sp, fontWeight = FontWeight.Bold))
-                Spacer(GlanceModifier.defaultWeight())
-                Column(horizontalAlignment = Alignment.End) {
-                    d.delta?.let { Text(it, style = TextStyle(color = TextMain, fontSize = 22.sp, fontWeight = FontWeight.Medium)) }
-                    d.time?.let { Text(it, style = TextStyle(color = TextMuted, fontSize = 15.sp)) }
-                    d.forecast?.let { Text(it, maxLines = 1, style = TextStyle(color = TextMuted, fontSize = 15.sp)) }
-                }
-            }
+            Text(
+                listOfNotNull(d.delta, d.time).joinToString(" · "),
+                maxLines = 1,
+                style = TextStyle(color = TextMuted, fontSize = 12.sp)
+            )
+        }
+        if (wide) {
             d.chart?.let {
-                Spacer(GlanceModifier.height(6.dp))
+                Spacer(GlanceModifier.width(8.dp))
                 Image(
                     ImageProvider(it),
                     null,
                     contentScale = ContentScale.FillBounds,
-                    modifier = GlanceModifier.fillMaxWidth().defaultWeight()
+                    modifier = GlanceModifier.width(110.dp).height(36.dp)
                 )
-            }
-        } else if (square) {
-            Text(
-                d.alarm ?: d.state.orEmpty(),
-                maxLines = 1,
-                style = TextStyle(
-                    color = if (d.alarm != null) {
-                        Low
-                    } else {
-                        accent
-                    },
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            )
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(
-                    d.value,
-                    style = TextStyle(color = if (d.stale) TextMuted else TextMain, fontSize = 52.sp, fontWeight = FontWeight.Medium)
-                )
-                Spacer(GlanceModifier.width(6.dp))
-                Text(d.arrow, style = TextStyle(color = accent, fontSize = 34.sp, fontWeight = FontWeight.Bold))
-            }
-            Text(listOfNotNull(d.delta, d.time).joinToString(" · "), maxLines = 1, style = TextStyle(color = TextMuted, fontSize = 13.sp))
-            d.forecast?.let { Text(it, maxLines = 1, style = TextStyle(color = TextMuted, fontSize = 12.sp)) }
-            d.chart?.let {
-                Spacer(GlanceModifier.height(6.dp))
-                Image(
-                    provider = ImageProvider(it),
-                    contentDescription = null, // the description above already says it all
-                    contentScale = ContentScale.FillBounds,
-                    modifier = GlanceModifier.fillMaxWidth().defaultWeight()
-                )
-            }
-        } else {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    d.value,
-                    style = TextStyle(color = if (d.stale) TextMuted else TextMain, fontSize = 28.sp, fontWeight = FontWeight.Medium)
-                )
-                Spacer(GlanceModifier.width(4.dp))
-                Text(d.arrow, style = TextStyle(color = accent, fontSize = 22.sp, fontWeight = FontWeight.Bold))
-                Spacer(GlanceModifier.width(10.dp))
-                Column(GlanceModifier.defaultWeight()) {
-                    Text(
-                        d.alarm ?: d.state.orEmpty(),
-                        maxLines = 1,
-                        style = TextStyle(
-                            color = if (d.alarm != null) {
-                                Low
-                            } else {
-                                accent
-                            },
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    )
-                    Text(
-                        listOfNotNull(d.delta, d.time).joinToString(" · "),
-                        maxLines = 1,
-                        style = TextStyle(color = TextMuted, fontSize = 12.sp)
-                    )
-                }
-                if (wide) {
-                    d.chart?.let {
-                        Spacer(GlanceModifier.width(8.dp))
-                        Image(
-                            ImageProvider(it),
-                            null,
-                            contentScale = ContentScale.FillBounds,
-                            modifier = GlanceModifier.width(110.dp).height(36.dp)
-                        )
-                    }
-                }
             }
         }
     }
