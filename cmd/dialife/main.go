@@ -470,107 +470,123 @@ func device(cfg config.Config, args []string) error {
 	if len(args) == 0 {
 		return errors.New("device: want add, list, rotate, person or revoke")
 	}
+	cmd, ok := map[string]func(context.Context, *store.Store, []string) error{
+		"add":    deviceAdd,
+		"list":   deviceList,
+		"rotate": deviceRotate,
+		"person": devicePerson,
+		"revoke": deviceRevoke,
+	}[args[0]]
+	if !ok {
+		return fmt.Errorf("device: unknown command %q", args[0])
+	}
 	s, err := openMigrated(cfg)
 	if err != nil {
 		return err
 	}
 	defer s.Close()
-	ctx := context.Background()
+	return cmd(context.Background(), s, args)
+}
 
-	switch args[0] {
-	case "add":
-		fs := flag.NewFlagSet("device add", flag.ContinueOnError)
-		name := fs.String("name", "", "device name, e.g. \"xDrip\"")
-		roleStr := fs.String("role", "", "uploader | caregiver | reader")
-		if err := fs.Parse(args[1:]); err != nil {
-			return err
-		}
-		if *name == "" {
-			return errors.New("device add: -name is required")
-		}
-		role, err := auth.ParseRole(*roleStr)
-		if err != nil {
-			return err
-		}
-		token, err := auth.NewToken()
-		if err != nil {
-			return err
-		}
-		d, err := s.CreateDevice(ctx, *name, string(role), auth.Hash(token), time.Now())
-		if err != nil {
-			return err
-		}
-		fmt.Printf("device #%d %q (%s) created\n", d.ID, d.Name, d.Role)
-		fmt.Printf("token (shown once, store it now):\n%s\n", token)
-		return nil
+// deviceAdd adds a device and shows its token, once.
+func deviceAdd(ctx context.Context, s *store.Store, args []string) error {
+	fs := flag.NewFlagSet("device add", flag.ContinueOnError)
+	name := fs.String("name", "", "device name, e.g. \"xDrip\"")
+	roleStr := fs.String("role", "", "uploader | caregiver | reader")
+	if err := fs.Parse(args[1:]); err != nil {
+		return err
+	}
+	if *name == "" {
+		return errors.New("device add: -name is required")
+	}
+	role, err := auth.ParseRole(*roleStr)
+	if err != nil {
+		return err
+	}
+	token, err := auth.NewToken()
+	if err != nil {
+		return err
+	}
+	d, err := s.CreateDevice(ctx, *name, string(role), auth.Hash(token), time.Now())
+	if err != nil {
+		return err
+	}
+	fmt.Printf("device #%d %q (%s) created\n", d.ID, d.Name, d.Role)
+	fmt.Printf("token (shown once, store it now):\n%s\n", token)
+	return nil
+}
 
-	case "list":
-		devs, err := s.ListDevices(ctx)
-		if err != nil {
-			return err
-		}
-		tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-		fmt.Fprintln(tw, "ID\tNAME\tPERSON\tROLE\tUNITS\tCREATED\tLAST SEEN\tREVOKED")
-		for _, d := range devs {
-			fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-				d.ID, d.Name, d.Person, d.Role, d.DisplayUnits, fmtTime(&d.CreatedAt), fmtTime(d.LastSeenAt), fmtTime(d.RevokedAt))
-		}
-		return tw.Flush()
+// deviceList lists the devices.
+func deviceList(ctx context.Context, s *store.Store, args []string) error {
+	devs, err := s.ListDevices(ctx)
+	if err != nil {
+		return err
+	}
+	tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
+	fmt.Fprintln(tw, "ID\tNAME\tPERSON\tROLE\tUNITS\tCREATED\tLAST SEEN\tREVOKED")
+	for _, d := range devs {
+		fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			d.ID, d.Name, d.Person, d.Role, d.DisplayUnits, fmtTime(&d.CreatedAt), fmtTime(d.LastSeenAt), fmtTime(d.RevokedAt))
+	}
+	return tw.Flush()
+}
 
-	case "rotate":
-		fs := flag.NewFlagSet("device rotate", flag.ContinueOnError)
-		id := fs.Int64("id", 0, "device id from 'device list'")
-		if err := fs.Parse(args[1:]); err != nil {
-			return err
+// deviceRotate gives a device a new token; the old one stops working.
+func deviceRotate(ctx context.Context, s *store.Store, args []string) error {
+	fs := flag.NewFlagSet("device rotate", flag.ContinueOnError)
+	id := fs.Int64("id", 0, "device id from 'device list'")
+	if err := fs.Parse(args[1:]); err != nil {
+		return err
+	}
+	token, err := auth.NewToken()
+	if err != nil {
+		return err
+	}
+	d, err := s.RotateToken(ctx, *id, auth.Hash(token))
+	if errors.Is(err, store.ErrNotFound) {
+		return fmt.Errorf("no active device with id %d", *id)
+	}
+	if err != nil {
+		return err
+	}
+	fmt.Printf("device #%d %q (%s): new token, the old one no longer works\n", d.ID, d.Name, d.Role)
+	fmt.Printf("token (shown once, store it now):\n%s\n", token)
+	return nil
+}
+
+// devicePerson says whose a device is: phones of one person answer questions as one voice.
+func devicePerson(ctx context.Context, s *store.Store, args []string) error {
+	fs := flag.NewFlagSet("device person", flag.ContinueOnError)
+	id := fs.Int64("id", 0, "device id from 'device list'")
+	name := fs.String("name", "", "who holds it, e.g. \"Тато\"; empty: the device name")
+	if err := fs.Parse(args[1:]); err != nil {
+		return err
+	}
+	if err := s.SetPerson(ctx, *id, *name); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return fmt.Errorf("no device with id %d", *id)
 		}
-		token, err := auth.NewToken()
-		if err != nil {
-			return err
-		}
-		d, err := s.RotateToken(ctx, *id, auth.Hash(token))
+		return err
+	}
+	fmt.Printf("device #%d belongs to %q\n", *id, *name)
+	return nil
+}
+
+// deviceRevoke revokes a device.
+func deviceRevoke(ctx context.Context, s *store.Store, args []string) error {
+	fs := flag.NewFlagSet("device revoke", flag.ContinueOnError)
+	id := fs.Int64("id", 0, "device id from 'device list'")
+	if err := fs.Parse(args[1:]); err != nil {
+		return err
+	}
+	if err := s.RevokeDevice(ctx, *id, time.Now()); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return fmt.Errorf("no active device with id %d", *id)
 		}
-		if err != nil {
-			return err
-		}
-		fmt.Printf("device #%d %q (%s): new token, the old one no longer works\n", d.ID, d.Name, d.Role)
-		fmt.Printf("token (shown once, store it now):\n%s\n", token)
-		return nil
-
-	case "person":
-		// phones of one person answer questions as one voice
-		fs := flag.NewFlagSet("device person", flag.ContinueOnError)
-		id := fs.Int64("id", 0, "device id from 'device list'")
-		name := fs.String("name", "", "who holds it, e.g. \"Тато\"; empty: the device name")
-		if err := fs.Parse(args[1:]); err != nil {
-			return err
-		}
-		if err := s.SetPerson(ctx, *id, *name); err != nil {
-			if errors.Is(err, store.ErrNotFound) {
-				return fmt.Errorf("no device with id %d", *id)
-			}
-			return err
-		}
-		fmt.Printf("device #%d belongs to %q\n", *id, *name)
-		return nil
-
-	case "revoke":
-		fs := flag.NewFlagSet("device revoke", flag.ContinueOnError)
-		id := fs.Int64("id", 0, "device id from 'device list'")
-		if err := fs.Parse(args[1:]); err != nil {
-			return err
-		}
-		if err := s.RevokeDevice(ctx, *id, time.Now()); err != nil {
-			if errors.Is(err, store.ErrNotFound) {
-				return fmt.Errorf("no active device with id %d", *id)
-			}
-			return err
-		}
-		fmt.Printf("device #%d revoked\n", *id)
-		return nil
+		return err
 	}
-	return fmt.Errorf("device: unknown command %q", args[0])
+	fmt.Printf("device #%d revoked\n", *id)
+	return nil
 }
 
 func fmtTime(t *time.Time) string {
