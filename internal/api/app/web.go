@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -272,7 +273,7 @@ func (h *Handlers) WebSessions(w http.ResponseWriter, r *http.Request) {
 
 // WebSessionRevoke serves POST /api/web/sessions/{id}/revoke: any parent closes any browser.
 func (h *Handlers) WebSessionRevoke(w http.ResponseWriter, r *http.Request) {
-	id, ok := questionID(w, r) // a positive integer id, same parsing
+	id, ok := pathID(w, r) // a positive integer id, same parsing
 	if !ok {
 		return
 	}
@@ -421,4 +422,14 @@ func (c *webCodes) drop(id string) {
 func (h *Handlers) WebCode(id string) string {
 	c, _ := h.webCodes.get(id, time.Time{})
 	return c
+}
+
+// pathID reads a positive numeric {id} from the path; on failure it has already answered.
+func pathID(w http.ResponseWriter, r *http.Request) (int64, bool) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil || id <= 0 {
+		httpx.Error(w, http.StatusBadRequest)
+		return 0, false
+	}
+	return id, true
 }
