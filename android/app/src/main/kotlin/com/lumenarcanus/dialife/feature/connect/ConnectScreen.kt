@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.ui.connect
+package com.lumenarcanus.dialife.feature.connect
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background

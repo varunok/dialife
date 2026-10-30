@@ -259,13 +259,6 @@ class LiveRepository(context: Context, private val api: DiaLifeApi = DiaLifeApi(
     suspend fun freshState(): Result<com.lumenarcanus.dialife.data.StateResponse> =
         creds?.let { api.state(it) } ?: Result.failure(ApiException(ApiError.Unauthorized))
 
-    suspend fun putDose(d: com.lumenarcanus.dialife.data.DoseSettings): Result<com.lumenarcanus.dialife.data.DoseSettings> =
-        creds?.let { api.putDose(it, d) } ?: Result.failure(ApiException(ApiError.Unauthorized))
-
-    // the tables change only on an import; the frequent foods come with them
-
-    /** The food catalog, kept for a few minutes between forms. */
-
     fun saveTreatment(t: Treatment) {
         _pending.value = queue.put(PendingOp(t.id, treatment = t.copy(pending = false)))
         flush()

@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.ui.web
+package com.lumenarcanus.dialife.feature.weblogin
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -56,8 +56,6 @@ import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.data.ApiError
 import com.lumenarcanus.dialife.data.ApiException
-import com.lumenarcanus.dialife.data.Credentials
-import com.lumenarcanus.dialife.data.DiaLifeApi
 import com.lumenarcanus.dialife.data.WebLoginInfo
 import com.lumenarcanus.dialife.data.WebLoginLink
 import com.lumenarcanus.dialife.data.WebSession
@@ -79,7 +77,7 @@ private enum class SpanUnit(val minutes: Int, val label: Int) {
  * it for as long as chosen (or decline), and close any browser already in.
  */
 @Composable
-fun WebLoginScreen(creds: Credentials, onBack: () -> Unit, api: DiaLifeApi = DiaLifeApi()) {
+fun WebLoginScreen(repository: WebLoginRepository, onBack: () -> Unit) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -98,7 +96,7 @@ fun WebLoginScreen(creds: Credentials, onBack: () -> Unit, api: DiaLifeApi = Dia
         val waiting = awaitNew
         awaitNew = false // only this once, not on later reloads (a logout)
         repeat(if (waiting) 10 else 1) {
-            api.webSessions(creds).onSuccess { sessions = it }
+            repository.sessions().onSuccess { sessions = it }
             if (!waiting || sessions.any { it.id !in before }) return@LaunchedEffect
             kotlinx.coroutines.delay(1500)
         }
@@ -107,7 +105,7 @@ fun WebLoginScreen(creds: Credentials, onBack: () -> Unit, api: DiaLifeApi = Dia
         // while the screen is open: last seen, closed elsewhere
         while (true) {
             kotlinx.coroutines.delay(30_000)
-            api.webSessions(creds).onSuccess { sessions = it }
+            repository.sessions().onSuccess { sessions = it }
         }
     }
     BackHandler(onBack = onBack)
@@ -122,7 +120,7 @@ fun WebLoginScreen(creds: Credentials, onBack: () -> Unit, api: DiaLifeApi = Dia
             }
             note = null
             scope.launch {
-                api.webInspect(creds, l)
+                repository.inspect(l)
                     .onSuccess {
                         link = l
                         info = it
@@ -147,7 +145,7 @@ fun WebLoginScreen(creds: Credentials, onBack: () -> Unit, api: DiaLifeApi = Dia
         if (l != null && i != null) {
             Approve(i, onDecide = { minutes ->
                 scope.launch {
-                    val r = if (minutes == null) api.webReject(creds, l) else api.webApprove(creds, l, minutes)
+                    val r = if (minutes == null) repository.reject(l) else repository.approve(l, minutes)
                     r.onSuccess {
                         note = if (minutes == null) {
                             ctx.getString(R.string.web_denied)
@@ -167,7 +165,7 @@ fun WebLoginScreen(creds: Credentials, onBack: () -> Unit, api: DiaLifeApi = Dia
                 Text(stringResource(R.string.web_scan), fontSize = 15.sp)
             }
         }
-        Sessions(sessions) { id -> scope.launch { api.webRevoke(creds, id).onSuccess { reload++ } } }
+        Sessions(sessions) { id -> scope.launch { repository.revoke(id).onSuccess { reload++ } } }
     }
 }
 

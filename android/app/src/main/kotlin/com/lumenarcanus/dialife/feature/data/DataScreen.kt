@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.ui.data
+package com.lumenarcanus.dialife.feature.data
 
 import android.content.pm.ActivityInfo
 import androidx.activity.compose.BackHandler

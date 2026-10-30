@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.ui.settings
+package com.lumenarcanus.dialife.feature.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

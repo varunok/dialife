@@ -3,9 +3,9 @@ package com.lumenarcanus.dialife.ui
 import com.lumenarcanus.dialife.data.History
 import com.lumenarcanus.dialife.data.Series
 import com.lumenarcanus.dialife.data.Treatment
-import com.lumenarcanus.dialife.ui.data.EntryKind
-import com.lumenarcanus.dialife.ui.data.entriesOf
-import com.lumenarcanus.dialife.ui.data.rowsOf
+import com.lumenarcanus.dialife.feature.data.EntryKind
+import com.lumenarcanus.dialife.feature.data.entriesOf
+import com.lumenarcanus.dialife.feature.data.rowsOf
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

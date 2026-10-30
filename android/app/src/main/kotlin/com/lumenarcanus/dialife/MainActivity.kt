@@ -44,13 +44,13 @@ import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.data.DiaLifeApi
 import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.feature.alarms.AlarmLogScreen
+import com.lumenarcanus.dialife.feature.connect.ConnectScreen
+import com.lumenarcanus.dialife.feature.data.DataScreen
+import com.lumenarcanus.dialife.feature.settings.SettingsScreen
 import com.lumenarcanus.dialife.live.LiveService
-import com.lumenarcanus.dialife.ui.connect.ConnectScreen
-import com.lumenarcanus.dialife.ui.data.DataScreen
 import com.lumenarcanus.dialife.ui.home.BackgroundSetup
 import com.lumenarcanus.dialife.ui.home.HomeScreen
 import com.lumenarcanus.dialife.ui.home.HomeViewModel
-import com.lumenarcanus.dialife.ui.settings.SettingsScreen
 import com.lumenarcanus.dialife.ui.theme.DiaLifeTheme
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import kotlinx.coroutines.launch
@@ -150,10 +150,10 @@ class MainActivity : AppCompatActivity() {
                             )
                             Screen.DoseSettings -> {
                                 val live by liveRepository.live.collectAsStateWithLifecycle()
-                                com.lumenarcanus.dialife.ui.settings.DoseSettingsScreen(
+                                com.lumenarcanus.dialife.feature.settings.DoseSettingsScreen(
                                     dose = live.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
                                     units = unitsOf(live.state?.displayUnits ?: s.credentials.displayUnits),
-                                    onSave = { d -> liveRepository.putDose(d) },
+                                    onSave = { d -> doseSettings.save(d) },
                                     onBack = { screen = Screen.Settings }
                                 )
                             }
@@ -221,8 +221,10 @@ class MainActivity : AppCompatActivity() {
                                     }
                                 )
                             }
-                            Screen.WebLogin -> com.lumenarcanus.dialife.ui.web.WebLoginScreen(
-                                creds = s.credentials,
+                            Screen.WebLogin -> com.lumenarcanus.dialife.feature.weblogin.WebLoginScreen(
+                                repository = remember {
+                                    com.lumenarcanus.dialife.feature.weblogin.WebLoginRepository({ liveRepository.credentials })
+                                },
                                 onBack = { screen = Screen.Home }
                             )
                             Screen.Log -> AlarmLogScreen(

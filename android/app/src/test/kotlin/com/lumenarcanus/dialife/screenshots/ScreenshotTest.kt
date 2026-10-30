@@ -16,13 +16,13 @@ import com.lumenarcanus.dialife.feature.alarms.HandlingScreen
 import com.lumenarcanus.dialife.feature.meal.MealInputs
 import com.lumenarcanus.dialife.feature.planned.PlannedCard
 import com.lumenarcanus.dialife.feature.planned.PlannedCardUiState
+import com.lumenarcanus.dialife.feature.settings.SettingsScreen
 import com.lumenarcanus.dialife.feature.wait.CountdownCard
 import com.lumenarcanus.dialife.feature.wait.CountdownUiState
 import com.lumenarcanus.dialife.feature.wait.WarningCard
 import com.lumenarcanus.dialife.feature.wait.warningUiState
 import com.lumenarcanus.dialife.ui.home.BackgroundSetup
 import com.lumenarcanus.dialife.ui.home.sampleHomeUi
-import com.lumenarcanus.dialife.ui.settings.SettingsScreen
 import com.lumenarcanus.dialife.ui.theme.DiaLifeTheme
 import java.util.TimeZone
 import org.junit.Before
@@ -173,7 +173,7 @@ class ScreenshotTest {
     @Config(qualifiers = "+uk")
     fun dataListUk() = shot("data_list_dark_uk", dark = true) {
         val ui = sampleHomeUi(now)
-        com.lumenarcanus.dialife.ui.data.DataScreen(
+        com.lumenarcanus.dialife.feature.data.DataScreen(
             ui.history, ui.state!!.questions, ui.state!!.thresholds, Units.MgDl, 3, now,
             loadHistory = { _, _ -> null }, onSaveTreatment = {}, onBack = {}
         )
@@ -190,12 +190,12 @@ class ScreenshotTest {
             androidx.compose.ui.Modifier.padding(20.dp),
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
         ) {
-            com.lumenarcanus.dialife.ui.web.Approve(
+            com.lumenarcanus.dialife.feature.weblogin.Approve(
                 com.lumenarcanus.dialife.data.WebLoginInfo("x", "Firefox", "Linux", now + 120_000, ip = "198.51.100.9"),
                 now = now
             ) {
             }
-            com.lumenarcanus.dialife.ui.web.Sessions(
+            com.lumenarcanus.dialife.feature.weblogin.Sessions(
                 listOf(
                     com.lumenarcanus.dialife.data.WebSession(
                         1,
@@ -355,7 +355,7 @@ class ScreenshotTest {
     @Test
     @Config(qualifiers = "uk-w412dp-h3500dp-xxhdpi")
     fun doseSettingsUk() = shot("dose_settings_dark_uk", dark = true) {
-        com.lumenarcanus.dialife.ui.settings.DoseSettingsScreen(
+        com.lumenarcanus.dialife.feature.settings.DoseSettingsScreen(
             com.lumenarcanus.dialife.data.DoseSettings(
                 updatedBy = "Тато"
             ),
@@ -493,7 +493,7 @@ class ScreenshotTest {
     @Config(qualifiers = "en-w412dp-h2600dp-xxhdpi")
     fun dataListEnAll() = shot("data_list_dark_en_all", dark = true) {
         val ui = sampleHomeUi(now)
-        com.lumenarcanus.dialife.ui.data.DataScreen(
+        com.lumenarcanus.dialife.feature.data.DataScreen(
             ui.history, ui.state!!.questions, ui.state!!.thresholds, Units.MgDl, 3, now,
             loadHistory = { _, _ -> null }, onSaveTreatment = {}, onBack = {}
         )
@@ -503,7 +503,7 @@ class ScreenshotTest {
     @Config(qualifiers = "es-w412dp-h2600dp-xxhdpi")
     fun dataListEsAll() = shot("data_list_dark_es_all", dark = true) {
         val ui = sampleHomeUi(now)
-        com.lumenarcanus.dialife.ui.data.DataScreen(
+        com.lumenarcanus.dialife.feature.data.DataScreen(
             ui.history, ui.state!!.questions, ui.state!!.thresholds, Units.MgDl, 3, now,
             loadHistory = { _, _ -> null }, onSaveTreatment = {}, onBack = {}
         )
@@ -748,12 +748,12 @@ class ScreenshotTest {
             androidx.compose.ui.Modifier.padding(20.dp),
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
         ) {
-            com.lumenarcanus.dialife.ui.web.Approve(
+            com.lumenarcanus.dialife.feature.weblogin.Approve(
                 com.lumenarcanus.dialife.data.WebLoginInfo("x", "Firefox", "Linux", now + 120_000, ip = "198.51.100.9"),
                 now = now
             ) {
             }
-            com.lumenarcanus.dialife.ui.web.Sessions(
+            com.lumenarcanus.dialife.feature.weblogin.Sessions(
                 listOf(
                     com.lumenarcanus.dialife.data.WebSession(
                         1,
@@ -777,12 +777,12 @@ class ScreenshotTest {
             androidx.compose.ui.Modifier.padding(20.dp),
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
         ) {
-            com.lumenarcanus.dialife.ui.web.Approve(
+            com.lumenarcanus.dialife.feature.weblogin.Approve(
                 com.lumenarcanus.dialife.data.WebLoginInfo("x", "Firefox", "Linux", now + 120_000, ip = "198.51.100.9"),
                 now = now
             ) {
             }
-            com.lumenarcanus.dialife.ui.web.Sessions(
+            com.lumenarcanus.dialife.feature.weblogin.Sessions(
                 listOf(
                     com.lumenarcanus.dialife.data.WebSession(
                         1,
@@ -810,7 +810,7 @@ class ScreenshotTest {
     @Test
     @Config(qualifiers = "en-w412dp-h3500dp-xxhdpi")
     fun doseSettingsEnAll() = shot("dose_settings_dark_en_all", dark = true) {
-        com.lumenarcanus.dialife.ui.settings.DoseSettingsScreen(
+        com.lumenarcanus.dialife.feature.settings.DoseSettingsScreen(
             com.lumenarcanus.dialife.data.DoseSettings(
                 updatedBy = "Тато"
             ),
@@ -825,7 +825,7 @@ class ScreenshotTest {
     @Test
     @Config(qualifiers = "es-w412dp-h3500dp-xxhdpi")
     fun doseSettingsEsAll() = shot("dose_settings_dark_es_all", dark = true) {
-        com.lumenarcanus.dialife.ui.settings.DoseSettingsScreen(
+        com.lumenarcanus.dialife.feature.settings.DoseSettingsScreen(
             com.lumenarcanus.dialife.data.DoseSettings(
                 updatedBy = "Тато"
             ),
