@@ -63,6 +63,10 @@ class LiveService : Service() {
                 if (qs != null) questionNotifier.sync(qs, liveRepository.myId, unitsOf(st?.displayUnits ?: units))
             }
         }
+        // "you can eat" when the wait on home runs out
+        scope.launch {
+            liveRepository.live.map { it.state?.wait }.distinctUntilChanged().collect { EatReminder.sync(this@LiveService, it) }
+        }
         scope.launch {
             liveRepository.questions.collect { q ->
                 questionNotifier.onEvent(q, liveRepository.myId, unitsOf(liveRepository.live.value.state?.displayUnits ?: units))

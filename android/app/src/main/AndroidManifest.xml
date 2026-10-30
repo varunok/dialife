@@ -52,6 +52,7 @@
         <receiver android:name=".live.WatchdogReceiver" android:exported="false" />
         <receiver android:name=".live.ActionReceiver" android:exported="false" />
         <receiver android:name=".live.BasalReminderReceiver" android:exported="false" />
+        <receiver android:name=".live.EatReminderReceiver" android:exported="false" />
 
         <receiver
             android:name=".widget.GlucoseWidgetReceiver"

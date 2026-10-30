@@ -131,7 +131,6 @@ class MainActivity : AppCompatActivity() {
                                     treatments = all,
                                     dose = ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
                                     mealRules = ui.state?.mealRules ?: com.lumenarcanus.dialife.data.MealRules(),
-                                    wait = ui.state?.wait,
                                     mbg = ui.history?.mbg ?: com.lumenarcanus.dialife.data.Series(),
                                     planned = ui.state?.planned.orEmpty(),
                                     units = unitsOf(ui.state?.displayUnits ?: s.credentials.displayUnits),
@@ -263,6 +262,11 @@ class MainActivity : AppCompatActivity() {
             onOpenWebLogin = { onOpen(Screen.WebLogin) },
             onOpenMeal = onMeal,
             onPlanned = { act -> planned(act) },
+            onCloseWait = { id, kind ->
+                lifecycleScope.launch {
+                    liveRepository.closeWait(id, kind).onFailure { Toast.makeText(this@MainActivity, R.string.q_failed, Toast.LENGTH_LONG).show() }
+                }
+            },
             onOpenSettings = { onOpen(Screen.Settings) },
             onOpenHandling = { id -> openHandling = id },
             onRetry = liveRepository::reconnectNow,

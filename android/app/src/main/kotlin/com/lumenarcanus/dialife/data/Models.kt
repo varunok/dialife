@@ -107,7 +107,7 @@ data class StateResponse(
     @SerialName("meal_gap_min") val mealGapMin: Int = MealRules().gapMin, // food entries this close are one meal
     @SerialName("bolus_before_min") val bolusBeforeMin: Int = MealRules().beforeMin, // rapid this long before a meal is for it
     @SerialName("bolus_after_min") val bolusAfterMin: Int = MealRules().afterMin, // and this long after
-    val wait: Wait? = null, // after a rapid dose: when to start eating, a suggestion only
+    val wait: Wait? = null, // a rapid dose with food beside it: when to start eating, a suggestion only
 ) {
     val mealRules get() = MealRules(mealGapMin, bolusBeforeMin, bolusAfterMin)
 }
@@ -305,7 +305,7 @@ data class CarbSuggestion(
     val similar: List<CarbTableHit> = emptyList(), // table foods that mean the same in other words
 )
 
-/** After a rapid dose, when to start eating (the server's suggestion, never a rule). */
+/** After a rapid dose with food beside it, when to start eating (the server's suggestion, never a rule). */
 @Serializable
 data class Wait(
     @SerialName("dose_id") val doseId: String,
@@ -315,7 +315,9 @@ data class Wait(
     val reason: String, // "range" | "high" | "unseen": wait; "low" | "falling": eat now
     val sgv: Int? = null,
     @SerialName("covers_g") val coversG: Double = 0.0, // carbs the dose covers at the ratio
-    @SerialName("food_g") val foodG: Double = 0.0, // carbs already logged after it
+    @SerialName("food_g") val foodG: Double = 0.0, // carbs logged since half an hour before it
+    val closed: Boolean = false, // "already ate", on any phone
+    @SerialName("more_closed") val moreClosed: Boolean = false, // the "more insulin than food" card closed
 )
 
 /** A portion from an imported carb table: carbs for it, or for the typed portion when scaled. */

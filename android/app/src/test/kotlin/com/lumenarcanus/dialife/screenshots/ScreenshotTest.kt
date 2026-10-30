@@ -79,12 +79,12 @@ class ScreenshotTest {
         val dose = now - 10 * 60_000
         val w = com.lumenarcanus.dialife.data.Wait("d", dose, 3.0, dose + 15 * 60_000, "range", 142, 60.0, 0.0)
         androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
-            com.lumenarcanus.dialife.ui.meal.WaitCard(w, 0, 20, Units.MgDl, now)
-            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(reason = "high", sgv = 214, eatFrom = dose + 20 * 60_000), 0, 20, Units.MgDl, now)
-            com.lumenarcanus.dialife.ui.meal.WaitCard(w, 20, 20, Units.MgDl, now)
-            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(reason = "falling", sgv = 92, eatFrom = now), 0, 20, Units.MgDl, now)
-            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(doseAt = now - 17 * 60_000, eatFrom = now - 2 * 60_000), 0, 20, Units.MgDl, now)
-            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(reason = "unseen", sgv = null), 0, 20, Units.MgDl, now)
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w, Units.MgDl, now) {}
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(reason = "high", sgv = 214, eatFrom = dose + 20 * 60_000), Units.MgDl, now) {}
+            com.lumenarcanus.dialife.ui.meal.MoreCard(w.copy(foodG = 20.0), 20) {}
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(reason = "falling", sgv = 92, eatFrom = now), Units.MgDl, now) {}
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(doseAt = now - 17 * 60_000, eatFrom = now - 2 * 60_000), Units.MgDl, now) {}
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(reason = "unseen", sgv = null), Units.MgDl, now) {}
         }
     }
 
@@ -287,12 +287,12 @@ class ScreenshotTest {
         val dose = now - 10 * 60_000
         val w = com.lumenarcanus.dialife.data.Wait("d", dose, 3.0, dose + 15 * 60_000, "range", 142, 60.0, 0.0)
         androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
-            com.lumenarcanus.dialife.ui.meal.WaitCard(w, 0, 20, Units.MgDl, now)
-            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(reason = "high", sgv = 214, eatFrom = dose + 20 * 60_000), 0, 20, Units.MgDl, now)
-            com.lumenarcanus.dialife.ui.meal.WaitCard(w, 20, 20, Units.MgDl, now)
-            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(reason = "falling", sgv = 92, eatFrom = now), 0, 20, Units.MgDl, now)
-            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(doseAt = now - 17 * 60_000, eatFrom = now - 2 * 60_000), 0, 20, Units.MgDl, now)
-            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(reason = "unseen", sgv = null), 0, 20, Units.MgDl, now)
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w, Units.MgDl, now) {}
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(reason = "high", sgv = 214, eatFrom = dose + 20 * 60_000), Units.MgDl, now) {}
+            com.lumenarcanus.dialife.ui.meal.MoreCard(w.copy(foodG = 20.0), 20) {}
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(reason = "falling", sgv = 92, eatFrom = now), Units.MgDl, now) {}
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(doseAt = now - 17 * 60_000, eatFrom = now - 2 * 60_000), Units.MgDl, now) {}
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(reason = "unseen", sgv = null), Units.MgDl, now) {}
         }
     }
 
@@ -302,12 +302,12 @@ class ScreenshotTest {
         val dose = now - 10 * 60_000
         val w = com.lumenarcanus.dialife.data.Wait("d", dose, 3.0, dose + 15 * 60_000, "range", 142, 60.0, 0.0)
         androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
-            com.lumenarcanus.dialife.ui.meal.WaitCard(w, 0, 20, Units.MgDl, now)
-            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(reason = "high", sgv = 214, eatFrom = dose + 20 * 60_000), 0, 20, Units.MgDl, now)
-            com.lumenarcanus.dialife.ui.meal.WaitCard(w, 20, 20, Units.MgDl, now)
-            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(reason = "falling", sgv = 92, eatFrom = now), 0, 20, Units.MgDl, now)
-            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(doseAt = now - 17 * 60_000, eatFrom = now - 2 * 60_000), 0, 20, Units.MgDl, now)
-            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(reason = "unseen", sgv = null), 0, 20, Units.MgDl, now)
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w, Units.MgDl, now) {}
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(reason = "high", sgv = 214, eatFrom = dose + 20 * 60_000), Units.MgDl, now) {}
+            com.lumenarcanus.dialife.ui.meal.MoreCard(w.copy(foodG = 20.0), 20) {}
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(reason = "falling", sgv = 92, eatFrom = now), Units.MgDl, now) {}
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(doseAt = now - 17 * 60_000, eatFrom = now - 2 * 60_000), Units.MgDl, now) {}
+            com.lumenarcanus.dialife.ui.meal.WaitCard(w.copy(reason = "unseen", sgv = null), Units.MgDl, now) {}
         }
     }
 

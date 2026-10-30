@@ -432,6 +432,8 @@
 
     <string name="channel_reminders">Reminders</string>
     <string name="channel_reminders_desc">Long-acting insulin an hour before it is due.</string>
+    <string name="channel_eat">You can eat</string>
+    <string name="channel_eat_desc">When the wait after rapid insulin with food is over. An ordinary sound, silent in silent mode.</string>
     <string name="rem_title">In an hour: long-acting, %1$s</string>
     <string name="rem_title_plain">Long-acting insulin in an hour</string>
     <string name="set_insulin_choose">Choose…</string>
@@ -773,13 +775,15 @@
     <string name="wait_fact_sugar">Sugar %1$s</string>
     <string name="wait_fact_food">Food %1$d g</string>
     <string name="wait_note">A suggestion, not a rule. Every phone shows the same.</string>
+    <string name="wait_eaten">Already ate</string>
+    <string name="wait_close">Close</string>
     <string name="age_min">%1$d min</string>
     <string name="age_hours">%1$d h</string>
     <string name="age_days">%1$d days</string>
     <string name="role_caregiver">family phone</string>
     <string name="role_uploader">xDrip+ phone</string>
     <string name="dose_wait">When to eat after rapid insulin</string>
-    <string name="dose_wait_note">A suggestion on the food screen and the main screen, counted from the injection. Never a rule, nothing is recorded.</string>
+    <string name="dose_wait_note">Shown when rapid insulin (not a correction) and food are entered within 5 min of each other, in any order; counted from the injection. On the main screen. Not a rule, nothing is recorded.</string>
     <string name="dose_wait_min">Wait, sugar in range</string>
     <string name="dose_wait_high_from">Sugar is high from</string>
     <string name="dose_wait_high_min">Wait when high</string>

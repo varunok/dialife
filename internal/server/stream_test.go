@@ -200,11 +200,26 @@ func TestStreamTreatmentsAndUploader(t *testing.T) {
 	if tr.Op != "upsert" || len(tr.IDs) != 1 || tr.IDs[0] != "2f1c6c1e8b3a4d2e9f001a2b" {
 		t.Fatalf("treatment event %+v", tr)
 	}
+	// and the state counted from it at once: a rapid dose with its food opens the wait
+	var st struct {
+		Wait *struct {
+			DoseID string `json:"dose_id"`
+		}
+	}
+	decodeInto(t, c.next(t, "bg").Data, &st)
+	if st.Wait == nil || st.Wait.DoseID != "2f1c6c1e8b3a4d2e9f001a2b" {
+		t.Fatalf("wait after the upload: %+v", st.Wait)
+	}
 
 	f.do(t, "DELETE", "/api/v1/treatments/2f1c6c1e8b3a4d2e9f001a2b", nil, xdrip(xd))
 	decodeInto(t, c.next(t, "treatment").Data, &tr)
 	if tr.Op != "delete" {
 		t.Fatalf("delete event %+v", tr)
+	}
+	st.Wait = nil
+	decodeInto(t, c.next(t, "bg").Data, &st)
+	if st.Wait != nil {
+		t.Fatalf("the entry is gone, so is the wait: %+v", st.Wait)
 	}
 	f.do(t, "DELETE", "/api/v1/treatments/2f1c6c1e8b3a4d2e9f001a2b", nil, xdrip(xd))
 	c.expectQuiet(t) // deleting nothing is silent

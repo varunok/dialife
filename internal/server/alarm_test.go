@@ -226,6 +226,7 @@ func TestHouseholdSettingsOverHTTP(t *testing.T) {
 	f.do(t, "POST", "/api/v1/treatments", strings.NewReader(`{"eventType":"Meal Bolus","carbs":40,"created_at":"`+
 		testNow.Add(-40*time.Minute).UTC().Format(time.RFC3339)+`"}`), xdrip(xd))
 	s.next(t, "treatment")
+	s.next(t, "bg") // the state counted afresh from the treatments
 	upload(t, f, xd, testNow.Add(-time.Minute), "SingleUp", 200, 220, 240, 255, 268, 281)
 	s.next(t, "history")
 	s.next(t, "bg")

@@ -113,6 +113,7 @@ func New(d Deps) *App {
 	mux.Handle("POST /api/planned", caregiver(http.HandlerFunc(api.SavePlanned)))
 	mux.Handle("POST /api/planned/{id}/given", caregiver(http.HandlerFunc(api.PlannedGiven)))
 	mux.Handle("POST /api/planned/{id}/skip", caregiver(http.HandlerFunc(api.PlannedSkip)))
+	mux.Handle("POST /api/wait/{dose_id}/close", caregiver(http.HandlerFunc(api.CloseWait)))
 	mux.Handle("POST /api/questions/{id}/answer", caregiver(http.HandlerFunc(api.AnswerQuestion)))
 	mux.Handle("POST /api/questions/{id}/dismiss", caregiver(http.HandlerFunc(api.DismissQuestion)))
 	// no token: the signed link is the credential (see acklink)

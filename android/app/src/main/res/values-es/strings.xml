@@ -439,6 +439,8 @@
 
     <string name="channel_reminders">Recordatorios</string>
     <string name="channel_reminders_desc">Insulina basal una hora antes de que toque.</string>
+    <string name="channel_eat">Ya puede comer</string>
+    <string name="channel_eat_desc">Cuando termina la espera tras la insulina rápida con comida. Un sonido normal, en silencio si el teléfono lo está.</string>
     <string name="rem_title">En una hora: basal, %1$s</string>
     <string name="rem_title_plain">Insulina basal en una hora</string>
     <string name="set_insulin_choose">Elegir…</string>
@@ -781,13 +783,15 @@
     <string name="wait_fact_sugar">Glucosa %1$s</string>
     <string name="wait_fact_food">Comida %1$d g</string>
     <string name="wait_note">Una sugerencia, no una regla. Igual en todos los teléfonos.</string>
+    <string name="wait_eaten">Ya comió</string>
+    <string name="wait_close">Cerrar</string>
     <string name="age_min">%1$d min</string>
     <string name="age_hours">%1$d h</string>
     <string name="age_days">%1$d días</string>
     <string name="role_caregiver">teléfono de la familia</string>
     <string name="role_uploader">teléfono con xDrip+</string>
     <string name="dose_wait">Cuándo comer tras la rápida</string>
-    <string name="dose_wait_note">Una sugerencia en la pantalla de comida y en la principal, contada desde la inyección. No es una regla, no se registra nada.</string>
+    <string name="dose_wait_note">Aparece cuando la insulina rápida (no una corrección) y la comida se anotan con 5 min de diferencia o menos, en cualquier orden; contada desde la inyección. En la pantalla principal. No es una regla, no se registra nada.</string>
     <string name="dose_wait_min">Esperar, glucosa en rango</string>
     <string name="dose_wait_high_from">Glucosa alta desde</string>
     <string name="dose_wait_high_min">Esperar si está alta</string>

@@ -450,6 +450,8 @@
 
     <string name="channel_reminders">Нагадування</string>
     <string name="channel_reminders_desc">Довгий інсулін за годину до уколу.</string>
+    <string name="channel_eat">Можна їсти</string>
+    <string name="channel_eat_desc">Коли минув час очікування після короткого інсуліну з їжею. Звичайний звук, у беззвучному режимі мовчить.</string>
     <string name="rem_title">Через годину довгий: %1$s</string>
     <string name="rem_title_plain">Через годину довгий інсулін</string>
     <string name="set_insulin_choose">Вибрати…</string>
@@ -793,13 +795,15 @@
     <string name="wait_fact_sugar">Цукор %1$s</string>
     <string name="wait_fact_food">Їжа %1$d г</string>
     <string name="wait_note">Порада, не правило. На всіх телефонах однаково.</string>
+    <string name="wait_eaten">Вже поїли</string>
+    <string name="wait_close">Закрити</string>
     <string name="age_min">%1$d хв</string>
     <string name="age_hours">%1$d год</string>
     <string name="age_days">%1$d дн.</string>
     <string name="role_caregiver">телефон родини</string>
     <string name="role_uploader">телефон із xDrip+</string>
     <string name="dose_wait">Коли їсти після короткого</string>
-    <string name="dose_wait_note">Порада на екрані «Їжа» і на головному, від часу уколу. Не правило, нічого не записується.</string>
+    <string name="dose_wait_note">З\'являється, коли короткий інсулін (не корекцію) і їжу внесено в межах 5 хв одне від одного, у будь-якому порядку; від часу уколу. На головному екрані. Не правило, нічого не записується.</string>
     <string name="dose_wait_min">Чекати, цукор у нормі</string>
     <string name="dose_wait_high_from">Цукор високий від</string>
     <string name="dose_wait_high_min">Чекати, коли високий</string>

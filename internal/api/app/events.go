@@ -111,6 +111,8 @@ func (h *Handlers) TreatmentsChanged(ctx context.Context, op string, ids []strin
 	}
 	h.Bus.Publish(EventTreatment, treatmentEvent{Op: op, IDs: ids}, h.Now())
 	h.evaluateQuestions(ctx)
+	// what the state counts from them (the wait for food) changes at once, not with the next reading
+	h.PublishState(ctx)
 }
 
 func (h *Handlers) DeviceStatusSaved(_ context.Context, ds []store.DeviceStatus) {

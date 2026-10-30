@@ -21,6 +21,7 @@ object Notifications {
     const val CHANNEL_CHECKIN = "checkin"
     const val CHANNEL_EPISODES = "episodes"
     const val CHANNEL_REMINDERS = "reminders"
+    const val CHANNEL_EAT = "eat" // "you can eat": the wait after a rapid dose ran out
     const val CHANNEL_QUESTIONS = "questions"
     const val CHANNEL_QUESTIONS_NIGHT = "questions_night"
     const val ID_LIVE = 1
@@ -57,6 +58,11 @@ object Notifications {
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL_REMINDERS, context.getString(R.string.channel_reminders), NotificationManager.IMPORTANCE_DEFAULT).apply {
                 description = context.getString(R.string.channel_reminders_desc)
+            },
+        )
+        nm.createNotificationChannel(
+            NotificationChannel(CHANNEL_EAT, context.getString(R.string.channel_eat), NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = context.getString(R.string.channel_eat_desc)
             },
         )
         nm.createNotificationChannel(
