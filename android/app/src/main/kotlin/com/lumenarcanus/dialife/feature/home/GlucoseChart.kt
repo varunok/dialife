@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.ui.home
+package com.lumenarcanus.dialife.feature.home
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -59,13 +59,13 @@ import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.formatDelta
 import com.lumenarcanus.dialife.core.ui.formatGlucose
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
+import com.lumenarcanus.dialife.core.ui.theme.Onest
+import com.lumenarcanus.dialife.core.ui.theme.PlexMono
 import com.lumenarcanus.dialife.data.Forecast
 import com.lumenarcanus.dialife.data.History
 import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.data.Treatment
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
-import com.lumenarcanus.dialife.ui.theme.Onest
-import com.lumenarcanus.dialife.ui.theme.PlexMono
 import java.util.Date
 import java.util.TimeZone
 import kotlin.math.abs
@@ -400,8 +400,8 @@ fun GlucoseChart(
     val noteGlyph = stringResource(R.string.glyph_note)
     val basalGlyph = stringResource(R.string.glyph_basal)
     val unitInsulin = stringResource(R.string.unit_insulin)
-    val basalInk = com.lumenarcanus.dialife.ui.treatment.basalColor(c.isDark)
-    val basalFill = com.lumenarcanus.dialife.ui.treatment.basalContainer(c.isDark)
+    val basalInk = com.lumenarcanus.dialife.feature.entry.basalColor(c.isDark)
+    val basalFill = com.lumenarcanus.dialife.feature.entry.basalContainer(c.isDark)
     val meterLabel = stringResource(R.string.meter_label)
     val meterSensor = stringResource(R.string.meter_sensor)
     val meterEstimate = stringResource(R.string.meter_estimate)
@@ -901,7 +901,7 @@ fun GlucoseChart(
                         suspectDouble.format(
                             locale,
                             com.lumenarcanus.dialife.feature.questions.QuestionNotifier.doubleInsulin(context, q),
-                            com.lumenarcanus.dialife.ui.treatment.gapText(
+                            com.lumenarcanus.dialife.feature.entry.gapText(
                                 context,
                                 q.to - q.from
                             )

@@ -20,8 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.formatClock
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.data.DoseCalc
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
 
 /** A bright card: red for what must be seen before injecting, amber for a note, green when all agrees. */
 @Composable

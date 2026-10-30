@@ -30,8 +30,8 @@ import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatGlucose
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
-import com.lumenarcanus.dialife.ui.theme.PlexMono
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
+import com.lumenarcanus.dialife.core.ui.theme.PlexMono
 
 @Composable
 internal fun MeterCard(m: com.lumenarcanus.dialife.data.MeterReport, units: Units) {
@@ -87,7 +87,7 @@ internal fun MeterCard(m: com.lumenarcanus.dialife.data.MeterReport, units: Unit
                     sub?.let { Text(it, color = c.textFaint, fontSize = 12.sp) }
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text(value, color = c.text, fontSize = 14.sp, fontFamily = com.lumenarcanus.dialife.ui.theme.PlexMono)
+                    Text(value, color = c.text, fontSize = 14.sp, fontFamily = com.lumenarcanus.dialife.core.ui.theme.PlexMono)
                     valueSub?.let { Text(it, color = c.textFaint, fontSize = 12.sp) }
                 }
             }
@@ -163,7 +163,7 @@ internal fun MeterCard(m: com.lumenarcanus.dialife.data.MeterReport, units: Unit
 @Composable
 internal fun sensorInks(): List<Color> {
     val c = DiaTheme.colors
-    return listOf(c.textMuted, com.lumenarcanus.dialife.ui.treatment.basalColor(c.isDark), c.carbs, c.inRange, c.insulin, c.high)
+    return listOf(c.textMuted, com.lumenarcanus.dialife.feature.entry.basalColor(c.isDark), c.carbs, c.inRange, c.insulin, c.high)
 }
 
 internal fun diamondPath(at: androidx.compose.ui.geometry.Offset, half: Float) = androidx.compose.ui.graphics.Path().apply {
@@ -181,13 +181,13 @@ internal fun MeterScatter(m: com.lumenarcanus.dialife.data.MeterReport, units: U
     val locale = LocalConfiguration.current.locales[0]
     val measurer = androidx.compose.ui.text.rememberTextMeasurer()
     val inks = sensorInks()
-    val est = com.lumenarcanus.dialife.ui.home.meterInk(c.isDark)
+    val est = com.lumenarcanus.dialife.feature.home.meterInk(c.isDark)
     val axisSensor = stringResource(R.string.meter_axis_sensor)
     val axisMeter = stringResource(R.string.meter_axis_meter)
     val current = m.starts.size
     androidx.compose.foundation.Canvas(modifier) {
         val label = androidx.compose.ui.text.TextStyle(
-            fontFamily = com.lumenarcanus.dialife.ui.theme.PlexMono,
+            fontFamily = com.lumenarcanus.dialife.core.ui.theme.PlexMono,
             fontSize = 10.sp,
             color = c.textFaint
         )
@@ -220,7 +220,7 @@ internal fun MeterScatter(m: com.lumenarcanus.dialife.data.MeterReport, units: U
             drawText(t, topLeft = androidx.compose.ui.geometry.Offset(sx(v.toDouble()) - t.size.width / 2f, size.height - t.size.height))
             v += 50
         }
-        val axis = label.copy(fontFamily = com.lumenarcanus.dialife.ui.theme.Onest, color = c.textMuted)
+        val axis = label.copy(fontFamily = com.lumenarcanus.dialife.core.ui.theme.Onest, color = c.textMuted)
         drawText(measurer.measure(axisMeter, axis), topLeft = androidx.compose.ui.geometry.Offset(left + 4.dp.toPx(), 0f))
         val xs = measurer.measure(axisSensor, axis)
         drawText(

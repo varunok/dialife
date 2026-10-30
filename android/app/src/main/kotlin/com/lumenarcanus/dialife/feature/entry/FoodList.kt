@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.ui.treatment
+package com.lumenarcanus.dialife.feature.entry
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -43,13 +43,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.data.FoodRepository
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
+import com.lumenarcanus.dialife.core.ui.theme.GlucoseHero
 import com.lumenarcanus.dialife.data.CarbSuggestion
 import com.lumenarcanus.dialife.data.CarbTableHit
 import com.lumenarcanus.dialife.data.FoodCatalog
 import com.lumenarcanus.dialife.data.FoodItem
 import com.lumenarcanus.dialife.data.inLang
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
-import com.lumenarcanus.dialife.ui.theme.GlucoseHero
 
 /** One line of the meal being typed. carbs is the field's text; source says where it came from. */
 data class FoodRow(

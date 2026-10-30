@@ -22,10 +22,10 @@ import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.BannerButton
 import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatGlucose
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.data.AlarmView
 import com.lumenarcanus.dialife.feature.alarms.ActionReceiver
 import com.lumenarcanus.dialife.feature.alarms.AlarmText
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
 
 /** A live episode on the home screen: what it is, who has it, and the one action that fits. */
 @Composable

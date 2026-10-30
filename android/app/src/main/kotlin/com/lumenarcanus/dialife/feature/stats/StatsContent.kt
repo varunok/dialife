@@ -44,9 +44,9 @@ import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.formatGlucose
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
+import com.lumenarcanus.dialife.core.ui.theme.PlexMono
 import com.lumenarcanus.dialife.data.Stats
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
-import com.lumenarcanus.dialife.ui.theme.PlexMono
 import java.util.Locale
 
 @Composable
@@ -171,7 +171,7 @@ internal fun DailyTotals(s: Stats) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
     fun n(v: Double) = formatAmount(v, locale)
-    val basal = com.lumenarcanus.dialife.ui.treatment.basalColor(c.isDark)
+    val basal = com.lumenarcanus.dialife.feature.entry.basalColor(c.isDark)
     Card {
         Text(stringResource(R.string.stats_daily), color = c.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         @Composable

@@ -145,7 +145,7 @@ class QuestionNotifier(private val app: Context) {
             )
         }
 
-        fun doubleInsulin(ctx: Context, q: Question): String = com.lumenarcanus.dialife.ui.treatment.insulinLabel(
+        fun doubleInsulin(ctx: Context, q: Question): String = com.lumenarcanus.dialife.feature.entry.insulinLabel(
             ctx,
             com.lumenarcanus.dialife.data.InsulinType.of(q.insulin)
         )

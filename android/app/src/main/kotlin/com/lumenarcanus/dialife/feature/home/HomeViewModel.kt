@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.ui.home
+package com.lumenarcanus.dialife.feature.home
 
 import android.os.SystemClock
 import androidx.lifecycle.ViewModel

@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.ui.home
+package com.lumenarcanus.dialife.feature.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -27,7 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 
 @Composable
 internal fun Tiles(state: HomeState, onOpenStats: () -> Unit, onOpenLog: () -> Unit) {

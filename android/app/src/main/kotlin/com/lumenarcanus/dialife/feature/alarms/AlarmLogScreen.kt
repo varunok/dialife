@@ -47,13 +47,13 @@ import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatGlucose
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
+import com.lumenarcanus.dialife.core.ui.theme.PlexMono
 import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.data.DiaLifeApi
 import com.lumenarcanus.dialife.data.LogEpisode
 import com.lumenarcanus.dialife.data.LogEvent
 import com.lumenarcanus.dialife.feature.alarms.AlarmText
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
-import com.lumenarcanus.dialife.ui.theme.PlexMono
 
 private val Periods = listOf(1, 7, 30)
 

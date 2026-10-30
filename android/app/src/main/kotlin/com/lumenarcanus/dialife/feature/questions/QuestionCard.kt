@@ -23,9 +23,9 @@ import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatGlucose
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.data.Question
 import com.lumenarcanus.dialife.data.Treatment
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
 
 /**
  * "Did you forget to log?" Everyone answers; whoever has answered sees who is

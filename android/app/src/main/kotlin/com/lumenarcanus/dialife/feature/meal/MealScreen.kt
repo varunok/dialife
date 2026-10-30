@@ -61,20 +61,20 @@ import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.data.FoodRepository
 import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.formatClock
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
+import com.lumenarcanus.dialife.core.ui.theme.GlucoseHero
 import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.data.inLang
+import com.lumenarcanus.dialife.feature.entry.FoodLookup
+import com.lumenarcanus.dialife.feature.entry.FoodPicker
+import com.lumenarcanus.dialife.feature.entry.TimeDialog
+import com.lumenarcanus.dialife.feature.entry.atLabel
+import com.lumenarcanus.dialife.feature.entry.foodItemsOf
+import com.lumenarcanus.dialife.feature.entry.newFoodRow
+import com.lumenarcanus.dialife.feature.entry.parseMeter
 import com.lumenarcanus.dialife.feature.meal.MealDraft
 import com.lumenarcanus.dialife.feature.meal.MealDrafts
 import com.lumenarcanus.dialife.live.TreatmentQueue
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
-import com.lumenarcanus.dialife.ui.theme.GlucoseHero
-import com.lumenarcanus.dialife.ui.treatment.FoodLookup
-import com.lumenarcanus.dialife.ui.treatment.FoodPicker
-import com.lumenarcanus.dialife.ui.treatment.TimeDialog
-import com.lumenarcanus.dialife.ui.treatment.atLabel
-import com.lumenarcanus.dialife.ui.treatment.foodItemsOf
-import com.lumenarcanus.dialife.ui.treatment.newFoodRow
-import com.lumenarcanus.dialife.ui.treatment.parseMeter
 
 /**
  * The meal: every dish its own line, the rapid dose worked out from the

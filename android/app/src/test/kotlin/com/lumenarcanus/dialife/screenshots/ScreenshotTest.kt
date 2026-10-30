@@ -8,11 +8,14 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.theme.DiaLifeTheme
 import com.lumenarcanus.dialife.data.AlarmView
 import com.lumenarcanus.dialife.data.Caregiver
 import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.data.Question
 import com.lumenarcanus.dialife.feature.alarms.HandlingScreen
+import com.lumenarcanus.dialife.feature.home.BackgroundSetup
+import com.lumenarcanus.dialife.feature.home.sampleHomeUi
 import com.lumenarcanus.dialife.feature.meal.MealInputs
 import com.lumenarcanus.dialife.feature.planned.PlannedCard
 import com.lumenarcanus.dialife.feature.planned.PlannedCardUiState
@@ -21,9 +24,6 @@ import com.lumenarcanus.dialife.feature.wait.CountdownCard
 import com.lumenarcanus.dialife.feature.wait.CountdownUiState
 import com.lumenarcanus.dialife.feature.wait.WarningCard
 import com.lumenarcanus.dialife.feature.wait.warningUiState
-import com.lumenarcanus.dialife.ui.home.BackgroundSetup
-import com.lumenarcanus.dialife.ui.home.sampleHomeUi
-import com.lumenarcanus.dialife.ui.theme.DiaLifeTheme
 import java.util.TimeZone
 import org.junit.Before
 import org.junit.Rule
@@ -71,7 +71,7 @@ class ScreenshotTest {
             names = mapOf("uk" to "Полуниця"),
             portions = mapOf("uk" to "1 чашка (250 мл)")
         )
-        val row = com.lumenarcanus.dialife.ui.treatment.newFoodRow("Полуниця", portion = "100 грам").copy(
+        val row = com.lumenarcanus.dialife.feature.entry.newFoodRow("Полуниця", portion = "100 грам").copy(
             asked = true,
             models = true,
             suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(
@@ -83,8 +83,8 @@ class ScreenshotTest {
             androidx.compose.ui.Modifier.padding(16.dp),
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
         ) {
-            com.lumenarcanus.dialife.ui.treatment.FoodSuggestions(row, "uk") {}
-            com.lumenarcanus.dialife.ui.treatment.FoodSuggestions(
+            com.lumenarcanus.dialife.feature.entry.FoodSuggestions(row, "uk") {}
+            com.lumenarcanus.dialife.feature.entry.FoodSuggestions(
                 row.copy(
                     suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(
                         table = listOf(
@@ -143,7 +143,7 @@ class ScreenshotTest {
     @Config(qualifiers = "uk-w915dp-h412dp-land-xxhdpi")
     fun chartFullScreenUk() = shot("chart_full_dark_uk", dark = true) {
         val ui = sampleHomeUi(now)
-        com.lumenarcanus.dialife.ui.home.ChartCard(
+        com.lumenarcanus.dialife.feature.home.ChartCard(
             ui.history, ui.state?.ar2, ui.state!!.thresholds, Units.MgDl, ui.rangeHours, ui.now, onRange = {},
             modifier = androidx.compose.ui.Modifier.fillMaxSize(), expanded = true,
             suspects = ui.state!!.questions
@@ -154,10 +154,10 @@ class ScreenshotTest {
     @Config(qualifiers = "uk-w915dp-h412dp-land-xxhdpi")
     fun chartMeterLineUk() = shot("chart_meter_dark_uk", dark = true) {
         val ui = sampleHomeUi(now)
-        com.lumenarcanus.dialife.ui.home.ChartCard(
+        com.lumenarcanus.dialife.feature.home.ChartCard(
             ui.history, ui.state?.ar2, ui.state!!.thresholds, Units.MgDl, ui.rangeHours, ui.now, onRange = {},
             modifier = androidx.compose.ui.Modifier.fillMaxSize(), expanded = true,
-            meter = com.lumenarcanus.dialife.ui.home.sampleMeter(now), meterLine = true
+            meter = com.lumenarcanus.dialife.feature.home.sampleMeter(now), meterLine = true
         )
     }
 
@@ -165,7 +165,7 @@ class ScreenshotTest {
     @Config(qualifiers = "+uk")
     fun meterCardUk() = shot("meter_card_dark_uk", dark = true) {
         androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.padding(16.dp)) {
-            com.lumenarcanus.dialife.feature.stats.MeterCard(com.lumenarcanus.dialife.ui.home.sampleMeter(now), Units.MgDl)
+            com.lumenarcanus.dialife.feature.stats.MeterCard(com.lumenarcanus.dialife.feature.home.sampleMeter(now), Units.MgDl)
         }
     }
 
@@ -376,7 +376,7 @@ class ScreenshotTest {
             names = mapOf("uk" to "Полуниця"),
             portions = mapOf("uk" to "1 чашка (250 мл)")
         )
-        val row = com.lumenarcanus.dialife.ui.treatment.newFoodRow("Полуниця", portion = "100 грам").copy(
+        val row = com.lumenarcanus.dialife.feature.entry.newFoodRow("Полуниця", portion = "100 грам").copy(
             asked = true,
             models = true,
             suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(
@@ -388,8 +388,8 @@ class ScreenshotTest {
             androidx.compose.ui.Modifier.padding(16.dp),
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
         ) {
-            com.lumenarcanus.dialife.ui.treatment.FoodSuggestions(row, "uk") {}
-            com.lumenarcanus.dialife.ui.treatment.FoodSuggestions(
+            com.lumenarcanus.dialife.feature.entry.FoodSuggestions(row, "uk") {}
+            com.lumenarcanus.dialife.feature.entry.FoodSuggestions(
                 row.copy(
                     suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(
                         table = listOf(
@@ -411,7 +411,7 @@ class ScreenshotTest {
             names = mapOf("uk" to "Полуниця"),
             portions = mapOf("uk" to "1 чашка (250 мл)")
         )
-        val row = com.lumenarcanus.dialife.ui.treatment.newFoodRow("Полуниця", portion = "100 грам").copy(
+        val row = com.lumenarcanus.dialife.feature.entry.newFoodRow("Полуниця", portion = "100 грам").copy(
             asked = true,
             models = true,
             suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(
@@ -423,8 +423,8 @@ class ScreenshotTest {
             androidx.compose.ui.Modifier.padding(16.dp),
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
         ) {
-            com.lumenarcanus.dialife.ui.treatment.FoodSuggestions(row, "uk") {}
-            com.lumenarcanus.dialife.ui.treatment.FoodSuggestions(
+            com.lumenarcanus.dialife.feature.entry.FoodSuggestions(row, "uk") {}
+            com.lumenarcanus.dialife.feature.entry.FoodSuggestions(
                 row.copy(
                     suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(
                         table = listOf(
@@ -477,7 +477,7 @@ class ScreenshotTest {
     @Config(qualifiers = "en-w412dp-h2600dp-xxhdpi")
     fun meterCardEnAll() = shot("meter_card_dark_en_all", dark = true) {
         androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.padding(16.dp)) {
-            com.lumenarcanus.dialife.feature.stats.MeterCard(com.lumenarcanus.dialife.ui.home.sampleMeter(now), Units.MgDl)
+            com.lumenarcanus.dialife.feature.stats.MeterCard(com.lumenarcanus.dialife.feature.home.sampleMeter(now), Units.MgDl)
         }
     }
 
@@ -485,7 +485,7 @@ class ScreenshotTest {
     @Config(qualifiers = "es-w412dp-h2600dp-xxhdpi")
     fun meterCardEsAll() = shot("meter_card_dark_es_all", dark = true) {
         androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.padding(16.dp)) {
-            com.lumenarcanus.dialife.feature.stats.MeterCard(com.lumenarcanus.dialife.ui.home.sampleMeter(now), Units.MgDl)
+            com.lumenarcanus.dialife.feature.stats.MeterCard(com.lumenarcanus.dialife.feature.home.sampleMeter(now), Units.MgDl)
         }
     }
 

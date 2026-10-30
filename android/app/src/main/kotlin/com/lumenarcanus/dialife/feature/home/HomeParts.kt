@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.ui.home
+package com.lumenarcanus.dialife.feature.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -40,8 +40,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
-import com.lumenarcanus.dialife.ui.treatment.TreatmentKind
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
+import com.lumenarcanus.dialife.feature.entry.TreatmentKind
 
 /**
  * The chart alone, sideways and edge to edge: on a small phone the card is too
@@ -183,7 +183,7 @@ internal val ACTION_INNER = 8.dp + 22.dp + 6.dp
 
 @Composable
 internal fun ActionButton(kind: TreatmentKind, modifier: Modifier, small: Boolean = false, stacked: Boolean = false, onClick: () -> Unit) {
-    val look = com.lumenarcanus.dialife.ui.treatment.kindLook(kind)
+    val look = com.lumenarcanus.dialife.feature.entry.kindLook(kind)
     Button(
         onClick = onClick,
         modifier = modifier.heightIn(
@@ -202,9 +202,9 @@ internal fun ActionButton(kind: TreatmentKind, modifier: Modifier, small: Boolea
         val sign = 20.dp
         val signs = @Composable {
             if (kind == TreatmentKind.Insulin) {
-                com.lumenarcanus.dialife.ui.treatment.InsulinSigns(sign, look.fill)
+                com.lumenarcanus.dialife.feature.entry.InsulinSigns(sign, look.fill)
             } else {
-                com.lumenarcanus.dialife.ui.treatment.KindSign(look.glyph, look.ink, sign)
+                com.lumenarcanus.dialife.feature.entry.KindSign(look.glyph, look.ink, sign)
             }
         }
         // the label stays whole: past what the layout allows (a very large font), it shrinks rather than being cut

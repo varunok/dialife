@@ -9,9 +9,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.lumenarcanus.dialife.data.Treatment
-import com.lumenarcanus.dialife.ui.treatment.FoodRow
-import com.lumenarcanus.dialife.ui.treatment.foodRowsOf
-import com.lumenarcanus.dialife.ui.treatment.newFoodRow
+import com.lumenarcanus.dialife.feature.entry.FoodRow
+import com.lumenarcanus.dialife.feature.entry.foodRowsOf
+import com.lumenarcanus.dialife.feature.entry.newFoodRow
 
 /** Minutes ago for the time chips; the last chip picks a time. */
 internal val TimeShifts = listOf(0, 15, 30)

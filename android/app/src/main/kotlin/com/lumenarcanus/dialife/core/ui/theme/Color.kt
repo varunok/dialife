@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.ui.theme
+package com.lumenarcanus.dialife.core.ui.theme
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf

@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.ui.treatment
+package com.lumenarcanus.dialife.feature.entry
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,11 +36,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
+import com.lumenarcanus.dialife.core.ui.theme.GlucoseHero
 import com.lumenarcanus.dialife.data.FoodTable
 import com.lumenarcanus.dialife.data.TableFood
 import com.lumenarcanus.dialife.data.inLang
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
-import com.lumenarcanus.dialife.ui.theme.GlucoseHero
 
 /**
  * The whole carb table to pick a food from: by category or by a word typed in

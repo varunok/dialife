@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.ui.home
+package com.lumenarcanus.dialife.feature.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -25,8 +25,8 @@ import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.BannerButton
 import com.lumenarcanus.dialife.core.ui.formatClock
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.feature.alarms.AlarmText
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
 
 /** No reading for a while: the chain is broken somewhere, and here is where to look. */
 @Composable

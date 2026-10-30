@@ -2,8 +2,8 @@ package com.lumenarcanus.dialife.ui
 
 import com.lumenarcanus.dialife.data.InsulinType
 import com.lumenarcanus.dialife.data.Treatment
-import com.lumenarcanus.dialife.ui.treatment.DoseLevel
-import com.lumenarcanus.dialife.ui.treatment.nearDose
+import com.lumenarcanus.dialife.feature.entry.DoseLevel
+import com.lumenarcanus.dialife.feature.entry.nearDose
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

@@ -22,10 +22,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.data.FoodRepository
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.data.FoodCatalog
 import com.lumenarcanus.dialife.feature.meal.MealDraft
 import com.lumenarcanus.dialife.feature.meal.MealDrafts
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
 
 @Composable
 internal fun rememberCatalog(repo: FoodRepository?): FoodCatalog? {

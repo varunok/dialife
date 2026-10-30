@@ -33,11 +33,11 @@ import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.AlertCard
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatAmount
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.data.DoseCalc
 import com.lumenarcanus.dialife.data.DoseSettings
 import com.lumenarcanus.dialife.feature.meal.MealDraft
 import com.lumenarcanus.dialife.feature.meal.MealDrafts
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
 
 /** Before saving: what to know, an extra tap for a dose over the limit, and the choice to plan the dose or not. */
 @OptIn(ExperimentalMaterial3Api::class)

@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.ui.home
+package com.lumenarcanus.dialife.feature.home
 
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.getValue

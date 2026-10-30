@@ -37,12 +37,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
+import com.lumenarcanus.dialife.core.ui.theme.GlucoseHero
+import com.lumenarcanus.dialife.feature.entry.FoodRow
+import com.lumenarcanus.dialife.feature.entry.FoodSuggestions
 import com.lumenarcanus.dialife.feature.meal.MealDraft
 import com.lumenarcanus.dialife.feature.meal.MealDrafts
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
-import com.lumenarcanus.dialife.ui.theme.GlucoseHero
-import com.lumenarcanus.dialife.ui.treatment.FoodRow
-import com.lumenarcanus.dialife.ui.treatment.FoodSuggestions
 
 /** One dish: folded it reads like a receipt line; a tap opens portion, carbs and suggestions; a swipe left takes it away. */
 @OptIn(ExperimentalMaterial3Api::class)

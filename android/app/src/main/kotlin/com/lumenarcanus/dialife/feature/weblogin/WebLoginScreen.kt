@@ -54,13 +54,13 @@ import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.data.ApiError
 import com.lumenarcanus.dialife.data.ApiException
 import com.lumenarcanus.dialife.data.WebLoginInfo
 import com.lumenarcanus.dialife.data.WebLoginLink
 import com.lumenarcanus.dialife.data.WebSession
 import com.lumenarcanus.dialife.data.parseWebLoginLink
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import kotlinx.coroutines.launch
 
 private enum class SpanUnit(val minutes: Int, val label: Int) {

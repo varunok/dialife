@@ -2,9 +2,9 @@ package com.lumenarcanus.dialife.ui
 
 import com.lumenarcanus.dialife.data.FoodItem
 import com.lumenarcanus.dialife.data.Treatment
-import com.lumenarcanus.dialife.ui.treatment.foodItemsOf
-import com.lumenarcanus.dialife.ui.treatment.foodRowsOf
-import com.lumenarcanus.dialife.ui.treatment.newFoodRow
+import com.lumenarcanus.dialife.feature.entry.foodItemsOf
+import com.lumenarcanus.dialife.feature.entry.foodRowsOf
+import com.lumenarcanus.dialife.feature.entry.newFoodRow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

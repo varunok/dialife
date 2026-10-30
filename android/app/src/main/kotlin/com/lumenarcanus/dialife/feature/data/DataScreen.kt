@@ -60,16 +60,16 @@ import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatDelta
 import com.lumenarcanus.dialife.core.ui.formatGlucose
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
+import com.lumenarcanus.dialife.core.ui.theme.PlexMono
 import com.lumenarcanus.dialife.data.History
 import com.lumenarcanus.dialife.data.InsulinType
 import com.lumenarcanus.dialife.data.Prefs
 import com.lumenarcanus.dialife.data.Question
 import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.data.Treatment
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
-import com.lumenarcanus.dialife.ui.theme.PlexMono
-import com.lumenarcanus.dialife.ui.treatment.basalColor
-import com.lumenarcanus.dialife.ui.treatment.basalContainer
+import com.lumenarcanus.dialife.feature.entry.basalColor
+import com.lumenarcanus.dialife.feature.entry.basalContainer
 
 enum class EntryKind { Rapid, Basal, Carbs, Meter, Activity, Note, Suspect }
 
@@ -216,8 +216,8 @@ fun DataScreen(
         }
     }
     editing?.takeIf { !((it.carbs ?: 0.0) > 0 && (it.insulin ?: 0.0) <= 0 && it.glucose == null && it.duration == null) }?.let { tr ->
-        com.lumenarcanus.dialife.ui.treatment.TreatmentSheet(
-            com.lumenarcanus.dialife.ui.treatment.TreatmentKind.Insulin,
+        com.lumenarcanus.dialife.feature.entry.TreatmentSheet(
+            com.lumenarcanus.dialife.feature.entry.TreatmentKind.Insulin,
             tr,
             onSave = {
                 onSaveTreatment(it)
@@ -626,8 +626,8 @@ private fun suspectText(e: Entry, units: Units): String {
 private fun whoOf(e: Entry): Pair<String, Boolean>? {
     val tr = e.treatment
     if (tr != null) {
-        return when (val o = com.lumenarcanus.dialife.ui.home.originOf(tr)) {
-            is com.lumenarcanus.dialife.ui.home.Origin.Here -> o.who.takeIf { it.isNotBlank() }?.let { it to false }
+        return when (val o = com.lumenarcanus.dialife.feature.home.originOf(tr)) {
+            is com.lumenarcanus.dialife.feature.home.Origin.Here -> o.who.takeIf { it.isNotBlank() }?.let { it to false }
             else -> "xDrip" to true
         }
     }

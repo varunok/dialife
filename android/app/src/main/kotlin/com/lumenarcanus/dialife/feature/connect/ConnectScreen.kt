@@ -51,8 +51,8 @@ import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import com.lumenarcanus.dialife.ConnectFailure
 import com.lumenarcanus.dialife.ConnectUiState
 import com.lumenarcanus.dialife.R
-import com.lumenarcanus.dialife.ui.theme.DataLabel
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
+import com.lumenarcanus.dialife.core.ui.theme.DataLabel
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 
 @Composable
 fun ConnectScreen(

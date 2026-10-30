@@ -39,6 +39,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.ui.theme.DiaLifeTheme
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.data.DiaLifeApi
@@ -46,13 +48,11 @@ import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.feature.alarms.AlarmLogScreen
 import com.lumenarcanus.dialife.feature.connect.ConnectScreen
 import com.lumenarcanus.dialife.feature.data.DataScreen
+import com.lumenarcanus.dialife.feature.home.BackgroundSetup
+import com.lumenarcanus.dialife.feature.home.HomeScreen
+import com.lumenarcanus.dialife.feature.home.HomeViewModel
 import com.lumenarcanus.dialife.feature.settings.SettingsScreen
 import com.lumenarcanus.dialife.live.LiveService
-import com.lumenarcanus.dialife.ui.home.BackgroundSetup
-import com.lumenarcanus.dialife.ui.home.HomeScreen
-import com.lumenarcanus.dialife.ui.home.HomeViewModel
-import com.lumenarcanus.dialife.ui.theme.DiaLifeTheme
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import kotlinx.coroutines.launch
 
 private enum class Screen { Home, Stats, Log, Settings, Handling, Data, WebLogin, Meal, DoseSettings }

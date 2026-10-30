@@ -8,8 +8,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lumenarcanus.dialife.alarmController
+import com.lumenarcanus.dialife.feature.home.HomeViewModel
 import com.lumenarcanus.dialife.liveRepository
-import com.lumenarcanus.dialife.ui.home.HomeViewModel
 
 /** "You are handling it" with its data: the reading and chart as on home, the episode's actions as on the banner. */
 @Composable

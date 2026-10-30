@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.ui.treatment
+package com.lumenarcanus.dialife.feature.entry
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,8 +19,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.data.InsulinType
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
 
 /** How a kind of entry looks everywhere: its name, its chart letter and its colours. */
 data class KindLook(val name: Int, val glyph: String, val ink: Color, val fill: Color)

@@ -37,8 +37,8 @@ import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatGlucose
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.liveRepository
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import java.util.Locale
 
 /** The wait on home, with its own state and actions. */

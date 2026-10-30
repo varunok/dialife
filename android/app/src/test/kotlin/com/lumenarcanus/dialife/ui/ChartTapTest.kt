@@ -9,11 +9,11 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.theme.DiaLifeTheme
 import com.lumenarcanus.dialife.data.FoodItem
 import com.lumenarcanus.dialife.data.Treatment
-import com.lumenarcanus.dialife.ui.home.ChartCard
-import com.lumenarcanus.dialife.ui.home.sampleHomeUi
-import com.lumenarcanus.dialife.ui.theme.DiaLifeTheme
+import com.lumenarcanus.dialife.feature.home.ChartCard
+import com.lumenarcanus.dialife.feature.home.sampleHomeUi
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith

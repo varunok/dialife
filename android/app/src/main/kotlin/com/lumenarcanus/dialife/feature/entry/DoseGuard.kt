@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.ui.treatment
+package com.lumenarcanus.dialife.feature.entry
 
 import android.content.Context
 import androidx.compose.foundation.background
@@ -19,14 +19,14 @@ import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.formatClock
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.data.InsulinIntent
 import com.lumenarcanus.dialife.data.InsulinType
 import com.lumenarcanus.dialife.data.Prefs
 import com.lumenarcanus.dialife.data.StateResponse
 import com.lumenarcanus.dialife.data.Treatment
-import com.lumenarcanus.dialife.ui.home.Origin
-import com.lumenarcanus.dialife.ui.home.originOf
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
+import com.lumenarcanus.dialife.feature.home.Origin
+import com.lumenarcanus.dialife.feature.home.originOf
 import kotlin.math.abs
 
 // Two doses of one insulin too close together: one injection logged twice, or

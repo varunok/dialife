@@ -50,10 +50,10 @@ import com.lumenarcanus.dialife.data.CredentialStore
 import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.data.StateResponse
 import com.lumenarcanus.dialife.feature.alarms.AlarmText
+import com.lumenarcanus.dialife.feature.home.STALE_MIN
 import com.lumenarcanus.dialife.live.LiveCache
 import com.lumenarcanus.dialife.live.Notifications
 import com.lumenarcanus.dialife.liveRepository
-import com.lumenarcanus.dialife.ui.home.STALE_MIN
 import kotlinx.coroutines.flow.first
 
 /** Everything the widget shows, already worded: Glance renders, it does not compute. */

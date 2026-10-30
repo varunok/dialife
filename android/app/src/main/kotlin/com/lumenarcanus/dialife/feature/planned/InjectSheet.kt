@@ -41,17 +41,17 @@ import com.lumenarcanus.dialife.core.ui.Stepper
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.formatClock
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.data.DoseCalc
 import com.lumenarcanus.dialife.data.DoseSettings
 import com.lumenarcanus.dialife.data.InsulinType
 import com.lumenarcanus.dialife.data.PlannedDose
 import com.lumenarcanus.dialife.data.Prefs
 import com.lumenarcanus.dialife.data.Treatment
+import com.lumenarcanus.dialife.feature.entry.TimeDialog
+import com.lumenarcanus.dialife.feature.entry.atLabel
+import com.lumenarcanus.dialife.feature.entry.nearDose
 import com.lumenarcanus.dialife.live.TreatmentQueue
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
-import com.lumenarcanus.dialife.ui.treatment.TimeDialog
-import com.lumenarcanus.dialife.ui.treatment.atLabel
-import com.lumenarcanus.dialife.ui.treatment.nearDose
 
 /** "Given": how much, and when, within reason; the same-dose guard and the limits as everywhere. */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)

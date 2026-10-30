@@ -29,7 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 
 internal val Periods = listOf(1, 7, 14, 30)
 

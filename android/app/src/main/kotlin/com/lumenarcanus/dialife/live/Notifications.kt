@@ -12,7 +12,7 @@ import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatDelta
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.core.ui.unitsOf
-import com.lumenarcanus.dialife.ui.home.Trend
+import com.lumenarcanus.dialife.feature.home.Trend
 
 object Notifications {
     const val CHANNEL_LIVE = "live"

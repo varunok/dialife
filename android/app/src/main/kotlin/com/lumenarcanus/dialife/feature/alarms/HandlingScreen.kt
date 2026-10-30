@@ -49,17 +49,17 @@ import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatDelta
 import com.lumenarcanus.dialife.core.ui.formatGlucose
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
+import com.lumenarcanus.dialife.core.ui.theme.GlucoseHero
 import com.lumenarcanus.dialife.data.EpisodeRules
 import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.feature.alarms.ActionReceiver
 import com.lumenarcanus.dialife.feature.alarms.AlarmText
+import com.lumenarcanus.dialife.feature.home.ChartWindow
+import com.lumenarcanus.dialife.feature.home.GlucoseChart
+import com.lumenarcanus.dialife.feature.home.HomeUi
 import com.lumenarcanus.dialife.live.Notifications
 import com.lumenarcanus.dialife.live.TreatmentQueue
-import com.lumenarcanus.dialife.ui.home.ChartWindow
-import com.lumenarcanus.dialife.ui.home.GlucoseChart
-import com.lumenarcanus.dialife.ui.home.HomeUi
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
-import com.lumenarcanus.dialife.ui.theme.GlucoseHero
 
 private val QuickCarbs = listOf(10.0, 15.0, 20.0)
 

@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.ui.home
+package com.lumenarcanus.dialife.feature.home
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
@@ -31,13 +31,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.theme.DiaLifeTheme
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.data.Question
 import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.data.Treatment
-import com.lumenarcanus.dialife.ui.theme.DiaLifeTheme
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
-import com.lumenarcanus.dialife.ui.treatment.TreatmentKind
-import com.lumenarcanus.dialife.ui.treatment.TreatmentSheet
+import com.lumenarcanus.dialife.feature.entry.TreatmentKind
+import com.lumenarcanus.dialife.feature.entry.TreatmentSheet
 
 @Composable
 fun HomeScreen(
@@ -183,7 +183,7 @@ fun HomeScreen(
         }
         // someone else has the insulin form open: talk before reaching for a pen too
         ui.state?.intents.orEmpty().filter { it.deviceId != ui.myId && it.until > ui.now }.takeIf { it.isNotEmpty() }?.let {
-            com.lumenarcanus.dialife.ui.treatment.IntentWarning(it, ui.now)
+            com.lumenarcanus.dialife.feature.entry.IntentWarning(it, ui.now)
         }
         watchSection()
         plannedSection()
@@ -223,7 +223,7 @@ fun HomeScreen(
             val measurer = androidx.compose.ui.text.rememberTextMeasurer()
             val density = androidx.compose.ui.platform.LocalDensity.current
             val kinds = listOf(TreatmentKind.Insulin, TreatmentKind.Food, TreatmentKind.Meter)
-            val labels = kinds.map { stringResource(com.lumenarcanus.dialife.ui.treatment.kindLook(it).name) }
+            val labels = kinds.map { stringResource(com.lumenarcanus.dialife.feature.entry.kindLook(it).name) }
             val style = androidx.compose.material3.LocalTextStyle.current.merge(
                 androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
             )

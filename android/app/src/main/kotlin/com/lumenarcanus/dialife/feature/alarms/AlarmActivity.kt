@@ -51,14 +51,14 @@ import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatDelta
 import com.lumenarcanus.dialife.core.ui.formatGlucose
+import com.lumenarcanus.dialife.core.ui.theme.DiaLifeTheme
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
+import com.lumenarcanus.dialife.core.ui.theme.GlucoseHero
 import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.data.AlarmView
 import com.lumenarcanus.dialife.feature.alarms.ActionReceiver
 import com.lumenarcanus.dialife.feature.alarms.AlarmText
 import com.lumenarcanus.dialife.liveRepository
-import com.lumenarcanus.dialife.ui.theme.DiaLifeTheme
-import com.lumenarcanus.dialife.ui.theme.DiaTheme
-import com.lumenarcanus.dialife.ui.theme.GlucoseHero
 import kotlinx.coroutines.launch
 
 /**
@@ -281,14 +281,14 @@ private fun AlarmScreen(
                 val live by ctx.liveRepository.live.collectAsStateWithLifecycle()
                 val from = (alarm.handledAt ?: alarm.startedAt) - 15 * 60_000L
                 val now = System.currentTimeMillis()
-                com.lumenarcanus.dialife.ui.home.GlucoseChart(
+                com.lumenarcanus.dialife.feature.home.GlucoseChart(
                     history = live.history,
                     forecast = state?.ar2,
                     thresholds = state?.thresholds ?: com.lumenarcanus.dialife.data.Thresholds(),
                     units = units,
                     rangeHours = 3,
                     now = now,
-                    window = com.lumenarcanus.dialife.ui.home.ChartWindow(
+                    window = com.lumenarcanus.dialife.feature.home.ChartWindow(
                         from,
                         maxOf(now + 30 * 60_000L, from + 3_600_000L),
                         followsNow = true
