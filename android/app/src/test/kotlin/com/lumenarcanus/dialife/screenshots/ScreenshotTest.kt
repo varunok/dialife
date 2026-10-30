@@ -222,7 +222,7 @@ class ScreenshotTest {
         com.lumenarcanus.dialife.ui.meal.MealScreen(
             repo = null, treatments = t, dose = com.lumenarcanus.dialife.data.DoseSettings(), planned = emptyList(), units = Units.MgDl,
             editing = meal(now).copy(foodItems = meal(now).foodItems!! + com.lumenarcanus.dialife.data.FoodItem("Гречка з котлетою", null, null, null)),
-            initialTime = null, onSave = {}, onSaved = {}, onClose = {},
+            initialTime = null, onSave = {}, onSaved = {}, onClose = {}, clock = { now },
         )
     }
 
@@ -409,7 +409,7 @@ class ScreenshotTest {
         com.lumenarcanus.dialife.ui.meal.MealScreen(
             repo = null, treatments = t, dose = com.lumenarcanus.dialife.data.DoseSettings(), planned = emptyList(), units = Units.MgDl,
             editing = meal(now).copy(foodItems = meal(now).foodItems!! + com.lumenarcanus.dialife.data.FoodItem("Гречка з котлетою", null, null, null)),
-            initialTime = null, onSave = {}, onSaved = {}, onClose = {},
+            initialTime = null, onSave = {}, onSaved = {}, onClose = {}, clock = { now },
         )
     }
 
@@ -421,7 +421,7 @@ class ScreenshotTest {
         com.lumenarcanus.dialife.ui.meal.MealScreen(
             repo = null, treatments = t, dose = com.lumenarcanus.dialife.data.DoseSettings(), planned = emptyList(), units = Units.MgDl,
             editing = meal(now).copy(foodItems = meal(now).foodItems!! + com.lumenarcanus.dialife.data.FoodItem("Гречка з котлетою", null, null, null)),
-            initialTime = null, onSave = {}, onSaved = {}, onClose = {},
+            initialTime = null, onSave = {}, onSaved = {}, onClose = {}, clock = { now },
         )
     }
 

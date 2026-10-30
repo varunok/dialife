@@ -141,6 +141,7 @@ fun MealScreen(
     forLow: Boolean = false, // carbs given for a low: no insulin is worked out, no planned dose, no meal draft
     mealRules: com.lumenarcanus.dialife.data.MealRules = com.lumenarcanus.dialife.data.MealRules(), // the server's: what makes one meal
     mbg: com.lumenarcanus.dialife.data.Series = com.lumenarcanus.dialife.data.Series(), // glucometer checks uploaded by xDrip+
+    clock: () -> Long = System::currentTimeMillis, // a fixed moment in the screenshot tests
 ) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
@@ -158,7 +159,7 @@ fun MealScreen(
             }
         }
     }
-    val startedAt = remember { draft?.startedAt?.takeIf { it > 0 } ?: System.currentTimeMillis() }
+    val startedAt = remember { draft?.startedAt?.takeIf { it > 0 } ?: clock() }
     var whenIdx by remember { mutableStateOf(draft?.whenIdx ?: if (editing != null || initialTime != null) 3 else 0) }
     var pickedAt by remember { mutableStateOf(draft?.pickedAt ?: editing?.t ?: initialTime) }
     var plan by remember { mutableStateOf(draft?.plan ?: false) }
@@ -182,7 +183,7 @@ fun MealScreen(
     }
     LaunchedEffect(removed) { if (removed != null) { kotlinx.coroutines.delay(6000); removed = null } }
 
-    val now = System.currentTimeMillis()
+    val now = clock()
     val time = if (whenIdx == 3) pickedAt ?: now else now - TimeShifts[whenIdx] * 60_000L
     val current = rows.sumOf { it.grams ?: 0 }
 
