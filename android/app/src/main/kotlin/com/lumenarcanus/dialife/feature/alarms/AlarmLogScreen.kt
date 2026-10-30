@@ -25,11 +25,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -49,27 +46,16 @@ import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.core.ui.theme.PlexMono
-import com.lumenarcanus.dialife.data.Credentials
-import com.lumenarcanus.dialife.data.DiaLifeApi
 import com.lumenarcanus.dialife.data.LogEpisode
 import com.lumenarcanus.dialife.data.LogEvent
-import com.lumenarcanus.dialife.feature.alarms.AlarmText
 
 private val Periods = listOf(1, 7, 30)
 
 /** What happened at night: every episode, who took it and how fast, what was asked, how it ended. */
 @Composable
-fun AlarmLogScreen(creds: Credentials, units: Units, onBack: () -> Unit, api: DiaLifeApi = DiaLifeApi()) {
+fun AlarmLogScreen(uiState: AlarmLogUiState, onPick: (Int) -> Unit, onRetry: () -> Unit, onBack: () -> Unit) {
     val c = DiaTheme.colors
-    var days by rememberSaveable { mutableIntStateOf(7) }
-    var episodes by remember { mutableStateOf<List<LogEpisode>?>(null) }
-    var failed by remember { mutableStateOf(false) }
-    var attempt by remember { mutableIntStateOf(0) }
-    LaunchedEffect(days, attempt) {
-        failed = false
-        episodes = null
-        api.alarmLog(creds, days).onSuccess { episodes = it.episodes }.onFailure { failed = true }
-    }
+    val units = uiState.units
     LazyColumn(
         Modifier.fillMaxSize().background(c.background).safeDrawingPadding().padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -78,19 +64,23 @@ fun AlarmLogScreen(creds: Credentials, units: Units, onBack: () -> Unit, api: Di
             Column(verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(top = 12.dp)) {
                 TextButton(onClick = onBack) { Text("‹ " + stringResource(R.string.nav_back), color = c.textMuted) }
                 Text(stringResource(R.string.log_title), color = c.text, fontSize = 26.sp, fontWeight = FontWeight.SemiBold)
-                PeriodChips(days) { days = it }
+                PeriodChips(uiState.days, onPick)
             }
         }
-        when {
-            failed -> item {
+        when (val load = uiState.load) {
+            AlarmLogLoad.Failed -> item {
                 Column {
                     Text(stringResource(R.string.err_network), color = c.high)
-                    TextButton(onClick = { attempt++ }) { Text(stringResource(R.string.stats_retry)) }
+                    TextButton(onClick = onRetry) { Text(stringResource(R.string.stats_retry)) }
                 }
             }
-            episodes == null -> item { Text(stringResource(R.string.home_loading), color = c.textMuted) }
-            episodes!!.isEmpty() -> item { Text(stringResource(R.string.log_empty), color = c.textMuted) }
-            else -> items(episodes!!, key = { it.id }) { EpisodeCard(it, units) }
+            AlarmLogLoad.Loading -> item { Text(stringResource(R.string.home_loading), color = c.textMuted) }
+            is AlarmLogLoad.Ready ->
+                if (load.episodes.isEmpty()) {
+                    item { Text(stringResource(R.string.log_empty), color = c.textMuted) }
+                } else {
+                    items(load.episodes, key = { it.id }) { EpisodeCard(it, units) }
+                }
         }
         item { Spacer(Modifier.heightIn(min = 24.dp)) }
     }

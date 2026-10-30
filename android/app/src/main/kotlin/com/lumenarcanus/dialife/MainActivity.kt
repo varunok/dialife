@@ -49,7 +49,6 @@ import com.lumenarcanus.dialife.core.ui.theme.DiaLifeTheme
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.data.Credentials
-import com.lumenarcanus.dialife.feature.alarms.AlarmLogScreen
 import com.lumenarcanus.dialife.feature.connect.ConnectRoute
 import com.lumenarcanus.dialife.feature.connect.ConnectViewModel
 import com.lumenarcanus.dialife.feature.data.DataRoute
@@ -184,11 +183,7 @@ class MainActivity : AppCompatActivity() {
             }
             composable<Destination.WebLogin> { com.lumenarcanus.dialife.feature.weblogin.WebLoginRoute(onBack = back) }
             composable<Destination.Log> {
-                AlarmLogScreen(
-                    creds = creds,
-                    units = unitsOf(liveRepository.live.value.state?.displayUnits ?: creds.displayUnits),
-                    onBack = back
-                )
+                com.lumenarcanus.dialife.feature.alarms.AlarmLogRoute(onBack = back)
             }
         }
     }
