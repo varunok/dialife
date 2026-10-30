@@ -19,8 +19,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.data.DoseCalc
-import com.lumenarcanus.dialife.live.AlarmText
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 
 /** A bright card: red for what must be seen before injecting, amber for a note, green when all agrees. */
@@ -38,7 +38,7 @@ fun AlertCard(a: DoseCalc.Alert, units: Units, locale: java.util.Locale, title: 
         is DoseCalc.Alert.Low -> stringResource(R.string.alert_low, g(a.mg)) to stringResource(R.string.alert_low_text)
         is DoseCalc.Alert.VeryHigh -> stringResource(R.string.alert_very_high, g(a.mg)) to
             stringResource(R.string.alert_very_high_text, f(a.maxCorr))
-        is DoseCalc.Alert.RecentRapid -> stringResource(R.string.alert_recent, f(a.units), AlarmText.clock(ctx, a.at)) to
+        is DoseCalc.Alert.RecentRapid -> stringResource(R.string.alert_recent, f(a.units), formatClock(ctx, a.at)) to
             stringResource(R.string.alert_recent_text)
         is DoseCalc.Alert.GivenLess -> stringResource(R.string.alert_given_less, f(a.dose - a.given)) to
             stringResource(R.string.alert_given_text, f(a.given), f(a.dose))

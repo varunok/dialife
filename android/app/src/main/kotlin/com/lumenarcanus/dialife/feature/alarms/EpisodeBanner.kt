@@ -20,10 +20,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.BannerButton
+import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.data.AlarmView
-import com.lumenarcanus.dialife.live.ActionReceiver
-import com.lumenarcanus.dialife.live.AlarmText
+import com.lumenarcanus.dialife.feature.alarms.ActionReceiver
+import com.lumenarcanus.dialife.feature.alarms.AlarmText
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 
 /** A live episode on the home screen: what it is, who has it, and the one action that fits. */
@@ -65,7 +66,7 @@ internal fun EpisodeBanner(a: AlarmView, ui: AlarmsUiState, onAction: (String, L
             !a.comingBy.isNullOrBlank() -> Text(stringResource(R.string.someone_coming, a.comingBy), color = c.text, fontSize = 14.sp)
         }
         a.quietUntil?.let {
-            Text(stringResource(R.string.quiet_until_short, AlarmText.clock(ctx, it)), color = c.textMuted, fontSize = 14.sp)
+            Text(stringResource(R.string.quiet_until_short, formatClock(ctx, it)), color = c.textMuted, fontSize = 14.sp)
         }
         // someone else has it: say exactly when this phone would ring again
         if (a.state == "handled" && !mine) {
@@ -94,7 +95,7 @@ internal fun EpisodeBanner(a: AlarmView, ui: AlarmsUiState, onAction: (String, L
                     add(
                         stringResource(
                             R.string.wake_if_ceiling,
-                            AlarmText.clock(
+                            formatClock(
                                 ctx,
                                 a.handledAt + rules.ceilingMin * 60_000L
                             )

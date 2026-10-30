@@ -50,7 +50,8 @@
         </service>
 
         <receiver android:name=".live.WatchdogReceiver" android:exported="false" />
-        <receiver android:name=".live.ActionReceiver" android:exported="false" />
+        <receiver android:name=".feature.alarms.ActionReceiver" android:exported="false" />
+        <receiver android:name=".feature.questions.QuestionAnswerReceiver" android:exported="false" />
         <receiver android:name=".live.BasalReminderReceiver" android:exported="false" />
         <receiver android:name=".feature.wait.EatReminderReceiver" android:exported="false" />
         <receiver android:name=".feature.wait.EatenReceiver" android:exported="false" />

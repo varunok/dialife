@@ -900,7 +900,7 @@ fun GlucoseChart(
                     ) {
                         suspectDouble.format(
                             locale,
-                            com.lumenarcanus.dialife.live.QuestionNotifier.doubleInsulin(context, q),
+                            com.lumenarcanus.dialife.feature.questions.QuestionNotifier.doubleInsulin(context, q),
                             com.lumenarcanus.dialife.ui.treatment.gapText(
                                 context,
                                 q.to - q.from

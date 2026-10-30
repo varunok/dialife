@@ -45,12 +45,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.data.DiaLifeApi
 import com.lumenarcanus.dialife.data.LogEpisode
 import com.lumenarcanus.dialife.data.LogEvent
-import com.lumenarcanus.dialife.live.AlarmText
+import com.lumenarcanus.dialife.feature.alarms.AlarmText
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.ui.theme.PlexMono
 
@@ -171,7 +172,7 @@ private fun EpisodeCard(e: LogEpisode, units: Units) {
             e.events.forEach { ev ->
                 Row {
                     Text(
-                        AlarmText.clock(ctx, ev.t),
+                        formatClock(ctx, ev.t),
                         color = c.textFaint,
                         fontSize = 13.sp,
                         fontFamily = PlexMono,
@@ -194,10 +195,10 @@ private fun episodeSpan(ctx: Context, e: LogEpisode): String {
         DateUtils.DAY_IN_MILLIS,
         DateUtils.FORMAT_ABBREV_MONTH
     )
-    val start = AlarmText.clock(ctx, e.startedAt)
+    val start = formatClock(ctx, e.startedAt)
     val end = e.clearedAt ?: return ctx.getString(R.string.log_since, day, start)
     val min = ((end - e.startedAt) / 60_000).toInt()
-    return ctx.getString(R.string.log_span, day, start, AlarmText.clock(ctx, end)) + " · " +
+    return ctx.getString(R.string.log_span, day, start, formatClock(ctx, end)) + " · " +
         ctx.resources.getQuantityString(R.plurals.minutes_short, min, min)
 }
 

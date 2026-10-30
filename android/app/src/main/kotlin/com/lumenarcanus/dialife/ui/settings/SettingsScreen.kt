@@ -42,13 +42,14 @@ import com.lumenarcanus.dialife.BuildConfig
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatAmount
+import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.data.Prefs
 import com.lumenarcanus.dialife.data.StateResponse
 import com.lumenarcanus.dialife.data.ThemeChoice
-import com.lumenarcanus.dialife.live.AlarmText
+import com.lumenarcanus.dialife.feature.alarms.AlarmText
 import com.lumenarcanus.dialife.ui.home.BackgroundSetup
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import kotlinx.coroutines.delay
@@ -254,7 +255,7 @@ fun SettingsScreen(
                 }
             )
             state?.uploader?.let { u ->
-                val seen = if (u.mills > 0) AlarmText.clock(ctx, u.mills) else "—"
+                val seen = if (u.mills > 0) formatClock(ctx, u.mills) else "—"
                 Line(
                     AlarmText.uploader(ctx, state),
                     listOfNotNull(

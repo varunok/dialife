@@ -63,6 +63,7 @@ import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.BannerButton
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatAmount
+import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatDelta
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.core.ui.unitsOf
@@ -77,7 +78,7 @@ import com.lumenarcanus.dialife.data.StateResponse
 import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.data.Uploader
-import com.lumenarcanus.dialife.live.AlarmText
+import com.lumenarcanus.dialife.feature.alarms.AlarmText
 import com.lumenarcanus.dialife.ui.theme.DiaLifeTheme
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.ui.theme.GlucoseHero
@@ -711,7 +712,7 @@ private fun Hero(state: HomeState, locale: Locale) {
                     } else {
                         R.string.forecast_blind_insulin
                     },
-                    com.lumenarcanus.dialife.live.AlarmText.clock(ctx, b.t)
+                    formatClock(ctx, b.t)
                 ),
                 color = c.textFaint,
                 fontSize = 13.sp
@@ -846,7 +847,7 @@ private fun StaleBanner(ui: HomeUi, state: HomeState) {
             fontSize = 17.sp,
             fontWeight = FontWeight.SemiBold
         )
-        Text(stringResource(R.string.stale_last, AlarmText.clock(ctx, bg.mills)), color = c.text, fontSize = 14.sp)
+        Text(stringResource(R.string.stale_last, formatClock(ctx, bg.mills)), color = c.text, fontSize = 14.sp)
         ui.state.uploader?.let { u ->
             if (u.mills >
                 0
@@ -855,7 +856,7 @@ private fun StaleBanner(ui: HomeUi, state: HomeState) {
                     stringResource(
                         R.string.stale_phone,
                         AlarmText.uploader(ctx, ui.state),
-                        AlarmText.clock(ctx, u.mills),
+                        formatClock(ctx, u.mills),
                         u.battery?.let { "$it%" } ?: "—"
                     ),
                     color = c.textMuted,

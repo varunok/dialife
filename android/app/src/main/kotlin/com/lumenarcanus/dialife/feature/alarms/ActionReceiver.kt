@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.live
+package com.lumenarcanus.dialife.feature.alarms
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -6,7 +6,6 @@ import android.content.Intent
 import com.lumenarcanus.dialife.alarmController
 import com.lumenarcanus.dialife.data.CredentialStore
 import com.lumenarcanus.dialife.liveRepository
-import com.lumenarcanus.dialife.questionAnswers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -26,13 +25,6 @@ class ActionReceiver : BroadcastReceiver() {
                     CredentialStore(context).credentials.first()?.let { context.liveRepository.start(it) }
                 }
                 val ctl = context.alarmController
-                if (action == ANSWER) {
-                    val answer = intent.getStringExtra(EXTRA_ANSWER) ?: return@launch
-                    val questions = context.questionAnswers
-                    val r = questions.answer(id, answer).recoverCatching { questions.answer(id, answer).getOrThrow() } // one retry
-                    if (r.isFailure) ctl.failed()
-                    return@launch
-                }
                 val r = ctl.act(action, id).recoverCatching { ctl.act(action, id).getOrThrow() } // one retry
                 if (r.isFailure) ctl.failed()
             } finally {
@@ -50,7 +42,5 @@ class ActionReceiver : BroadcastReceiver() {
         const val HELP = "help"
         const val COMING = "coming"
         const val RESOLVE = "resolve"
-        const val ANSWER = "answer" // a question: EXTRA_ID is the question, EXTRA_ANSWER what happened
-        const val EXTRA_ANSWER = "answer"
     }
 }

@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.live
+package com.lumenarcanus.dialife.feature.alarms
 
 import android.app.Notification
 import android.app.NotificationManager
@@ -7,11 +7,15 @@ import android.content.Context
 import android.content.Intent
 import android.os.SystemClock
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.data.AlarmEvent
 import com.lumenarcanus.dialife.data.AlarmView
 import com.lumenarcanus.dialife.data.DiaLifeApi
 import com.lumenarcanus.dialife.feature.alarms.AlarmActivity
+import com.lumenarcanus.dialife.live.AlarmSignal
+import com.lumenarcanus.dialife.live.LiveRepository
+import com.lumenarcanus.dialife.live.Notifications
 
 /**
  * Turns episode events into what this phone does: ring, ask, inform or stay
@@ -158,7 +162,7 @@ class AlarmController(context: Context, private val repo: LiveRepository, privat
 
     private fun handledBody(a: AlarmView): String {
         val base = AlarmText.title(app, a, units)
-        return a.quietUntil?.let { app.getString(R.string.quiet_until, base, AlarmText.clock(app, it)) } ?: base
+        return a.quietUntil?.let { app.getString(R.string.quiet_until, base, formatClock(app, it)) } ?: base
     }
 
     /** Stop the sound and take the alarm off the screen. */

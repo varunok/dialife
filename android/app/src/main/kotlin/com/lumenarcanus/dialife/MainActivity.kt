@@ -44,7 +44,6 @@ import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.data.DiaLifeApi
 import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.feature.alarms.AlarmLogScreen
-import com.lumenarcanus.dialife.feature.alarms.HandlingScreen
 import com.lumenarcanus.dialife.live.LiveService
 import com.lumenarcanus.dialife.ui.connect.ConnectScreen
 import com.lumenarcanus.dialife.ui.data.DataScreen
@@ -189,28 +188,19 @@ class MainActivity : AppCompatActivity() {
                                     onBack = { screen = Screen.Home }
                                 )
                             }
-                            Screen.Handling -> {
-                                val home = viewModel { HomeViewModel(liveRepository) }
-                                val ui by home.ui.collectAsStateWithLifecycle()
-                                HandlingScreen(
-                                    ui = ui,
-                                    alarmId = handling,
-                                    units = unitsOf(ui.state?.displayUnits ?: s.credentials.displayUnits),
-                                    onAct = ::act,
-                                    onSaveTreatment = liveRepository::saveTreatment,
-                                    onBack = { screen = Screen.Home },
-                                    onOpenMeal = {
-                                        mealEdit = null
-                                        mealEntry = null
-                                        mealQuestion = 0L
-                                        mealFrom = 0L
-                                        mealLow = true
-                                        mealBack =
-                                            Screen.Handling
-                                        screen = Screen.Meal
-                                    }
-                                )
-                            }
+                            Screen.Handling -> com.lumenarcanus.dialife.feature.alarms.HandlingRoute(
+                                alarmId = handling,
+                                onBack = { screen = Screen.Home },
+                                onOpenMeal = {
+                                    mealEdit = null
+                                    mealEntry = null
+                                    mealQuestion = 0L
+                                    mealFrom = 0L
+                                    mealLow = true
+                                    mealBack = Screen.Handling
+                                    screen = Screen.Meal
+                                }
+                            )
                             Screen.Data -> {
                                 val home = viewModel { HomeViewModel(liveRepository) }
                                 val ui by home.ui.collectAsStateWithLifecycle()
@@ -322,14 +312,6 @@ class MainActivity : AppCompatActivity() {
         // Android 14+ grants full-screen alarms only to apps the user allowed
         fullScreen = Build.VERSION.SDK_INT >= 34 && !getSystemService(NotificationManager::class.java).canUseFullScreenIntent()
     )
-
-    private fun act(action: String, id: Long) {
-        lifecycleScope.launch {
-            alarmController.act(action, id).onFailure {
-                Toast.makeText(this@MainActivity, R.string.action_failed_body, Toast.LENGTH_LONG).show()
-            }
-        }
-    }
 
     private fun askFullScreen() {
         startActivity(Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:$packageName")))

@@ -3,7 +3,7 @@ package com.lumenarcanus.dialife
 import android.app.Application
 import com.lumenarcanus.dialife.core.data.PlannedDoseRepository
 import com.lumenarcanus.dialife.core.data.QuestionRepository
-import com.lumenarcanus.dialife.live.AlarmController
+import com.lumenarcanus.dialife.feature.alarms.AlarmController
 import com.lumenarcanus.dialife.live.LiveRepository
 import com.lumenarcanus.dialife.live.Notifications
 import kotlinx.coroutines.launch
@@ -12,7 +12,7 @@ class DiaLifeApp : Application() {
     /** One connection per process: the screen and the foreground service share it. */
     val live by lazy { LiveRepository(this) }
     val alarms by lazy { AlarmController(this, live) }
-    val questions by lazy { com.lumenarcanus.dialife.live.QuestionNotifier(this) }
+    val questions by lazy { com.lumenarcanus.dialife.feature.questions.QuestionNotifier(this) }
     val plannedDoses by lazy { PlannedDoseRepository({ live.credentials }) }
     val questionAnswers by lazy { QuestionRepository(live, questions) }
 
@@ -37,5 +37,5 @@ val android.content.Context.questionAnswers: QuestionRepository
 val android.content.Context.alarmController: AlarmController
     get() = (applicationContext as DiaLifeApp).alarms
 
-val android.content.Context.questionNotifier: com.lumenarcanus.dialife.live.QuestionNotifier
+val android.content.Context.questionNotifier: com.lumenarcanus.dialife.feature.questions.QuestionNotifier
     get() = (applicationContext as DiaLifeApp).questions

@@ -9,7 +9,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lumenarcanus.dialife.alarmController
-import com.lumenarcanus.dialife.live.ActionReceiver
+import com.lumenarcanus.dialife.feature.alarms.ActionReceiver
 import com.lumenarcanus.dialife.liveRepository
 
 /** The live episodes on home; [onOpenHandling] goes to "you are handling it" (taking one goes there too). */

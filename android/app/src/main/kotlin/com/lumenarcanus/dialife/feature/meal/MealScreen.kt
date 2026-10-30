@@ -61,11 +61,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.formatAmount
+import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.data.inLang
 import com.lumenarcanus.dialife.feature.meal.MealDraft
 import com.lumenarcanus.dialife.feature.meal.MealDrafts
-import com.lumenarcanus.dialife.live.AlarmText
 import com.lumenarcanus.dialife.live.LiveRepository
 import com.lumenarcanus.dialife.live.TreatmentQueue
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
@@ -289,7 +289,7 @@ fun MealScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        stringResource(R.string.meal_join_q, AlarmText.clock(ctx, meal.from), meal.carbs, formatAmount(meal.given, locale)),
+                        stringResource(R.string.meal_join_q, formatClock(ctx, meal.from), meal.carbs, formatAmount(meal.given, locale)),
                         color = c.text,
                         fontSize = 14.sp
                     )

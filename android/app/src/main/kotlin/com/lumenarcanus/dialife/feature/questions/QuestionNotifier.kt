@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.live
+package com.lumenarcanus.dialife.feature.questions
 
 import android.app.Notification
 import android.app.NotificationManager
@@ -9,8 +9,10 @@ import com.lumenarcanus.dialife.MainActivity
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatAmount
+import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.data.Question
+import com.lumenarcanus.dialife.live.Notifications
 
 /**
  * "Did you forget to log?" on this phone: shown while this person still has to
@@ -72,10 +74,9 @@ class QuestionNotifier(private val app: Context) {
             PendingIntent.getBroadcast(
                 app,
                 (q.id * 10 + answer.hashCode() % 10).toInt(),
-                Intent(app, ActionReceiver::class.java)
-                    .putExtra(ActionReceiver.EXTRA_ACTION, ActionReceiver.ANSWER)
-                    .putExtra(ActionReceiver.EXTRA_ID, q.id)
-                    .putExtra(ActionReceiver.EXTRA_ANSWER, answer),
+                Intent(app, QuestionAnswerReceiver::class.java)
+                    .putExtra(QuestionAnswerReceiver.EXTRA_ID, q.id)
+                    .putExtra(QuestionAnswerReceiver.EXTRA_ANSWER, answer),
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
         ).build()
@@ -140,7 +141,7 @@ class QuestionNotifier(private val app: Context) {
                 doubleInsulin(ctx, q),
                 doses.getOrNull(0)?.let { units(ctx, it.units) }.orEmpty(),
                 doses.getOrNull(1)?.let { units(ctx, it.units) }.orEmpty(),
-                AlarmText.clock(ctx, q.watchUntil ?: q.to)
+                formatClock(ctx, q.watchUntil ?: q.to)
             )
         }
 
@@ -155,7 +156,7 @@ class QuestionNotifier(private val app: Context) {
         fun questionTitle(ctx: Context, q: Question): String = if (q.kind ==
             "planned"
         ) {
-            ctx.getString(R.string.q_planned_title, AlarmText.clock(ctx, q.from))
+            ctx.getString(R.string.q_planned_title, formatClock(ctx, q.from))
         } else {
             ctx.getString(
                 when (q.kind) {
@@ -178,17 +179,17 @@ class QuestionNotifier(private val app: Context) {
                         R.string.q_double_body,
                         doubleInsulin(ctx, q),
                         units(ctx, a.units),
-                        AlarmText.clock(ctx, a.t),
+                        formatClock(ctx, a.t),
                         a.by,
                         units(ctx, b.units),
-                        AlarmText.clock(ctx, b.t),
+                        formatClock(ctx, b.t),
                         b.by
                     )
                 }
-                "bolus" -> ctx.getString(R.string.q_bolus_body, AlarmText.clock(ctx, q.from))
+                "bolus" -> ctx.getString(R.string.q_bolus_body, formatClock(ctx, q.from))
                 "planned" -> ctx.getString(R.string.q_planned_body, units(ctx, q.dose ?: 0.0))
-                "rise" -> ctx.getString(R.string.q_rise_body, g(q.sgvFrom), g(q.sgvTo), AlarmText.clock(ctx, q.from))
-                else -> ctx.getString(R.string.q_fall_body, g(q.sgvFrom), g(q.sgvTo), AlarmText.clock(ctx, q.from))
+                "rise" -> ctx.getString(R.string.q_rise_body, g(q.sgvFrom), g(q.sgvTo), formatClock(ctx, q.from))
+                else -> ctx.getString(R.string.q_fall_body, g(q.sgvFrom), g(q.sgvTo), formatClock(ctx, q.from))
             }
         }
 

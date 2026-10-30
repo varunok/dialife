@@ -18,12 +18,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.formatAmount
+import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.data.InsulinIntent
 import com.lumenarcanus.dialife.data.InsulinType
 import com.lumenarcanus.dialife.data.Prefs
 import com.lumenarcanus.dialife.data.StateResponse
 import com.lumenarcanus.dialife.data.Treatment
-import com.lumenarcanus.dialife.live.AlarmText
 import com.lumenarcanus.dialife.ui.home.Origin
 import com.lumenarcanus.dialife.ui.home.originOf
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
@@ -125,7 +125,7 @@ fun RecentDoseNote(near: NearDose, st: StateResponse?) {
             stringResource(
                 R.string.dose_recent,
                 doseText(ctx, near.dose),
-                AlarmText.clock(ctx, near.dose.t),
+                formatClock(ctx, near.dose.t),
                 whoLogged(ctx, near.dose, st)
             ),
             color = c.text,
@@ -150,7 +150,7 @@ fun SameDoseDialog(near: NearDose, type: InsulinType, st: StateResponse?, onSame
                     stringResource(
                         R.string.dose_recent_body,
                         doseText(ctx, d),
-                        AlarmText.clock(ctx, d.t),
+                        formatClock(ctx, d.t),
                         whoLogged(ctx, d, st),
                         gapText(ctx, near.gapMs)
                     )
@@ -170,7 +170,7 @@ fun SameDoseDialog(near: NearDose, type: InsulinType, st: StateResponse?, onSame
                     if (basal) R.string.dose_basal_body else R.string.dose_same_body,
                     insulinLabel(ctx, type),
                     doseText(ctx, d),
-                    AlarmText.clock(ctx, d.t),
+                    formatClock(ctx, d.t),
                     whoLogged(ctx, d, st),
                     gapText(ctx, near.gapMs)
                 )

@@ -35,8 +35,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatGlucose
-import com.lumenarcanus.dialife.live.AlarmText
 import com.lumenarcanus.dialife.liveRepository
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import java.util.Locale
@@ -92,7 +92,7 @@ fun CountdownCard(ui: CountdownUiState, units: Units, onEaten: () -> Unit) {
             }
         }
         val facts = listOfNotNull(
-            stringResource(R.string.wait_fact_dose, formatUnits(w.units, locale), AlarmText.clock(ctx, w.doseAt)),
+            stringResource(R.string.wait_fact_dose, formatUnits(w.units, locale), formatClock(ctx, w.doseAt)),
             sgv?.let { stringResource(R.string.wait_fact_sugar, it) }
         )
         Text(facts.joinToString("  ·  "), color = c.textMuted, fontSize = 12.sp)
@@ -107,7 +107,7 @@ fun WarningCard(ui: WarningUiState, onClose: () -> Unit) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
-    val dose = stringResource(R.string.wait_fact_dose, formatUnits(ui.units, locale), AlarmText.clock(ctx, ui.doseAt))
+    val dose = stringResource(R.string.wait_fact_dose, formatUnits(ui.units, locale), formatClock(ctx, ui.doseAt))
     Column(
         Modifier.fillMaxWidth().background(
             c.highContainer,
@@ -149,7 +149,7 @@ private fun Ring(ui: CountdownUiState, ink: Color) {
 private fun title(ui: CountdownUiState): String = when {
     ui.eatNow -> stringResource(R.string.wait_eat_now)
     ui.leftMs == 0L -> stringResource(R.string.wait_go)
-    else -> stringResource(R.string.wait_from, AlarmText.clock(LocalContext.current, ui.wait.eatFrom))
+    else -> stringResource(R.string.wait_from, formatClock(LocalContext.current, ui.wait.eatFrom))
 }
 
 @Composable

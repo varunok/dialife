@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import com.lumenarcanus.dialife.MainActivity
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.data.InsulinType
 import com.lumenarcanus.dialife.data.Prefs
 import com.lumenarcanus.dialife.liveRepository
@@ -101,7 +102,7 @@ object BasalReminder {
             .setContentTitle(
                 Prefs.basalName?.let { context.getString(R.string.rem_title, it) } ?: context.getString(R.string.rem_title_plain)
             )
-            .setContentText(context.getString(R.string.rem_body, AlarmText.clock(context, due)))
+            .setContentText(context.getString(R.string.rem_body, formatClock(context, due)))
             .setAutoCancel(true)
             .setContentIntent(open)
             .build()

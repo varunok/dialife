@@ -36,8 +36,8 @@ import com.lumenarcanus.dialife.core.ui.LimitAlert
 import com.lumenarcanus.dialife.core.ui.Stepper
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatAmount
+import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.data.DoseCalc
-import com.lumenarcanus.dialife.live.AlarmText
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.ui.theme.GlucoseHero
 
@@ -84,7 +84,7 @@ fun PlannedCard(ui: PlannedCardUiState, units: Units, onAction: (PlannedAction) 
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                stringResource(R.string.planned_meal_at, AlarmText.clock(ctx, mealAt)) + if (p.by.isNotBlank()) " · " + p.by else "",
+                stringResource(R.string.planned_meal_at, formatClock(ctx, mealAt)) + if (p.by.isNotBlank()) " · " + p.by else "",
                 color = c.textMuted,
                 fontSize = 12.sp
             )
@@ -181,7 +181,7 @@ fun PlannedCard(ui: PlannedCardUiState, units: Units, onAction: (PlannedAction) 
                 when (step) {
                     "ask" -> {
                         Text(
-                            stringResource(R.string.q_planned_title, AlarmText.clock(ctx, mealAt)),
+                            stringResource(R.string.q_planned_title, formatClock(ctx, mealAt)),
                             color = c.text,
                             fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold
@@ -238,7 +238,7 @@ fun PlannedCard(ui: PlannedCardUiState, units: Units, onAction: (PlannedAction) 
         AlertDialog(
             onDismissRequest = { skipping = false },
             title = { Text(stringResource(R.string.planned_skip_q)) },
-            text = { Text(stringResource(R.string.planned_skip_text, f(p.dose), AlarmText.clock(ctx, mealAt))) },
+            text = { Text(stringResource(R.string.planned_skip_text, f(p.dose), formatClock(ctx, mealAt))) },
             confirmButton = {
                 TextButton(onClick = {
                     skipping = false

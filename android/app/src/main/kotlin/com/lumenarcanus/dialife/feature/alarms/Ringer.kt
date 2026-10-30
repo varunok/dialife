@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.live
+package com.lumenarcanus.dialife.feature.alarms
 
 import android.content.Context
 import android.media.AudioAttributes

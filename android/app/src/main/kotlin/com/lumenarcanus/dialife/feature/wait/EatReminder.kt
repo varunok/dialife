@@ -10,9 +10,9 @@ import android.content.Intent
 import com.lumenarcanus.dialife.MainActivity
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.alarmController
+import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.data.CredentialStore
 import com.lumenarcanus.dialife.data.Wait
-import com.lumenarcanus.dialife.live.AlarmText
 import com.lumenarcanus.dialife.live.LiveRepository
 import com.lumenarcanus.dialife.live.Notifications
 import com.lumenarcanus.dialife.liveRepository
@@ -95,7 +95,7 @@ object EatReminder {
             .setSmallIcon(R.drawable.ic_stat_drop)
             .setContentTitle(context.getString(R.string.wait_go))
             .setContentText(
-                context.getString(R.string.wait_fact_dose, formatUnits(w.units, Locale.getDefault()), AlarmText.clock(context, w.doseAt))
+                context.getString(R.string.wait_fact_dose, formatUnits(w.units, Locale.getDefault()), formatClock(context, w.doseAt))
             )
             .setAutoCancel(true)
             .setContentIntent(open)

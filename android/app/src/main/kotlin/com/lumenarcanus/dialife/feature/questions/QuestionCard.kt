@@ -21,10 +21,10 @@ import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatAmount
+import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.data.Question
 import com.lumenarcanus.dialife.data.Treatment
-import com.lumenarcanus.dialife.live.AlarmText
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 
 /**
@@ -56,13 +56,13 @@ internal fun QuestionCard(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
-            com.lumenarcanus.dialife.live.QuestionNotifier.questionTitle(ctx, q),
+            com.lumenarcanus.dialife.feature.questions.QuestionNotifier.questionTitle(ctx, q),
             color = c.text,
             fontSize = 17.sp,
             fontWeight = FontWeight.SemiBold
         )
         Text(
-            com.lumenarcanus.dialife.live.QuestionNotifier.questionBody(ctx, q, units),
+            com.lumenarcanus.dialife.feature.questions.QuestionNotifier.questionBody(ctx, q, units),
             color = c.text,
             fontSize = 14.sp
         )
@@ -71,7 +71,11 @@ internal fun QuestionCard(
                 stringResource(
                     R.string.q_again,
                     prev.joinToString(", ") {
-                        ctx.getString(R.string.q_said, it.person, com.lumenarcanus.dialife.live.QuestionNotifier.answerText(ctx, it.answer))
+                        ctx.getString(
+                            R.string.q_said,
+                            it.person,
+                            com.lumenarcanus.dialife.feature.questions.QuestionNotifier.answerText(ctx, it.answer)
+                        )
                     }
                 ),
                 color = c.high,
@@ -94,7 +98,7 @@ internal fun QuestionCard(
                 }
             ).joinToString(" · ")
             Text(
-                stringResource(R.string.q_entered, what, com.lumenarcanus.dialife.live.AlarmText.clock(ctx, tr.t), tr.enteredBy.orEmpty()),
+                stringResource(R.string.q_entered, what, formatClock(ctx, tr.t), tr.enteredBy.orEmpty()),
                 color = c.textMuted,
                 fontSize = 13.sp
             )
@@ -131,7 +135,7 @@ internal fun QuestionCard(
                         Text(
                             stringResource(
                                 R.string.q_btn_was_for_it,
-                                com.lumenarcanus.dialife.live.AlarmText.clock(ctx, before.t),
+                                formatClock(ctx, before.t),
                                 formatAmount(before.insulin ?: 0.0, locale)
                             )
                         )
@@ -184,6 +188,6 @@ internal fun WatchCard(q: Question) {
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text(stringResource(R.string.watch_title), color = c.low, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-        Text(com.lumenarcanus.dialife.live.QuestionNotifier.watchBody(ctx, q), color = c.text, fontSize = 14.sp)
+        Text(com.lumenarcanus.dialife.feature.questions.QuestionNotifier.watchBody(ctx, q), color = c.text, fontSize = 14.sp)
     }
 }

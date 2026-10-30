@@ -46,12 +46,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatDelta
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.data.EpisodeRules
 import com.lumenarcanus.dialife.data.Treatment
-import com.lumenarcanus.dialife.live.ActionReceiver
-import com.lumenarcanus.dialife.live.AlarmText
+import com.lumenarcanus.dialife.feature.alarms.ActionReceiver
+import com.lumenarcanus.dialife.feature.alarms.AlarmText
 import com.lumenarcanus.dialife.live.Notifications
 import com.lumenarcanus.dialife.live.TreatmentQueue
 import com.lumenarcanus.dialife.ui.home.ChartWindow
@@ -162,7 +163,7 @@ fun HandlingScreen(
             Text(
                 stringResource(
                     R.string.hd_taken_at,
-                    AlarmText.clock(ctx, it),
+                    formatClock(ctx, it),
                     ctx.resources.getQuantityString(R.plurals.minutes_short, min, min)
                 ),
                 color = c.textMuted,
@@ -191,7 +192,7 @@ fun HandlingScreen(
                 Text(stringResource(R.string.checkin_title), color = c.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                 a.checkinSentAt?.let {
                     Text(
-                        stringResource(R.string.hd_checkin_deadline, AlarmText.clock(ctx, it + rules.checkinTimeoutMin * 60_000L)),
+                        stringResource(R.string.hd_checkin_deadline, formatClock(ctx, it + rules.checkinTimeoutMin * 60_000L)),
                         color = c.high,
                         fontSize = 14.sp
                     )
@@ -219,7 +220,7 @@ fun HandlingScreen(
             }
         } else {
             a.nextCheckinAt?.takeIf { it > ui.now }?.let {
-                Text(stringResource(R.string.hd_next_checkin, AlarmText.clock(ctx, it)), color = c.textMuted, fontSize = 14.sp)
+                Text(stringResource(R.string.hd_next_checkin, formatClock(ctx, it)), color = c.textMuted, fontSize = 14.sp)
             }
         }
 
@@ -295,7 +296,7 @@ fun HandlingScreen(
                 Bullet(
                     stringResource(
                         R.string.hd_wake_ceiling,
-                        AlarmText.clock(ctx, a.handledAt + rules.ceilingMin * 60_000L),
+                        formatClock(ctx, a.handledAt + rules.ceilingMin * 60_000L),
                         rules.ceilingMin
                     )
                 )

@@ -41,6 +41,7 @@ import androidx.glance.text.TextStyle
 import com.lumenarcanus.dialife.MainActivity
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatDelta
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.core.ui.unitsOf
@@ -48,7 +49,7 @@ import com.lumenarcanus.dialife.data.AlarmView
 import com.lumenarcanus.dialife.data.CredentialStore
 import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.data.StateResponse
-import com.lumenarcanus.dialife.live.AlarmText
+import com.lumenarcanus.dialife.feature.alarms.AlarmText
 import com.lumenarcanus.dialife.live.LiveCache
 import com.lumenarcanus.dialife.live.Notifications
 import com.lumenarcanus.dialife.liveRepository
@@ -128,7 +129,7 @@ class GlucoseWidget : GlanceAppWidget() {
         }
         val value = formatGlucose(bg.sgv, units, locale)
         val stale = System.currentTimeMillis() - bg.mills >= STALE_MIN * 60_000L
-        val time = context.getString(R.string.widget_at, AlarmText.clock(context, bg.mills))
+        val time = context.getString(R.string.widget_at, formatClock(context, bg.mills))
         val bounds = formatGlucose(th.low, units, locale) + "–" + formatGlucose(th.high, units, locale)
         val stateText = when {
             stale -> context.getString(R.string.status_stale)

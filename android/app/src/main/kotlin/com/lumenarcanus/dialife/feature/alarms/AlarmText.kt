@@ -1,13 +1,12 @@
-package com.lumenarcanus.dialife.live
+package com.lumenarcanus.dialife.feature.alarms
 
 import android.content.Context
-import android.text.format.DateFormat
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.data.AlarmEvent
 import com.lumenarcanus.dialife.data.AlarmView
-import java.util.Date
 
 /** The words of an alarm, shared by notifications, the alarm screen and the home banner. */
 object AlarmText {
@@ -43,12 +42,10 @@ object AlarmText {
     fun uploaderInSentence(ctx: Context, st: com.lumenarcanus.dialife.data.StateResponse?): String =
         st?.uploaderName?.takeIf { it.isNotBlank() }?.let { "«$it»" } ?: ctx.getString(R.string.uploader_in_sentence)
 
-    fun clock(ctx: Context, ms: Long): String = DateFormat.getTimeFormat(ctx).format(Date(ms))
-
     /** Why it rings (again), as the server's reason says. */
     fun reason(ctx: Context, e: AlarmEvent?, a: AlarmView, now: Long = System.currentTimeMillis()): String {
         val was = e?.wasHandledBy?.takeIf { it.isNotBlank() } ?: ctx.getString(R.string.someone)
-        val since = clock(ctx, a.startedAt)
+        val since = formatClock(ctx, a.startedAt)
         return when (e?.reason ?: a.reason) {
             "repeat" -> ctx.getString(R.string.reason_repeat, since)
             "escalated" -> ctx.getString(R.string.reason_escalated, since)

@@ -26,6 +26,7 @@ import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.AlertCard
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatAmount
+import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.data.DoseCalc
 import com.lumenarcanus.dialife.data.DoseSettings
@@ -33,7 +34,6 @@ import com.lumenarcanus.dialife.data.InsulinType
 import com.lumenarcanus.dialife.data.Meals
 import com.lumenarcanus.dialife.data.Prefs
 import com.lumenarcanus.dialife.data.Treatment
-import com.lumenarcanus.dialife.live.AlarmText
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.ui.theme.GlucoseHero
 import com.lumenarcanus.dialife.ui.treatment.basalColor
@@ -87,7 +87,7 @@ fun EntryDetail(
         }
         Row(verticalAlignment = Alignment.Top) {
             Text(title, color = ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-            Text(listOfNotNull(AlarmText.clock(ctx, tr.t), who).joinToString(" · "), color = c.textMuted, fontSize = 12.sp)
+            Text(listOfNotNull(formatClock(ctx, tr.t), who).joinToString(" · "), color = c.textMuted, fontSize = 12.sp)
         }
 
         // the dishes, every line whole
@@ -118,7 +118,7 @@ fun EntryDetail(
             Text(
                 when {
                     tr.insulinRole == "corr" -> stringResource(R.string.detail_for_corr)
-                    forMeal != null -> stringResource(R.string.detail_for_meal, AlarmText.clock(ctx, forMeal.from), forMeal.carbs)
+                    forMeal != null -> stringResource(R.string.detail_for_meal, formatClock(ctx, forMeal.from), forMeal.carbs)
                     else -> stringResource(R.string.detail_for_nothing)
                 },
                 color = c.textMuted,
@@ -165,7 +165,7 @@ fun EntryDetail(
             meal.insulin.forEach { i ->
                 Row {
                     Text(
-                        stringResource(R.string.detail_given_at, AlarmText.clock(ctx, i.t)),
+                        stringResource(R.string.detail_given_at, formatClock(ctx, i.t)),
                         color = c.textMuted,
                         fontSize = 13.sp,
                         modifier = Modifier.weight(1f).alignByBaseline()

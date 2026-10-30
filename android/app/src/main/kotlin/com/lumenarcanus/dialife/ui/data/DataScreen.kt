@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatAmount
+import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatDelta
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.data.History
@@ -65,7 +66,6 @@ import com.lumenarcanus.dialife.data.Prefs
 import com.lumenarcanus.dialife.data.Question
 import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.data.Treatment
-import com.lumenarcanus.dialife.live.AlarmText
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.ui.theme.PlexMono
 import com.lumenarcanus.dialife.ui.treatment.basalColor
@@ -268,7 +268,7 @@ fun DataScreen(
                 android.text.format.DateUtils.FORMAT_ABBREV_MONTH
         )
     }
-    val window = stringResource(R.string.data_window, day, AlarmText.clock(ctx, from), AlarmText.clock(ctx, to))
+    val window = stringResource(R.string.data_window, day, formatClock(ctx, from), formatClock(ctx, to))
 
     if (wide) {
         WideTable(rows, entries, h, from, to, window, units, thresholds, step, {
@@ -434,7 +434,7 @@ private fun HourHeader(hourStart: Long, vs: List<Int>, units: Units) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            AlarmText.clock(ctx, hourStart) + "–" + AlarmText.clock(ctx, hourStart + HOUR),
+            formatClock(ctx, hourStart) + "–" + formatClock(ctx, hourStart + HOUR),
             color = c.text,
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
@@ -489,7 +489,7 @@ private fun ListRow(r: DataRow, units: Units, th: Thresholds, onEdit: (Treatment
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            AlarmText.clock(ctx, r.t) + (r.end?.let { "\n" + AlarmText.clock(ctx, it) } ?: ""),
+            formatClock(ctx, r.t) + (r.end?.let { "\n" + formatClock(ctx, it) } ?: ""),
             color = c.textMuted,
             fontSize = 12.sp,
             fontFamily = PlexMono,
@@ -600,22 +600,22 @@ private fun entryText(e: Entry, units: Units): String {
 private fun suspectText(e: Entry, units: Units): String {
     val q = e.question ?: return "?"
     val ctx = LocalContext.current
-    if (q.kind == "bolus") return stringResource(R.string.data_suspect_bolus, AlarmText.clock(ctx, q.from))
+    if (q.kind == "bolus") return stringResource(R.string.data_suspect_bolus, formatClock(ctx, q.from))
     if (q.kind ==
         "double"
     ) {
         return stringResource(
             R.string.data_suspect_double,
-            com.lumenarcanus.dialife.live.QuestionNotifier.doubleInsulin(ctx, q),
-            AlarmText.clock(ctx, q.from),
-            AlarmText.clock(ctx, q.to)
+            com.lumenarcanus.dialife.feature.questions.QuestionNotifier.doubleInsulin(ctx, q),
+            formatClock(ctx, q.from),
+            formatClock(ctx, q.to)
         )
     }
     val locale = LocalConfiguration.current.locales[0]
     return stringResource(
         if (q.kind == "fall") R.string.data_suspect_fall else R.string.data_suspect_rise,
-        AlarmText.clock(ctx, q.from),
-        AlarmText.clock(ctx, q.to),
+        formatClock(ctx, q.from),
+        formatClock(ctx, q.to),
         formatGlucose(q.sgvFrom, units, locale),
         formatGlucose(q.sgvTo, units, locale)
     )
@@ -651,7 +651,7 @@ private fun EntryChip(e: Entry, units: Units, onEdit: (Treatment) -> Unit, showT
         verticalAlignment = Alignment.CenterVertically
     ) {
         // in an interval, say when exactly; a suspect already carries its span
-        val at = if (showTime && e.kind != EntryKind.Suspect) " · " + AlarmText.clock(ctx, e.t) else ""
+        val at = if (showTime && e.kind != EntryKind.Suspect) " · " + formatClock(ctx, e.t) else ""
         Text(
             entryText(e, units) + at + (
                 who?.let {
@@ -763,7 +763,7 @@ private fun WideTable(
                                     text(it) + if (r.end !=
                                         null
                                     ) {
-                                        " · " + AlarmText.clock(ctx, it.t)
+                                        " · " + formatClock(ctx, it.t)
                                     } else {
                                         ""
                                     }
@@ -780,9 +780,9 @@ private fun WideTable(
                         listOf(
                             {
                                 Text(
-                                    AlarmText.clock(ctx, r.t) + (
+                                    formatClock(ctx, r.t) + (
                                         r.end?.let {
-                                            "–" + AlarmText.clock(ctx, it)
+                                            "–" + formatClock(ctx, it)
                                         } ?: ""
                                         ),
                                     color = c.textMuted,

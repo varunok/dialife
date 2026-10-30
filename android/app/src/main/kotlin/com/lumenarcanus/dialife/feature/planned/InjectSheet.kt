@@ -40,13 +40,13 @@ import com.lumenarcanus.dialife.core.ui.LimitAlert
 import com.lumenarcanus.dialife.core.ui.Stepper
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatAmount
+import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.data.DoseCalc
 import com.lumenarcanus.dialife.data.DoseSettings
 import com.lumenarcanus.dialife.data.InsulinType
 import com.lumenarcanus.dialife.data.PlannedDose
 import com.lumenarcanus.dialife.data.Prefs
 import com.lumenarcanus.dialife.data.Treatment
-import com.lumenarcanus.dialife.live.AlarmText
 import com.lumenarcanus.dialife.live.TreatmentQueue
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.ui.treatment.TimeDialog
@@ -110,7 +110,7 @@ internal fun InjectSheet(
                     title = stringResource(
                         R.string.planned_same_q,
                         f(near.dose.insulin ?: 0.0),
-                        AlarmText.clock(ctx, near.dose.t),
+                        formatClock(ctx, near.dose.t),
                         near.dose.enteredBy.orEmpty()
                     ),
                     text = stringResource(R.string.planned_same_text)
@@ -161,7 +161,7 @@ internal fun InjectSheet(
                 })
             }
             Text(
-                err ?: stringResource(R.string.planned_when_range, AlarmText.clock(ctx, earliest)),
+                err ?: stringResource(R.string.planned_when_range, formatClock(ctx, earliest)),
                 color = if (err !=
                     null
                 ) {
@@ -190,7 +190,7 @@ internal fun InjectSheet(
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = c.insulin, contentColor = c.background)
-            ) { Text(stringResource(R.string.planned_given_save, f(amount), AlarmText.clock(ctx, at)), fontWeight = FontWeight.SemiBold) }
+            ) { Text(stringResource(R.string.planned_given_save, f(amount), formatClock(ctx, at)), fontWeight = FontWeight.SemiBold) }
             TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.tr_cancel)) }
         }
     }

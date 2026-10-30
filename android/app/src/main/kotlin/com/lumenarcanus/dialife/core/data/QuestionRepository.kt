@@ -3,8 +3,8 @@ package com.lumenarcanus.dialife.core.data
 import com.lumenarcanus.dialife.data.ApiError
 import com.lumenarcanus.dialife.data.ApiException
 import com.lumenarcanus.dialife.data.DiaLifeApi
+import com.lumenarcanus.dialife.feature.questions.QuestionNotifier
 import com.lumenarcanus.dialife.live.LiveRepository
-import com.lumenarcanus.dialife.live.QuestionNotifier
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 

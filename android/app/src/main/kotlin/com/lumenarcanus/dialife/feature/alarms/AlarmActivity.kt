@@ -48,12 +48,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.alarmController
 import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatDelta
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.data.AlarmView
-import com.lumenarcanus.dialife.live.ActionReceiver
-import com.lumenarcanus.dialife.live.AlarmText
+import com.lumenarcanus.dialife.feature.alarms.ActionReceiver
+import com.lumenarcanus.dialife.feature.alarms.AlarmText
 import com.lumenarcanus.dialife.liveRepository
 import com.lumenarcanus.dialife.ui.theme.DiaLifeTheme
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
@@ -259,7 +260,7 @@ private fun AlarmScreen(
                 if (help) {
                     listOfNotNull(
                         alarm.handledAt?.let {
-                            stringResource(R.string.help_handling_since, alarm.handledBy.orEmpty(), AlarmText.clock(ctx, it))
+                            stringResource(R.string.help_handling_since, alarm.handledBy.orEmpty(), formatClock(ctx, it))
                         },
                         AlarmText.progress(ctx, alarm, units).takeIf { it.isNotBlank() }
                     ).joinToString(" · ")

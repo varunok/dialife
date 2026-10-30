@@ -60,11 +60,11 @@ import com.lumenarcanus.dialife.core.ui.Confirm
 import com.lumenarcanus.dialife.core.ui.LimitAlert
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatAmount
+import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.data.InsulinType
 import com.lumenarcanus.dialife.data.Prefs
 import com.lumenarcanus.dialife.data.Treatment
-import com.lumenarcanus.dialife.live.AlarmText
 import com.lumenarcanus.dialife.live.TreatmentQueue
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.ui.theme.GlucoseHero
@@ -240,7 +240,7 @@ fun TreatmentSheet(
                                 if (nearMeal !=
                                     null
                                 ) {
-                                    stringResource(R.string.ins_for_auto_meal, AlarmText.clock(ctx, nearMeal.from))
+                                    stringResource(R.string.ins_for_auto_meal, formatClock(ctx, nearMeal.from))
                                 } else {
                                     stringResource(R.string.ins_for_auto_corr)
                                 },
@@ -464,7 +464,7 @@ fun daysAgo(t: Long, now: Long): Int {
 @Composable
 fun atLabel(t: Long): String {
     val ctx = LocalContext.current
-    val clock = AlarmText.clock(ctx, t)
+    val clock = formatClock(ctx, t)
     return when (daysAgo(t, System.currentTimeMillis())) {
         0 -> stringResource(R.string.tr_at, clock)
         1 -> stringResource(R.string.tr_yesterday_at, clock)
