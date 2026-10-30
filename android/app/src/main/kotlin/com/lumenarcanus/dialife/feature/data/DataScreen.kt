@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -99,17 +100,7 @@ fun DataScreen(
     val step = uiState.step
     val loading = uiState.loading
     val ctx = LocalContext.current
-    val day = if (android.text.format.DateUtils.isToday(to)) {
-        stringResource(R.string.data_today)
-    } else {
-        android.text.format.DateUtils.formatDateTime(
-            ctx,
-            to,
-            android.text.format.DateUtils.FORMAT_SHOW_DATE or android.text.format.DateUtils.FORMAT_NO_YEAR or
-                android.text.format.DateUtils.FORMAT_ABBREV_MONTH
-        )
-    }
-    val window = stringResource(R.string.data_window, day, formatClock(ctx, from), formatClock(ctx, to))
+    val window = windowText(from, to)
 
     if (uiState.wide) {
         WideTable(rows, entries, h, from, to, window, units, thresholds, step, {
@@ -122,39 +113,9 @@ fun DataScreen(
         Modifier.fillMaxSize().background(c.background).safeDrawingPadding().padding(start = 20.dp, end = 20.dp, top = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onBack) { Text("‹ " + stringResource(R.string.nav_back), color = c.textMuted) }
-            Spacer(Modifier.weight(1f))
-            IconButton(onClick = onBack) {
-                Icon(painterResource(R.drawable.ic_chart), stringResource(R.string.data_chart), tint = c.textMuted)
-            }
-            IconButton(onClick = {
-                onAction(DataAction.Wide(true))
-            }) { Icon(painterResource(R.drawable.ic_fullscreen), stringResource(R.string.data_wide), tint = c.textMuted) }
-        }
+        DataTopBar(onBack, onWide = { onAction(DataAction.Wide(true)) })
         Text(stringResource(R.string.data_title), color = c.text, fontSize = 26.sp, fontWeight = FontWeight.SemiBold)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = { onAction(DataAction.Older) }) { Text("‹ " + stringResource(R.string.data_prev), color = c.textMuted) }
-            Text(
-                window,
-                color = c.text,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(1f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            TextButton(onClick = { onAction(DataAction.Newer) }, enabled = page > 0) {
-                Text(
-                    stringResource(R.string.data_next) + " ›",
-                    color = if (page > 0) {
-                        c.textMuted
-                    } else {
-                        c.textFaint
-                    }
-                )
-            }
-        }
+        WindowPager(window, page, onAction)
         // two rows: "Лише записи" and "Поза межами" do not fit beside the step
         Segments(
             listOf(
@@ -167,32 +128,104 @@ fun DataScreen(
             fill = true
         ) { onAction(DataAction.Filter(it)) }
         StepSegments(step) { onAction(DataAction.Step(it)) }
-        Column(
-            Modifier.fillMaxWidth().weight(1f)
-                .background(c.surface, RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
-                .border(1.dp, c.line, RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
-        ) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                HeadCell(stringResource(R.string.data_time), timeColumn())
-                HeadCell(if (units == Units.MgDl) "mg/dL" else stringResource(R.string.unit_mmol), 74.dp)
-                HeadCell(stringResource(R.string.data_delta), 44.dp)
-                HeadCell(stringResource(R.string.data_entries), null)
-            }
-            when {
-                loading -> Text(stringResource(R.string.data_loading), color = c.textMuted, modifier = Modifier.padding(14.dp))
-                rows.isEmpty() -> Text(stringResource(R.string.data_empty), color = c.textMuted, modifier = Modifier.padding(14.dp))
-                else -> {
-                    val groups = rows.groupBy { hourOf(it.t) }
-                    val readings = h?.sgv ?: Series()
-                    LazyColumn(Modifier.fillMaxSize()) {
-                        groups.forEach { (hourStart, rs) ->
-                            item(key = "h$hourStart") {
-                                val vs = readings.t.indices.filter { readings.t[it] in maxOf(hourStart, from)..minOf(hourStart + HOUR, to) }
-                                    .map { readings.v[it] }
-                                HourHeader(hourStart, vs, units)
-                            }
-                            items(rs, key = { "r${it.t}" }) { r -> ListRow(r, units, thresholds, onEdit) }
+        DataTable(uiState, onEdit)
+    }
+}
+
+/** "Today · 07:46–10:46", or the date for an older window. */
+@Composable
+private fun windowText(from: Long, to: Long): String {
+    val ctx = LocalContext.current
+    val day = if (android.text.format.DateUtils.isToday(to)) {
+        stringResource(R.string.data_today)
+    } else {
+        android.text.format.DateUtils.formatDateTime(
+            ctx,
+            to,
+            android.text.format.DateUtils.FORMAT_SHOW_DATE or android.text.format.DateUtils.FORMAT_NO_YEAR or
+                android.text.format.DateUtils.FORMAT_ABBREV_MONTH
+        )
+    }
+    return stringResource(R.string.data_window, day, formatClock(ctx, from), formatClock(ctx, to))
+}
+
+/** Back, the chart, and the wide table. */
+@Composable
+private fun DataTopBar(onBack: () -> Unit, onWide: () -> Unit) {
+    val c = DiaTheme.colors
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        TextButton(onClick = onBack) { Text("‹ " + stringResource(R.string.nav_back), color = c.textMuted) }
+        Spacer(Modifier.weight(1f))
+        IconButton(onClick = onBack) {
+            Icon(painterResource(R.drawable.ic_chart), stringResource(R.string.data_chart), tint = c.textMuted)
+        }
+        IconButton(onClick = onWide) {
+            Icon(painterResource(R.drawable.ic_fullscreen), stringResource(R.string.data_wide), tint = c.textMuted)
+        }
+    }
+}
+
+/** The window shown, with the span before and after it. */
+@Composable
+private fun WindowPager(window: String, page: Int, onAction: (DataAction) -> Unit) {
+    val c = DiaTheme.colors
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        TextButton(onClick = { onAction(DataAction.Older) }) { Text("‹ " + stringResource(R.string.data_prev), color = c.textMuted) }
+        Text(
+            window,
+            color = c.text,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        TextButton(onClick = { onAction(DataAction.Newer) }, enabled = page > 0) {
+            Text(
+                stringResource(R.string.data_next) + " ›",
+                color = if (page > 0) {
+                    c.textMuted
+                } else {
+                    c.textFaint
+                }
+            )
+        }
+    }
+}
+
+/** The rows by hour, under their heads; "loading" or "nothing" instead when so. */
+@Composable
+private fun ColumnScope.DataTable(uiState: DataUiState, onEdit: (Treatment) -> Unit) {
+    val c = DiaTheme.colors
+    val units = uiState.units
+    val from = uiState.from
+    val to = uiState.to
+    val rows = uiState.rows
+    Column(
+        Modifier.fillMaxWidth().weight(1f)
+            .background(c.surface, RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
+            .border(1.dp, c.line, RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
+    ) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            HeadCell(stringResource(R.string.data_time), timeColumn())
+            HeadCell(if (units == Units.MgDl) "mg/dL" else stringResource(R.string.unit_mmol), 74.dp)
+            HeadCell(stringResource(R.string.data_delta), 44.dp)
+            HeadCell(stringResource(R.string.data_entries), null)
+        }
+        when {
+            uiState.loading -> Text(stringResource(R.string.data_loading), color = c.textMuted, modifier = Modifier.padding(14.dp))
+            rows.isEmpty() -> Text(stringResource(R.string.data_empty), color = c.textMuted, modifier = Modifier.padding(14.dp))
+            else -> {
+                val groups = rows.groupBy { hourOf(it.t) }
+                val readings = uiState.history?.sgv ?: Series()
+                LazyColumn(Modifier.fillMaxSize()) {
+                    groups.forEach { (hourStart, rs) ->
+                        item(key = "h$hourStart") {
+                            val vs = readings.t.indices.filter { readings.t[it] in maxOf(hourStart, from)..minOf(hourStart + HOUR, to) }
+                                .map { readings.v[it] }
+                            HourHeader(hourStart, vs, units)
                         }
+                        items(rs, key = { "r${it.t}" }) { r -> ListRow(r, units, uiState.thresholds, onEdit) }
                     }
                 }
             }

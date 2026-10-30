@@ -32,7 +32,9 @@ import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.core.ui.theme.GlucoseHero
 import com.lumenarcanus.dialife.data.DoseCalc
 import com.lumenarcanus.dialife.data.DoseSettings
+import com.lumenarcanus.dialife.data.FoodItem
 import com.lumenarcanus.dialife.data.InsulinType
+import com.lumenarcanus.dialife.data.Meal
 import com.lumenarcanus.dialife.data.MealRules
 import com.lumenarcanus.dialife.data.Meals
 import com.lumenarcanus.dialife.data.Meters
@@ -55,14 +57,8 @@ fun EntryDetail(
     mbg: Series = Series()
 ) {
     val c = DiaTheme.colors
-    val ctx = LocalContext.current
-    val locale = LocalConfiguration.current.locales[0]
-    fun f(x: Double) = formatAmount(x, locale)
-    val u = stringResource(R.string.unit_insulin)
-    val g = stringResource(R.string.unit_carbs)
     val meals = Meals.group(treatments, mealRules)
     val meal = meals.firstOrNull { m -> m.foods.any { it.id == tr.id } || m.insulin.any { it.id == tr.id } }
-    val who = tr.enteredBy?.takeIf { it.isNotBlank() }
 
     Column(
         Modifier.fillMaxWidth().background(
@@ -71,143 +67,176 @@ fun EntryDetail(
         ).border(1.dp, c.line, RoundedCornerShape(16.dp)).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        val (title, ink) = when {
-            (tr.insulin ?: 0.0) > 0 -> {
-                val basal = InsulinType.of(tr.insulinType) == InsulinType.Basal
-                (
-                    (
-                        tr.insulinName ?: Prefs.nameOf(if (basal) InsulinType.Basal else InsulinType.Rapid)
-                            ?: stringResource(if (basal) R.string.ins_basal else R.string.ins_rapid)
-                        ) +
-                        " " + f(tr.insulin ?: 0.0) + " $u"
-                    ) to (if (basal) basalColor(c.isDark) else c.insulin)
-            }
-            (tr.carbs ?: 0.0) > 0 -> stringResource(R.string.detail_food, (tr.carbs ?: 0.0).toInt()) to c.carbs
-            tr.glucose != null -> stringResource(R.string.detail_meter, formatGlucose(tr.glucose, units, locale)) to c.inRange
-            tr.duration != null -> stringResource(R.string.tr_activity) + " · " + stringResource(R.string.data_step_min, tr.duration) to
-                c.inRange
-            else -> stringResource(R.string.tr_note) to c.text
-        }
-        Row(verticalAlignment = Alignment.Top) {
-            Text(title, color = ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-            Text(listOfNotNull(formatClock(ctx, tr.t), who).joinToString(" · "), color = c.textMuted, fontSize = 12.sp)
-        }
+        EntryTitle(tr, units)
 
         // the dishes, every line whole
-        tr.foodItems?.takeIf { it.isNotEmpty() }?.forEach { item ->
-            Row {
-                Text(
-                    listOfNotNull(
-                        item.name,
-                        item.portion?.takeIf {
-                            it.isNotBlank()
-                        }
-                    ).joinToString(", "),
-                    color = c.text,
-                    fontSize = 13.5.sp,
-                    modifier = Modifier.weight(1f).alignByBaseline()
-                )
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    (if (item.suggested) "≈ " else "") + (item.carbs?.let { kotlin.math.round(it).toInt().toString() } ?: "—") + " $g",
-                    style = GlucoseHero.copy(fontSize = 14.sp, lineHeight = 18.sp, color = c.carbs),
-                    modifier = Modifier.alignByBaseline()
-                )
-            }
-        }
+        tr.foodItems?.takeIf { it.isNotEmpty() }?.forEach { item -> DishLine(item) }
 
-        if ((tr.insulin ?: 0.0) > 0 && InsulinType.of(tr.insulinType) == InsulinType.Rapid) {
-            val forMeal = meal?.takeIf { m -> m.insulin.any { it.id == tr.id } }
-            Text(
-                when {
-                    tr.insulinRole == "corr" -> stringResource(R.string.detail_for_corr)
-                    forMeal != null -> stringResource(R.string.detail_for_meal, formatClock(ctx, forMeal.from), forMeal.carbs)
-                    else -> stringResource(R.string.detail_for_nothing)
-                },
-                color = c.textMuted,
-                fontSize = 13.sp
-            )
-            if (tr.insulinRole == "corr") Text(stringResource(R.string.detail_corr_note), color = c.textFaint, fontSize = 12.sp)
-        }
+        if ((tr.insulin ?: 0.0) > 0 && InsulinType.of(tr.insulinType) == InsulinType.Rapid) RapidFor(tr, meal)
 
         // a meal: all its entries, the dose it needed and what was given
-        if (meal != null && (tr.carbs ?: 0.0) > 0) {
-            Box(Modifier.fillMaxWidth().height(1.dp).background(c.line))
-            if (meal.foods.size > 1) {
-                Text(stringResource(R.string.detail_meal, meal.foods.size, meal.carbs), color = c.textMuted, fontSize = 13.sp)
-            }
-            val first = meal.foods.first().t
-            val meter = Meters.latest(
-                treatments,
-                mbg,
-                to = first + 5 * 60_000L,
-                from = first - dose.freshMin * 60_000L
-            )
-            val m = DoseCalc.meal(dose, meal.carbs, meter?.mg, meter?.t, first + 5 * 60_000L, meal.given)
-            Row {
-                Text(
-                    stringResource(
-                        R.string.detail_worked_out,
-                        meal.carbs,
-                        String.format(locale, "%.2f", m.food).trimEnd('0').trimEnd(',', '.')
+        if (meal != null && (tr.carbs ?: 0.0) > 0) MealDoseCheck(meal, treatments, dose, units, mbg)
+        tr.notes?.takeIf { it.isNotBlank() }?.let { Text(it, color = c.text, fontSize = 13.sp) }
+    }
+}
+
+/** What it is and how much, in its colour; when, and who entered it. */
+@Composable
+private fun EntryTitle(tr: Treatment, units: Units) {
+    val c = DiaTheme.colors
+    val ctx = LocalContext.current
+    val locale = LocalConfiguration.current.locales[0]
+    fun f(x: Double) = formatAmount(x, locale)
+    val u = stringResource(R.string.unit_insulin)
+    val who = tr.enteredBy?.takeIf { it.isNotBlank() }
+    val (title, ink) = when {
+        (tr.insulin ?: 0.0) > 0 -> {
+            val basal = InsulinType.of(tr.insulinType) == InsulinType.Basal
+            (
+                (
+                    tr.insulinName ?: Prefs.nameOf(if (basal) InsulinType.Basal else InsulinType.Rapid)
+                        ?: stringResource(if (basal) R.string.ins_basal else R.string.ins_rapid)
                     ) +
-                        if (m.corr > 0) " + " + stringResource(R.string.planned_corr, f(m.corr)) else "",
-                    color = c.textMuted,
-                    fontSize = 13.sp,
-                    modifier = Modifier.weight(1f).alignByBaseline()
-                )
-                Text(
-                    f(m.dose) + " $u",
-                    style = GlucoseHero.copy(fontSize = 14.sp, lineHeight = 18.sp, color = c.insulin),
-                    modifier = Modifier.alignByBaseline()
-                )
-            }
-            meal.insulin.forEach { i ->
-                Row {
-                    Text(
-                        stringResource(R.string.detail_given_at, formatClock(ctx, i.t)),
-                        color = c.textMuted,
-                        fontSize = 13.sp,
-                        modifier = Modifier.weight(1f).alignByBaseline()
-                    )
-                    Text(
-                        f(i.insulin ?: 0.0) + " $u",
-                        style = GlucoseHero.copy(fontSize = 14.sp, lineHeight = 18.sp, color = c.insulin),
-                        modifier = Modifier.alignByBaseline()
-                    )
+                    " " + f(tr.insulin ?: 0.0) + " $u"
+                ) to (if (basal) basalColor(c.isDark) else c.insulin)
+        }
+        (tr.carbs ?: 0.0) > 0 -> stringResource(R.string.detail_food, (tr.carbs ?: 0.0).toInt()) to c.carbs
+        tr.glucose != null -> stringResource(R.string.detail_meter, formatGlucose(tr.glucose, units, locale)) to c.inRange
+        tr.duration != null -> stringResource(R.string.tr_activity) + " · " + stringResource(R.string.data_step_min, tr.duration) to
+            c.inRange
+        else -> stringResource(R.string.tr_note) to c.text
+    }
+    Row(verticalAlignment = Alignment.Top) {
+        Text(title, color = ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+        Text(listOfNotNull(formatClock(ctx, tr.t), who).joinToString(" · "), color = c.textMuted, fontSize = 12.sp)
+    }
+}
+
+/** A dish: its name and portion, its carbs ("≈" for a suggestion taken). */
+@Composable
+private fun DishLine(item: FoodItem) {
+    val c = DiaTheme.colors
+    val g = stringResource(R.string.unit_carbs)
+    Row {
+        Text(
+            listOfNotNull(
+                item.name,
+                item.portion?.takeIf {
+                    it.isNotBlank()
                 }
-            }
-            when {
-                meal.given <= 0 -> AlertCard(
-                    DoseCalc.Alert.RecentRapid(0.0, 0),
-                    units,
-                    locale,
-                    title = stringResource(R.string.detail_none_given),
-                    text = stringResource(R.string.detail_none_given_text, f(m.dose))
-                )
-                m.toGive > 0 -> {
-                    // food added after the injection: the dose was for less
-                    val after = meal.foods.filter { it.t > meal.insulin.last().t }
-                    AlertCard(
-                        DoseCalc.Alert.GivenLess(meal.given, m.dose),
-                        units,
-                        locale,
-                        text = if (after.isNotEmpty()) {
-                            stringResource(
-                                R.string.detail_added_after,
-                                after.sumOf {
-                                    (it.carbs ?: 0.0).toInt()
-                                }
-                            )
-                        } else {
-                            null
+            ).joinToString(", "),
+            color = c.text,
+            fontSize = 13.5.sp,
+            modifier = Modifier.weight(1f).alignByBaseline()
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(
+            (if (item.suggested) "≈ " else "") + (item.carbs?.let { kotlin.math.round(it).toInt().toString() } ?: "—") + " $g",
+            style = GlucoseHero.copy(fontSize = 14.sp, lineHeight = 18.sp, color = c.carbs),
+            modifier = Modifier.alignByBaseline()
+        )
+    }
+}
+
+/** What a rapid dose was for: a correction, the meal near it, or nothing logged. */
+@Composable
+private fun RapidFor(tr: Treatment, meal: Meal?) {
+    val c = DiaTheme.colors
+    val ctx = LocalContext.current
+    val forMeal = meal?.takeIf { m -> m.insulin.any { it.id == tr.id } }
+    Text(
+        when {
+            tr.insulinRole == "corr" -> stringResource(R.string.detail_for_corr)
+            forMeal != null -> stringResource(R.string.detail_for_meal, formatClock(ctx, forMeal.from), forMeal.carbs)
+            else -> stringResource(R.string.detail_for_nothing)
+        },
+        color = c.textMuted,
+        fontSize = 13.sp
+    )
+    if (tr.insulinRole == "corr") Text(stringResource(R.string.detail_corr_note), color = c.textFaint, fontSize = 12.sp)
+}
+
+/** The meal's entries, the dose it needed with the reading of the time, what was given, and how the two compare. */
+@Composable
+private fun MealDoseCheck(meal: Meal, treatments: List<Treatment>, dose: DoseSettings, units: Units, mbg: Series) {
+    val c = DiaTheme.colors
+    val ctx = LocalContext.current
+    val locale = LocalConfiguration.current.locales[0]
+    fun f(x: Double) = formatAmount(x, locale)
+    val u = stringResource(R.string.unit_insulin)
+    Box(Modifier.fillMaxWidth().height(1.dp).background(c.line))
+    if (meal.foods.size > 1) {
+        Text(stringResource(R.string.detail_meal, meal.foods.size, meal.carbs), color = c.textMuted, fontSize = 13.sp)
+    }
+    val first = meal.foods.first().t
+    val meter = Meters.latest(
+        treatments,
+        mbg,
+        to = first + 5 * 60_000L,
+        from = first - dose.freshMin * 60_000L
+    )
+    val m = DoseCalc.meal(dose, meal.carbs, meter?.mg, meter?.t, first + 5 * 60_000L, meal.given)
+    Row {
+        Text(
+            stringResource(
+                R.string.detail_worked_out,
+                meal.carbs,
+                String.format(locale, "%.2f", m.food).trimEnd('0').trimEnd(',', '.')
+            ) +
+                if (m.corr > 0) " + " + stringResource(R.string.planned_corr, f(m.corr)) else "",
+            color = c.textMuted,
+            fontSize = 13.sp,
+            modifier = Modifier.weight(1f).alignByBaseline()
+        )
+        Text(
+            f(m.dose) + " $u",
+            style = GlucoseHero.copy(fontSize = 14.sp, lineHeight = 18.sp, color = c.insulin),
+            modifier = Modifier.alignByBaseline()
+        )
+    }
+    meal.insulin.forEach { i ->
+        Row {
+            Text(
+                stringResource(R.string.detail_given_at, formatClock(ctx, i.t)),
+                color = c.textMuted,
+                fontSize = 13.sp,
+                modifier = Modifier.weight(1f).alignByBaseline()
+            )
+            Text(
+                f(i.insulin ?: 0.0) + " $u",
+                style = GlucoseHero.copy(fontSize = 14.sp, lineHeight = 18.sp, color = c.insulin),
+                modifier = Modifier.alignByBaseline()
+            )
+        }
+    }
+    when {
+        meal.given <= 0 -> AlertCard(
+            DoseCalc.Alert.RecentRapid(0.0, 0),
+            units,
+            locale,
+            title = stringResource(R.string.detail_none_given),
+            text = stringResource(R.string.detail_none_given_text, f(m.dose))
+        )
+        m.toGive > 0 -> {
+            // food added after the injection: the dose was for less
+            val after = meal.foods.filter { it.t > meal.insulin.last().t }
+            AlertCard(
+                DoseCalc.Alert.GivenLess(meal.given, m.dose),
+                units,
+                locale,
+                text = if (after.isNotEmpty()) {
+                    stringResource(
+                        R.string.detail_added_after,
+                        after.sumOf {
+                            (it.carbs ?: 0.0).toInt()
                         }
                     )
+                } else {
+                    null
                 }
-                m.toGive < 0 -> AlertCard(DoseCalc.Alert.GivenMore(meal.given, m.dose), units, locale)
-                else -> AlertCard(DoseCalc.Alert.GivenSame(meal.given), units, locale)
-            }
+            )
         }
-        tr.notes?.takeIf { it.isNotBlank() }?.let { Text(it, color = c.text, fontSize = 13.sp) }
+        m.toGive < 0 -> AlertCard(DoseCalc.Alert.GivenMore(meal.given, m.dose), units, locale)
+        else -> AlertCard(DoseCalc.Alert.GivenSame(meal.given), units, locale)
     }
 }
