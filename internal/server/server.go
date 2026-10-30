@@ -17,8 +17,10 @@ import (
 	"dialife/internal/config"
 	"dialife/internal/forecast"
 	"dialife/internal/httpx"
+	"dialife/internal/meter"
 	"dialife/internal/planned"
 	"dialife/internal/questions"
+	"dialife/internal/stats"
 	"dialife/internal/store"
 	"dialife/internal/wait"
 	"dialife/internal/web"
@@ -92,8 +94,6 @@ func New(d Deps) *App {
 	mux.Handle("GET /api/state", anyRole(http.HandlerFunc(api.State)))
 	mux.Handle("GET /api/history", anyRole(http.HandlerFunc(api.History)))
 	mux.Handle("GET /api/stream", anyRole(http.HandlerFunc(api.Stream)))
-	mux.Handle("GET /api/stats", anyRole(http.HandlerFunc(api.Stats)))
-	mux.Handle("GET /api/meter", anyRole(http.HandlerFunc(api.Meter)))
 	caregiver := d.Auth.Require(auth.RoleCaregiver)
 	// the web viewer: logging in by a QR code a parent scans, then read-only like a reader
 	mux.Handle("POST /api/web/login", http.HandlerFunc(api.WebLoginStart))
@@ -113,6 +113,8 @@ func New(d Deps) *App {
 	planned.HTTP{Service: api.Planned}.Routes(mux, caregiver)
 	wait.HTTP{Service: api.Wait}.Routes(mux, caregiver)
 	questions.HTTP{Engine: api.Questions}.Routes(mux, caregiver)
+	stats.HTTP{Store: d.Store, Now: d.Now, Loc: d.Loc, Thresholds: api.CurrentThresholds}.Routes(mux, anyRole)
+	meter.HTTP{Store: d.Store, Now: d.Now}.Routes(mux, anyRole)
 	alarms.HTTP{Engine: api.Alarms, Store: d.Store, Links: d.Links, Now: d.Now}.Routes(mux, anyRole, caregiver)
 	mux.Handle("GET /api/healthz", anyRole(healthz(d.Store)))
 	// the read-only web viewer

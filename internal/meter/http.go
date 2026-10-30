@@ -1,32 +1,43 @@
-package app
+package meter
 
 import (
+	"log/slog"
 	"net/http"
 	"slices"
 	"time"
 
 	"dialife/internal/glucose"
 	"dialife/internal/httpx"
-	"dialife/internal/meter"
 	"dialife/internal/store"
 )
 
 // all of it: the comparison gets better with every check, old sensors included
 const meterRows = 100000
 
-// Meter serves GET /api/meter: sensor vs glucometer over all checks ever made,
+// HTTP is the glucometer comparison's part of the API.
+type HTTP struct {
+	Store *store.Store
+	Now   func() time.Time
+}
+
+// Routes adds GET /api/meter for every role.
+func (h HTTP) Routes(mux *http.ServeMux, anyRole func(http.Handler) http.Handler) {
+	mux.Handle("GET /api/meter", anyRole(http.HandlerFunc(h.get)))
+}
+
+// get serves GET /api/meter: sensor vs glucometer over all checks ever made,
 // and, with enough of them, the model the app draws "≈ meter" with.
-func (h *Handlers) Meter(w http.ResponseWriter, r *http.Request) {
+func (h HTTP) get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	es, err := h.Store.QueryEntries(ctx, store.EntryQuery{Type: "mbg", Count: meterRows, Asc: true})
 	if err != nil {
 		fail(w, "meter entries", err)
 		return
 	}
-	var checks []meter.Point
+	var checks []Point
 	for _, e := range es {
 		if e.MBG != nil && *e.MBG > 0 {
-			checks = append(checks, meter.Point{T: e.Date, V: *e.MBG, Src: meter.Source(e.Device)})
+			checks = append(checks, Point{T: e.Date, V: *e.MBG, Src: Source(e.Device)})
 		}
 	}
 	ts, err := h.Store.ListTreatments(ctx, store.TreatmentQuery{Count: meterRows})
@@ -36,18 +47,18 @@ func (h *Handlers) Meter(w http.ResponseWriter, r *http.Request) {
 	}
 	var starts []int64
 	for _, t := range ts {
-		if v := bgCheck(t.Raw); v != nil {
-			checks = append(checks, meter.Point{T: t.CreatedAt, V: *v, Src: t.EnteredBy})
+		if v := CheckOf(t.Raw); v != nil {
+			checks = append(checks, Point{T: t.CreatedAt, V: *v, Src: t.EnteredBy})
 		}
 		if t.EventType == "Sensor Start" || t.EventType == "Sensor Change" {
 			starts = append(starts, t.CreatedAt)
 		}
 	}
 	slices.Sort(starts)
-	checks = meter.Dedup(checks)
+	checks = Dedup(checks)
 
 	// the sensor around each check only, not years of readings
-	var sgv []meter.Point
+	var sgv []Point
 	reach := (15 * time.Minute).Milliseconds()
 	for _, c := range checks {
 		from, to := c.T-reach, c.T+reach
@@ -61,9 +72,14 @@ func (h *Handlers) Meter(w http.ResponseWriter, r *http.Request) {
 		}
 		for _, e := range rs {
 			if e.SGV != nil && *e.SGV > glucose.MaxErrorCode {
-				sgv = append(sgv, meter.Point{T: e.Date, V: *e.SGV})
+				sgv = append(sgv, Point{T: e.Date, V: *e.SGV})
 			}
 		}
 	}
-	httpx.WriteJSON(w, http.StatusOK, meter.Fit(meter.Pairs(checks, sgv, starts), starts, h.Now()))
+	httpx.WriteJSON(w, http.StatusOK, Fit(Pairs(checks, sgv, starts), starts, h.Now()))
+}
+
+func fail(w http.ResponseWriter, what string, err error) {
+	slog.Error(what, "err", err)
+	httpx.Error(w, http.StatusInternalServerError)
 }

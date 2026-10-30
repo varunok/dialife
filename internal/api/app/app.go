@@ -12,7 +12,6 @@ import (
 	"log/slog"
 	"math"
 	"net/http"
-	"strings"
 	"time"
 
 	"dialife/internal/acklink"
@@ -136,8 +135,8 @@ func (h *Handlers) State(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, resp)
 }
 
-// thresholds are the live household values (settings table), else defaults.
-func (h *Handlers) thresholds(ctx context.Context) config.Thresholds {
+// CurrentThresholds are the live household values (settings table), else defaults.
+func (h *Handlers) CurrentThresholds(ctx context.Context) config.Thresholds {
 	if h.Alarms == nil {
 		return h.Thresholds
 	}
@@ -146,7 +145,7 @@ func (h *Handlers) thresholds(ctx context.Context) config.Thresholds {
 
 // snapshot is the device-independent state; callers add display_units.
 func (h *Handlers) snapshot(ctx context.Context, now time.Time) (stateResponse, error) {
-	th := h.thresholds(ctx)
+	th := h.CurrentThresholds(ctx)
 	resp := stateResponse{Now: now.UnixMilli(), Thresholds: th, UploaderName: h.Uploader, Intents: h.intents.list(now)}
 
 	st, ok, err := h.computeState(ctx, now)
@@ -238,7 +237,7 @@ func (h *Handlers) AlarmInput(ctx context.Context, now time.Time) (alarms.Input,
 		return in, err
 	}
 	if ok {
-		_, in.Forecast = h.describe(st, now, h.thresholds(ctx))
+		_, in.Forecast = h.describe(st, now, h.CurrentThresholds(ctx))
 	}
 	return in, nil
 }
@@ -386,23 +385,6 @@ func exercise(raw []byte) (*int, string) {
 	return min, d.Intensity
 }
 
-// bgCheck is a glucometer reading entered as a treatment ("BG Check"), in mg/dL.
-func bgCheck(raw []byte) *int {
-	var d struct {
-		Glucose *float64 `json:"glucose"`
-		Units   string   `json:"units"`
-	}
-	if json.Unmarshal(raw, &d) != nil || d.Glucose == nil || *d.Glucose <= 0 {
-		return nil
-	}
-	v := *d.Glucose
-	if strings.HasPrefix(strings.ToLower(d.Units), "mmol") {
-		v *= glucose.MgdlPerMmol
-	}
-	mg := int(math.Round(v))
-	return &mg
-}
-
 // sameMeterReading: one glucometer check often arrives twice (as a BG check
 // and again as a calibration, or echoed back by xDrip+ after download).
 const sameMeterReading = 15 * time.Minute
@@ -458,7 +440,7 @@ func (h *Handlers) History(w http.ResponseWriter, r *http.Request) {
 		if t.Insulin != nil {
 			ht.MealID, ht.InsulinRole = insulinFor(t.Raw)
 		}
-		if ht.Glucose = bgCheck(t.Raw); ht.Glucose != nil {
+		if ht.Glucose = meter.CheckOf(t.Raw); ht.Glucose != nil {
 			checks = append(checks, series1{t.CreatedAt, *ht.Glucose})
 		}
 		resp.Treatments = append(resp.Treatments, ht)
