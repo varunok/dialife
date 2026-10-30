@@ -1,7 +1,5 @@
-package com.lumenarcanus.dialife.ui
+package com.lumenarcanus.dialife.feature.entry
 
-import com.lumenarcanus.dialife.feature.entry.daysAgo
-import com.lumenarcanus.dialife.feature.entry.pickedTime
 import java.time.LocalDateTime
 import java.time.ZoneId
 import org.junit.Assert.assertEquals

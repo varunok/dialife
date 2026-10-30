@@ -1,7 +1,6 @@
-package com.lumenarcanus.dialife.ui
+package com.lumenarcanus.dialife.feature.entry
 
 import com.lumenarcanus.dialife.core.ui.Units
-import com.lumenarcanus.dialife.feature.entry.parseMeter
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

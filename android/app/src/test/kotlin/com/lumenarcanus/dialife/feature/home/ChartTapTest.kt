@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.ui
+package com.lumenarcanus.dialife.feature.home
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.Modifier
@@ -12,8 +12,6 @@ import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.theme.DiaLifeTheme
 import com.lumenarcanus.dialife.data.FoodItem
 import com.lumenarcanus.dialife.data.Treatment
-import com.lumenarcanus.dialife.feature.home.ChartCard
-import com.lumenarcanus.dialife.feature.home.sampleHomeUi
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
