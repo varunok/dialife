@@ -215,7 +215,7 @@ fun ChartCard(
         }
         // full screen: the entry says what it is over the chart, like a reading; no editing there
         selected?.takeIf { !expanded }?.let { tr ->
-            com.lumenarcanus.dialife.ui.meal.EntryDetail(tr, history?.treatments.orEmpty(), dose, units, mealRules)
+            com.lumenarcanus.dialife.ui.meal.EntryDetail(tr, history?.treatments.orEmpty(), dose, units, mealRules, mbg = history?.mbg ?: com.lumenarcanus.dialife.data.Series())
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 androidx.compose.material3.OutlinedButton(onClick = { onEdit(tr) }, modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.tr_edit), color = c.text)

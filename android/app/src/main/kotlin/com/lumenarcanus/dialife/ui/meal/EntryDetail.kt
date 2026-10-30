@@ -42,7 +42,7 @@ import com.lumenarcanus.dialife.ui.treatment.formatAmount
  * dose compares with what was given; an injection and what it was for.
  */
 @Composable
-fun EntryDetail(tr: Treatment, treatments: List<Treatment>, dose: DoseSettings, units: Units, mealRules: com.lumenarcanus.dialife.data.MealRules = com.lumenarcanus.dialife.data.MealRules()) {
+fun EntryDetail(tr: Treatment, treatments: List<Treatment>, dose: DoseSettings, units: Units, mealRules: com.lumenarcanus.dialife.data.MealRules = com.lumenarcanus.dialife.data.MealRules(), mbg: com.lumenarcanus.dialife.data.Series = com.lumenarcanus.dialife.data.Series()) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
@@ -101,8 +101,8 @@ fun EntryDetail(tr: Treatment, treatments: List<Treatment>, dose: DoseSettings, 
             Box(Modifier.fillMaxWidth().height(1.dp).background(c.line))
             if (meal.foods.size > 1) Text(stringResource(R.string.detail_meal, meal.foods.size, meal.carbs), color = c.textMuted, fontSize = 13.sp)
             val first = meal.foods.first().t
-            val meter = treatments.filter { it.glucose != null && it.t <= first + 5 * 60_000L && it.t >= first - dose.freshMin * 60_000L }.maxByOrNull { it.t }
-            val m = DoseCalc.meal(dose, meal.carbs, meter?.glucose, meter?.t, first + 5 * 60_000L, meal.given)
+            val meter = com.lumenarcanus.dialife.data.Meters.latest(treatments, mbg, to = first + 5 * 60_000L, from = first - dose.freshMin * 60_000L)
+            val m = DoseCalc.meal(dose, meal.carbs, meter?.mg, meter?.t, first + 5 * 60_000L, meal.given)
             Row {
                 Text(stringResource(R.string.detail_worked_out, meal.carbs, String.format(locale, "%.2f", m.food).trimEnd('0').trimEnd(',', '.')) + if (m.corr > 0) " + " + stringResource(R.string.planned_corr, f(m.corr)) else "",
                     color = c.textMuted, fontSize = 13.sp, modifier = Modifier.weight(1f).alignByBaseline())

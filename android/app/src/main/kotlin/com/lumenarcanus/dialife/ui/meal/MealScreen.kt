@@ -141,6 +141,7 @@ fun MealScreen(
     forLow: Boolean = false, // carbs given for a low: no insulin is worked out, no planned dose, no meal draft
     mealRules: com.lumenarcanus.dialife.data.MealRules = com.lumenarcanus.dialife.data.MealRules(), // the server's: what makes one meal
     wait: com.lumenarcanus.dialife.data.Wait? = null, // after a rapid dose: when to start eating
+    mbg: com.lumenarcanus.dialife.data.Series = com.lumenarcanus.dialife.data.Series(), // glucometer checks uploaded by xDrip+
 ) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
@@ -199,8 +200,8 @@ fun MealScreen(
     val given = if (joined) meal!!.given else 0.0
 
     val typed = parseMeter(meterText, units)
-    val lastMeter = treatments.filter { it.glucose != null && it.t <= now }.maxByOrNull { it.t }
-    val meter = typed ?: lastMeter?.glucose
+    val lastMeter = com.lumenarcanus.dialife.data.Meters.latest(treatments, mbg, to = now)
+    val meter = typed ?: lastMeter?.mg
     val meterAt = if (typed != null) now else lastMeter?.t
     val recent = treatments.filter {
         Meals.isRapid(it) && it.t in (now - 3 * 3_600_000L)..now && (meal == null || meal.insulin.none { m -> m.id == it.id })
