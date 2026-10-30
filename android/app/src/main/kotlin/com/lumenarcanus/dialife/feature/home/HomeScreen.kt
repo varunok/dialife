@@ -130,42 +130,20 @@ fun HomeScreen(
         )
     }
     confirmDelete?.let { tr ->
-        AlertDialog(
-            onDismissRequest = { confirmDelete = null },
-            title = { Text(stringResource(R.string.tr_delete_title)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    onDeleteTreatment(tr.id)
-                    confirmDelete = null
-                }) { Text(stringResource(R.string.tr_delete), color = c.low) }
-            },
-            dismissButton = { TextButton(onClick = { confirmDelete = null }) { Text(stringResource(R.string.tr_cancel)) } }
-        )
+        DeleteDialog(onDelete = {
+            onDeleteTreatment(tr.id)
+            confirmDelete = null
+        }, onDismiss = { confirmDelete = null })
     }
+    @Composable
+    fun Chart(modifier: Modifier, expanded: Boolean, onExpand: () -> Unit, onOpenTable: (() -> Unit)?) = HomeChart(
+        ui, state?.units ?: fallbackUnits, modifier, expanded, onExpand, onOpenTable, onMeterLine, onRange, onDismissQuestion,
+        onEdit = { sheet = TreatmentKind.Insulin to it },
+        onDelete = { confirmDelete = it }
+    )
     if (fullChart) {
         FullScreenChart(onClose = { fullChart = false }) {
-            ChartCard(
-                history = ui.history,
-                forecast = ui.state?.ar2,
-                thresholds = thresholds,
-                units = state?.units ?: fallbackUnits,
-                rangeHours = ui.rangeHours,
-                now = ui.now,
-                onMeterLine = onMeterLine,
-                onRange = onRange,
-                modifier = Modifier.fillMaxSize(),
-                onEdit = { sheet = TreatmentKind.Insulin to it },
-                onDelete = { confirmDelete = it },
-                highlightFrom = ui.state?.alarms?.filter { it.state != "cleared" }?.minOfOrNull { it.startedAt },
-                expanded = true,
-                onExpand = { fullChart = false },
-                meter = ui.meter,
-                suspects = ui.state?.questions.orEmpty(),
-                onDismissSuspect = onDismissQuestion,
-                dose = ui.state?.dose ?: DoseSettings(),
-                planned = ui.state?.planned.orEmpty(),
-                mealRules = ui.state?.mealRules ?: MealRules()
-            )
+            Chart(Modifier.fillMaxSize(), expanded = true, onExpand = { fullChart = false }, onOpenTable = null)
         }
         return
     }
@@ -209,56 +187,9 @@ fun HomeScreen(
             sheet = (if (q.kind == "rise") TreatmentKind.Food else TreatmentKind.Insulin) to null
         }
         if (setup.needed) SetupCard(setup, onAllowNotifications, onAllowBackground, onAllowFullScreen)
-        ChartCard(
-            history = ui.history,
-            forecast = ui.state?.ar2,
-            thresholds = thresholds,
-            units = state?.units ?: fallbackUnits,
-            rangeHours = ui.rangeHours,
-            now = ui.now,
-            onMeterLine = onMeterLine,
-            onRange = onRange,
-            modifier = Modifier.fillMaxWidth(),
-            onEdit = { sheet = TreatmentKind.Insulin to it },
-            onDelete = { confirmDelete = it },
-            highlightFrom = ui.state?.alarms?.filter { it.state != "cleared" }?.minOfOrNull { it.startedAt },
-            onExpand = { fullChart = true },
-            meter = ui.meter,
-            suspects = ui.state?.questions.orEmpty(),
-            onDismissSuspect = onDismissQuestion,
-            dose = ui.state?.dose ?: DoseSettings(),
-            planned = ui.state?.planned.orEmpty(),
-            mealRules = ui.state?.mealRules ?: MealRules(),
-            onOpenTable = onOpenData
-        )
+        Chart(Modifier.fillMaxWidth(), expanded = false, onExpand = { fullChart = true }, onOpenTable = onOpenData)
         state?.let { Tiles(it, onOpenStats, onOpenLog) }
-        // a button for every kind of entry, each with its chart letter; the form opens on that kind
-        androidx.compose.foundation.layout.BoxWithConstraints {
-            // the three side by side when every label fits next to its sign at full
-            // size; on a narrow screen or a large font, the sign goes above the label
-            val gap = 10.dp
-            val measurer = androidx.compose.ui.text.rememberTextMeasurer()
-            val density = androidx.compose.ui.platform.LocalDensity.current
-            val kinds = listOf(TreatmentKind.Insulin, TreatmentKind.Food, TreatmentKind.Meter)
-            val labels = kinds.map { stringResource(kindLook(it).name) }
-            val style = androidx.compose.material3.LocalTextStyle.current.merge(
-                androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-            )
-            val stacked = kinds.zip(labels).any { (k, l) ->
-                // insulin carries two signs, overlapping
-                val inner = ACTION_INNER + if (k == TreatmentKind.Insulin) 15.dp else 0.dp
-                measurer.measure(l, style).size.width > with(density) { ((maxWidth - gap * 2) / 3 - inner).roundToPx() }
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
-                ActionButton(TreatmentKind.Insulin, Modifier.weight(1f), stacked = stacked) { sheet = TreatmentKind.Insulin to null }
-                ActionButton(TreatmentKind.Food, Modifier.weight(1f), stacked = stacked) { sheet = TreatmentKind.Food to null }
-                ActionButton(TreatmentKind.Meter, Modifier.weight(1f), stacked = stacked) { sheet = TreatmentKind.Meter to null }
-            }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ActionButton(TreatmentKind.Activity, Modifier.weight(1f), small = true) { sheet = TreatmentKind.Activity to null }
-            ActionButton(TreatmentKind.Note, Modifier.weight(1f), small = true) { sheet = TreatmentKind.Note to null }
-        }
+        EntryButtons { kind -> sheet = kind to null }
     }
 }
 
@@ -270,4 +201,87 @@ private fun PreviewDarkUk() = DiaLifeTheme(dark = true) { HomeScreen(sampleHomeU
 @Composable
 private fun PreviewLightEn() = DiaLifeTheme(dark = false) {
     HomeScreen(sampleHomeUi().let { it.copy(state = it.state?.copy(displayUnits = "mmol")) })
+}
+
+/** The chart card on home or full screen: the same data, the same marks, the same taps. */
+@Composable
+private fun HomeChart(
+    ui: HomeUi,
+    units: Units,
+    modifier: Modifier,
+    expanded: Boolean,
+    onExpand: () -> Unit,
+    onOpenTable: (() -> Unit)?,
+    onMeterLine: (Boolean) -> Unit,
+    onRange: (Int) -> Unit,
+    onDismissSuspect: (Long) -> Unit,
+    onEdit: (Treatment) -> Unit,
+    onDelete: (Treatment) -> Unit
+) = ChartCard(
+    history = ui.history,
+    forecast = ui.state?.ar2,
+    thresholds = ui.state?.thresholds ?: Thresholds(),
+    units = units,
+    rangeHours = ui.rangeHours,
+    now = ui.now,
+    onMeterLine = onMeterLine,
+    onRange = onRange,
+    modifier = modifier,
+    onEdit = onEdit,
+    onDelete = onDelete,
+    highlightFrom = ui.state?.alarms?.filter { it.state != "cleared" }?.minOfOrNull { it.startedAt },
+    expanded = expanded,
+    onExpand = onExpand,
+    meter = ui.meter,
+    suspects = ui.state?.questions.orEmpty(),
+    onDismissSuspect = onDismissSuspect,
+    dose = ui.state?.dose ?: DoseSettings(),
+    planned = ui.state?.planned.orEmpty(),
+    mealRules = ui.state?.mealRules ?: MealRules(),
+    onOpenTable = onOpenTable
+)
+
+/** "Delete the entry?" */
+@Composable
+private fun DeleteDialog(onDelete: () -> Unit, onDismiss: () -> Unit) {
+    val c = DiaTheme.colors
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.tr_delete_title)) },
+        confirmButton = { TextButton(onClick = onDelete) { Text(stringResource(R.string.tr_delete), color = c.low) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.tr_cancel)) } }
+    )
+}
+
+/**
+ * A button for every kind of entry, each with its chart letter; the form opens on that kind.
+ * The three side by side when every label fits next to its sign at full size; on a narrow
+ * screen or a large font, the sign goes above the label.
+ */
+@Composable
+private fun EntryButtons(onOpen: (TreatmentKind) -> Unit) {
+    androidx.compose.foundation.layout.BoxWithConstraints {
+        val gap = 10.dp
+        val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        val kinds = listOf(TreatmentKind.Insulin, TreatmentKind.Food, TreatmentKind.Meter)
+        val labels = kinds.map { stringResource(kindLook(it).name) }
+        val style = androidx.compose.material3.LocalTextStyle.current.merge(
+            androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+        )
+        val stacked = kinds.zip(labels).any { (k, l) ->
+            // insulin carries two signs, overlapping
+            val inner = ACTION_INNER + if (k == TreatmentKind.Insulin) 15.dp else 0.dp
+            measurer.measure(l, style).size.width > with(density) { ((maxWidth - gap * 2) / 3 - inner).roundToPx() }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+            ActionButton(TreatmentKind.Insulin, Modifier.weight(1f), stacked = stacked) { onOpen(TreatmentKind.Insulin) }
+            ActionButton(TreatmentKind.Food, Modifier.weight(1f), stacked = stacked) { onOpen(TreatmentKind.Food) }
+            ActionButton(TreatmentKind.Meter, Modifier.weight(1f), stacked = stacked) { onOpen(TreatmentKind.Meter) }
+        }
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        ActionButton(TreatmentKind.Activity, Modifier.weight(1f), small = true) { onOpen(TreatmentKind.Activity) }
+        ActionButton(TreatmentKind.Note, Modifier.weight(1f), small = true) { onOpen(TreatmentKind.Note) }
+    }
 }
