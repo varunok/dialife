@@ -260,94 +260,25 @@ var clearText = map[alarms.Kind]string{
 // when this caregiver should not get it (check-ins go to the handler only,
 // "is on it" and help requests to everyone but the handler).
 func (n *Ntfy) Build(typ string, e alarms.Event, t Target) (Message, bool) {
+	note, ok := map[string]func(Message, alarms.Event, Target, string, bool) (Message, bool){
+		alarms.EventAlarm:   n.alarmNote,
+		alarms.EventHandled: n.handledNote,
+		alarms.EventCheckin: n.checkinNote,
+		alarms.EventHelp:    n.helpNote,
+		alarms.EventComing:  n.comingNote,
+		alarms.EventClear:   n.clearNote,
+	}[typ]
+	if !ok {
+		return Message{}, false
+	}
 	a := e.Alarm
 	what := kindText[a.Kind]
 	if what == "" {
 		what = string(a.Kind)
 	}
 	isHandler := a.HandledByID != 0 && a.HandledByID == t.DeviceID
-	m := Message{Topic: t.Topic}
-
-	switch typ {
-	case alarms.EventAlarm:
-		m.Title = what + n.value(a)
-		m.Message = n.alarmBody(e)
-		m.Priority, m.Tags = prioHigh, []string{"warning"}
-		if a.Level == alarms.Urgent {
-			m.Priority, m.Tags = prioMax, []string{"rotating_light"}
-		}
-		m.Actions = []Action{n.button("Я займаюсь", a.ID, t, acklink.ActHandle, 0)}
-		if !(a.Kind == alarms.KindLow && a.Level == alarms.Urgent) {
-			m.Actions = append(m.Actions, n.button("Тиша 2 год", a.ID, t, acklink.ActHandle, quietMin))
-		}
-
-	case alarms.EventHandled:
-		if isHandler {
-			return Message{}, false
-		}
-		m.Title = e.By + " займається"
-		m.Message = what + n.value(a) + "."
-		if a.QuietUntil != nil {
-			m.Message += " Тиша до " + n.clock(*a.QuietUntil) + "."
-		}
-		m.Priority, m.Tags = prioQuiet, []string{"white_check_mark"}
-
-	case alarms.EventCheckin:
-		if !isHandler {
-			return Message{}, false
-		}
-		m.Title = "Все під контролем?"
-		m.Message = what + ": " + n.progress(a) + "."
-		m.Priority, m.Tags = prioNormal, []string{"hourglass"}
-		m.Actions = []Action{
-			n.button("Так, ще 15 хв", a.ID, t, acklink.ActOK, 0),
-			n.button("Потрібна допомога", a.ID, t, acklink.ActHelp, 0),
-		}
-
-	case alarms.EventHelp:
-		if isHandler {
-			return Message{}, false
-		}
-		m.Title = e.By + " просить допомоги"
-		m.Message = what + n.value(a) + "."
-		m.Priority, m.Tags = prioMax, []string{"sos"}
-		m.Actions = []Action{n.button("Іду", a.ID, t, acklink.ActComing, 0)}
-
-	case alarms.EventComing:
-		if a.ComingByID == t.DeviceID {
-			return Message{}, false
-		}
-		m.Title = e.By + " йде"
-		m.Message = what + n.value(a) + "."
-		m.Priority, m.Tags = prioQuiet, []string{"running"}
-		if isHandler { // the one who asked: a gentle buzz, help is on the way
-			m.Priority = prioNormal
-		}
-
-	case alarms.EventClear:
-		m.Title = clearText[a.Kind]
-		if m.Title == "" {
-			m.Title = "Відбій: " + what
-		}
-		if e.Summary != nil && e.Summary.Manual { // ended by hand: the sensor did not say it is over
-			m.Title = what + ": завершено вручну"
-		}
-		var parts []string
-		if a.SGV != nil {
-			parts = append(parts, fmt.Sprintf("Зараз %d mg/dL", *a.SGV))
-		}
-		if s := e.Summary; s != nil {
-			parts = append(parts, fmt.Sprintf("тривало %d хв", s.DurationMin))
-			switch {
-			case s.Manual:
-				parts = append(parts, "завершив(ла) вручну "+s.ResolvedBy)
-			case s.HandledBy != "":
-				parts = append(parts, "вів(ла) "+s.HandledBy)
-			}
-		}
-		m.Message = strings.Join(parts, " · ") + "."
-		m.Priority, m.Tags = prioQuiet, []string{"white_check_mark"}
-	default:
+	m, send := note(Message{Topic: t.Topic}, e, t, what, isHandler)
+	if !send {
 		return Message{}, false
 	}
 	switch typ {
@@ -358,6 +289,109 @@ func (n *Ntfy) Build(typ string, e alarms.Event, t Target) (Message, bool) {
 	default:
 		m.SequenceID = sidInfo(a.ID)
 	}
+	return m, true
+}
+
+// alarmNote: an alarm rings: what and how much, why, "I'm on it" and (unless it is an urgent low) "quiet".
+func (n *Ntfy) alarmNote(m Message, e alarms.Event, t Target, what string, isHandler bool) (Message, bool) {
+	a := e.Alarm
+	m.Title = what + n.value(a)
+	m.Message = n.alarmBody(e)
+	m.Priority, m.Tags = prioHigh, []string{"warning"}
+	if a.Level == alarms.Urgent {
+		m.Priority, m.Tags = prioMax, []string{"rotating_light"}
+	}
+	m.Actions = []Action{n.button("Я займаюсь", a.ID, t, acklink.ActHandle, 0)}
+	if !(a.Kind == alarms.KindLow && a.Level == alarms.Urgent) {
+		m.Actions = append(m.Actions, n.button("Тиша 2 год", a.ID, t, acklink.ActHandle, quietMin))
+	}
+	return m, true
+}
+
+// handledNote: someone took it: to everyone else, quietly.
+func (n *Ntfy) handledNote(m Message, e alarms.Event, t Target, what string, isHandler bool) (Message, bool) {
+	a := e.Alarm
+	if isHandler {
+		return m, false
+	}
+	m.Title = e.By + " займається"
+	m.Message = what + n.value(a) + "."
+	if a.QuietUntil != nil {
+		m.Message += " Тиша до " + n.clock(*a.QuietUntil) + "."
+	}
+	m.Priority, m.Tags = prioQuiet, []string{"white_check_mark"}
+	return m, true
+}
+
+// checkinNote: "all under control?": to the one handling it only.
+func (n *Ntfy) checkinNote(m Message, e alarms.Event, t Target, what string, isHandler bool) (Message, bool) {
+	a := e.Alarm
+	if !isHandler {
+		return m, false
+	}
+	m.Title = "Все під контролем?"
+	m.Message = what + ": " + n.progress(a) + "."
+	m.Priority, m.Tags = prioNormal, []string{"hourglass"}
+	m.Actions = []Action{
+		n.button("Так, ще 15 хв", a.ID, t, acklink.ActOK, 0),
+		n.button("Потрібна допомога", a.ID, t, acklink.ActHelp, 0),
+	}
+	return m, true
+}
+
+// helpNote: the one handling it asks for help: to everyone else, as loud as it gets.
+func (n *Ntfy) helpNote(m Message, e alarms.Event, t Target, what string, isHandler bool) (Message, bool) {
+	a := e.Alarm
+	if isHandler {
+		return m, false
+	}
+	m.Title = e.By + " просить допомоги"
+	m.Message = what + n.value(a) + "."
+	m.Priority, m.Tags = prioMax, []string{"sos"}
+	m.Actions = []Action{n.button("Іду", a.ID, t, acklink.ActComing, 0)}
+	return m, true
+}
+
+// comingNote: someone is coming: to everyone but them; the one who asked gets a gentle buzz.
+func (n *Ntfy) comingNote(m Message, e alarms.Event, t Target, what string, isHandler bool) (Message, bool) {
+	a := e.Alarm
+	if a.ComingByID == t.DeviceID {
+		return m, false
+	}
+	m.Title = e.By + " йде"
+	m.Message = what + n.value(a) + "."
+	m.Priority, m.Tags = prioQuiet, []string{"running"}
+	if isHandler { // the one who asked: a gentle buzz, help is on the way
+		m.Priority = prioNormal
+	}
+	return m, true
+}
+
+// clearNote: it is over (or ended by hand), how long it lasted and who handled it.
+func (n *Ntfy) clearNote(m Message, e alarms.Event, t Target, what string, isHandler bool) (Message, bool) {
+	a := e.Alarm
+	m.Title = clearText[a.Kind]
+	if m.Title == "" {
+		m.Title = "Відбій: " + what
+	}
+	if e.Summary != nil && e.Summary.Manual { // ended by hand: the sensor did not say it is over
+		m.Title = what + ": завершено вручну"
+	}
+	var parts []string
+	if a.SGV != nil {
+		parts = append(parts, fmt.Sprintf("Зараз %d mg/dL", *a.SGV))
+	}
+	if s := e.Summary; s != nil {
+		parts = append(parts, fmt.Sprintf("тривало %d хв", s.DurationMin))
+		switch {
+		case s.Manual:
+			parts = append(parts, "завершив(ла) вручну "+s.ResolvedBy)
+		case s.HandledBy != "":
+			parts = append(parts, "вів(ла) "+s.HandledBy)
+		}
+	}
+	m.Message = strings.Join(parts, " · ") + "."
+	m.Priority, m.Tags = prioQuiet, []string{"white_check_mark"}
 	return m, true
 }
 
