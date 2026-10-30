@@ -62,6 +62,7 @@ import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.core.ui.theme.GlucoseHero
 import com.lumenarcanus.dialife.data.DoseCalc
 import com.lumenarcanus.dialife.data.DoseSettings
+import com.lumenarcanus.dialife.data.InsulinIntent
 import com.lumenarcanus.dialife.data.InsulinType
 import com.lumenarcanus.dialife.data.MealRules
 import com.lumenarcanus.dialife.data.Prefs
@@ -170,139 +171,15 @@ fun TreatmentSheet(
             }
 
             when (kind) {
-                TreatmentKind.Insulin -> {
-                    if (others.isNotEmpty()) IntentWarning(others, System.currentTimeMillis())
-                    if (editing == null) {
-                        nearDose(recent, form.insType, form.time, null)?.takeIf {
-                            it.level == DoseLevel.Recent
-                        }?.let { RecentDoseNote(it, live) }
-                    }
-                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                        InsulinType.entries.forEachIndexed { i, t ->
-                            SegmentedButton(
-                                selected = form.insType == t,
-                                onClick = { form.insType = t },
-                                shape = SegmentedButtonDefaults.itemShape(i, InsulinType.entries.size),
-                                // its chart letter instead of the tick: І or Д, so a wrong one is seen
-                                icon = {
-                                    kindLook(TreatmentKind.Insulin, t).let { l -> KindSign(l.glyph, l.ink, 20.dp, background = l.fill) }
-                                }
-                            ) {
-                                Text(
-                                    stringResource(if (t == InsulinType.Basal) R.string.ins_basal else R.string.ins_rapid) +
-                                        (Prefs.nameOf(t)?.let { " · $it" } ?: ""),
-                                    maxLines = 1,
-                                    fontSize = 13.sp
-                                )
-                            }
-                        }
-                    }
-                    val basal = form.insType == InsulinType.Basal
-                    // rapid: for a meal or a correction; the meal near it chooses, a tap changes it
-                    val nearMeal = remember(recent, form.time) { form.nearMeal(mealRules) }
-                    if (!basal) {
-                        val role = form.role(mealRules)
-                        Text(stringResource(R.string.ins_for), color = c.textMuted, fontSize = 13.sp)
-                        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                            listOf("meal" to R.string.ins_for_meal, "corr" to R.string.ins_for_corr).forEachIndexed { i, (r, label) ->
-                                SegmentedButton(selected = role == r, onClick = {
-                                    form.insRole = r
-                                }, shape = SegmentedButtonDefaults.itemShape(i, 2)) { Text(stringResource(label)) }
-                            }
-                        }
-                        if (form.insRole == null) {
-                            Text(
-                                if (nearMeal != null) {
-                                    stringResource(R.string.ins_for_auto_meal, formatClock(ctx, nearMeal.from))
-                                } else {
-                                    stringResource(R.string.ins_for_auto_corr)
-                                },
-                                color = c.textFaint,
-                                fontSize = 12.sp
-                            )
-                        }
-                        if (role == "meal" && nearMeal == null) {
-                            Text(stringResource(R.string.ins_for_meal_none), color = c.high, fontSize = 12.5.sp)
-                        }
-                    }
-                    Amount(
-                        value = form.insulin, step = if (basal) 1.0 else 0.5, max = 80.0, unit = stringResource(R.string.unit_insulin),
-                        quick = if (basal) BasalQuick else InsulinQuick,
-                        accent = if (basal) {
-                            basalColor(
-                                c.isDark
-                            )
-                        } else {
-                            c.insulin
-                        },
-                        container = if (basal) basalContainer(c.isDark) else c.insulinContainer, locale = locale,
-                        label = stringResource(R.string.tr_insulin)
-                    ) {
-                        form.changeInsulin(it)
-                    }
-                    val lv = form.level(dose)
-                    LimitAlert(lv, form.insulin, form.limit(dose), units, locale)
-                    if (lv == DoseCalc.Level.High ||
-                        lv == DoseCalc.Level.Absurd
-                    ) {
-                        Confirm(
-                            form.okBig,
-                            stringResource(R.string.planned_ok_given, formatAmount(form.insulin, locale))
-                        ) {
-                            form.okBig = it
-                        }
-                    }
-                }
+                TreatmentKind.Insulin -> InsulinFields(form, recent, mealRules, dose, units, live, others)
                 TreatmentKind.Food -> FoodList(form.foodRows, foods)
                 TreatmentKind.Meter -> MeterField(form.meter, units) { form.meter = it }
-                TreatmentKind.Activity -> {
-                    Text(stringResource(R.string.act_intensity), color = c.textMuted, fontSize = 13.sp)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Intensities.forEach { (key, label) ->
-                            FilterChip(selected = form.intensity == key, onClick = {
-                                form.intensity = key
-                            }, label = { Text(stringResource(label)) })
-                        }
-                    }
-                    Amount(
-                        value = form.minutes, step = 5.0, max = 600.0, unit = stringResource(R.string.unit_min),
-                        quick = MinutesQuick, accent = c.inRange, container = c.inRangeContainer, locale = locale,
-                        label = stringResource(R.string.act_duration)
-                    ) { form.minutes = it }
-                }
+                TreatmentKind.Activity -> ActivityFields(form)
                 TreatmentKind.Note -> {}
             }
 
             // when: now, a little earlier, or any time picked on the clock
-            Text(stringResource(R.string.tr_when), color = c.textMuted, fontSize = 13.sp)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                val shifts = if (editing == null) TimeShifts.map { form.openedAt - it * 60_000L } else emptyList()
-                if (editing == null) {
-                    TimeShifts.forEachIndexed { i, m ->
-                        FilterChip(
-                            selected = form.time == shifts[i],
-                            onClick = { form.time = shifts[i] },
-                            label = {
-                                Text(if (m == 0) stringResource(R.string.tr_now) else stringResource(R.string.tr_minutes_ago, m))
-                            }
-                        )
-                    }
-                }
-                val custom = form.time !in shifts
-                FilterChip(
-                    selected = custom,
-                    onClick = { form.picking = true },
-                    label = {
-                        Text(if (custom) atLabel(form.time) else stringResource(R.string.tr_other_time))
-                    }
-                )
-            }
-            if (form.picking) {
-                TimeDialog(initial = form.time, onPick = {
-                    form.time = it
-                    form.picking = false
-                }, onDismiss = { form.picking = false })
-            }
+            EntryWhen(form, isNew = editing == null)
 
             OutlinedTextField(
                 value = form.note,
@@ -340,6 +217,168 @@ fun TreatmentSheet(
                 shape = RoundedCornerShape(18.dp)
             ) { Text(stringResource(R.string.tr_save), fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
         }
+    }
+}
+
+/** Insulin: who else is giving it, a dose just given, the type, what a rapid one is for, the amount and its limit. */
+@Composable
+private fun InsulinFields(
+    form: TreatmentFormState,
+    recent: List<Treatment>,
+    mealRules: MealRules,
+    dose: DoseSettings,
+    units: Units,
+    live: StateResponse?,
+    others: List<InsulinIntent>
+) {
+    val c = DiaTheme.colors
+    val locale = LocalConfiguration.current.locales[0]
+    if (others.isNotEmpty()) IntentWarning(others, System.currentTimeMillis())
+    if (form.editing == null) {
+        nearDose(recent, form.insType, form.time, null)?.takeIf { it.level == DoseLevel.Recent }?.let { RecentDoseNote(it, live) }
+    }
+    InsulinTypeChoice(form)
+    val basal = form.insType == InsulinType.Basal
+    if (!basal) InsulinRoleChoice(form, recent, mealRules)
+    Amount(
+        value = form.insulin, step = if (basal) 1.0 else 0.5, max = 80.0, unit = stringResource(R.string.unit_insulin),
+        quick = if (basal) BasalQuick else InsulinQuick,
+        accent = if (basal) {
+            basalColor(
+                c.isDark
+            )
+        } else {
+            c.insulin
+        },
+        container = if (basal) basalContainer(c.isDark) else c.insulinContainer, locale = locale,
+        label = stringResource(R.string.tr_insulin)
+    ) {
+        form.changeInsulin(it)
+    }
+    val lv = form.level(dose)
+    LimitAlert(lv, form.insulin, form.limit(dose), units, locale)
+    if (lv == DoseCalc.Level.High ||
+        lv == DoseCalc.Level.Absurd
+    ) {
+        Confirm(
+            form.okBig,
+            stringResource(R.string.planned_ok_given, formatAmount(form.insulin, locale))
+        ) {
+            form.okBig = it
+        }
+    }
+}
+
+/** Rapid or long-acting, each with its chart letter and the family's insulin. */
+@Composable
+private fun InsulinTypeChoice(form: TreatmentFormState) {
+    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+        InsulinType.entries.forEachIndexed { i, t ->
+            SegmentedButton(
+                selected = form.insType == t,
+                onClick = { form.insType = t },
+                shape = SegmentedButtonDefaults.itemShape(i, InsulinType.entries.size),
+                // its chart letter instead of the tick: І or Д, so a wrong one is seen
+                icon = {
+                    kindLook(TreatmentKind.Insulin, t).let { l -> KindSign(l.glyph, l.ink, 20.dp, background = l.fill) }
+                }
+            ) {
+                Text(
+                    stringResource(if (t == InsulinType.Basal) R.string.ins_basal else R.string.ins_rapid) +
+                        (Prefs.nameOf(t)?.let { " · $it" } ?: ""),
+                    maxLines = 1,
+                    fontSize = 13.sp
+                )
+            }
+        }
+    }
+}
+
+/** Rapid: for a meal or a correction; the meal near it chooses, a tap changes it. */
+@Composable
+private fun InsulinRoleChoice(form: TreatmentFormState, recent: List<Treatment>, mealRules: MealRules) {
+    val c = DiaTheme.colors
+    val ctx = LocalContext.current
+    val nearMeal = remember(recent, form.time) { form.nearMeal(mealRules) }
+    val role = form.role(mealRules)
+    Text(stringResource(R.string.ins_for), color = c.textMuted, fontSize = 13.sp)
+    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+        listOf("meal" to R.string.ins_for_meal, "corr" to R.string.ins_for_corr).forEachIndexed { i, (r, label) ->
+            SegmentedButton(selected = role == r, onClick = {
+                form.insRole = r
+            }, shape = SegmentedButtonDefaults.itemShape(i, 2)) { Text(stringResource(label)) }
+        }
+    }
+    if (form.insRole == null) {
+        Text(
+            if (nearMeal != null) {
+                stringResource(R.string.ins_for_auto_meal, formatClock(ctx, nearMeal.from))
+            } else {
+                stringResource(R.string.ins_for_auto_corr)
+            },
+            color = c.textFaint,
+            fontSize = 12.sp
+        )
+    }
+    if (role == "meal" && nearMeal == null) {
+        Text(stringResource(R.string.ins_for_meal_none), color = c.high, fontSize = 12.5.sp)
+    }
+}
+
+/** Activity: how hard, and how long. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ActivityFields(form: TreatmentFormState) {
+    val c = DiaTheme.colors
+    val locale = LocalConfiguration.current.locales[0]
+    Text(stringResource(R.string.act_intensity), color = c.textMuted, fontSize = 13.sp)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Intensities.forEach { (key, label) ->
+            FilterChip(selected = form.intensity == key, onClick = {
+                form.intensity = key
+            }, label = { Text(stringResource(label)) })
+        }
+    }
+    Amount(
+        value = form.minutes, step = 5.0, max = 600.0, unit = stringResource(R.string.unit_min),
+        quick = MinutesQuick, accent = c.inRange, container = c.inRangeContainer, locale = locale,
+        label = stringResource(R.string.act_duration)
+    ) { form.minutes = it }
+}
+
+/** When: now, a little earlier (a new entry only), or any time picked on the clock. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun EntryWhen(form: TreatmentFormState, isNew: Boolean) {
+    val c = DiaTheme.colors
+    Text(stringResource(R.string.tr_when), color = c.textMuted, fontSize = 13.sp)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        val shifts = if (isNew) TimeShifts.map { form.openedAt - it * 60_000L } else emptyList()
+        if (isNew) {
+            TimeShifts.forEachIndexed { i, m ->
+                FilterChip(
+                    selected = form.time == shifts[i],
+                    onClick = { form.time = shifts[i] },
+                    label = {
+                        Text(if (m == 0) stringResource(R.string.tr_now) else stringResource(R.string.tr_minutes_ago, m))
+                    }
+                )
+            }
+        }
+        val custom = form.time !in shifts
+        FilterChip(
+            selected = custom,
+            onClick = { form.picking = true },
+            label = {
+                Text(if (custom) atLabel(form.time) else stringResource(R.string.tr_other_time))
+            }
+        )
+    }
+    if (form.picking) {
+        TimeDialog(initial = form.time, onPick = {
+            form.time = it
+            form.picking = false
+        }, onDismiss = { form.picking = false })
     }
 }
 
