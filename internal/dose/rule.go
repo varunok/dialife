@@ -4,6 +4,7 @@
 package dose
 
 import (
+	"cmp"
 	"errors"
 	"slices"
 )
@@ -88,28 +89,49 @@ var ErrRange = errors.New("dose settings out of range")
 
 // Valid checks every value is within reason.
 func (d Settings) Valid() error {
-	ok := d.Ratio >= 1 && d.Ratio <= 100 &&
-		slices.Contains([]string{"nearest", "halfDown", "down", "up"}, d.Rule) &&
-		(d.Step == 1 || d.Step == 0.5) &&
-		d.FreshMin >= 1 && d.FreshMin <= 60 &&
-		d.MaxRapid >= 0.5 && d.MaxRapid <= 100 &&
-		d.MaxBasal >= 0.5 && d.MaxBasal <= 200 &&
-		d.MaxCarbs >= 20 && d.MaxCarbs <= 500 &&
-		(d.ISF == 0 || d.ISF >= 5 && d.ISF <= 400) &&
-		d.DIAMin >= 120 && d.DIAMin <= 480 &&
-		d.CarbMin >= 60 && d.CarbMin <= 360 &&
-		d.WaitMin >= 0 && d.WaitMin <= 45 && d.WaitHighMin >= d.WaitMin && d.WaitHighMin <= 60 &&
-		d.WaitLowBelow >= 60 && d.WaitLowBelow <= 120 && d.WaitHighFrom > d.WaitLowBelow && d.WaitHighFrom <= 300 &&
-		len(d.Table) <= 20
-	if !ok {
+	if !d.valuesValid() || !d.waitValid() || !d.tableValid() {
 		return ErrRange
+	}
+	return nil
+}
+
+// Rules are the ways a dose can be rounded to the pen's step.
+var Rules = []string{"nearest", "halfDown", "down", "up"}
+
+func between[T cmp.Ordered](v, lo, hi T) bool { return v >= lo && v <= hi }
+
+func (d Settings) valuesValid() bool {
+	return !slices.Contains([]bool{
+		between(d.Ratio, 1, 100),
+		slices.Contains(Rules, d.Rule),
+		d.Step == 1 || d.Step == 0.5,
+		between(d.FreshMin, 1, 60),
+		between(d.MaxRapid, 0.5, 100),
+		between(d.MaxBasal, 0.5, 200),
+		between(d.MaxCarbs, 20, 500),
+		d.ISF == 0 || between(d.ISF, 5, 400), // 0: from the table
+		between(d.DIAMin, 120, 480),
+		between(d.CarbMin, 60, 360),
+	}, false)
+}
+
+// waitValid: the minutes in order (high no shorter), the bounds in order.
+func (d Settings) waitValid() bool {
+	return between(d.WaitMin, 0, 45) && between(d.WaitHighMin, d.WaitMin, 60) &&
+		between(d.WaitLowBelow, 60, 120) && between(d.WaitHighFrom, d.WaitLowBelow+1, 300)
+}
+
+// tableValid: at most 20 rows, each a plausible glucometer value and dose, no value twice.
+func (d Settings) tableValid() bool {
+	if len(d.Table) > 20 {
+		return false
 	}
 	seen := map[int]bool{}
 	for _, s := range d.Table {
-		if s.MG < 40 || s.MG > 600 || s.U < 0 || s.U > 50 || seen[s.MG] {
-			return ErrRange
+		if !between(s.MG, 40, 600) || !between(s.U, 0, 50) || seen[s.MG] {
+			return false
 		}
 		seen[s.MG] = true
 	}
-	return nil
+	return true
 }
