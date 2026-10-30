@@ -66,6 +66,25 @@ func TestDoubleDoseFromXDripAsksEveryone(t *testing.T) {
 	}
 }
 
+// One of the two deleted (by whoever): nothing is left to ask, the question goes.
+func TestDoubleDoseGoesWithOneDeleted(t *testing.T) {
+	f := newFixture(t)
+	_, xd := f.addDevice(t, "xDrip", auth.RoleUploader)
+	_, mom := f.addDevice(t, "Мама", auth.RoleCaregiver)
+	dose(t, f, xd, 15*time.Minute, 2, "")
+	second := dose(t, f, xd, 10*time.Minute, 2, "")
+	if qs := questionsOf(t, f, mom); len(qs) != 1 || qs[0].Kind != "double" {
+		t.Fatalf("asked: %+v", qs)
+	}
+	if resp := f.do(t, "DELETE", "/api/v1/treatments/"+second, nil, xdrip(xd)); resp.StatusCode != 200 {
+		t.Fatalf("delete %d", resp.StatusCode)
+	}
+	f.advance(time.Minute)
+	if qs := questionsOf(t, f, mom); len(qs) != 0 {
+		t.Fatalf("one dose left, still asked: %+v", qs)
+	}
+}
+
 func TestTwoDosesKeepAWatch(t *testing.T) {
 	f := newFixture(t)
 	_, xd := f.addDevice(t, "xDrip", auth.RoleUploader)

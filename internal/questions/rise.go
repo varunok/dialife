@@ -10,87 +10,120 @@ import (
 	"dialife/internal/store"
 )
 
+// step moves an open question on: closes it when its reason went away or an
+// entry explains it, records a parent's vote, gives up when nobody answered,
+// or reminds again.
 func (e *Engine) step(ctx context.Context, q store.Question, logged []loggedEntry, now time.Time) error {
 	devs, err := e.Store.ListDevices(ctx)
 	if err != nil {
 		return err
 	}
-	if q.Kind == "planned" {
-		p, err := e.Store.PlannedDose(ctx, q.RefID)
-		if err != nil && !errors.Is(err, store.ErrNotFound) {
-			return err
-		}
-		if err != nil || p.State != "planned" {
-			q.State, q.Outcome = "answered", p.State
-			if q.Outcome == "" {
-				q.Outcome = "expired"
-			}
-			q.TreatmentID = p.InsulinID
-			q.ClosedAt = ptr(now.UnixMilli())
-			if p.ClosedBy != nil {
-				if d, ok := caregiverByID(devs, *p.ClosedBy); ok {
-					q.ClosedBy = d.Person
-				}
-			}
-			return e.save(ctx, q, now, false)
-		}
-		if q.RemindedAt == nil || now.UnixMilli()-*q.RemindedAt >= remindEvery.Milliseconds() {
-			q.RemindedAt = ptr(now.UnixMilli())
-			return e.save(ctx, q, now, true)
-		}
-		return nil
-	}
-	if q.Kind == "double" {
+	switch q.Kind {
+	case "planned":
+		return e.stepPlanned(ctx, q, devs, now)
+	case "double":
 		// someone deleted one of the two: nothing left to ask
-		for _, id := range []string{q.TreatmentID, q.RefID} {
-			_, ok, err := e.treatment(ctx, id)
-			if err != nil {
-				return err
-			}
-			if !ok {
-				q.State, q.Outcome = "answered", "one"
-				q.ClosedAt = ptr(now.UnixMilli())
-				return e.save(ctx, q, now, false)
-			}
-		}
-	}
-	// an entry that explains it: from xDrip+ it settles the question, from a parent it is their vote
-	for _, l := range logged {
-		explains := Explains(q.Kind, q.From, l.Entry)
-		if q.Kind == "bolus" && !explains {
-			explains = linked([]Entry{l.Entry}, mealAtLogged(logged, q.From))
-		}
-		if l.T > now.UnixMilli() || !explains || l.ID == q.TreatmentID {
-			continue
-		}
-		answer := "food"
-		if q.Kind == "fall" || q.Kind == "bolus" {
-			answer = "insulin"
-		}
-		dev, voter := caregiverByID(devs, l.DeviceID)
-		if !voter {
-			q.State, q.Outcome, q.TreatmentID, q.ClosedBy = "answered", answer, l.ID, "xDrip"
-			q.ClosedAt = ptr(now.UnixMilli())
-			return e.save(ctx, q, now, false)
-		}
-		as, err := e.Store.QuestionAnswers(ctx, q.ID)
+		gone, err := e.eitherGone(ctx, q.TreatmentID, q.RefID)
 		if err != nil {
 			return err
 		}
-		if !answeredThisRound(as, q.Round, dev.Person) {
-			return e.vote(ctx, q, dev, answer, l.ID, now)
+		if gone {
+			q.State, q.Outcome = "answered", "one"
+			q.ClosedAt = ptr(now.UnixMilli())
+			return e.save(ctx, q, now, false)
 		}
+	}
+	if done, err := e.settleByEntry(ctx, q, devs, logged, now); done || err != nil {
+		return err
 	}
 	if now.UnixMilli()-q.To >= unanswered.Milliseconds() {
 		q.State = "unknown"
 		q.ClosedAt = ptr(now.UnixMilli())
 		return e.save(ctx, q, now, false)
 	}
-	if q.RemindedAt == nil || now.UnixMilli()-*q.RemindedAt >= remindEvery.Milliseconds() {
-		q.RemindedAt = ptr(now.UnixMilli())
-		return e.save(ctx, q, now, true)
+	return e.remindIfDue(ctx, q, now)
+}
+
+// stepPlanned: a planned dose given, skipped or gone closes its question with
+// that outcome (and who closed it); while it is still planned, a reminder.
+func (e *Engine) stepPlanned(ctx context.Context, q store.Question, devs []store.Device, now time.Time) error {
+	p, err := e.Store.PlannedDose(ctx, q.RefID)
+	if err != nil && !errors.Is(err, store.ErrNotFound) {
+		return err
 	}
-	return nil
+	if err == nil && p.State == "planned" {
+		return e.remindIfDue(ctx, q, now)
+	}
+	q.State, q.Outcome = "answered", p.State
+	if q.Outcome == "" {
+		q.Outcome = "expired"
+	}
+	q.TreatmentID = p.InsulinID
+	q.ClosedAt = ptr(now.UnixMilli())
+	if p.ClosedBy != nil {
+		if d, ok := caregiverByID(devs, *p.ClosedBy); ok {
+			q.ClosedBy = d.Person
+		}
+	}
+	return e.save(ctx, q, now, false)
+}
+
+// eitherGone: one of the two entries no longer exists.
+func (e *Engine) eitherGone(ctx context.Context, ids ...string) (bool, error) {
+	for _, id := range ids {
+		_, ok, err := e.treatment(ctx, id)
+		if err != nil || !ok {
+			return err == nil, err
+		}
+	}
+	return false, nil
+}
+
+// settleByEntry: an entry that explains it settles the question when it came
+// from xDrip+, and is its parent's vote when a parent logged it (once a round).
+// done: the question was saved or voted on.
+func (e *Engine) settleByEntry(ctx context.Context, q store.Question, devs []store.Device, logged []loggedEntry, now time.Time) (bool, error) {
+	answer := "food"
+	if q.Kind == "fall" || q.Kind == "bolus" {
+		answer = "insulin"
+	}
+	for _, l := range logged {
+		if l.T > now.UnixMilli() || l.ID == q.TreatmentID || !explainsQuestion(q, l, logged) {
+			continue
+		}
+		dev, voter := caregiverByID(devs, l.DeviceID)
+		if !voter {
+			q.State, q.Outcome, q.TreatmentID, q.ClosedBy = "answered", answer, l.ID, "xDrip"
+			q.ClosedAt = ptr(now.UnixMilli())
+			return true, e.save(ctx, q, now, false)
+		}
+		as, err := e.Store.QuestionAnswers(ctx, q.ID)
+		if err != nil {
+			return true, err
+		}
+		if !answeredThisRound(as, q.Round, dev.Person) {
+			return true, e.vote(ctx, q, dev, answer, l.ID, now)
+		}
+	}
+	return false, nil
+}
+
+// explainsQuestion: the entry is what the question asks about; for a missed
+// bolus, also a dose linked to the meal it was for.
+func explainsQuestion(q store.Question, l loggedEntry, logged []loggedEntry) bool {
+	if Explains(q.Kind, q.From, l.Entry) {
+		return true
+	}
+	return q.Kind == "bolus" && linked([]Entry{l.Entry}, mealAtLogged(logged, q.From))
+}
+
+// remindIfDue reminds again once remindEvery has passed since the last time.
+func (e *Engine) remindIfDue(ctx context.Context, q store.Question, now time.Time) error {
+	if q.RemindedAt != nil && now.UnixMilli()-*q.RemindedAt < remindEvery.Milliseconds() {
+		return nil
+	}
+	q.RemindedAt = ptr(now.UnixMilli())
+	return e.save(ctx, q, now, true)
 }
 
 func (e *Engine) detect(ctx context.Context, qs []store.Question, logged []loggedEntry, now time.Time) error {
