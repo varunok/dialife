@@ -52,20 +52,6 @@ class DiaLifeApi(private val http: OkHttpClient = defaultClient) {
     suspend fun coming(c: Credentials, id: Long): Result<Unit> = post(c, "/api/alarms/$id/coming", "{}")
 
     /** An answer to "did you forget to log?"; a closed question (409) counts as done. */
-    suspend fun answerQuestion(c: Credentials, id: Long, answer: String, treatmentId: String? = null): Result<Unit> = post(
-        c,
-        "/api/questions/$id/answer",
-        buildJsonObject {
-            put("answer", answer)
-            treatmentId?.let { put("treatment_id", it) }
-        }.toString()
-    ).closedIsDone()
-
-    suspend fun dismissQuestion(c: Credentials, id: Long): Result<Unit> = post(c, "/api/questions/$id/dismiss", "{}").closedIsDone()
-
-    private fun Result<Unit>.closedIsDone(): Result<Unit> =
-        recoverCatching { e -> if ((e as? ApiException)?.error == ApiError.Server(409)) Unit else throw e }
-
     /** Carb suggestions for the foods typed in the form; only ever suggestions. */
     suspend fun suggestCarbs(c: Credentials, items: List<Pair<String, String>>): Result<CarbSuggestions> = postFor(
         c,

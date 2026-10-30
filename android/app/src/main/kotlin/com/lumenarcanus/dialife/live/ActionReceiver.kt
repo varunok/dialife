@@ -6,7 +6,7 @@ import android.content.Intent
 import com.lumenarcanus.dialife.alarmController
 import com.lumenarcanus.dialife.data.CredentialStore
 import com.lumenarcanus.dialife.liveRepository
-import com.lumenarcanus.dialife.questionNotifier
+import com.lumenarcanus.dialife.questionAnswers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -28,9 +28,9 @@ class ActionReceiver : BroadcastReceiver() {
                 val ctl = context.alarmController
                 if (action == ANSWER) {
                     val answer = intent.getStringExtra(EXTRA_ANSWER) ?: return@launch
-                    val repo = context.liveRepository
-                    val r = repo.answerQuestion(id, answer).recoverCatching { repo.answerQuestion(id, answer).getOrThrow() }
-                    if (r.isFailure) ctl.failed() else context.questionNotifier.cancel(id)
+                    val questions = context.questionAnswers
+                    val r = questions.answer(id, answer).recoverCatching { questions.answer(id, answer).getOrThrow() } // one retry
+                    if (r.isFailure) ctl.failed()
                     return@launch
                 }
                 val r = ctl.act(action, id).recoverCatching { ctl.act(action, id).getOrThrow() } // one retry

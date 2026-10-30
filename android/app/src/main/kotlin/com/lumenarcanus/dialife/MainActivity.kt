@@ -301,14 +301,13 @@ class MainActivity : AppCompatActivity() {
             onDeleteTreatment = liveRepository::deleteTreatment,
             onAnswerQuestion = { id, answer, tr ->
                 lifecycleScope.launch {
-                    liveRepository.answerQuestion(id, answer, tr)
-                        .onSuccess { questionNotifier.cancel(id) }
+                    questionAnswers.answer(id, answer, tr)
                         .onFailure { Toast.makeText(this@MainActivity, R.string.q_failed, Toast.LENGTH_LONG).show() }
                 }
             },
             onDismissQuestion = { id ->
                 lifecycleScope.launch {
-                    liveRepository.dismissQuestion(id).onFailure {
+                    questionAnswers.dismiss(id).onFailure {
                         Toast.makeText(this@MainActivity, R.string.q_failed, Toast.LENGTH_LONG).show()
                     }
                 }

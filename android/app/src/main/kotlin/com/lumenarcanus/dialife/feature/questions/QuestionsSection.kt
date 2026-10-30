@@ -10,12 +10,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lumenarcanus.dialife.data.Question
 import com.lumenarcanus.dialife.liveRepository
-import com.lumenarcanus.dialife.questionNotifier
+import com.lumenarcanus.dialife.questionAnswers
 
 @Composable
 private fun questionsViewModel(): QuestionsViewModel {
     val ctx = LocalContext.current
-    return viewModel { QuestionsViewModel(ctx.liveRepository, ctx.questionNotifier) }
+    return viewModel { QuestionsViewModel(ctx.liveRepository, ctx.questionAnswers) }
 }
 
 /** The open questions on home; [onLog] opens the entry form for one ("enter it"). */

@@ -3,9 +3,9 @@ package com.lumenarcanus.dialife.feature.questions
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.data.QuestionRepository
 import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.live.LiveRepository
-import com.lumenarcanus.dialife.live.QuestionNotifier
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /** The questions on home: from the live state; an answer clears its notification here. */
-class QuestionsViewModel(private val live: LiveRepository, private val notifier: QuestionNotifier) : ViewModel() {
+class QuestionsViewModel(private val live: LiveRepository, private val questions: QuestionRepository) : ViewModel() {
     private val userMessage = MutableStateFlow<Int?>(null)
     private val clock = flow {
         while (true) {
@@ -34,8 +34,7 @@ class QuestionsViewModel(private val live: LiveRepository, private val notifier:
         when (a) {
             is QuestionAction.Link -> live.saveTreatment(a.treatment)
             is QuestionAction.Answer -> viewModelScope.launch {
-                live.answerQuestion(a.id, a.answer, a.treatmentId)
-                    .onSuccess { notifier.cancel(a.id) }
+                questions.answer(a.id, a.answer, a.treatmentId)
                     .onFailure { userMessage.value = R.string.q_failed }
             }
         }

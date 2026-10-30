@@ -239,16 +239,9 @@ class LiveRepository(context: Context, private val api: DiaLifeApi = DiaLifeApi(
     private val _questions = MutableSharedFlow<Question>(extraBufferCapacity = 16)
     val questions: SharedFlow<Question> = _questions.asSharedFlow()
 
-    suspend fun answerQuestion(id: Long, answer: String, treatmentId: String? = null): Result<Unit> {
-        val c = creds ?: return Result.failure(ApiException(ApiError.Unauthorized))
-        return api.answerQuestion(c, id, answer, treatmentId)
-    }
-
-    suspend fun dismissQuestion(id: Long): Result<Unit> {
-        val c = creds ?: return Result.failure(ApiException(ApiError.Unauthorized))
-        return api.dismissQuestion(c, id).onSuccess {
-            _live.update { cur -> cur.copy(state = cur.state?.let { s -> s.copy(questions = s.questions.filter { it.id != id }) }) }
-        }
+    /** A change made here shows at once; the server's next state replaces it anyway. */
+    fun updateState(f: (com.lumenarcanus.dialife.data.StateResponse) -> com.lumenarcanus.dialife.data.StateResponse) {
+        _live.update { cur -> cur.copy(state = cur.state?.let(f)) }
     }
 
     /** The insulin form opened (or its type changed) here; best effort, the server forgets it in 10 min anyway. */

@@ -10,7 +10,7 @@ import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.liveRepository
 import com.lumenarcanus.dialife.plannedDoses
-import com.lumenarcanus.dialife.questionNotifier
+import com.lumenarcanus.dialife.questionAnswers
 
 /**
  * The food form with its data: a new meal, an entry to edit ([editingId], or
@@ -21,7 +21,7 @@ import com.lumenarcanus.dialife.questionNotifier
 fun MealRoute(editingId: String?, entry: Treatment?, initialTime: Long?, forLow: Boolean, questionId: Long, onDone: () -> Unit) {
     val ctx = LocalContext.current
     val vm = viewModel {
-        MealViewModel(ctx.liveRepository, ctx.plannedDoses, ctx.questionNotifier) {
+        MealViewModel(ctx.liveRepository, ctx.plannedDoses, ctx.questionAnswers) {
             Toast.makeText(ctx.applicationContext, R.string.meal_plan_failed, Toast.LENGTH_LONG).show()
         }
     }

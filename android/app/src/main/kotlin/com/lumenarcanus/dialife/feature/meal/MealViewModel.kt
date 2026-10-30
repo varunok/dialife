@@ -3,12 +3,12 @@ package com.lumenarcanus.dialife.feature.meal
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lumenarcanus.dialife.core.data.PlannedDoseRepository
+import com.lumenarcanus.dialife.core.data.QuestionRepository
 import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.data.DoseSettings
 import com.lumenarcanus.dialife.data.MealRules
 import com.lumenarcanus.dialife.data.Series
 import com.lumenarcanus.dialife.live.LiveRepository
-import com.lumenarcanus.dialife.live.QuestionNotifier
 import com.lumenarcanus.dialife.live.withPending
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 class MealViewModel(
     private val live: LiveRepository,
     private val plannedDoses: PlannedDoseRepository,
-    private val questions: QuestionNotifier,
+    private val questions: QuestionRepository,
     private val onPlanFailed: () -> Unit
 ) : ViewModel() {
     val inputs: StateFlow<MealInputs> = combine(live.live, live.pending) { l, pending ->
@@ -48,7 +48,7 @@ class MealViewModel(
         }
         if (questionId != 0L) {
             viewModelScope.launch {
-                live.answerQuestion(questionId, "food", s.food.id).onSuccess { questions.cancel(questionId) }
+                questions.answer(questionId, "food", s.food.id)
             }
         }
     }
