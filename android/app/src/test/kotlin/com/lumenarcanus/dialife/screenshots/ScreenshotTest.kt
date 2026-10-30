@@ -21,7 +21,6 @@ import com.lumenarcanus.dialife.feature.wait.WarningCard
 import com.lumenarcanus.dialife.feature.wait.warningUiState
 import com.lumenarcanus.dialife.ui.handling.HandlingScreen
 import com.lumenarcanus.dialife.ui.home.BackgroundSetup
-import com.lumenarcanus.dialife.ui.home.HomeScreen
 import com.lumenarcanus.dialife.ui.home.sampleHomeUi
 import com.lumenarcanus.dialife.ui.settings.SettingsScreen
 import com.lumenarcanus.dialife.ui.theme.DiaLifeTheme
@@ -60,7 +59,7 @@ class ScreenshotTest {
 
     @Test
     @Config(qualifiers = "+uk")
-    fun homeDarkUk() = shot("home_dark_uk", dark = true) { HomeScreen(sampleHomeUi(now), deviceName = "Тато") }
+    fun homeDarkUk() = shot("home_dark_uk", dark = true) { SampleHome(sampleHomeUi(now), deviceName = "Тато") }
 
     // tall enough to show the entry buttons under the chart
     @Test
@@ -118,27 +117,27 @@ class ScreenshotTest {
 
     @Test
     @Config(qualifiers = "uk-w320dp-h2000dp-xxhdpi")
-    fun homeNarrowUk320() = shot("home_narrow_uk_320", dark = true) { HomeScreen(sampleHomeUi(now), deviceName = "Тато") }
+    fun homeNarrowUk320() = shot("home_narrow_uk_320", dark = true) { SampleHome(sampleHomeUi(now), deviceName = "Тато") }
 
     @Test
     @Config(qualifiers = "es-w320dp-h2000dp-xxhdpi")
-    fun homeNarrowEs320() = shot("home_narrow_es_320", dark = true) { HomeScreen(sampleHomeUi(now), deviceName = "Тато") }
+    fun homeNarrowEs320() = shot("home_narrow_es_320", dark = true) { SampleHome(sampleHomeUi(now), deviceName = "Тато") }
 
     @Test
     @Config(qualifiers = "en-w320dp-h2000dp-xxhdpi")
-    fun homeNarrowEn320() = shot("home_narrow_en_320", dark = true) { HomeScreen(sampleHomeUi(now), deviceName = "Тато") }
+    fun homeNarrowEn320() = shot("home_narrow_en_320", dark = true) { SampleHome(sampleHomeUi(now), deviceName = "Тато") }
 
     @Test
     @Config(qualifiers = "es-w360dp-h2000dp-xxhdpi")
-    fun homeNarrowEs360() = shot("home_narrow_es_360", dark = true) { HomeScreen(sampleHomeUi(now), deviceName = "Тато") }
+    fun homeNarrowEs360() = shot("home_narrow_es_360", dark = true) { SampleHome(sampleHomeUi(now), deviceName = "Тато") }
 
     @Test
     @Config(qualifiers = "uk-w412dp-h2000dp-xxhdpi")
-    fun homeButtonsUk() = shot("home_buttons_dark_uk", dark = true) { HomeScreen(sampleHomeUi(now), deviceName = "Тато") }
+    fun homeButtonsUk() = shot("home_buttons_dark_uk", dark = true) { SampleHome(sampleHomeUi(now), deviceName = "Тато") }
 
     @Test
     @Config(qualifiers = "es-w412dp-h2000dp-xxhdpi")
-    fun homeButtonsEs() = shot("home_buttons_dark_es", dark = true) { HomeScreen(sampleHomeUi(now), deviceName = "Papá") }
+    fun homeButtonsEs() = shot("home_buttons_dark_es", dark = true) { SampleHome(sampleHomeUi(now), deviceName = "Papá") }
 
     @Test
     @Config(qualifiers = "uk-w915dp-h412dp-land-xxhdpi")
@@ -182,7 +181,7 @@ class ScreenshotTest {
 
     @Test
     @Config(qualifiers = "+es")
-    fun homeDarkEs() = shot("home_dark_es", dark = true) { HomeScreen(sampleHomeUi(now), deviceName = "Papá") }
+    fun homeDarkEs() = shot("home_dark_es", dark = true) { SampleHome(sampleHomeUi(now), deviceName = "Papá") }
 
     @Test
     @Config(qualifiers = "+uk")
@@ -217,13 +216,13 @@ class ScreenshotTest {
     @Config(qualifiers = "+en")
     fun homeLightEnMmol() = shot("home_light_en_mmol", dark = false) {
         val ui = sampleHomeUi(now)
-        HomeScreen(ui.copy(state = ui.state?.copy(displayUnits = "mmol")), deviceName = "Dad")
+        SampleHome(ui.copy(state = ui.state?.copy(displayUnits = "mmol")), deviceName = "Dad")
     }
 
     @Test
     @Config(qualifiers = "+uk")
     fun homeStaleUk() = shot("home_stale_uk", dark = true) {
-        HomeScreen(sampleHomeUi(now).copy(now = now + 23 * 60_000L), deviceName = "Тато")
+        SampleHome(sampleHomeUi(now).copy(now = now + 23 * 60_000L), deviceName = "Тато")
     }
 
     @Test
@@ -802,11 +801,11 @@ class ScreenshotTest {
 
     @Test
     @Config(qualifiers = "en-w412dp-h2600dp-xxhdpi")
-    fun homeDarkEnAll() = shot("home_dark_en_all", dark = true) { HomeScreen(sampleHomeUi(now), deviceName = "Тато") }
+    fun homeDarkEnAll() = shot("home_dark_en_all", dark = true) { SampleHome(sampleHomeUi(now), deviceName = "Тато") }
 
     @Test
     @Config(qualifiers = "es-w412dp-h2600dp-xxhdpi")
-    fun homeDarkEsAll() = shot("home_dark_es_all", dark = true) { HomeScreen(sampleHomeUi(now), deviceName = "Тато") }
+    fun homeDarkEsAll() = shot("home_dark_es_all", dark = true) { SampleHome(sampleHomeUi(now), deviceName = "Тато") }
 
     @Test
     @Config(qualifiers = "en-w412dp-h3500dp-xxhdpi")

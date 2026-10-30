@@ -26,7 +26,6 @@ import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.ui.data.DataScreen
 import com.lumenarcanus.dialife.ui.handling.HandlingScreen
 import com.lumenarcanus.dialife.ui.home.ChartCard
-import com.lumenarcanus.dialife.ui.home.HomeScreen
 import com.lumenarcanus.dialife.ui.home.HomeUi
 import com.lumenarcanus.dialife.ui.home.sampleHomeUi
 import com.lumenarcanus.dialife.ui.theme.DiaLifeTheme
@@ -88,7 +87,7 @@ class ReadmeShots {
 
     /** The live day, the chart and what everyone logged. */
     @Test
-    fun home() = shot("app_home") { HomeScreen(day(), deviceName = "Dad") }
+    fun home() = shot("app_home") { SampleHome(day(), deviceName = "Dad") }
 
     /** A low that Dad took on: the others are quiet, he is asked to check in. */
     @Test
@@ -136,12 +135,12 @@ class ReadmeShots {
             intents = listOf(InsulinIntent(9, "Mom", "rapid", now - 2 * min, now + 8 * min)),
             questions = listOf(double)
         )
-        HomeScreen(ui.copy(state = st, myId = 8), deviceName = "Dad")
+        SampleHome(ui.copy(state = st, myId = 8), deviceName = "Dad")
     }
 
     /** A rise nobody logged food for: both parents are asked, and their answers differ. */
     @Test
-    fun question() = shot("app_question") { HomeScreen(sampleHomeUi(now, dad = "Dad", mom = "Mom"), deviceName = "Dad") }
+    fun question() = shot("app_question") { SampleHome(sampleHomeUi(now, dad = "Dad", mom = "Mom"), deviceName = "Dad") }
 
     /** A meal as a list: the family's own numbers first, then an estimate with a range. */
     @Test

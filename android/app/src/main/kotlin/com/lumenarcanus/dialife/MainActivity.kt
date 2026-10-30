@@ -296,6 +296,8 @@ class MainActivity : AppCompatActivity() {
             onOpenWebLogin = { onOpen(Screen.WebLogin) },
             onOpenMeal = onMeal,
             plannedSection = { com.lumenarcanus.dialife.feature.planned.PlannedSection() },
+            questionsSection = { onLog -> com.lumenarcanus.dialife.feature.questions.QuestionsSection(onLog) },
+            watchSection = { com.lumenarcanus.dialife.feature.questions.WatchSection() },
             waitSection = { com.lumenarcanus.dialife.feature.wait.WaitSection() },
             onOpenSettings = { onOpen(Screen.Settings) },
             onOpenHandling = { id -> openHandling = id },
