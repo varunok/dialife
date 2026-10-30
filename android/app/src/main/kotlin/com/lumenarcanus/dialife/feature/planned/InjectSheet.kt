@@ -135,9 +135,7 @@ internal fun InjectSheet(
                 amount = it
                 ok = false
             }
-            if (amount !=
-                p.dose
-            ) {
+            if (amount != p.dose) {
                 Text(stringResource(R.string.planned_given_differs, f(p.dose), f(amount)), color = c.high, fontSize = 12.5.sp)
             }
             LimitAlert(lv, amount, dose.maxRapid, units, locale)
@@ -150,9 +148,7 @@ internal fun InjectSheet(
                 }, label = { Text(stringResource(R.string.tr_minutes_ago, 15)) })
                 FilterChip(selected = whenIdx == 2, onClick = { picking = true }, label = {
                     Text(
-                        if (whenIdx ==
-                            2
-                        ) {
+                        if (whenIdx == 2) {
                             atLabel(at)
                         } else {
                             stringResource(R.string.tr_other_time)
@@ -162,9 +158,7 @@ internal fun InjectSheet(
             }
             Text(
                 err ?: stringResource(R.string.planned_when_range, formatClock(ctx, earliest)),
-                color = if (err !=
-                    null
-                ) {
+                color = if (err != null) {
                     c.low
                 } else {
                     c.textFaint

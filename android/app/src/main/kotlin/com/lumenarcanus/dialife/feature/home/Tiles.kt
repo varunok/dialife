@@ -36,9 +36,7 @@ internal fun Tiles(state: HomeState, onOpenStats: () -> Unit, onOpenLog: () -> U
         Triple(stringResource(R.string.tile_time_in_range), state.timeInRange?.let { "$it%" } ?: "—", onOpenStats),
         Triple(
             stringResource(R.string.tile_alarms),
-            if (state.alarms ==
-                0
-            ) {
+            if (state.alarms == 0) {
                 stringResource(R.string.tile_alarms_quiet)
             } else {
                 pluralStringResource(R.plurals.tile_alarms_active, state.alarms, state.alarms)

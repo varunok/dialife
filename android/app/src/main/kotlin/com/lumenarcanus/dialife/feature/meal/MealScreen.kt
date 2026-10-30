@@ -177,8 +177,7 @@ fun MealScreen(
                 onClick = onClose,
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier.size(48.dp).semantics {
-                    contentDescription =
-                        back
+                    contentDescription = back
                 },
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
             ) {
@@ -190,9 +189,7 @@ fun MealScreen(
                     stringResource(
                         if (forLow) {
                             R.string.meal_low_title
-                        } else if (editing !=
-                            null
-                        ) {
+                        } else if (editing != null) {
                             R.string.meal_edit_title
                         } else {
                             R.string.meal_title
@@ -257,9 +254,7 @@ fun MealScreen(
                 )
                 val n = form.rows.count { it.name.isNotBlank() || it.grams != null }
                 Text(
-                    if (n ==
-                        0
-                    ) {
+                    if (n == 0) {
                         stringResource(R.string.meal_empty_short)
                     } else {
                         pluralStringResource(R.plurals.meal_dishes, n, n) + " · $current " +
@@ -370,8 +365,7 @@ fun MealScreen(
             } else {
                 DoseCard(
                     m, dose, units, locale, earlier, given, typedMeter = form.meterText, onMeter = {
-                        form.meterText =
-                            it.filter { ch -> ch.isDigit() || ch == ',' || ch == '.' }.take(5)
+                        form.meterText = it.filter { ch -> ch.isDigit() || ch == ',' || ch == '.' }.take(5)
                     },
                     plan = planOn, onPlan = { form.plan = it }, openPlan = openPlan
                 )
@@ -451,8 +445,7 @@ fun MealScreen(
             form.whenIdx = 3
             form.pickingTime = false
         }, onDismiss = {
-            form.pickingTime =
-                false
+            form.pickingTime = false
         })
     }
     if (form.closing) {
@@ -474,8 +467,7 @@ fun MealScreen(
         SaveSheet(m, dose, units, locale, planOn, form.okBig, onOkBig = {
             form.okBig = it
         }, onPlan = { finish(true) }, onFoodOnly = { finish(false) }, onBack = {
-            form.asking =
-                false
+            form.asking = false
         })
     }
 }

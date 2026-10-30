@@ -44,8 +44,7 @@ fun Stepper(value: Double, step: Double, unit: String, onChange: (Double) -> Uni
                 onChange((Math.round((value - step) * 10) / 10.0).coerceAtLeast(0.0))
             },
             modifier = Modifier.size(52.dp).semantics {
-                contentDescription =
-                    minus
+                contentDescription = minus
             }
         ) {
             Text("−", fontSize = 26.sp, color = c.insulin)
@@ -59,8 +58,7 @@ fun Stepper(value: Double, step: Double, unit: String, onChange: (Double) -> Uni
                 onChange((Math.round((value + step) * 10) / 10.0).coerceAtMost(200.0))
             },
             modifier = Modifier.size(52.dp).semantics {
-                contentDescription =
-                    plus
+                contentDescription = plus
             }
         ) {
             Text("+", fontSize = 26.sp, color = c.insulin)

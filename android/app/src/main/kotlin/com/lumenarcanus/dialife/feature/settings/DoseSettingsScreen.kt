@@ -139,9 +139,7 @@ fun DoseSettingsScreen(uiState: DoseSettingsUiState, onEdit: (DoseSettingsForm) 
                                     ) {
                                         Text(f(x), style = GlucoseHero.copy(fontSize = 12.sp, lineHeight = 14.sp, color = c.textMuted))
                                         Text(
-                                            if (o >
-                                                x + 1e-9
-                                            ) {
+                                            if (o > x + 1e-9) {
                                                 "↑"
                                             } else if (o < x - 1e-9) {
                                                 "↓"
@@ -156,9 +154,7 @@ fun DoseSettingsScreen(uiState: DoseSettingsUiState, onEdit: (DoseSettingsForm) 
                                             style = GlucoseHero.copy(
                                                 fontSize = 15.sp,
                                                 lineHeight = 18.sp,
-                                                color = if (o >
-                                                    x + 1e-9
-                                                ) {
+                                                color = if (o > x + 1e-9) {
                                                     c.high
                                                 } else if (o < x - 1e-9) {
                                                     c.inRange

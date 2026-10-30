@@ -143,9 +143,7 @@ fun DataScreen(
             TextButton(onClick = { onAction(DataAction.Newer) }, enabled = page > 0) {
                 Text(
                     stringResource(R.string.data_next) + " ›",
-                    color = if (page >
-                        0
-                    ) {
+                    color = if (page > 0) {
                         c.textMuted
                     } else {
                         c.textFaint

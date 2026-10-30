@@ -68,9 +68,7 @@ internal fun SaveSheet(
         ) {
             Text(
                 stringResource(
-                    if (planOn ||
-                        !m.canPlan
-                    ) {
+                    if (planOn || !m.canPlan) {
                         R.string.meal_check_title
                     } else {
                         R.string.meal_plan_q

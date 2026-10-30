@@ -149,9 +149,7 @@ private fun EpisodeCard(e: LogEpisode, units: Units) {
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f)
             )
-            if (e.state !=
-                "cleared"
-            ) {
+            if (e.state != "cleared") {
                 Text(stringResource(R.string.log_live), color = accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
             }
         }

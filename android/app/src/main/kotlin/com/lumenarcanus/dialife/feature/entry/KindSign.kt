@@ -47,9 +47,7 @@ fun KindSign(glyph: String, ink: Color, size: Dp = 22.dp, background: Color = Di
     Box(
         // the letter repeats the button's name: not read out
         Modifier.size(size).clearAndSetSemantics {}.background(background, CircleShape).then(
-            if (ring !=
-                null
-            ) {
+            if (ring != null) {
                 Modifier.border(2.dp, ring, CircleShape)
             } else {
                 Modifier

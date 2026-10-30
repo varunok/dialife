@@ -43,9 +43,7 @@ class AlarmController(context: Context, private val repo: LiveRepository, privat
             "alarm" -> ring(a, e, help = false)
             "handled" -> {
                 silence(a.id)
-                if (a.handledById !=
-                    me
-                ) {
+                if (a.handledById != me) {
                     info(a, app.getString(R.string.someone_handles, e.by ?: a.handledBy.orEmpty()), handledBody(a), loud = false)
                 }
             }
@@ -59,17 +57,14 @@ class AlarmController(context: Context, private val repo: LiveRepository, privat
                         a,
                         app.getString(R.string.someone_coming, e.by ?: a.comingBy.orEmpty()),
                         AlarmText.title(app, a, units),
-                        loud =
-                        a.handledById == me
+                        loud = a.handledById == me
                     )
                 }
             }
             "clear" -> {
                 silence(a.id)
                 nm.cancel(TAG_CHECKIN, a.id.toInt())
-                val title = if (e.summary?.manual ==
-                    true
-                ) {
+                val title = if (e.summary?.manual == true) {
                     app.getString(R.string.clear_manual, AlarmText.kind(app, a))
                 } else {
                     AlarmText.clear(app, a)

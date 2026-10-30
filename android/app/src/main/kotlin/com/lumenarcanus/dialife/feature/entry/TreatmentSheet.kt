@@ -167,9 +167,7 @@ fun TreatmentSheet(
             when (kind) {
                 TreatmentKind.Insulin -> {
                     if (others.isNotEmpty()) IntentWarning(others, System.currentTimeMillis())
-                    if (editing ==
-                        null
-                    ) {
+                    if (editing == null) {
                         nearDose(recent, form.insType, form.time, null)?.takeIf {
                             it.level == DoseLevel.Recent
                         }?.let { RecentDoseNote(it, live) }
@@ -209,9 +207,7 @@ fun TreatmentSheet(
                         }
                         if (form.insRole == null) {
                             Text(
-                                if (nearMeal !=
-                                    null
-                                ) {
+                                if (nearMeal != null) {
                                     stringResource(R.string.ins_for_auto_meal, formatClock(ctx, nearMeal.from))
                                 } else {
                                     stringResource(R.string.ins_for_auto_corr)
@@ -220,9 +216,7 @@ fun TreatmentSheet(
                                 fontSize = 12.sp
                             )
                         }
-                        if (role == "meal" &&
-                            nearMeal == null
-                        ) {
+                        if (role == "meal" && nearMeal == null) {
                             Text(stringResource(R.string.ins_for_meal_none), color = c.high, fontSize = 12.5.sp)
                         }
                     }
@@ -435,8 +429,7 @@ private fun Amount(
         FilledTonalIconButton(
             onClick = { onChange((value - step).coerceAtLeast(0.0)) },
             modifier = Modifier.size(56.dp).semantics {
-                contentDescription =
-                    minus
+                contentDescription = minus
             }
         ) {
             Text("−", fontSize = 28.sp, color = accent)
@@ -445,8 +438,7 @@ private fun Amount(
         Row(
             verticalAlignment = Alignment.Bottom,
             modifier = Modifier.semantics(mergeDescendants = true) {
-                contentDescription =
-                    "$label $shown $unit"
+                contentDescription = "$label $shown $unit"
             }
         ) {
             Text(shown, style = GlucoseHero.copy(fontSize = 64.sp, lineHeight = 64.sp, color = c.text))
@@ -457,8 +449,7 @@ private fun Amount(
         FilledTonalIconButton(
             onClick = { onChange((value + step).coerceAtMost(max)) },
             modifier = Modifier.size(56.dp).semantics {
-                contentDescription =
-                    plus
+                contentDescription = plus
             }
         ) {
             Text("+", fontSize = 28.sp, color = accent)
@@ -493,9 +484,7 @@ private fun MeterField(text: String, units: Units, onChange: (String) -> Unit) {
         textStyle = GlucoseHero.copy(fontSize = 48.sp, lineHeight = 52.sp, color = c.text),
         suffix = { Text(unit, color = c.textMuted, fontSize = 18.sp) },
         keyboardOptions = KeyboardOptions(
-            keyboardType = if (units ==
-                Units.Mmol
-            ) {
+            keyboardType = if (units == Units.Mmol) {
                 androidx.compose.ui.text.input.KeyboardType.Decimal
             } else {
                 androidx.compose.ui.text.input.KeyboardType.Number

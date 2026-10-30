@@ -184,8 +184,7 @@ fun HandlingScreen(
         if (a.checkinPending) {
             Column(
                 Modifier.fillMaxWidth().background(c.highContainer, RoundedCornerShape(20.dp)).padding(16.dp).semantics {
-                    liveRegion =
-                        LiveRegionMode.Assertive
+                    liveRegion = LiveRegionMode.Assertive
                 },
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
@@ -251,8 +250,7 @@ fun HandlingScreen(
                         color = c.inRange,
                         fontSize = 14.sp,
                         modifier = Modifier.semantics {
-                            liveRegion =
-                                LiveRegionMode.Polite
+                            liveRegion = LiveRegionMode.Polite
                         }
                     )
                 }
@@ -281,9 +279,7 @@ fun HandlingScreen(
                 val limit = if (a.kind == "low") a.handledSgv - rules.worseBy else a.handledSgv + rules.worseBy
                 Bullet(
                     stringResource(
-                        if (a.kind ==
-                            "low"
-                        ) {
+                        if (a.kind == "low") {
                             R.string.hd_wake_worse_low
                         } else {
                             R.string.hd_wake_worse_high

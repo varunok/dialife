@@ -115,9 +115,7 @@ internal fun ListRow(r: DataRow, units: Units, th: Thresholds, onEdit: (Treatmen
                 Row {
                     Text(
                         formatGlucose(r.min, units, locale),
-                        color = if (r.min <
-                            th.low
-                        ) {
+                        color = if (r.min < th.low) {
                             c.low
                         } else {
                             c.textMuted
@@ -128,9 +126,7 @@ internal fun ListRow(r: DataRow, units: Units, th: Thresholds, onEdit: (Treatmen
                     Text("–", color = c.textFaint, fontSize = 10.5.sp, fontFamily = PlexMono)
                     Text(
                         formatGlucose(r.max, units, locale),
-                        color = if (r.max >
-                            th.high
-                        ) {
+                        color = if (r.max > th.high) {
                             c.high
                         } else {
                             c.textMuted

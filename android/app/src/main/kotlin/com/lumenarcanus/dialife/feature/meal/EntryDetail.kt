@@ -130,9 +130,7 @@ fun EntryDetail(
         // a meal: all its entries, the dose it needed and what was given
         if (meal != null && (tr.carbs ?: 0.0) > 0) {
             Box(Modifier.fillMaxWidth().height(1.dp).background(c.line))
-            if (meal.foods.size >
-                1
-            ) {
+            if (meal.foods.size > 1) {
                 Text(stringResource(R.string.detail_meal, meal.foods.size, meal.carbs), color = c.textMuted, fontSize = 13.sp)
             }
             val first = meal.foods.first().t
@@ -140,8 +138,7 @@ fun EntryDetail(
                 treatments,
                 mbg,
                 to = first + 5 * 60_000L,
-                from =
-                first - dose.freshMin * 60_000L
+                from = first - dose.freshMin * 60_000L
             )
             val m = DoseCalc.meal(dose, meal.carbs, meter?.mg, meter?.t, first + 5 * 60_000L, meal.given)
             Row {

@@ -65,9 +65,7 @@ internal fun MeterCard(m: com.lumenarcanus.dialife.data.MeterReport, units: Unit
             Column {
                 Text(
                     stringResource(
-                        if (m.biasPct <
-                            0
-                        ) {
+                        if (m.biasPct < 0) {
                             R.string.meter_lower
                         } else {
                             R.string.meter_higher

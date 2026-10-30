@@ -81,8 +81,7 @@ internal object Sparkline {
             style = Paint.Style.STROKE
             strokeWidth = 7f
             strokeCap = Paint.Cap.ROUND
-            strokeJoin =
-                Paint.Join.ROUND
+            strokeJoin = Paint.Join.ROUND
         }
         fun colour(v: Int) = when {
             v < th.low -> low

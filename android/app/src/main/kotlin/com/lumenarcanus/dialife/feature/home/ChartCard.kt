@@ -173,8 +173,7 @@ fun ChartCard(
                 dose,
                 units,
                 mealRules,
-                mbg =
-                history?.mbg ?: com.lumenarcanus.dialife.data.Series()
+                mbg = history?.mbg ?: com.lumenarcanus.dialife.data.Series()
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 androidx.compose.material3.OutlinedButton(onClick = { onEdit(tr) }, modifier = Modifier.weight(1f)) {

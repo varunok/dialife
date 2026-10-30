@@ -77,9 +77,7 @@ internal fun EpisodeBanner(a: AlarmView, ui: AlarmsUiState, onAction: (String, L
                     val limit = if (a.kind == "low") a.handledSgv - rules.worseBy else a.handledSgv + rules.worseBy
                     add(
                         stringResource(
-                            if (a.kind ==
-                                "low"
-                            ) {
+                            if (a.kind == "low") {
                                 R.string.hd_wake_worse_low
                             } else {
                                 R.string.hd_wake_worse_high
@@ -89,9 +87,7 @@ internal fun EpisodeBanner(a: AlarmView, ui: AlarmsUiState, onAction: (String, L
                     )
                 }
                 add(stringResource(R.string.wake_if_no_answer, a.handledBy.orEmpty()))
-                if (a.level == "urgent" &&
-                    a.handledAt != null
-                ) {
+                if (a.level == "urgent" && a.handledAt != null) {
                     add(
                         stringResource(
                             R.string.wake_if_ceiling,

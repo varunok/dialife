@@ -150,9 +150,7 @@ internal fun suspectText(e: Entry, units: Units): String {
     val q = e.question ?: return "?"
     val ctx = LocalContext.current
     if (q.kind == "bolus") return stringResource(R.string.data_suspect_bolus, formatClock(ctx, q.from))
-    if (q.kind ==
-        "double"
-    ) {
+    if (q.kind == "double") {
         return stringResource(
             R.string.data_suspect_double,
             com.lumenarcanus.dialife.feature.questions.QuestionNotifier.doubleInsulin(ctx, q),

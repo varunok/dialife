@@ -160,9 +160,7 @@ internal fun QuestionCard(
                 androidx.compose.material3.OutlinedButton(onClick = { onAnswer("nothing", null) }) {
                     Text(
                         stringResource(
-                            if (q.kind ==
-                                "bolus"
-                            ) {
+                            if (q.kind == "bolus") {
                                 R.string.q_btn_no_insulin
                             } else {
                                 R.string.q_btn_nothing

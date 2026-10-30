@@ -87,9 +87,7 @@ fun FoodPicker(tables: List<FoodTable>, lang: String, onPick: (TableFood, FoodTa
                 FilterChip(selected = cat == null, onClick = { cat = null }, label = { Text(stringResource(R.string.food_pick_all)) })
                 cats.forEach { k ->
                     FilterChip(selected = cat == k.id, onClick = {
-                        cat = if (cat ==
-                            k.id
-                        ) {
+                        cat = if (cat == k.id) {
                             null
                         } else {
                             k.id
@@ -124,9 +122,7 @@ fun FoodPicker(tables: List<FoodTable>, lang: String, onPick: (TableFood, FoodTa
                             style = GlucoseHero.copy(
                                 fontSize = 18.sp,
                                 lineHeight = 22.sp,
-                                color = if (f.carbs ==
-                                    0
-                                ) {
+                                color = if (f.carbs == 0) {
                                     c.textMuted
                                 } else {
                                     c.carbs

@@ -109,9 +109,7 @@ fun PlannedCard(ui: PlannedCardUiState, units: Units, onAction: (PlannedAction) 
         // the correction was for the sugar then; before injecting, a fresh reading
         p.meterAt?.let { at ->
             val age = ((now - at) / 60_000L).toInt()
-            if (p.corr > 0 &&
-                age > dose.freshMin
-            ) {
+            if (p.corr > 0 && age > dose.freshMin) {
                 AlertCard(
                     DoseCalc.Alert.RecentRapid(0.0, 0),
                     units,

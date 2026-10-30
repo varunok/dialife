@@ -46,9 +46,7 @@ internal fun StaleBanner(ui: HomeUi, state: HomeState) {
         )
         Text(stringResource(R.string.stale_last, formatClock(ctx, bg.mills)), color = c.text, fontSize = 14.sp)
         ui.state.uploader?.let { u ->
-            if (u.mills >
-                0
-            ) {
+            if (u.mills > 0) {
                 Text(
                     stringResource(
                         R.string.stale_phone,

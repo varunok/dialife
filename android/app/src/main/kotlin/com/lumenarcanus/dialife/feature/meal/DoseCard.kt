@@ -74,9 +74,7 @@ internal fun DoseCard(
         }
         Line(
             (
-                if (earlier >
-                    0
-                ) {
+                if (earlier > 0) {
                     stringResource(R.string.meal_line_carbs_join, earlier, m.carbs - earlier, m.carbs)
                 } else {
                     "${m.carbs} " +
@@ -110,9 +108,7 @@ internal fun DoseCard(
                     Text(
                         stringResource(
                             R.string.meal_fresh_meter,
-                            if (units ==
-                                Units.Mmol
-                            ) {
+                            if (units == Units.Mmol) {
                                 stringResource(R.string.unit_mmol)
                             } else {
                                 "mg/dL"
@@ -129,9 +125,7 @@ internal fun DoseCard(
         Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
             Text(
                 stringResource(
-                    if (given >
-                        0
-                    ) {
+                    if (given > 0) {
                         R.string.meal_to_give_more
                     } else {
                         R.string.meal_to_give
@@ -143,9 +137,7 @@ internal fun DoseCard(
             )
             Text(
                 (
-                    if (given > 0 &&
-                        m.toGive > 0
-                    ) {
+                    if (given > 0 && m.toGive > 0) {
                         "+"
                     } else {
                         ""

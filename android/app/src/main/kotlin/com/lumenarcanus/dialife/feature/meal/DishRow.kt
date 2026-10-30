@@ -91,9 +91,7 @@ internal fun DishRow(
                     Text(row.name.ifBlank { "—" }, color = c.text, fontSize = 15.sp, fontWeight = FontWeight.Medium)
                     Text(
                         (row.portion.ifBlank { stringResource(R.string.meal_no_portion) }) +
-                            if (row.grams ==
-                                null
-                            ) {
+                            if (row.grams == null) {
                                 ""
                             } else {
                                 " · " + stringResource(if (hinted) R.string.meal_from_hint else R.string.meal_by_hand)
@@ -182,9 +180,7 @@ internal fun DishRow(
                     border = if (row.grams == null) BorderStroke(1.dp, c.textFaint) else null
                 ) {
                     Text(
-                        if (row.grams ==
-                            null
-                        ) {
+                        if (row.grams == null) {
                             stringResource(R.string.meal_need_carbs)
                         } else {
                             stringResource(R.string.meal_done, row.grams!!)

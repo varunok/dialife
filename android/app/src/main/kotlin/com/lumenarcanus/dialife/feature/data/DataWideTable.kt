@@ -137,9 +137,7 @@ internal fun WideTable(
                                 "·"
                             } else {
                                 es.map {
-                                    text(it) + if (r.end !=
-                                        null
-                                    ) {
+                                    text(it) + if (r.end != null) {
                                         " · " + formatClock(ctx, it.t)
                                     } else {
                                         ""
@@ -171,9 +169,7 @@ internal fun WideTable(
                                 r.sgv?.let { v ->
                                     Row(verticalAlignment = Alignment.Bottom) {
                                         Text(
-                                            formatGlucose(v, units, locale) + if (r.end ==
-                                                null
-                                            ) {
+                                            formatGlucose(v, units, locale) + if (r.end == null) {
                                                 " " + arrowOf(r.delta)
                                             } else {
                                                 ""

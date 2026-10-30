@@ -226,9 +226,7 @@ private fun AlarmScreen(
                                     com.lumenarcanus.dialife.live.Notifications.arrowOf(bg?.direction).ifBlank { null },
                                     bg?.delta?.let { formatDelta(it, units, locale) },
                                     stringResource(
-                                        if (units ==
-                                            Units.MgDl
-                                        ) {
+                                        if (units == Units.MgDl) {
                                             R.string.unit_mgdl
                                         } else {
                                             R.string.unit_mmol
@@ -303,8 +301,7 @@ private fun AlarmScreen(
                 color = c.high,
                 fontSize = 15.sp,
                 modifier = Modifier.semantics {
-                    liveRegion =
-                        LiveRegionMode.Polite
+                    liveRegion = LiveRegionMode.Polite
                 }
             )
         }

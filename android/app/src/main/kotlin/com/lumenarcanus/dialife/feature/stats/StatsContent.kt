@@ -227,16 +227,12 @@ internal fun DailyTotals(s: Stats) {
             }.getOrDefault(d.date)
             RowOf(
                 day,
-                if (d.basal >
-                    0
-                ) {
+                if (d.basal > 0) {
                     "${n(d.basal)} $u"
                 } else {
                     "—"
                 },
-                if (d.rapid >
-                    0
-                ) {
+                if (d.rapid > 0) {
                     "${n(d.rapid)} $u"
                 } else {
                     "—"
@@ -363,9 +359,7 @@ internal fun Agp(s: Stats, units: Units, modifier: Modifier, startMinute: Int = 
                 ) {
                     val p = Path()
                     pts.forEachIndexed { i, a ->
-                        if (i ==
-                            0
-                        ) {
+                        if (i == 0) {
                             p.moveTo((x(a.minute) + 15f / 1440f * w), y(top(a)))
                         } else {
                             p.lineTo((x(a.minute) + 15f / 1440f * w), y(top(a)))
@@ -379,9 +373,7 @@ internal fun Agp(s: Stats, units: Units, modifier: Modifier, startMinute: Int = 
                 band({ it.p75 }, { it.p25 }, c.inRange.copy(alpha = 0.30f))
                 val median = Path()
                 pts.forEachIndexed { i, a ->
-                    if (i ==
-                        0
-                    ) {
+                    if (i == 0) {
                         median.moveTo((x(a.minute) + 15f / 1440f * w), y(a.p50))
                     } else {
                         median.lineTo((x(a.minute) + 15f / 1440f * w), y(a.p50))

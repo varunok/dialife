@@ -105,9 +105,7 @@ fun SettingsScreen(
                         stringResource(
                             R.string.set_units_server,
                             stringResource(
-                                if (serverUnits ==
-                                    Units.MgDl
-                                ) {
+                                if (serverUnits == Units.MgDl) {
                                     R.string.unit_mgdl
                                 } else {
                                     R.string.unit_mmol
@@ -278,8 +276,7 @@ private fun InsulinPicker(type: com.lumenarcanus.dialife.data.InsulinType, chose
                     })
                 }
                 androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.set_insulin_other)) }, onClick = {
-                    open =
-                        false
+                    open = false
                     typing = true
                 })
             }

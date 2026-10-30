@@ -80,9 +80,7 @@ internal fun Hero(state: HomeState, locale: Locale) {
                         style = GlucoseHero.copy(
                             color = if (state.ageMin >= STALE_MIN) c.textFaint else c.text,
                             // an old number must not be read as the current one
-                            textDecoration = if (state.ageMin >=
-                                STALE_MIN
-                            ) {
+                            textDecoration = if (state.ageMin >= STALE_MIN) {
                                 androidx.compose.ui.text.style.TextDecoration.LineThrough
                             } else {
                                 null
@@ -135,18 +133,12 @@ internal fun Hero(state: HomeState, locale: Locale) {
                 Range.High -> stringResource(R.string.state_high, formatGlucose(state.high, state.units, locale))
             }
             // an old reading says nothing about the range now
-            if (state.ageMin <
-                STALE_MIN
-            ) {
+            if (state.ageMin < STALE_MIN) {
                 Chip(
                     label,
-                    background = if (state.range ==
-                        Range.InRange
-                    ) {
+                    background = if (state.range == Range.InRange) {
                         c.inRangeContainer
-                    } else if (state.range ==
-                        Range.Low
-                    ) {
+                    } else if (state.range == Range.Low) {
                         c.lowContainer
                     } else {
                         c.highContainer
@@ -156,9 +148,7 @@ internal fun Hero(state: HomeState, locale: Locale) {
             }
             state.forecast30?.let {
                 val q = state.forecastQuality?.takeIf { it.n >= 50 } // a record of fewer forecasts says little
-                val text = if (q !=
-                    null
-                ) {
+                val text = if (q != null) {
                     stringResource(
                         R.string.forecast_30_err,
                         formatGlucose(it, state.units, locale),
@@ -216,9 +206,7 @@ private fun ForecastNotes(state: HomeState, locale: Locale) {
         val ctx = androidx.compose.ui.platform.LocalContext.current
         Text(
             stringResource(
-                if (b.kind ==
-                    "food"
-                ) {
+                if (b.kind == "food") {
                     R.string.forecast_blind_food
                 } else {
                     R.string.forecast_blind_insulin

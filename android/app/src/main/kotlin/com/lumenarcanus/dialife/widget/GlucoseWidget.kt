@@ -218,9 +218,7 @@ private fun Content(d: WidgetData) {
                 d.alarm ?: d.state.orEmpty(),
                 maxLines = 1,
                 style = TextStyle(
-                    color = if (d.alarm !=
-                        null
-                    ) {
+                    color = if (d.alarm != null) {
                         Low
                     } else {
                         accent
@@ -257,9 +255,7 @@ private fun Content(d: WidgetData) {
                 d.alarm ?: d.state.orEmpty(),
                 maxLines = 1,
                 style = TextStyle(
-                    color = if (d.alarm !=
-                        null
-                    ) {
+                    color = if (d.alarm != null) {
                         Low
                     } else {
                         accent
@@ -301,9 +297,7 @@ private fun Content(d: WidgetData) {
                         d.alarm ?: d.state.orEmpty(),
                         maxLines = 1,
                         style = TextStyle(
-                            color = if (d.alarm !=
-                                null
-                            ) {
+                            color = if (d.alarm != null) {
                                 Low
                             } else {
                                 accent

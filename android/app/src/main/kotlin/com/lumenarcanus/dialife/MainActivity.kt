@@ -147,8 +147,7 @@ class MainActivity : AppCompatActivity() {
                 var setup by remember { mutableStateOf(backgroundSetup()) }
                 LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { setup = backgroundSetup() }
                 val askNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-                    setup =
-                        backgroundSetup()
+                    setup = backgroundSetup()
                 }
                 com.lumenarcanus.dialife.feature.settings.SettingsRoute(
                     creds = creds,

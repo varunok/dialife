@@ -153,9 +153,7 @@ class QuestionNotifier(private val app: Context) {
         private fun units(ctx: Context, u: Double) = formatAmount(u, ctx.resources.configuration.locales[0]) + " " +
             ctx.getString(R.string.unit_insulin)
 
-        fun questionTitle(ctx: Context, q: Question): String = if (q.kind ==
-            "planned"
-        ) {
+        fun questionTitle(ctx: Context, q: Question): String = if (q.kind == "planned") {
             ctx.getString(R.string.q_planned_title, formatClock(ctx, q.from))
         } else {
             ctx.getString(
