@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.formatDelta
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.data.History
@@ -69,7 +70,6 @@ import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.ui.theme.PlexMono
 import com.lumenarcanus.dialife.ui.treatment.basalColor
 import com.lumenarcanus.dialife.ui.treatment.basalContainer
-import com.lumenarcanus.dialife.ui.treatment.formatAmount
 
 enum class EntryKind { Rapid, Basal, Carbs, Meter, Activity, Note, Suspect }
 

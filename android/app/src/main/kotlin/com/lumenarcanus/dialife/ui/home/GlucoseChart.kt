@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.formatDelta
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.data.Forecast
@@ -930,7 +931,7 @@ fun GlucoseChart(
                         // "Lantus 10 од" when the brand is known, else "Інсулін 10 од"
                         tr.insulinName?.let {
                             "$it " +
-                                String.format(locale, "%s %s", com.lumenarcanus.dialife.ui.treatment.formatAmount(u, locale), unitInsulin)
+                                String.format(locale, "%s %s", formatAmount(u, locale), unitInsulin)
                         }
                             ?: insulinLabel.format(locale, u)
                     },

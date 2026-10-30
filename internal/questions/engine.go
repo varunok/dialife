@@ -13,6 +13,7 @@ import (
 	"dialife/internal/bus"
 	"dialife/internal/glucose"
 	"dialife/internal/insulin"
+	"dialife/internal/planned"
 	"dialife/internal/store"
 )
 
@@ -27,7 +28,7 @@ const (
 
 	// a planned dose: asked about after an hour, gone (expired) after three
 	PlannedAsk    = time.Hour
-	PlannedExpire = 3 * time.Hour
+	PlannedExpire = planned.Expire
 	// "asleep" for a rise: no more rise questions this long from its start
 	asleepFor = 2 * time.Hour
 )

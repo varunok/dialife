@@ -61,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.formatDelta
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.core.ui.unitsOf
@@ -511,11 +512,11 @@ private fun QuestionCard(
         entry?.let { tr ->
             val what = listOfNotNull(
                 tr.carbs?.takeIf { it > 0 }?.let {
-                    com.lumenarcanus.dialife.ui.treatment.formatAmount(it, locale) + " " +
+                    formatAmount(it, locale) + " " +
                         stringResource(R.string.unit_carbs)
                 },
                 tr.insulin?.takeIf { it > 0 }?.let {
-                    com.lumenarcanus.dialife.ui.treatment.formatAmount(it, locale) + " " +
+                    formatAmount(it, locale) + " " +
                         stringResource(R.string.unit_insulin)
                 }
             ).joinToString(" · ")
@@ -558,7 +559,7 @@ private fun QuestionCard(
                             stringResource(
                                 R.string.q_btn_was_for_it,
                                 com.lumenarcanus.dialife.live.AlarmText.clock(ctx, before.t),
-                                com.lumenarcanus.dialife.ui.treatment.formatAmount(before.insulin ?: 0.0, locale)
+                                formatAmount(before.insulin ?: 0.0, locale)
                             )
                         )
                     }
@@ -869,7 +870,7 @@ private fun Hero(state: HomeState, locale: Locale) {
         state.iob?.let { iob ->
             val u = stringResource(R.string.unit_insulin)
             val parts = listOfNotNull(
-                stringResource(R.string.iob_insulin, com.lumenarcanus.dialife.ui.treatment.formatAmount(iob.insulin, locale), u).takeIf {
+                stringResource(R.string.iob_insulin, formatAmount(iob.insulin, locale), u).takeIf {
                     iob.insulin >=
                         0.05
                 },

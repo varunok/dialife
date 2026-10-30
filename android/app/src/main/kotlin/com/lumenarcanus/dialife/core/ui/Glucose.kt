@@ -24,3 +24,6 @@ fun formatDelta(mgdl: Int, units: Units, locale: Locale): String {
     }
     return sign + formatGlucose(abs(mgdl), units, locale)
 }
+
+/** 1.5 → "1,5" in Ukrainian, "1.5" in English; whole numbers without a decimal. */
+fun formatAmount(v: Double, locale: Locale): String = if (v % 1.0 == 0.0) v.toLong().toString() else String.format(locale, "%.1f", v)

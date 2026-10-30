@@ -41,6 +41,7 @@ import androidx.core.os.LocaleListCompat
 import com.lumenarcanus.dialife.BuildConfig
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.data.Credentials
@@ -50,7 +51,6 @@ import com.lumenarcanus.dialife.data.ThemeChoice
 import com.lumenarcanus.dialife.live.AlarmText
 import com.lumenarcanus.dialife.ui.home.BackgroundSetup
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
-import com.lumenarcanus.dialife.ui.treatment.formatAmount
 import kotlinx.coroutines.delay
 
 /** This phone's settings: how it looks, alarms (view only in v1), permissions, connection. */

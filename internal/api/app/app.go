@@ -27,6 +27,7 @@ import (
 	"dialife/internal/insulin"
 	"dialife/internal/meter"
 	"dialife/internal/nstime"
+	"dialife/internal/planned"
 	"dialife/internal/questions"
 	"dialife/internal/store"
 	"dialife/internal/wait"
@@ -63,6 +64,7 @@ type Handlers struct {
 	Uploader   string            // what the family calls the xDrip+ phone; sent to the app as is
 	Carbs      *carbs.Service    // carb suggestions for the food form
 	Wait       *wait.Service     // when to eat after rapid insulin with food
+	Planned    *planned.Service  // doses worked out for a meal, not given yet
 
 	webCodes webCodes     // web login codes, in memory for their QR pictures
 	intents  intentBoard  // who has the insulin form open
@@ -86,7 +88,7 @@ type stateResponse struct {
 	UploaderName string              `json:"uploader_name,omitempty"` // what the family calls the xDrip+ phone
 	Intents      []insulinIntent     `json:"intents"`                 // parents with the insulin form open now
 	Dose         doseSettings        `json:"dose"`                    // the family's dose calculation
-	Planned      []plannedDose       `json:"planned"`                 // doses worked out for a meal, not given yet
+	Planned      []planned.Dose      `json:"planned"`                 // doses worked out for a meal, not given yet
 	IOB          *iobState           `json:"iob,omitempty"`           // what logged food and rapid insulin will still do; not for alarms
 	IOBQuality   *forecast.Quality   `json:"iob_quality,omitempty"`   // how often its "in 30 min" came true
 	Wait         *wait.State         `json:"wait,omitempty"`          // a rapid dose with food beside it: when to start eating, a suggestion
@@ -195,7 +197,7 @@ func (h *Handlers) snapshot(ctx context.Context, now time.Time) (stateResponse, 
 			resp.IOBQuality = &q
 		}
 	}
-	if resp.Planned, err = h.planned(ctx, devs); err != nil {
+	if resp.Planned, err = h.Planned.List(ctx, devs); err != nil {
 		return resp, err
 	}
 	resp.Caregivers = []caregiver{}

@@ -8,6 +8,7 @@ import android.content.Intent
 import com.lumenarcanus.dialife.MainActivity
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.data.Question
 
@@ -148,9 +149,8 @@ class QuestionNotifier(private val app: Context) {
             com.lumenarcanus.dialife.data.InsulinType.of(q.insulin)
         )
 
-        private fun units(ctx: Context, u: Double) =
-            com.lumenarcanus.dialife.ui.treatment.formatAmount(u, ctx.resources.configuration.locales[0]) + " " +
-                ctx.getString(R.string.unit_insulin)
+        private fun units(ctx: Context, u: Double) = formatAmount(u, ctx.resources.configuration.locales[0]) + " " +
+            ctx.getString(R.string.unit_insulin)
 
         fun questionTitle(ctx: Context, q: Question): String = if (q.kind ==
             "planned"

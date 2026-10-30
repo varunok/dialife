@@ -16,6 +16,7 @@ import (
 	"dialife/internal/carbs"
 	"dialife/internal/config"
 	"dialife/internal/httpx"
+	"dialife/internal/planned"
 	"dialife/internal/questions"
 	"dialife/internal/store"
 	"dialife/internal/wait"
@@ -63,6 +64,7 @@ func New(d Deps) *App {
 	api.Questions = &questions.Engine{Store: d.Store, Bus: d.Bus, Now: d.Now, Loc: d.Loc, Uploader: d.Uploader}
 	api.Questions.OnPlanned = func() { api.PublishState(context.Background()) }
 	api.Wait = &wait.Service{Store: d.Store, Now: d.Now, OnChange: api.PublishState}
+	api.Planned = &planned.Service{Store: d.Store, Now: d.Now, OnChange: api.PublishState, Settle: api.Questions.SettlePlanned}
 	status := nsv1.Status(d.Version, func(ctx context.Context) config.Thresholds { return api.Alarms.CurrentRules(ctx).Thresholds }, d.Now)
 	ns := &nsv1.Handlers{Store: d.Store, Now: d.Now, Events: api}
 
@@ -112,9 +114,7 @@ func New(d Deps) *App {
 	mux.Handle("POST /api/insulin/intent", caregiver(http.HandlerFunc(api.InsulinIntent)))
 	mux.Handle("DELETE /api/insulin/intent", caregiver(http.HandlerFunc(api.InsulinIntentEnd)))
 	mux.Handle("PUT /api/dose", caregiver(http.HandlerFunc(api.PutDose)))
-	mux.Handle("POST /api/planned", caregiver(http.HandlerFunc(api.SavePlanned)))
-	mux.Handle("POST /api/planned/{id}/given", caregiver(http.HandlerFunc(api.PlannedGiven)))
-	mux.Handle("POST /api/planned/{id}/skip", caregiver(http.HandlerFunc(api.PlannedSkip)))
+	planned.HTTP{Service: api.Planned}.Routes(mux, caregiver)
 	wait.HTTP{Service: api.Wait}.Routes(mux, caregiver)
 	mux.Handle("POST /api/questions/{id}/answer", caregiver(http.HandlerFunc(api.AnswerQuestion)))
 	mux.Handle("POST /api/questions/{id}/dismiss", caregiver(http.HandlerFunc(api.DismissQuestion)))

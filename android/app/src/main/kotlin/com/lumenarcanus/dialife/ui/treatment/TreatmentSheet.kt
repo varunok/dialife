@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.data.InsulinType
 import com.lumenarcanus.dialife.data.Prefs
@@ -96,10 +97,6 @@ fun parseMeter(text: String, units: Units): Int? {
     val mg = if (units == Units.Mmol) kotlin.math.round(v * 18.0).toInt() else kotlin.math.round(v).toInt()
     return mg.takeIf { it in 20..600 }
 }
-
-/** 1.5 → "1,5" in Ukrainian, "1.5" in English; whole numbers without a decimal. */
-fun formatAmount(v: Double, locale: java.util.Locale): String =
-    if (v % 1.0 == 0.0) v.toLong().toString() else String.format(locale, "%.1f", v)
 
 /**
  * Add or edit insulin, food or a note. Works offline: the entry goes to a
