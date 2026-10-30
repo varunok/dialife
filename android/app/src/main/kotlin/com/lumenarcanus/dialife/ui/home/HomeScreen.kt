@@ -244,7 +244,8 @@ fun HomeScreen(
     onOpenData: () -> Unit = {},
     onOpenWebLogin: () -> Unit = {},
     onOpenMeal: (editing: Treatment?, question: Question?) -> Unit = { _, _ -> }, // the food screen
-    onPlanned: (com.lumenarcanus.dialife.ui.meal.PlannedAction) -> Unit = {}, // given, changed or not given
+    // doses worked out for a meal, not given yet: a feature with its own state (feature/planned)
+    plannedSection: @Composable () -> Unit = {},
     // when to eat: a feature with its own state (feature/wait)
     waitSection: @Composable () -> Unit = {}
 ) {
@@ -367,23 +368,7 @@ fun HomeScreen(
         ui.state?.questions.orEmpty().filter { it.watch && (it.watchUntil ?: 0) > ui.now }.forEach { q ->
             androidx.compose.runtime.key("w", q.id) { WatchCard(q) }
         }
-        // doses worked out for a meal: given, changed or not given, on every phone
-        ui.state?.planned.orEmpty().filter { it.state == "planned" }.forEach { p ->
-            androidx.compose.runtime.key("p", p.id) {
-                com.lumenarcanus.dialife.ui.meal.PlannedCard(
-                    p, ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(), ui.now, ui.history?.treatments.orEmpty(),
-                    question = ui.state?.questions.orEmpty().firstOrNull {
-                        it.kind == "planned" &&
-                            it.plannedId == p.id &&
-                            it.state == "open"
-                    },
-                    units = state?.units ?: fallbackUnits,
-                    onPlanned = onPlanned,
-                    onSaveTreatment = onSaveTreatment,
-                    mealRules = ui.state?.mealRules ?: com.lumenarcanus.dialife.data.MealRules()
-                )
-            }
-        }
+        plannedSection()
         waitSection()
         ui.state?.questions.orEmpty().filter { it.state == "open" && it.kind != "planned" }.forEach { q ->
             androidx.compose.runtime.key("q", q.id) {

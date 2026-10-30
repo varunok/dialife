@@ -267,15 +267,6 @@ class LiveRepository(context: Context, private val api: DiaLifeApi = DiaLifeApi(
         return api.suggestCarbs(c, listOf(name to portion))
     }
 
-    suspend fun planDose(p: com.lumenarcanus.dialife.data.PlannedDose): Result<Unit> =
-        creds?.let { api.planDose(it, p) } ?: Result.failure(ApiException(ApiError.Unauthorized))
-
-    suspend fun plannedGiven(id: String, insulinId: String): Result<Unit> =
-        creds?.let { api.plannedGiven(it, id, insulinId) } ?: Result.failure(ApiException(ApiError.Unauthorized))
-
-    suspend fun plannedSkip(id: String): Result<Unit> =
-        creds?.let { api.plannedSkip(it, id) } ?: Result.failure(ApiException(ApiError.Unauthorized))
-
     /** The server's state right now, past whatever the stream has brought (or missed). */
     suspend fun freshState(): Result<com.lumenarcanus.dialife.data.StateResponse> =
         creds?.let { api.state(it) } ?: Result.failure(ApiException(ApiError.Unauthorized))

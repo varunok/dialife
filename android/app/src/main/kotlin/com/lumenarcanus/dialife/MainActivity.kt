@@ -323,7 +323,7 @@ class MainActivity : AppCompatActivity() {
             onOpenData = { onOpen(Screen.Data) },
             onOpenWebLogin = { onOpen(Screen.WebLogin) },
             onOpenMeal = onMeal,
-            onPlanned = { act -> planned(act) },
+            plannedSection = { com.lumenarcanus.dialife.feature.planned.PlannedSection() },
             waitSection = { com.lumenarcanus.dialife.feature.wait.WaitSection() },
             onOpenSettings = { onOpen(Screen.Settings) },
             onOpenHandling = { id -> openHandling = id },
@@ -346,28 +346,6 @@ class MainActivity : AppCompatActivity() {
             },
             onDisconnect = vm::disconnect
         )
-    }
-
-    /** Given, changed or not given: the insulin entry first, then the dose closed on the server. */
-    private fun planned(act: com.lumenarcanus.dialife.ui.meal.PlannedAction) {
-        lifecycleScope.launch {
-            val r = when (act) {
-                is com.lumenarcanus.dialife.ui.meal.PlannedAction.Given -> {
-                    if (act.isNew) {
-                        liveRepository.saveTreatment(act.insulin)
-                    } else if (act.insulin.mealId ==
-                        null
-                    ) {
-                        liveRepository.saveTreatment(act.insulin.copy(mealId = act.planned.mealId, insulinRole = "meal"))
-                    }
-                    liveRepository.plannedGiven(act.planned.id, act.insulin.id)
-                }
-                is com.lumenarcanus.dialife.ui.meal.PlannedAction.Change -> liveRepository.planDose(act.planned.copy(dose = act.dose))
-                is com.lumenarcanus.dialife.ui.meal.PlannedAction.Skip -> liveRepository.plannedSkip(act.planned.id)
-            }
-            // the server sends every phone the new state itself
-            r.onFailure { Toast.makeText(this@MainActivity, R.string.planned_failed, Toast.LENGTH_LONG).show() }
-        }
     }
 
     private fun backgroundSetup() = BackgroundSetup(

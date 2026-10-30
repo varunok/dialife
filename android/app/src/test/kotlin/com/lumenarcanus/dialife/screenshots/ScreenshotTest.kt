@@ -12,6 +12,8 @@ import com.lumenarcanus.dialife.data.AlarmView
 import com.lumenarcanus.dialife.data.Caregiver
 import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.data.Question
+import com.lumenarcanus.dialife.feature.planned.PlannedCard
+import com.lumenarcanus.dialife.feature.planned.PlannedCardUiState
 import com.lumenarcanus.dialife.feature.wait.CountdownCard
 import com.lumenarcanus.dialife.feature.wait.CountdownUiState
 import com.lumenarcanus.dialife.feature.wait.WarningCard
@@ -291,40 +293,42 @@ class ScreenshotTest {
                 now - 30 * 60_000L,
                 createdAt = now - 10 * 60_000L, by = "Мама"
             )
-            com.lumenarcanus.dialife.ui.meal.PlannedCard(
-                p,
-                com.lumenarcanus.dialife.data.DoseSettings(),
-                now,
-                listOf(
-                    meal(now)
+            PlannedCard(
+                PlannedCardUiState(
+                    dose = p,
+                    settings = com.lumenarcanus.dialife.data.DoseSettings(),
+                    now = now,
+                    mealAt = meal(now).t,
+                    question = null,
+                    recorded = null,
+                    treatments = listOf(
+                        meal(now)
+                    )
                 ),
-                null,
-                Units.MgDl,
-                {
-                },
-                {}
-            )
-            com.lumenarcanus.dialife.ui.meal.PlannedCard(
-                p.copy(id = "p2", createdAt = now - 65 * 60_000L),
-                com.lumenarcanus.dialife.data.DoseSettings(),
-                now,
-                listOf(meal(now)),
-                Question(
-                    id = 9,
-                    kind = "planned",
-                    state = "open",
-                    from = now - 25 * 60_000L,
-                    to = now,
-                    sgvFrom = 0,
-                    sgvTo = 0,
-                    plannedId = "p2",
-                    dose = 4.0
+                Units.MgDl
+            ) {}
+            PlannedCard(
+                PlannedCardUiState(
+                    dose = p.copy(id = "p2", createdAt = now - 65 * 60_000L),
+                    settings = com.lumenarcanus.dialife.data.DoseSettings(),
+                    now = now,
+                    mealAt = meal(now).t,
+                    question = Question(
+                        id = 9,
+                        kind = "planned",
+                        state = "open",
+                        from = now - 25 * 60_000L,
+                        to = now,
+                        sgvFrom = 0,
+                        sgvTo = 0,
+                        plannedId = "p2",
+                        dose = 4.0
+                    ),
+                    recorded = null,
+                    treatments = listOf(meal(now))
                 ),
-                Units.MgDl,
-                {
-                },
-                {}
-            )
+                Units.MgDl
+            ) {}
             com.lumenarcanus.dialife.ui.meal.EntryDetail(
                 meal(now),
                 listOf(
@@ -602,40 +606,42 @@ class ScreenshotTest {
                 now - 30 * 60_000L,
                 createdAt = now - 10 * 60_000L, by = "Мама"
             )
-            com.lumenarcanus.dialife.ui.meal.PlannedCard(
-                p,
-                com.lumenarcanus.dialife.data.DoseSettings(),
-                now,
-                listOf(
-                    meal(now)
+            PlannedCard(
+                PlannedCardUiState(
+                    dose = p,
+                    settings = com.lumenarcanus.dialife.data.DoseSettings(),
+                    now = now,
+                    mealAt = meal(now).t,
+                    question = null,
+                    recorded = null,
+                    treatments = listOf(
+                        meal(now)
+                    )
                 ),
-                null,
-                Units.MgDl,
-                {
-                },
-                {}
-            )
-            com.lumenarcanus.dialife.ui.meal.PlannedCard(
-                p.copy(id = "p2", createdAt = now - 65 * 60_000L),
-                com.lumenarcanus.dialife.data.DoseSettings(),
-                now,
-                listOf(meal(now)),
-                Question(
-                    id = 9,
-                    kind = "planned",
-                    state = "open",
-                    from = now - 25 * 60_000L,
-                    to = now,
-                    sgvFrom = 0,
-                    sgvTo = 0,
-                    plannedId = "p2",
-                    dose = 4.0
+                Units.MgDl
+            ) {}
+            PlannedCard(
+                PlannedCardUiState(
+                    dose = p.copy(id = "p2", createdAt = now - 65 * 60_000L),
+                    settings = com.lumenarcanus.dialife.data.DoseSettings(),
+                    now = now,
+                    mealAt = meal(now).t,
+                    question = Question(
+                        id = 9,
+                        kind = "planned",
+                        state = "open",
+                        from = now - 25 * 60_000L,
+                        to = now,
+                        sgvFrom = 0,
+                        sgvTo = 0,
+                        plannedId = "p2",
+                        dose = 4.0
+                    ),
+                    recorded = null,
+                    treatments = listOf(meal(now))
                 ),
-                Units.MgDl,
-                {
-                },
-                {}
-            )
+                Units.MgDl
+            ) {}
             com.lumenarcanus.dialife.ui.meal.EntryDetail(
                 meal(now),
                 listOf(
@@ -668,40 +674,42 @@ class ScreenshotTest {
                 now - 30 * 60_000L,
                 createdAt = now - 10 * 60_000L, by = "Мама"
             )
-            com.lumenarcanus.dialife.ui.meal.PlannedCard(
-                p,
-                com.lumenarcanus.dialife.data.DoseSettings(),
-                now,
-                listOf(
-                    meal(now)
+            PlannedCard(
+                PlannedCardUiState(
+                    dose = p,
+                    settings = com.lumenarcanus.dialife.data.DoseSettings(),
+                    now = now,
+                    mealAt = meal(now).t,
+                    question = null,
+                    recorded = null,
+                    treatments = listOf(
+                        meal(now)
+                    )
                 ),
-                null,
-                Units.MgDl,
-                {
-                },
-                {}
-            )
-            com.lumenarcanus.dialife.ui.meal.PlannedCard(
-                p.copy(id = "p2", createdAt = now - 65 * 60_000L),
-                com.lumenarcanus.dialife.data.DoseSettings(),
-                now,
-                listOf(meal(now)),
-                Question(
-                    id = 9,
-                    kind = "planned",
-                    state = "open",
-                    from = now - 25 * 60_000L,
-                    to = now,
-                    sgvFrom = 0,
-                    sgvTo = 0,
-                    plannedId = "p2",
-                    dose = 4.0
+                Units.MgDl
+            ) {}
+            PlannedCard(
+                PlannedCardUiState(
+                    dose = p.copy(id = "p2", createdAt = now - 65 * 60_000L),
+                    settings = com.lumenarcanus.dialife.data.DoseSettings(),
+                    now = now,
+                    mealAt = meal(now).t,
+                    question = Question(
+                        id = 9,
+                        kind = "planned",
+                        state = "open",
+                        from = now - 25 * 60_000L,
+                        to = now,
+                        sgvFrom = 0,
+                        sgvTo = 0,
+                        plannedId = "p2",
+                        dose = 4.0
+                    ),
+                    recorded = null,
+                    treatments = listOf(meal(now))
                 ),
-                Units.MgDl,
-                {
-                },
-                {}
-            )
+                Units.MgDl
+            ) {}
             com.lumenarcanus.dialife.ui.meal.EntryDetail(
                 meal(now),
                 listOf(

@@ -118,27 +118,6 @@ class DiaLifeApi(private val http: OkHttpClient = defaultClient) {
         }.toString()
     )
 
-    suspend fun planDose(c: Credentials, p: PlannedDose): Result<Unit> = post(
-        c,
-        "/api/planned",
-        buildJsonObject {
-            put("id", p.id)
-            put("meal_id", p.mealId)
-            put("dose", p.dose)
-            put("food", p.food)
-            put("corr", p.corr)
-            put("carbs", p.carbs)
-            p.meter?.let { put("meter", it) }
-            p.meterAt?.let { put("meter_at", it) }
-            put("created_at", p.createdAt)
-        }.toString()
-    )
-
-    suspend fun plannedGiven(c: Credentials, id: String, insulinId: String): Result<Unit> =
-        post(c, "/api/planned/$id/given", buildJsonObject { put("insulin_id", insulinId) }.toString())
-
-    suspend fun plannedSkip(c: Credentials, id: String): Result<Unit> = post(c, "/api/planned/$id/skip", "{}")
-
     /** The carb tables and the family's most logged foods, for the food form. */
     suspend fun foods(c: Credentials): Result<FoodCatalog> = get(c.server, c.token, "/api/foods")
 

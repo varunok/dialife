@@ -1,6 +1,7 @@
 package com.lumenarcanus.dialife
 
 import android.app.Application
+import com.lumenarcanus.dialife.core.data.PlannedDoseRepository
 import com.lumenarcanus.dialife.live.AlarmController
 import com.lumenarcanus.dialife.live.LiveRepository
 import com.lumenarcanus.dialife.live.Notifications
@@ -11,6 +12,7 @@ class DiaLifeApp : Application() {
     val live by lazy { LiveRepository(this) }
     val alarms by lazy { AlarmController(this, live) }
     val questions by lazy { com.lumenarcanus.dialife.live.QuestionNotifier(this) }
+    val plannedDoses by lazy { PlannedDoseRepository({ live.credentials }) }
 
     override fun onCreate() {
         super.onCreate()
@@ -23,6 +25,9 @@ class DiaLifeApp : Application() {
 
 val android.content.Context.liveRepository: LiveRepository
     get() = (applicationContext as DiaLifeApp).live
+
+val android.content.Context.plannedDoses: PlannedDoseRepository
+    get() = (applicationContext as DiaLifeApp).plannedDoses
 
 val android.content.Context.alarmController: AlarmController
     get() = (applicationContext as DiaLifeApp).alarms

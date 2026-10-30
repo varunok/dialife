@@ -90,6 +90,7 @@ import com.lumenarcanus.dialife.data.inLang
 import com.lumenarcanus.dialife.live.AlarmText
 import com.lumenarcanus.dialife.live.LiveRepository
 import com.lumenarcanus.dialife.live.TreatmentQueue
+import com.lumenarcanus.dialife.plannedDoses
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.ui.theme.GlucoseHero
 import com.lumenarcanus.dialife.ui.treatment.FoodLookup
@@ -275,7 +276,7 @@ fun MealScreen(
                 meter = if (m.fresh) meter else null, meterAt = if (m.fresh) meterAt else null,
                 createdAt = p?.createdAt ?: now
             )
-            scope.launch { repo.planDose(pd).onFailure { failed = true } }
+            scope.launch { ctx.plannedDoses.save(pd).onFailure { failed = true } }
         }
         if (keepsDraft) MealDrafts.clear(ctx)
         onSaved(food)

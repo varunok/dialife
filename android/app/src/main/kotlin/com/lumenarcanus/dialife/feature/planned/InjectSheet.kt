@@ -1,0 +1,204 @@
+package com.lumenarcanus.dialife.feature.planned
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.ui.AlertCard
+import com.lumenarcanus.dialife.core.ui.Confirm
+import com.lumenarcanus.dialife.core.ui.LimitAlert
+import com.lumenarcanus.dialife.core.ui.Stepper
+import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatAmount
+import com.lumenarcanus.dialife.data.DoseCalc
+import com.lumenarcanus.dialife.data.DoseSettings
+import com.lumenarcanus.dialife.data.InsulinType
+import com.lumenarcanus.dialife.data.PlannedDose
+import com.lumenarcanus.dialife.data.Prefs
+import com.lumenarcanus.dialife.data.Treatment
+import com.lumenarcanus.dialife.live.AlarmText
+import com.lumenarcanus.dialife.live.TreatmentQueue
+import com.lumenarcanus.dialife.ui.theme.DiaTheme
+import com.lumenarcanus.dialife.ui.treatment.TimeDialog
+import com.lumenarcanus.dialife.ui.treatment.atLabel
+import com.lumenarcanus.dialife.ui.treatment.nearDose
+
+/** "Given": how much, and when, within reason; the same-dose guard and the limits as everywhere. */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+internal fun InjectSheet(
+    p: PlannedDose,
+    dose: DoseSettings,
+    mealAt: Long,
+    treatments: List<Treatment>,
+    units: Units,
+    onDone: (Treatment, isNew: Boolean) -> Unit,
+    onBack: () -> Unit
+) {
+    val c = DiaTheme.colors
+    val locale = LocalConfiguration.current.locales[0]
+    val ctx = LocalContext.current
+    fun f(x: Double) = formatAmount(x, locale)
+    val u = stringResource(R.string.unit_insulin)
+    val opened = remember { System.currentTimeMillis() }
+    var amount by remember { mutableStateOf(p.dose) }
+    var whenIdx by remember { mutableStateOf(0) }
+    var picked by remember { mutableStateOf<Long?>(null) }
+    var picking by remember { mutableStateOf(false) }
+    var ok by remember { mutableStateOf(false) }
+    var another by remember { mutableStateOf(false) }
+    val at = when (whenIdx) {
+        0 -> opened
+        1 -> opened - 15 * 60_000L
+        else -> picked ?: opened
+    }
+    val earliest = mealAt - 60 * 60_000L
+    val err = when {
+        at > opened + 60_000L -> stringResource(R.string.tr_time_ahead)
+        at < earliest -> stringResource(R.string.planned_too_early)
+        else -> null
+    }
+    val near = nearDose(treatments, InsulinType.Rapid, at, null)?.takeIf { !another && it.dose.mealId != p.mealId }
+    val lv = DoseCalc.level(amount, dose.maxRapid, null)
+    val needOk = lv == DoseCalc.Level.High || lv == DoseCalc.Level.Absurd
+
+    ModalBottomSheet(
+        onDismissRequest = onBack,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = c.surface
+    ) {
+        Column(
+            Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(stringResource(R.string.planned_given_title), color = c.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            if (near != null) {
+                AlertCard(
+                    DoseCalc.Alert.NoMeter(0),
+                    units,
+                    locale,
+                    title = stringResource(
+                        R.string.planned_same_q,
+                        f(near.dose.insulin ?: 0.0),
+                        AlarmText.clock(ctx, near.dose.t),
+                        near.dose.enteredBy.orEmpty()
+                    ),
+                    text = stringResource(R.string.planned_same_text)
+                )
+                OutlinedButton(onClick = {
+                    onDone(near.dose, false)
+                }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+                    Text(stringResource(R.string.planned_same_yes), color = c.text)
+                }
+                Button(
+                    onClick = { another = true },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = c.insulin, contentColor = c.background)
+                ) {
+                    Text(stringResource(R.string.planned_same_no))
+                }
+                TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.tr_cancel)) }
+                return@Column
+            }
+            Text(stringResource(R.string.planned_given_note), color = c.textMuted, fontSize = 13.5.sp)
+            Stepper(amount, dose.step, u) {
+                amount = it
+                ok = false
+            }
+            if (amount !=
+                p.dose
+            ) {
+                Text(stringResource(R.string.planned_given_differs, f(p.dose), f(amount)), color = c.high, fontSize = 12.5.sp)
+            }
+            LimitAlert(lv, amount, dose.maxRapid, units, locale)
+            if (needOk) Confirm(ok, stringResource(R.string.planned_ok_given, f(amount))) { ok = it }
+            Text(stringResource(R.string.planned_when), color = c.textMuted, fontSize = 13.sp)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = whenIdx == 0, onClick = { whenIdx = 0 }, label = { Text(stringResource(R.string.tr_now)) })
+                FilterChip(selected = whenIdx == 1, onClick = {
+                    whenIdx = 1
+                }, label = { Text(stringResource(R.string.tr_minutes_ago, 15)) })
+                FilterChip(selected = whenIdx == 2, onClick = { picking = true }, label = {
+                    Text(
+                        if (whenIdx ==
+                            2
+                        ) {
+                            atLabel(at)
+                        } else {
+                            stringResource(R.string.tr_other_time)
+                        }
+                    )
+                })
+            }
+            Text(
+                err ?: stringResource(R.string.planned_when_range, AlarmText.clock(ctx, earliest)),
+                color = if (err !=
+                    null
+                ) {
+                    c.low
+                } else {
+                    c.textFaint
+                },
+                fontSize = 12.sp
+            )
+            Button(
+                onClick = {
+                    onDone(
+                        Treatment(
+                            id = TreatmentQueue.newId(),
+                            t = at,
+                            insulin = amount,
+                            insulinType = InsulinType.Rapid.wire,
+                            insulinName = Prefs.nameOf(InsulinType.Rapid),
+                            mealId = p.mealId,
+                            insulinRole = "meal"
+                        ),
+                        true
+                    )
+                },
+                enabled = err == null && amount > 0 && (!needOk || ok),
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = c.insulin, contentColor = c.background)
+            ) { Text(stringResource(R.string.planned_given_save, f(amount), AlarmText.clock(ctx, at)), fontWeight = FontWeight.SemiBold) }
+            TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.tr_cancel)) }
+        }
+    }
+    if (picking) {
+        TimeDialog(initial = at, onPick = {
+            picked = it
+            whenIdx = 2
+            picking = false
+        }, onDismiss = { picking = false })
+    }
+}

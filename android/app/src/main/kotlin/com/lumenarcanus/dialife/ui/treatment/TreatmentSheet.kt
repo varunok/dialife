@@ -56,6 +56,8 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.ui.Confirm
+import com.lumenarcanus.dialife.core.ui.LimitAlert
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.formatGlucose
@@ -269,11 +271,11 @@ fun TreatmentSheet(
                         okBig = false
                     }
                     val lv = com.lumenarcanus.dialife.data.DoseCalc.level(insulin, if (basal) dose.maxBasal else dose.maxRapid, null)
-                    com.lumenarcanus.dialife.ui.meal.LimitAlert(lv, insulin, if (basal) dose.maxBasal else dose.maxRapid, units, locale)
+                    LimitAlert(lv, insulin, if (basal) dose.maxBasal else dose.maxRapid, units, locale)
                     if (lv == com.lumenarcanus.dialife.data.DoseCalc.Level.High ||
                         lv == com.lumenarcanus.dialife.data.DoseCalc.Level.Absurd
                     ) {
-                        com.lumenarcanus.dialife.ui.meal.Confirm(
+                        Confirm(
                             okBig,
                             stringResource(R.string.planned_ok_given, formatAmount(insulin, locale))
                         ) {
