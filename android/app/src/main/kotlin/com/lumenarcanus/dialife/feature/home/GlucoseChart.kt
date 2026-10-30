@@ -2,40 +2,27 @@ package com.lumenarcanus.dialife.feature.home
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculateCentroid
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -44,14 +31,12 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
@@ -72,261 +57,6 @@ import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
-
-val ChartRanges = listOf(3, 6, 12, 24)
-private const val HOUR = 3_600_000L
-private const val FORECAST_SPAN = 30 * 60_000L
-private const val MIN_SPAN = HOUR // pinch in no further than an hour
-private val ACT_TOP = 4.dp // activity bars run along the top of the plot
-private val ACT_H = 12.dp
-private const val MAX_SPAN = 24 * HOUR + FORECAST_SPAN // the history the screen holds
-
-/**
- * A pinched or panned time window; null means "the chosen range, ending now".
- * A window pushed against "now" keeps following it as new readings arrive.
- */
-data class ChartWindow(val start: Long, val end: Long, val followsNow: Boolean = false) {
-    fun at(now: Long): ChartWindow = if (followsNow) ChartWindow(now + FORECAST_SPAN - (end - start), now + FORECAST_SPAN, true) else this
-}
-
-private sealed interface Pick {
-    data class Reading(val index: Int) : Pick
-    data class Event(val treatment: Treatment) : Pick
-    data class Meter(val point: MeterPoint) : Pick // uploaded by xDrip+: nothing to edit here
-    data class Suspect(val question: com.lumenarcanus.dialife.data.Question) : Pick
-}
-
-/**
- * Where a mark came from: typed in here (by whom), typed in xDrip+ and synced,
- * or sent by a glucometer by itself. Anything not entered in DiaLife gets a dot.
- */
-internal sealed interface Origin {
-    data class Here(val who: String) : Origin
-    data object XDrip : Origin
-    data class Device(val name: String) : Origin
-}
-
-internal fun originOf(tr: Treatment): Origin =
-    tr.enteredBy?.takeIf { it.isNotBlank() && !it.equals("xdrip", ignoreCase = true) }?.let { Origin.Here(it) }
-        ?: if (tr.pending) Origin.Here("") else Origin.XDrip
-
-/** A glucometer reading: entered here as a BG check (treatment set), or uploaded by xDrip+. */
-private data class MeterPoint(val t: Long, val v: Int, val treatment: Treatment? = null, val src: String? = null) {
-    val origin: Origin
-        get() = when {
-            treatment != null -> originOf(treatment)
-            src.isNullOrBlank() || src == "manual" -> Origin.XDrip
-            else -> Origin.Device(src.substringBefore(' ')) // "Roche 00:00:5E:…": the brand is enough
-        }
-}
-
-@Composable
-fun ChartCard(
-    history: History?,
-    forecast: Forecast?,
-    thresholds: Thresholds,
-    units: Units,
-    rangeHours: Int,
-    now: Long,
-    onRange: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-    onEdit: (Treatment) -> Unit = {},
-    onDelete: (Treatment) -> Unit = {},
-    highlightFrom: Long? = null, // a live episode: shade it from its start to now
-    expanded: Boolean = false, // the whole screen: the chart takes all the height left
-    onExpand: () -> Unit = {}, // the corner button: open full screen, or close it when expanded
-    meter: com.lumenarcanus.dialife.data.MeterReport? = null, // sensor vs glucometer: the "≈ meter" switch
-    meterLine: Boolean = com.lumenarcanus.dialife.data.Prefs.meterLine,
-    suspects: List<com.lumenarcanus.dialife.data.Question> = emptyList(), // unanswered questions: "?" marks
-    onDismissSuspect: (Long) -> Unit = {},
-    onOpenTable: (() -> Unit)? = null, // the same data as a table
-    dose: com.lumenarcanus.dialife.data.DoseSettings = com.lumenarcanus.dialife.data.DoseSettings(), // for a meal's worked-out dose
-    planned: List<com.lumenarcanus.dialife.data.PlannedDose> = emptyList(),
-    // the server's: what makes one meal
-    mealRules: com.lumenarcanus.dialife.data.MealRules = com.lumenarcanus.dialife.data.MealRules()
-) {
-    val c = DiaTheme.colors
-    val context = LocalContext.current
-    var window by remember { mutableStateOf<ChartWindow?>(null) }
-    var selected by remember { mutableStateOf<Treatment?>(null) }
-    var suspect by remember { mutableStateOf<com.lumenarcanus.dialife.data.Question?>(null) }
-    var whyNot by remember { mutableStateOf(false) } // the switch tapped before there is enough data
-    val estimate = meter?.model?.takeIf { meter.ready && meterLine }
-    Column(
-        modifier
-            .background(c.surface, RoundedCornerShape(22.dp))
-            .border(1.dp, c.line, RoundedCornerShape(22.dp))
-            .padding(start = 14.dp, end = 14.dp, top = if (expanded) 8.dp else 14.dp, bottom = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(if (expanded) 6.dp else 10.dp)
-    ) {
-        val title = window?.at(now)?.let { w ->
-            val f = android.text.format.DateFormat.getTimeFormat(context)
-            stringResource(R.string.chart_window, f.format(Date(w.start)), f.format(Date(min(w.end, now))))
-        } ?: stringResource(R.string.chart_last_hours, rangeHours)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(title, color = c.text, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, modifier = Modifier.weight(1f))
-            // wide enough when expanded (landscape): the ranges share the title's row
-            if (expanded) {
-                RangeTabs(window == null, rangeHours, Modifier.width(320.dp)) {
-                    window = null
-                    onRange(it)
-                }
-            }
-            MeterSwitch(on = estimate != null, ready = meter?.ready == true) {
-                if (meter?.ready == true) {
-                    com.lumenarcanus.dialife.data.Prefs.chooseMeterLine(!com.lumenarcanus.dialife.data.Prefs.meterLine)
-                } else {
-                    whyNot = !whyNot
-                }
-            }
-            onOpenTable?.let { open ->
-                androidx.compose.material3.IconButton(onClick = open, modifier = Modifier.size(40.dp)) {
-                    androidx.compose.material3.Icon(
-                        androidx.compose.ui.res.painterResource(R.drawable.ic_table),
-                        stringResource(R.string.chart_table),
-                        tint = c.textMuted
-                    )
-                }
-            }
-            val what = stringResource(if (expanded) R.string.chart_close else R.string.chart_expand)
-            androidx.compose.material3.IconButton(onClick = onExpand, modifier = Modifier.size(40.dp)) {
-                androidx.compose.material3.Icon(
-                    androidx.compose.ui.res.painterResource(if (expanded) R.drawable.ic_close else R.drawable.ic_fullscreen),
-                    contentDescription = what,
-                    tint = c.textMuted
-                )
-            }
-        }
-        if (whyNot && meter?.ready != true) {
-            val used = meter?.used ?: 0
-            val need = meter?.need ?: 8
-            Text(
-                stringResource(R.string.meter_not_ready, used, need, (need - used).coerceAtLeast(1)),
-                color = c.textMuted,
-                fontSize = 12.5.sp,
-                modifier = Modifier.fillMaxWidth().background(
-                    c.surfaceRaised,
-                    RoundedCornerShape(12.dp)
-                ).padding(horizontal = 12.dp, vertical = 10.dp)
-            )
-        }
-        // own full-width row: "Останні 24 год" plus four "N год" chips do not fit side by side
-        if (!expanded) {
-            RangeTabs(window == null, rangeHours, Modifier.fillMaxWidth()) {
-                window = null
-                onRange(it)
-            }
-        }
-        GlucoseChart(
-            history, forecast, thresholds, units, rangeHours, now,
-            window = window, onWindow = { window = it },
-            onEventPicked = { selected = it },
-            suspects = suspects,
-            onSuspectPicked = { suspect = it },
-            highlightFrom = highlightFrom,
-            estimate = estimate,
-            planned = planned,
-            entryTooltip = expanded,
-            modifier = if (expanded) Modifier.fillMaxWidth().weight(1f) else Modifier.fillMaxWidth().height(230.dp)
-        )
-        // the tapped marker's actions: the canvas tooltip says what it is, these say what to do
-        // a suspect mark: anyone may clear it, no questions asked
-        suspect?.let { q ->
-            androidx.compose.material3.OutlinedButton(onClick = {
-                suspect = null
-                onDismissSuspect(q.id)
-            }, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.q_dismiss), color = c.text)
-            }
-        }
-        // full screen: the entry says what it is over the chart, like a reading; no editing there
-        selected?.takeIf { !expanded }?.let { tr ->
-            com.lumenarcanus.dialife.feature.meal.EntryDetail(
-                tr,
-                history?.treatments.orEmpty(),
-                dose,
-                units,
-                mealRules,
-                mbg =
-                history?.mbg ?: com.lumenarcanus.dialife.data.Series()
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                androidx.compose.material3.OutlinedButton(onClick = { onEdit(tr) }, modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.tr_edit), color = c.text)
-                }
-                androidx.compose.material3.OutlinedButton(onClick = {
-                    selected = null
-                    onDelete(tr)
-                }, modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.tr_delete), color = c.low)
-                }
-            }
-        }
-    }
-}
-
-/** "≈ Meter": filled when the line is on, faded while there are too few checks for it. */
-@Composable
-private fun MeterSwitch(on: Boolean, ready: Boolean, onClick: () -> Unit) {
-    val c = DiaTheme.colors
-    val ink = if (on) meterInk(c.isDark) else c.textMuted
-    Row(
-        Modifier
-            .heightIn(min = 32.dp)
-            .background(if (on) c.insulinContainer else Color.Transparent, RoundedCornerShape(50))
-            .border(1.dp, if (on) Color.Transparent else c.line, RoundedCornerShape(50))
-            .selectable(selected = on, role = Role.Switch, onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 6.dp)
-            .then(if (ready) Modifier else Modifier.alpha(0.55f)),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Canvas(Modifier.size(10.dp)) {
-            val d = Path().apply {
-                moveTo(size.width / 2, 0f)
-                lineTo(size.width, size.height / 2)
-                lineTo(size.width / 2, size.height)
-                lineTo(
-                    0f,
-                    size.height / 2
-                )
-                close()
-            }
-            if (on) drawPath(d, ink) else drawPath(d, ink, style = Stroke(1.4.dp.toPx()))
-        }
-        Text(stringResource(R.string.meter_toggle), color = ink, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1)
-    }
-}
-
-/** The estimate's own ink: the insulin violet, lighter, so it never reads as a sensor line. */
-fun meterInk(dark: Boolean) = if (dark) Color(0xFFE8D9FF) else Color(0xFF5B3FD1)
-
-@Composable
-private fun RangeTabs(followsRange: Boolean, rangeHours: Int, modifier: Modifier, onRange: (Int) -> Unit) {
-    val c = DiaTheme.colors
-    Row(
-        modifier.background(c.background, RoundedCornerShape(12.dp)).padding(3.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        ChartRanges.forEach { h ->
-            val selected = followsRange && h == rangeHours
-            Text(
-                stringResource(R.string.chart_range, h),
-                color = if (selected) c.text else c.textMuted,
-                fontSize = 12.sp,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                modifier = Modifier
-                    .weight(1f)
-                    .background(if (selected) c.surfaceRaised else Color.Transparent, RoundedCornerShape(9.dp))
-                    .selectable(selected = selected, role = Role.Tab, onClick = { onRange(h) })
-                    .heightIn(min = 36.dp)
-                    .padding(horizontal = 4.dp, vertical = 9.dp)
-            )
-        }
-    }
-}
 
 @Composable
 fun GlucoseChart(
@@ -955,69 +685,3 @@ fun GlucoseChart(
         }
     }
 }
-
-private data class ChartView(
-    val start: Long,
-    val end: Long,
-    val now: Long,
-    val visible: List<Int>,
-    val treatments: List<Treatment>,
-    val thresholds: Thresholds,
-    val meters: List<MeterPoint>,
-    val lo: Float,
-    val hi: Float,
-    val activities: List<Treatment>,
-    val suspects: List<com.lumenarcanus.dialife.data.Question>
-)
-
-/** The small dot on a mark that came in from xDrip+ rather than typed in DiaLife. */
-private fun DrawScope.syncedDot(at: Offset, ink: Color, halo: Color) {
-    drawCircle(halo, 3.6.dp.toPx(), at)
-    drawCircle(ink, 2.4.dp.toPx(), at)
-}
-
-private fun DrawScope.tooltip(
-    measurer: androidx.compose.ui.text.TextMeasurer,
-    lines: List<String>,
-    ax: Float,
-    ay: Float,
-    plotW: Float,
-    plotH: Float,
-    bg: Color,
-    border: Color,
-    text: Color,
-    muted: Color
-) {
-    val first = TextStyle(fontFamily = Onest, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = text)
-    val rest = TextStyle(fontFamily = PlexMono, fontSize = 11.sp, color = muted)
-    val pad = 10.dp.toPx()
-    // a long line (a meal typed as one long name) wraps instead of growing past the plot
-    val fit = androidx.compose.ui.unit.Constraints(maxWidth = (plotW - pad * 2).toInt().coerceAtLeast(1))
-    val ms = lines.mapIndexed { i, s -> measurer.measure(s, if (i == 0) first else rest, constraints = fit) }
-    val w = ms.maxOf { it.size.width } + pad * 2
-    val h = ms.sumOf { it.size.height } + pad * 2 + 2.dp.toPx() * (ms.size - 1)
-    val left = (ax - w / 2).coerceIn(0f, max(0f, plotW - w))
-    val top = if (ay > plotH / 2) max(0f, ay - h - 14.dp.toPx()) else min(plotH - h, ay + 14.dp.toPx())
-    drawRoundRect(bg, Offset(left, top), Size(w, h), CornerRadius(12.dp.toPx()))
-    drawRoundRect(border, Offset(left, top), Size(w, h), CornerRadius(12.dp.toPx()), style = Stroke(1.dp.toPx()))
-    var yy = top + pad
-    ms.forEach { m ->
-        drawText(m, topLeft = Offset(left + pad, yy))
-        yy += m.size.height + 2.dp.toPx()
-    }
-}
-
-private fun band(v: Int, th: Thresholds) = when {
-    v < th.low -> -1
-    v > th.high -> 1
-    else -> 0
-}
-
-private fun colorFor(v: Int, th: Thresholds, low: Color, ok: Color, high: Color) = when (band(v, th)) {
-    -1 -> low
-    1 -> high
-    else -> ok
-}
-
-/** The reading just before index, if it is within 10 minutes. */
-private fun previous(ts: List<Long>, vs: List<Int>, i: Int): Int? = if (i > 0 && ts[i] - ts[i - 1] <= 10 * 60_000L) vs[i - 1] else null
