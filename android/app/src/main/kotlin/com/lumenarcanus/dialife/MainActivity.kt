@@ -51,7 +51,6 @@ import com.lumenarcanus.dialife.ui.home.BackgroundSetup
 import com.lumenarcanus.dialife.ui.home.HomeScreen
 import com.lumenarcanus.dialife.ui.home.HomeViewModel
 import com.lumenarcanus.dialife.ui.settings.SettingsScreen
-import com.lumenarcanus.dialife.ui.stats.StatsScreen
 import com.lumenarcanus.dialife.ui.theme.DiaLifeTheme
 import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import kotlinx.coroutines.launch
@@ -158,11 +157,7 @@ class MainActivity : AppCompatActivity() {
                                     onBack = { screen = Screen.Settings }
                                 )
                             }
-                            Screen.Stats -> StatsScreen(
-                                creds = s.credentials,
-                                units = unitsOf(liveRepository.live.value.state?.displayUnits ?: s.credentials.displayUnits),
-                                onBack = { screen = Screen.Home }
-                            )
+                            Screen.Stats -> com.lumenarcanus.dialife.feature.stats.StatsRoute(onBack = { screen = Screen.Home })
                             Screen.Settings -> {
                                 var setup by remember { mutableStateOf(backgroundSetup()) }
                                 LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { setup = backgroundSetup() }

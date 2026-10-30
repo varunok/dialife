@@ -165,7 +165,7 @@ class ScreenshotTest {
     @Config(qualifiers = "+uk")
     fun meterCardUk() = shot("meter_card_dark_uk", dark = true) {
         androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.padding(16.dp)) {
-            com.lumenarcanus.dialife.ui.stats.MeterCard(com.lumenarcanus.dialife.ui.home.sampleMeter(now), Units.MgDl)
+            com.lumenarcanus.dialife.feature.stats.MeterCard(com.lumenarcanus.dialife.ui.home.sampleMeter(now), Units.MgDl)
         }
     }
 
@@ -477,7 +477,7 @@ class ScreenshotTest {
     @Config(qualifiers = "en-w412dp-h2600dp-xxhdpi")
     fun meterCardEnAll() = shot("meter_card_dark_en_all", dark = true) {
         androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.padding(16.dp)) {
-            com.lumenarcanus.dialife.ui.stats.MeterCard(com.lumenarcanus.dialife.ui.home.sampleMeter(now), Units.MgDl)
+            com.lumenarcanus.dialife.feature.stats.MeterCard(com.lumenarcanus.dialife.ui.home.sampleMeter(now), Units.MgDl)
         }
     }
 
@@ -485,7 +485,7 @@ class ScreenshotTest {
     @Config(qualifiers = "es-w412dp-h2600dp-xxhdpi")
     fun meterCardEsAll() = shot("meter_card_dark_es_all", dark = true) {
         androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.padding(16.dp)) {
-            com.lumenarcanus.dialife.ui.stats.MeterCard(com.lumenarcanus.dialife.ui.home.sampleMeter(now), Units.MgDl)
+            com.lumenarcanus.dialife.feature.stats.MeterCard(com.lumenarcanus.dialife.ui.home.sampleMeter(now), Units.MgDl)
         }
     }
 
