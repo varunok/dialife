@@ -10,7 +10,6 @@ import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -36,8 +35,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.compose.NavHost
@@ -47,17 +44,14 @@ import androidx.navigation.toRoute
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.theme.DiaLifeTheme
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
-import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.feature.connect.ConnectRoute
 import com.lumenarcanus.dialife.feature.connect.ConnectViewModel
 import com.lumenarcanus.dialife.feature.data.DataRoute
 import com.lumenarcanus.dialife.feature.home.BackgroundSetup
-import com.lumenarcanus.dialife.feature.home.HomeScreen
-import com.lumenarcanus.dialife.feature.home.HomeViewModel
+import com.lumenarcanus.dialife.feature.home.HomeRoute
 import com.lumenarcanus.dialife.live.LiveService
 import com.lumenarcanus.dialife.navigation.Destination
-import kotlinx.coroutines.launch
 
 // AppCompatActivity (not plain ComponentActivity) so the in-app language works on Android 12 too.
 class MainActivity : AppCompatActivity() {
@@ -188,16 +182,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** Home, with what only the activity can do: start the live connection and the service, ask for permissions. */
     @Composable
     private fun Home(creds: Credentials, onOpen: (Destination) -> Unit) {
-        val home = viewModel { HomeViewModel(liveRepository) }
         LaunchedEffect(creds) {
             liveRepository.start(creds) // the screen works even if the service cannot start
             LiveService.start(this@MainActivity)
         }
-        val ui by home.ui.collectAsStateWithLifecycle()
-        LaunchedEffect(ui.unauthorized) { if (ui.unauthorized) vm.revoked() }
-
         // what still stops readings arriving in the background; re-checked on every return to the app
         var setup by remember { mutableStateOf(backgroundSetup()) }
         LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
@@ -208,47 +199,23 @@ class MainActivity : AppCompatActivity() {
             setup = backgroundSetup()
             LiveService.start(this@MainActivity)
         }
-        HomeScreen(
-            ui = ui,
-            fallbackUnits = unitsOf(creds.displayUnits),
-            deviceName = creds.deviceName,
+        HomeRoute(
+            creds = creds,
             setup = setup,
             onAllowNotifications = { askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS) },
             onAllowBackground = ::askBatteryExemption,
             onAllowFullScreen = ::askFullScreen,
-            alarmsSection = { com.lumenarcanus.dialife.feature.alarms.AlarmsSection(onOpenHandling = { id -> openHandling = id }) },
-            onRange = home::setRange,
+            onUnauthorized = vm::revoked,
+            onDisconnect = vm::disconnect,
             onOpenStats = { onOpen(Destination.Stats) },
             onOpenLog = { onOpen(Destination.Log) },
-            onOpenData = { onOpen(Destination.Data(ui.rangeHours)) },
+            onOpenData = { hours -> onOpen(Destination.Data(hours)) },
             onOpenWebLogin = { onOpen(Destination.WebLogin) },
+            onOpenSettings = { onOpen(Destination.Settings) },
             onOpenMeal = { tr, q ->
                 onOpen(Destination.Meal(editingId = tr?.id, entry = tr, initialTime = q?.from, questionId = q?.id ?: 0L))
             },
-            plannedSection = { com.lumenarcanus.dialife.feature.planned.PlannedSection() },
-            questionsSection = { onLog -> com.lumenarcanus.dialife.feature.questions.QuestionsSection(onLog) },
-            watchSection = { com.lumenarcanus.dialife.feature.questions.WatchSection() },
-            waitSection = { com.lumenarcanus.dialife.feature.wait.WaitSection() },
-            onOpenSettings = { onOpen(Destination.Settings) },
-            onRetry = liveRepository::reconnectNow,
-            onSaveTreatment = liveRepository::saveTreatment,
-            onDeleteTreatment = liveRepository::deleteTreatment,
-            onAnswerQuestion = { id, answer, tr ->
-                lifecycleScope.launch {
-                    questionAnswers.answer(id, answer, tr)
-                        .onFailure { Toast.makeText(this@MainActivity, R.string.q_failed, Toast.LENGTH_LONG).show() }
-                }
-            },
-            onDismissQuestion = { id ->
-                lifecycleScope.launch {
-                    questionAnswers.dismiss(id).onFailure {
-                        Toast.makeText(this@MainActivity, R.string.q_failed, Toast.LENGTH_LONG).show()
-                    }
-                }
-            },
-            onDisconnect = vm::disconnect,
-            onAnnounceInsulin = insulinIntents::announce,
-            foods = foodRepository
+            onOpenHandling = { id -> openHandling = id }
         )
     }
 
