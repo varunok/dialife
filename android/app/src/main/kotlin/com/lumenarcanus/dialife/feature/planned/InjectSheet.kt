@@ -48,6 +48,7 @@ import com.lumenarcanus.dialife.data.InsulinType
 import com.lumenarcanus.dialife.data.PlannedDose
 import com.lumenarcanus.dialife.data.Prefs
 import com.lumenarcanus.dialife.data.Treatment
+import com.lumenarcanus.dialife.feature.entry.NearDose
 import com.lumenarcanus.dialife.feature.entry.TimeDialog
 import com.lumenarcanus.dialife.feature.entry.atLabel
 import com.lumenarcanus.dialife.feature.entry.nearDose
@@ -105,31 +106,7 @@ internal fun InjectSheet(
         ) {
             Text(stringResource(R.string.planned_given_title), color = c.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
             if (near != null) {
-                AlertCard(
-                    DoseCalc.Alert.NoMeter(0),
-                    units,
-                    locale,
-                    title = stringResource(
-                        R.string.planned_same_q,
-                        f(near.dose.insulin ?: 0.0),
-                        formatClock(ctx, near.dose.t),
-                        near.dose.enteredBy.orEmpty()
-                    ),
-                    text = stringResource(R.string.planned_same_text)
-                )
-                OutlinedButton(onClick = {
-                    onDone(near.dose, false)
-                }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
-                    Text(stringResource(R.string.planned_same_yes), color = c.text)
-                }
-                Button(
-                    onClick = { another = true },
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = c.insulin, contentColor = c.background)
-                ) {
-                    Text(stringResource(R.string.planned_same_no))
-                }
-                TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.tr_cancel)) }
+                SameInjection(near, units, onSame = { onDone(near.dose, false) }, onAnother = { another = true }, onBack = onBack)
                 return@Column
             }
             Text(stringResource(R.string.planned_given_note), color = c.textMuted, fontSize = 13.5.sp)
@@ -142,31 +119,7 @@ internal fun InjectSheet(
             }
             LimitAlert(lv, amount, dose.maxRapid, units, locale)
             if (needOk) Confirm(ok, stringResource(R.string.planned_ok_given, f(amount))) { ok = it }
-            Text(stringResource(R.string.planned_when), color = c.textMuted, fontSize = 13.sp)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(selected = whenIdx == 0, onClick = { whenIdx = 0 }, label = { Text(stringResource(R.string.tr_now)) })
-                FilterChip(selected = whenIdx == 1, onClick = {
-                    whenIdx = 1
-                }, label = { Text(stringResource(R.string.tr_minutes_ago, 15)) })
-                FilterChip(selected = whenIdx == 2, onClick = { picking = true }, label = {
-                    Text(
-                        if (whenIdx == 2) {
-                            atLabel(at)
-                        } else {
-                            stringResource(R.string.tr_other_time)
-                        }
-                    )
-                })
-            }
-            Text(
-                err ?: stringResource(R.string.planned_when_range, formatClock(ctx, earliest)),
-                color = if (err != null) {
-                    c.low
-                } else {
-                    c.textFaint
-                },
-                fontSize = 12.sp
-            )
+            InjectWhen(whenIdx, at, err, earliest, onIdx = { whenIdx = it }, onPick = { picking = true })
             Button(
                 onClick = {
                     onDone(
@@ -197,4 +150,66 @@ internal fun InjectSheet(
             picking = false
         }, onDismiss = { picking = false })
     }
+}
+
+/** A rapid dose like this one is logged already: the same injection, or another one? */
+@Composable
+private fun SameInjection(near: NearDose, units: Units, onSame: () -> Unit, onAnother: () -> Unit, onBack: () -> Unit) {
+    val c = DiaTheme.colors
+    val ctx = LocalContext.current
+    val locale = LocalConfiguration.current.locales[0]
+    fun f(x: Double) = formatAmount(x, locale)
+    AlertCard(
+        DoseCalc.Alert.NoMeter(0),
+        units,
+        locale,
+        title = stringResource(
+            R.string.planned_same_q,
+            f(near.dose.insulin ?: 0.0),
+            formatClock(ctx, near.dose.t),
+            near.dose.enteredBy.orEmpty()
+        ),
+        text = stringResource(R.string.planned_same_text)
+    )
+    OutlinedButton(onClick = onSame, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+        Text(stringResource(R.string.planned_same_yes), color = c.text)
+    }
+    Button(
+        onClick = onAnother,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = c.insulin, contentColor = c.background)
+    ) {
+        Text(stringResource(R.string.planned_same_no))
+    }
+}
+
+/** When it was given: now, 15 min ago, or a time picked; from an hour before the meal up to now. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun InjectWhen(whenIdx: Int, at: Long, err: String?, earliest: Long, onIdx: (Int) -> Unit, onPick: () -> Unit) {
+    val c = DiaTheme.colors
+    val ctx = LocalContext.current
+    Text(stringResource(R.string.planned_when), color = c.textMuted, fontSize = 13.sp)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilterChip(selected = whenIdx == 0, onClick = { onIdx(0) }, label = { Text(stringResource(R.string.tr_now)) })
+        FilterChip(selected = whenIdx == 1, onClick = { onIdx(1) }, label = { Text(stringResource(R.string.tr_minutes_ago, 15)) })
+        FilterChip(selected = whenIdx == 2, onClick = onPick, label = {
+            Text(
+                if (whenIdx == 2) {
+                    atLabel(at)
+                } else {
+                    stringResource(R.string.tr_other_time)
+                }
+            )
+        })
+    }
+    Text(
+        err ?: stringResource(R.string.planned_when_range, formatClock(ctx, earliest)),
+        color = if (err != null) {
+            c.low
+        } else {
+            c.textFaint
+        },
+        fontSize = 12.sp
+    )
 }

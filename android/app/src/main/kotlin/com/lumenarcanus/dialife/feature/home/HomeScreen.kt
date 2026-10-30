@@ -87,48 +87,25 @@ fun HomeScreen(
     val state = ui.toHomeState(fallbackUnits)
     val thresholds = ui.state?.thresholds ?: Thresholds()
     val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
-    // the add/edit sheet: which tab it opened on, and what it edits (null: a new entry)
-    var sheet by remember { mutableStateOf<Pair<TreatmentKind, Treatment?>?>(null) }
+    // the add/edit sheet: which tab it opened on, what it edits, the question it answers
+    var sheet by remember { mutableStateOf<SheetRequest?>(null) }
     var confirmDelete by remember { mutableStateOf<Treatment?>(null) }
     var fullChart by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
-    var sheetFor by remember { mutableStateOf<Question?>(null) } // the sheet answers this question
-    // food has a screen of its own
-    val food = sheet?.let { (kind, editing) ->
-        editing?.let { (it.carbs ?: 0.0) > 0 && (it.insulin ?: 0.0) <= 0 && it.glucose == null && it.duration == null }
-            ?: (kind == TreatmentKind.Food)
-    } == true
-    androidx.compose.runtime.LaunchedEffect(food) {
-        if (food) {
-            onOpenMeal(sheet?.second, sheetFor)
+    EntrySheetHost(
+        sheet,
+        ui,
+        state?.units ?: fallbackUnits,
+        onClose = { sheet = null },
+        onOpenMeal = onOpenMeal,
+        onSave = { tr ->
+            haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+            onSaveTreatment(tr)
+            sheet?.question?.let { q -> onAnswerQuestion(q.id, if (q.kind == "rise") "food" else "insulin", tr.id) }
             sheet = null
-            sheetFor = null
-        }
-    }
-    sheet?.takeIf { !food }?.let { (kind, editing) ->
-        TreatmentSheet(
-            kind, editing,
-            onSave = {
-                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-                onSaveTreatment(it)
-                sheetFor?.let { q -> onAnswerQuestion(q.id, if (q.kind == "rise") "food" else "insulin", it.id) }
-                sheet = null
-                sheetFor = null
-            },
-            onDismiss = {
-                sheet = null
-                sheetFor = null
-            },
-            initialTime = sheetFor?.from,
-            recent = ui.history?.treatments.orEmpty(),
-            units = state?.units ?: fallbackUnits,
-            dose = ui.state?.dose ?: DoseSettings(),
-            mealRules = ui.state?.mealRules ?: MealRules(),
-            state = ui.state,
-            myId = ui.myId,
-            onAnnounce = onAnnounceInsulin,
-            foods = foods
-        )
-    }
+        },
+        onAnnounce = onAnnounceInsulin,
+        foods = foods
+    )
     confirmDelete?.let { tr ->
         DeleteDialog(onDelete = {
             onDeleteTreatment(tr.id)
@@ -138,7 +115,7 @@ fun HomeScreen(
     @Composable
     fun Chart(modifier: Modifier, expanded: Boolean, onExpand: () -> Unit, onOpenTable: (() -> Unit)?) = HomeChart(
         ui, state?.units ?: fallbackUnits, modifier, expanded, onExpand, onOpenTable, onMeterLine, onRange, onDismissQuestion,
-        onEdit = { sheet = TreatmentKind.Insulin to it },
+        onEdit = { sheet = SheetRequest(TreatmentKind.Insulin, it) },
         onDelete = { confirmDelete = it }
     )
     if (fullChart) {
@@ -182,14 +159,11 @@ fun HomeScreen(
         watchSection()
         plannedSection()
         waitSection()
-        questionsSection { q ->
-            sheetFor = q
-            sheet = (if (q.kind == "rise") TreatmentKind.Food else TreatmentKind.Insulin) to null
-        }
+        questionsSection { q -> sheet = SheetRequest(if (q.kind == "rise") TreatmentKind.Food else TreatmentKind.Insulin, question = q) }
         if (setup.needed) SetupCard(setup, onAllowNotifications, onAllowBackground, onAllowFullScreen)
         Chart(Modifier.fillMaxWidth(), expanded = false, onExpand = { fullChart = true }, onOpenTable = onOpenData)
         state?.let { Tiles(it, onOpenStats, onOpenLog) }
-        EntryButtons { kind -> sheet = kind to null }
+        EntryButtons { kind -> sheet = SheetRequest(kind) }
     }
 }
 
@@ -283,5 +257,51 @@ private fun EntryButtons(onOpen: (TreatmentKind) -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         ActionButton(TreatmentKind.Activity, Modifier.weight(1f), small = true) { onOpen(TreatmentKind.Activity) }
         ActionButton(TreatmentKind.Note, Modifier.weight(1f), small = true) { onOpen(TreatmentKind.Note) }
+    }
+}
+
+/** What the entry sheet opens with: its kind, the entry it edits (null: a new one), the question it answers. */
+private data class SheetRequest(val kind: TreatmentKind, val editing: Treatment? = null, val question: Question? = null) {
+    /** Food has a screen of its own. */
+    val isFood: Boolean
+        get() = editing?.let { (it.carbs ?: 0.0) > 0 && (it.insulin ?: 0.0) <= 0 && it.glucose == null && it.duration == null }
+            ?: (kind == TreatmentKind.Food)
+}
+
+/** The entry sheet for [request]; food goes to its own screen instead. */
+@Composable
+private fun EntrySheetHost(
+    request: SheetRequest?,
+    ui: HomeUi,
+    units: Units,
+    onClose: () -> Unit,
+    onOpenMeal: (editing: Treatment?, question: Question?) -> Unit,
+    onSave: (Treatment) -> Unit,
+    onAnnounce: (InsulinType?) -> Unit,
+    foods: FoodRepository?
+) {
+    val food = request?.isFood == true
+    androidx.compose.runtime.LaunchedEffect(food) {
+        if (food) {
+            onOpenMeal(request?.editing, request?.question)
+            onClose()
+        }
+    }
+    request?.takeIf { !food }?.let { r ->
+        TreatmentSheet(
+            r.kind,
+            r.editing,
+            onSave = onSave,
+            onDismiss = onClose,
+            initialTime = r.question?.from,
+            recent = ui.history?.treatments.orEmpty(),
+            units = units,
+            dose = ui.state?.dose ?: DoseSettings(),
+            mealRules = ui.state?.mealRules ?: MealRules(),
+            state = ui.state,
+            myId = ui.myId,
+            onAnnounce = onAnnounce,
+            foods = foods
+        )
     }
 }
