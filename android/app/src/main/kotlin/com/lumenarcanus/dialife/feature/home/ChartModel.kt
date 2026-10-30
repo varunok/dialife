@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.core.ui.theme.Onest
 import com.lumenarcanus.dialife.core.ui.theme.PlexMono
+import com.lumenarcanus.dialife.data.History
 import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.data.Treatment
 import kotlin.math.max
@@ -71,10 +72,13 @@ internal data class MeterPoint(val t: Long, val v: Int, val treatment: Treatment
         }
 }
 
+/** What a window of the chart holds: the readings, marks and scale bounds in view. */
 internal data class ChartView(
     val start: Long,
     val end: Long,
     val now: Long,
+    val ts: List<Long>,
+    val vs: List<Int>,
     val visible: List<Int>,
     val treatments: List<Treatment>,
     val thresholds: Thresholds,
@@ -84,6 +88,36 @@ internal data class ChartView(
     val activities: List<Treatment>,
     val suspects: List<com.lumenarcanus.dialife.data.Question>
 )
+
+internal fun chartView(
+    history: History?,
+    suspects: List<com.lumenarcanus.dialife.data.Question>,
+    thresholds: Thresholds,
+    start: Long,
+    end: Long,
+    now: Long
+): ChartView {
+    val ts = history?.sgv?.t.orEmpty()
+    val vs = history?.sgv?.v.orEmpty()
+    val until = min(end, now)
+    val visible = ts.indices.filter { ts[it] in start..until }
+    val inView = history?.treatments.orEmpty().filter { it.t in start..until }
+    // glucometer checks sit on the glucose scale; everything else is a marker along the bottom
+    val treatments = inView.filter { it.glucose == null && it.duration == null }
+    // activity lasts: one that began before the window still shows its part
+    val activities = history?.treatments.orEmpty().filter { a ->
+        a.duration != null &&
+            a.t <= until &&
+            a.t + a.duration * 60_000L >= start
+    }
+    val marks = suspects.filter { it.state == "unknown" && it.from in start..until }
+    val mbg = history?.mbg ?: com.lumenarcanus.dialife.data.Series()
+    val meters = inView.mapNotNull { tr -> tr.glucose?.let { MeterPoint(tr.t, it, tr) } } +
+        mbg.t.indices.filter { mbg.t[it] in start..until }.map { MeterPoint(mbg.t[it], mbg.v[it], src = mbg.d.getOrNull(it)) }
+    val maxV = max(visible.maxOfOrNull { vs[it] } ?: 0, meters.maxOfOrNull { it.v } ?: 0)
+    val hi = max(300, min(400, maxV + 20)).toFloat()
+    return ChartView(start, end, now, ts, vs, visible, treatments, thresholds, meters, 40f, hi, activities, marks)
+}
 
 /** The small dot on a mark that came in from xDrip+ rather than typed in DiaLife. */
 internal fun DrawScope.syncedDot(at: Offset, ink: Color, halo: Color) {
