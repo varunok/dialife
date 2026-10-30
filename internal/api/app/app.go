@@ -24,6 +24,7 @@ import (
 	"dialife/internal/glucose"
 	"dialife/internal/httpx"
 	"dialife/internal/insulin"
+	"dialife/internal/intent"
 	"dialife/internal/meter"
 	"dialife/internal/nstime"
 	"dialife/internal/planned"
@@ -65,9 +66,9 @@ type Handlers struct {
 	Wait       *wait.Service     // when to eat after rapid insulin with food
 	Planned    *planned.Service  // doses worked out for a meal, not given yet
 	Forecast   *forecast.Service // the trend forecast for the chart, what is on board, how both did
+	Intents    *intent.Board     // who has the insulin form open
 
 	webCodes webCodes     // web login codes, in memory for their QR pictures
-	intents  intentBoard  // who has the insulin form open
 	mealGapQ mealGapCache // how far apart a meal's entries may be
 }
 
@@ -84,7 +85,7 @@ type stateResponse struct {
 	Caregivers   []caregiver            `json:"caregivers"`              // who an alarm wakes, for "Notified: Dad, Mom"
 	Questions    []questions.View       `json:"questions,omitempty"`     // open ones and the last day's suspect marks; never to the web viewer
 	UploaderName string                 `json:"uploader_name,omitempty"` // what the family calls the xDrip+ phone
-	Intents      []insulinIntent        `json:"intents"`                 // parents with the insulin form open now
+	Intents      []intent.Intent        `json:"intents"`                 // parents with the insulin form open now
 	Dose         doseSettings           `json:"dose"`                    // the family's dose calculation
 	Planned      []planned.Dose         `json:"planned"`                 // doses worked out for a meal, not given yet
 	IOB          *forecast.OnBoardState `json:"iob,omitempty"`           // what logged food and rapid insulin will still do; not for alarms
@@ -146,7 +147,7 @@ func (h *Handlers) CurrentThresholds(ctx context.Context) config.Thresholds {
 // snapshot is the device-independent state; callers add display_units.
 func (h *Handlers) snapshot(ctx context.Context, now time.Time) (stateResponse, error) {
 	th := h.CurrentThresholds(ctx)
-	resp := stateResponse{Now: now.UnixMilli(), Thresholds: th, UploaderName: h.Uploader, Intents: h.intents.list(now)}
+	resp := stateResponse{Now: now.UnixMilli(), Thresholds: th, UploaderName: h.Uploader, Intents: h.Intents.List(now)}
 
 	st, ok, err := h.computeState(ctx, now)
 	if err != nil {
