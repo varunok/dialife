@@ -54,13 +54,22 @@ import java.util.Locale
 
 @Composable
 internal fun StatsContent(s: Stats, units: Units) {
+    // time in range: the big number and the five zones as one bar
+    TimeInRange(s, units)
+    // the numbers a clinic asks for
+    ClinicNumbers(s, units)
+    if (s.daily.isNotEmpty()) DailyTotals(s)
+    DailyPattern(s, units)
+}
+
+/** Time in range: the big number, the five zones as one bar and each with its share. */
+@Composable
+private fun TimeInRange(s: Stats, units: Units) {
     val c = DiaTheme.colors
     val locale = LocalConfiguration.current.locales[0]
     val th = s.thresholds
     fun g(v: Int) = formatGlucose(v, units, locale)
     fun pct(v: Double) = String.format(locale, "%.0f%%", v)
-
-    // time in range: the big number and the five zones as one bar
     Card {
         Text(stringResource(R.string.tile_time_in_range), color = c.textMuted, fontSize = 13.sp)
         Text(pct(s.zones.inRange), color = c.inRange, fontSize = 48.sp, fontWeight = FontWeight.Medium)
@@ -89,8 +98,15 @@ internal fun StatsContent(s: Stats, units: Units) {
             }
         }
     }
+}
 
-    // the numbers a clinic asks for
+/** Mean, GMI, CV, hypos, the standard 70–180 range and how much the sensor covered. */
+@Composable
+private fun ClinicNumbers(s: Stats, units: Units) {
+    val locale = LocalConfiguration.current.locales[0]
+    val th = s.thresholds
+    fun g(v: Int) = formatGlucose(v, units, locale)
+    fun pct(v: Double) = String.format(locale, "%.0f%%", v)
     val unit = stringResource(if (units == Units.MgDl) R.string.unit_mgdl else R.string.unit_mmol)
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.height(IntrinsicSize.Min)) {
         Metric(stringResource(R.string.stats_mean), g(s.mean.toInt()), unit, Modifier.weight(1f))
@@ -137,9 +153,12 @@ internal fun StatsContent(s: Stats, units: Units) {
             Modifier.weight(1f)
         )
     }
+}
 
-    if (s.daily.isNotEmpty()) DailyTotals(s)
-
+/** The day folded onto one (AGP), once there are three days of it; before that, the day in order or how long to wait. */
+@Composable
+private fun DailyPattern(s: Stats, units: Units) {
+    val c = DiaTheme.colors
     Card {
         Text(stringResource(R.string.stats_agp), color = c.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         // folding fewer than ~3 days onto one makes a "day" out of yesterday's evening and this morning
