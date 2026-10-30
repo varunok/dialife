@@ -80,7 +80,10 @@ fun DataScreen(
     onSaveTreatment: (Treatment) -> Unit,
     onBack: () -> Unit,
     // food has a screen of its own
-    onOpenMeal: (Treatment) -> Unit = {}
+    onOpenMeal: (Treatment) -> Unit = {},
+    // the entry sheet's: "… is giving insulin" on the other phones, food suggestions
+    onAnnounceInsulin: (com.lumenarcanus.dialife.data.InsulinType?) -> Unit = {},
+    foods: com.lumenarcanus.dialife.core.data.FoodRepository? = null
 ) {
     val c = DiaTheme.colors
     val units = uiState.units
@@ -103,7 +106,11 @@ fun DataScreen(
             },
             onDismiss = { editing = null },
             recent = uiState.recent,
-            units = units
+            units = units,
+            state = uiState.state,
+            myId = uiState.myId,
+            onAnnounce = onAnnounceInsulin,
+            foods = foods
         )
     }
     val onEdit: (Treatment) -> Unit = { editing = it }

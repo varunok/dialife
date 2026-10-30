@@ -244,17 +244,6 @@ class LiveRepository(context: Context, private val api: DiaLifeApi = DiaLifeApi(
         _live.update { cur -> cur.copy(state = cur.state?.let(f)) }
     }
 
-    /** The insulin form opened (or its type changed) here; best effort, the server forgets it in 10 min anyway. */
-    fun insulinIntent(insulin: String) {
-        val c = creds ?: return
-        scope.launch { api.insulinIntent(c, insulin) }
-    }
-
-    fun insulinIntentEnd() {
-        val c = creds ?: return
-        scope.launch { api.insulinIntentEnd(c) }
-    }
-
     /** The server's state right now, past whatever the stream has brought (or missed). */
     suspend fun freshState(): Result<com.lumenarcanus.dialife.data.StateResponse> =
         creds?.let { api.state(it) } ?: Result.failure(ApiException(ApiError.Unauthorized))

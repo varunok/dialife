@@ -59,7 +59,7 @@ internal fun EpisodeBanner(a: AlarmView, ui: AlarmsUiState, onAction: (String, L
             else -> stringResource(R.string.someone_handles_kind, a.handledBy.orEmpty(), AlarmText.kind(ctx, a))
         }
         Text(title, color = accent, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-        val details = if (a.state == "firing") AlarmText.reason(ctx, null, a) else AlarmText.progress(ctx, a, units)
+        val details = if (a.state == "firing") AlarmText.reason(ctx, null, a, ui.state) else AlarmText.progress(ctx, a, units)
         if (details.isNotBlank()) Text(details, color = c.textMuted, fontSize = 14.sp)
         when {
             a.comingById != 0L && a.comingById == myId -> Text(stringResource(R.string.you_are_coming), color = c.text, fontSize = 14.sp)

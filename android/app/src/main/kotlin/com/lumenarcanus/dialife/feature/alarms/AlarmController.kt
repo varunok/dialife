@@ -108,7 +108,7 @@ class AlarmController(context: Context, private val repo: LiveRepository, privat
         rungAt[a.id] = SystemClock.elapsedRealtime()
         nm.cancel(TAG_INFO, a.id.toInt())
         val title = if (help) app.getString(R.string.help_title, a.handledBy.orEmpty()) else AlarmText.title(app, a, units)
-        val body = if (help) AlarmText.title(app, a, units) else AlarmText.reason(app, e, a)
+        val body = if (help) AlarmText.title(app, a, units) else AlarmText.reason(app, e, a, repo.live.value.state)
         val screen = PendingIntent.getActivity(
             app,
             a.id.toInt(),

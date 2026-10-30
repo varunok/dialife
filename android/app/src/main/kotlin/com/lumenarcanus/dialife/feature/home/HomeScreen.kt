@@ -69,7 +69,10 @@ fun HomeScreen(
     questionsSection: @Composable (onLog: (Question) -> Unit) -> Unit = {},
     watchSection: @Composable () -> Unit = {},
     // when to eat: a feature with its own state (feature/wait)
-    waitSection: @Composable () -> Unit = {}
+    waitSection: @Composable () -> Unit = {},
+    // the entry sheet's: "… is giving insulin" on the other phones, food suggestions
+    onAnnounceInsulin: (com.lumenarcanus.dialife.data.InsulinType?) -> Unit = {},
+    foods: com.lumenarcanus.dialife.core.data.FoodRepository? = null
 ) {
     val c = DiaTheme.colors
     val locale = LocalConfiguration.current.locales[0]
@@ -111,7 +114,11 @@ fun HomeScreen(
             recent = ui.history?.treatments.orEmpty(),
             units = state?.units ?: fallbackUnits,
             dose = ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
-            mealRules = ui.state?.mealRules ?: com.lumenarcanus.dialife.data.MealRules()
+            mealRules = ui.state?.mealRules ?: com.lumenarcanus.dialife.data.MealRules(),
+            state = ui.state,
+            myId = ui.myId,
+            onAnnounce = onAnnounceInsulin,
+            foods = foods
         )
     }
     confirmDelete?.let { tr ->

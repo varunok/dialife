@@ -87,7 +87,9 @@ class DataViewModel(
         filter = c.filter,
         step = c.step,
         wide = c.wide,
-        loading = busy
+        loading = busy,
+        state = l.state,
+        myId = live.myId
     )
 
     init {

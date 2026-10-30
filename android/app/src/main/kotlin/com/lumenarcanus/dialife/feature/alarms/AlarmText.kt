@@ -42,8 +42,14 @@ object AlarmText {
     fun uploaderInSentence(ctx: Context, st: com.lumenarcanus.dialife.data.StateResponse?): String =
         st?.uploaderName?.takeIf { it.isNotBlank() }?.let { "«$it»" } ?: ctx.getString(R.string.uploader_in_sentence)
 
-    /** Why it rings (again), as the server's reason says. */
-    fun reason(ctx: Context, e: AlarmEvent?, a: AlarmView, now: Long = System.currentTimeMillis()): String {
+    /** Why it rings (again), as the server's reason says; [st] names the xDrip+ phone for a stale one. */
+    fun reason(
+        ctx: Context,
+        e: AlarmEvent?,
+        a: AlarmView,
+        st: com.lumenarcanus.dialife.data.StateResponse?,
+        now: Long = System.currentTimeMillis()
+    ): String {
         val was = e?.wasHandledBy?.takeIf { it.isNotBlank() } ?: ctx.getString(R.string.someone)
         val since = formatClock(ctx, a.startedAt)
         return when (e?.reason ?: a.reason) {
@@ -54,8 +60,7 @@ object AlarmText {
             "no_response" -> ctx.getString(R.string.reason_no_response, was)
             "quiet_over" -> ctx.getString(R.string.reason_quiet_over)
             else -> if (a.kind == "stale") {
-                val phone =
-                    uploaderInSentence(ctx, (ctx.applicationContext as? com.lumenarcanus.dialife.DiaLifeApp)?.live?.live?.value?.state)
+                val phone = uploaderInSentence(ctx, st)
                 ctx.getString(if (a.level == "urgent") R.string.reason_stale_30 else R.string.reason_stale_15, phone)
             } else {
                 ctx.getString(R.string.reason_since, since)

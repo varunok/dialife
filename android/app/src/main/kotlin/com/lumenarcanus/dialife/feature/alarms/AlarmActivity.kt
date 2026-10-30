@@ -265,7 +265,7 @@ private fun AlarmScreen(
                         AlarmText.progress(ctx, alarm, units).takeIf { it.isNotBlank() }
                     ).joinToString(" · ")
                 } else {
-                    AlarmText.reason(ctx, null, alarm)
+                    AlarmText.reason(ctx, null, alarm, state)
                 },
                 color = c.text,
                 fontSize = 17.sp

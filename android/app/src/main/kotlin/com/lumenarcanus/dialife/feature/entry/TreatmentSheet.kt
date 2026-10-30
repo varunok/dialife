@@ -35,7 +35,6 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -116,7 +115,15 @@ fun TreatmentSheet(
     initialTime: Long? = null, // a question's "log it": when the rise or fall began
     dose: com.lumenarcanus.dialife.data.DoseSettings = com.lumenarcanus.dialife.data.DoseSettings(), // the dose limits
     // the server's: what makes one meal
-    mealRules: com.lumenarcanus.dialife.data.MealRules = com.lumenarcanus.dialife.data.MealRules()
+    mealRules: com.lumenarcanus.dialife.data.MealRules = com.lumenarcanus.dialife.data.MealRules(),
+    // the live state: who else is giving insulin, the doses on board
+    state: com.lumenarcanus.dialife.data.StateResponse? = null,
+    // this phone's device id: its own "giving insulin" is not a warning
+    myId: Long = 0,
+    // "… is giving insulin" on the other phones: the type while this form is on insulin, null when it stops
+    onAnnounce: (InsulinType?) -> Unit = {},
+    // food suggestions and the carb tables; null in previews and tests
+    foods: com.lumenarcanus.dialife.core.data.FoodRepository? = null
 ) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
@@ -151,22 +158,19 @@ fun TreatmentSheet(
     var time by rememberSaveable { mutableLongStateOf(editing?.t ?: initialTime ?: now) }
 
     // "… is giving insulin" on the other phones while this form is on insulin
-    // null in previews and tests
-    val repo = (ctx.applicationContext as? com.lumenarcanus.dialife.DiaLifeApp)?.live
-    val foods = (ctx.applicationContext as? com.lumenarcanus.dialife.DiaLifeApp)?.foods
-    val live = repo?.live?.collectAsState()?.value?.state
+    val live = state
     val announce = editing == null && kind == TreatmentKind.Insulin
     var announced by remember { mutableStateOf(false) }
     androidx.compose.runtime.LaunchedEffect(announce, insType) {
         if (announce) {
-            repo?.insulinIntent(insType.wire)
+            onAnnounce(insType)
         } else if (announced) {
-            repo?.insulinIntentEnd()
+            onAnnounce(null)
         }
         announced = announce
     }
-    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { if (announced) repo?.insulinIntentEnd() } }
-    val others = live?.intents.orEmpty().filter { it.deviceId != repo?.myId && it.until > System.currentTimeMillis() }
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { if (announced) onAnnounce(null) } }
+    val others = live?.intents.orEmpty().filter { it.deviceId != myId && it.until > System.currentTimeMillis() }
     var confirming by remember { mutableStateOf<NearDose?>(null) }
     var insRole by rememberSaveable { mutableStateOf(editing?.insulinRole) } // null: chosen by the meal near it
     var okBig by remember { mutableStateOf(false) } // a dose over the limit, confirmed

@@ -251,7 +251,9 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             },
-            onDisconnect = vm::disconnect
+            onDisconnect = vm::disconnect,
+            onAnnounceInsulin = insulinIntents::announce,
+            foods = foodRepository
         )
     }
 

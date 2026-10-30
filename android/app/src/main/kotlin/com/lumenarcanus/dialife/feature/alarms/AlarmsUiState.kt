@@ -14,9 +14,11 @@ data class AlarmsUiState(
     val units: Units = Units.MgDl,
     // the family's episode rules: check-in timeout, ceiling
     val episode: EpisodeRules? = null,
+    // the family's name for the xDrip+ phone, for a stale reading's reason
+    val state: StateResponse? = null,
     // shown once, then AlarmsViewModel.userMessageShown()
     @StringRes val userMessage: Int? = null
 )
 
 fun alarmsUiState(state: StateResponse?, myId: Long, units: Units): AlarmsUiState =
-    AlarmsUiState(state?.alarms.orEmpty(), myId, units, state?.episode)
+    AlarmsUiState(state?.alarms.orEmpty(), myId, units, state?.episode, state)

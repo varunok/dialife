@@ -3,6 +3,7 @@ package com.lumenarcanus.dialife.feature.data
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.data.History
 import com.lumenarcanus.dialife.data.Question
+import com.lumenarcanus.dialife.data.StateResponse
 import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.data.Treatment
 
@@ -21,7 +22,10 @@ data class DataUiState(
     val thresholds: Thresholds = Thresholds(),
     val units: Units = Units.MgDl,
     // the live day's entries: what the entry sheet compares a dose with
-    val recent: List<Treatment> = emptyList()
+    val recent: List<Treatment> = emptyList(),
+    // the live state and this phone's id, for the entry sheet
+    val state: StateResponse? = null,
+    val myId: Long = 0
 )
 
 sealed interface DataAction {
@@ -54,7 +58,9 @@ fun dataUiState(
     filter: DataFilter = DataFilter.All,
     step: Int = 5,
     wide: Boolean = false,
-    loading: Boolean = false
+    loading: Boolean = false,
+    state: StateResponse? = null,
+    myId: Long = 0
 ): DataUiState {
     val w = dataWindow(spanHours, page, now)
     val h = if (isOlder(w, now)) older else live
@@ -72,6 +78,8 @@ fun dataUiState(
         loading = loading,
         thresholds = thresholds,
         units = units,
-        recent = live?.treatments.orEmpty()
+        recent = live?.treatments.orEmpty(),
+        state = state,
+        myId = myId
     )
 }
