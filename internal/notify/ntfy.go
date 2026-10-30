@@ -152,7 +152,7 @@ func (n *Ntfy) planned(ctx context.Context, data []byte) {
 	}
 }
 
-// PlannedMessage: «Кололи до їжі о 12:40?» with the dose and what to press.
+// PlannedMessage is «Кололи до їжі о 12:40?» with the dose and what to press.
 func PlannedMessage(q questions.View, t Target, at string) Message {
 	dose := strconv.FormatFloat(q.Dose, 'f', -1, 64)
 	return Message{Topic: t.Topic, SequenceID: sidPlanned(q.ID), Title: "Кололи до їжі о " + at + "?",

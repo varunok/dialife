@@ -16,7 +16,7 @@ VERSION="$(date -u +%Y%m%d-%H%M%S)"
 BIN="$ROOT/bin/dialife-linux-amd64"
 
 echo "==> test"
-(cd "$ROOT" && go test ./...)
+(cd "$ROOT" && make test) # lint + tests
 
 echo "==> build $VERSION"
 (cd "$ROOT" && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \

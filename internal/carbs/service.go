@@ -51,7 +51,7 @@ type Service struct {
 	vecs  map[string][]float32  // embedding vectors already read or made
 }
 
-// Enabled: some model is configured, so estimates may come.
+// Enabled tells that some model is configured, so estimates may come.
 func (s *Service) Enabled() bool { return len(s.Models) > 0 }
 
 // Suggest answers for each item: the family's own number if there is one,

@@ -731,7 +731,7 @@ func (e *Engine) describeDoses(ctx context.Context, q store.Question, v *View) e
 	return nil
 }
 
-// Recent: open questions and suspect marks of the last day, for the state snapshot.
+// Recent returns open questions and suspect marks of the last day, for the state snapshot.
 func (e *Engine) Recent(ctx context.Context) ([]View, error) {
 	now := e.Now()
 	// a long-acting pair may begin 16 hours before its day-long watch for a low

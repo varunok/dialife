@@ -56,7 +56,7 @@ func scanPlanned(sc scanner) (PlannedDose, error) {
 	return p, nil
 }
 
-// ErrClosedDose: the dose was already given, skipped or expired.
+// ErrClosedDose means the dose was already given, skipped or expired.
 var ErrClosedDose = errors.New("planned dose is closed")
 
 // SavePlannedDose creates a planned dose or changes one still planned.

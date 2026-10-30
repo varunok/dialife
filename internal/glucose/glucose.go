@@ -224,7 +224,7 @@ func trendRate(bs []Bucket) (float64, bool) {
 	return (bs[newest].Mean - bs[oldest].Mean) / mins, true
 }
 
-// directionFromRate maps mg/dL per minute onto Dexcom's arrow bands.
+// DirectionFromRate maps mg/dL per minute onto Dexcom's arrow bands.
 func DirectionFromRate(rate float64) string {
 	switch {
 	case rate > 3:

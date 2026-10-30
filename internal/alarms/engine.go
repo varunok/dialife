@@ -288,7 +288,7 @@ func (e *Engine) clear(ctx context.Context, a store.Alarm, in Input, now time.Ti
 	return nil
 }
 
-// Handle: "I'm on it". quiet > 0 additionally silences check-ins and level
+// Handle records "I'm on it". quiet > 0 additionally silences check-ins and level
 // changes for that long ("quiet 2 h"); refused for an urgent low.
 func (e *Engine) Handle(ctx context.Context, id int64, by store.Device, quiet time.Duration) (View, error) {
 	e.mu.Lock()
@@ -345,7 +345,7 @@ func (e *Engine) CheckinOK(ctx context.Context, id int64, by store.Device) (View
 	return v, nil
 }
 
-// Help: the handler asks the others to come. The episode stays theirs.
+// Help is the handler asking the others to come. The episode stays theirs.
 func (e *Engine) Help(ctx context.Context, id int64, by store.Device) (View, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()

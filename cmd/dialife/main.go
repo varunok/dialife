@@ -304,7 +304,7 @@ func alarmSettings(cfg config.Config, args []string) error {
 		return liveAlarms(cfg)
 	}
 	if len(args) == 0 || (args[0] != "show" && args[0] != "set") {
-		return errors.New("alarms: want show, live or set key=value ...")
+		return errors.New("alarms: want show, live or set key=value")
 	}
 	s, err := openMigrated(cfg)
 	if err != nil {

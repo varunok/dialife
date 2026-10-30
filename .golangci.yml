@@ -1,0 +1,26 @@
+version: "2"
+
+linters:
+  default: standard # errcheck, govet, ineffassign, staticcheck, unused
+  settings:
+    errcheck:
+      exclude-functions:
+        - (*database/sql.Tx).Rollback # deferred after Commit: its error is ErrTxDone
+    staticcheck:
+      checks:
+        - all
+        - -QF1001 # De Morgan: "!(low < high && …)" reads as the rule it checks
+        - -ST1000 # package comments: not on every package
+        - -ST1003 # naming: Nightscout's field names (sgv, mbg) stay as they are
+  exclusions:
+    presets:
+      - std-error-handling # unchecked Close / Write / Encode on the way out
+      - common-false-positives
+    rules:
+      - path: _test\.go # setup calls in tests fail the test further on anyway
+        linters: [errcheck]
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
