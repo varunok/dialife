@@ -15,20 +15,32 @@ import kotlinx.coroutines.flow.asStateFlow
 class UploaderTokenException : Exception("an uploader key cannot sign a family phone in")
 
 /** Which server and key this phone uses: checked with the server before it is kept, forgotten on sign-out. */
-class SessionRepository(
+interface SessionRepository {
+    val credentials: Flow<Credentials?>
+
+    /** The server stopped accepting the stored key; until the next try to connect. */
+    val revoked: StateFlow<Boolean>
+
+    /** Keeps the key once the server knows it; fails with [UploaderTokenException] or the API's error. */
+    suspend fun connect(server: String, token: String): Result<Unit>
+
+    /** The server stopped accepting the stored key: forget it. */
+    suspend fun revoke()
+
+    suspend fun disconnect()
+}
+
+class DefaultSessionRepository(
     private val context: Context,
     private val store: CredentialStore = CredentialStore(context),
     private val api: DiaLifeApi = DiaLifeApi()
-) {
-    val credentials: Flow<Credentials?> = store.credentials
+) : SessionRepository {
+    override val credentials: Flow<Credentials?> = store.credentials
 
     private val _revoked = MutableStateFlow(false)
+    override val revoked: StateFlow<Boolean> = _revoked.asStateFlow()
 
-    /** The server stopped accepting the stored key; until the next try to connect. */
-    val revoked: StateFlow<Boolean> = _revoked.asStateFlow()
-
-    /** Keeps the key once the server knows it; fails with [UploaderTokenException] or the API's error. */
-    suspend fun connect(server: String, token: String): Result<Unit> {
+    override suspend fun connect(server: String, token: String): Result<Unit> {
         _revoked.value = false
         return api.me(server, token).mapCatching { me ->
             if (me.role == "uploader") throw UploaderTokenException()
@@ -36,14 +48,13 @@ class SessionRepository(
         }
     }
 
-    /** The server stopped accepting the stored key: forget it. */
-    suspend fun revoke() {
+    override suspend fun revoke() {
         _revoked.value = true
         LiveService.stop(context)
         store.clear()
     }
 
-    suspend fun disconnect() {
+    override suspend fun disconnect() {
         LiveService.stop(context)
         store.clear()
         GlucoseWidget.refresh(context)

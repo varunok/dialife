@@ -3,7 +3,7 @@ package com.lumenarcanus.dialife.feature.stats
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lumenarcanus.dialife.core.ui.unitsOf
-import com.lumenarcanus.dialife.live.LiveRepository
+import com.lumenarcanus.dialife.live.LiveSource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** Loads the report for the picked period, and the glucometer comparison once (again on retry). */
-class StatsViewModel(live: LiveRepository, private val repository: StatsRepository = StatsRepository({ live.credentials })) : ViewModel() {
+class StatsViewModel(live: LiveSource, private val repository: StatsRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(
         StatsUiState(
             units = unitsOf(

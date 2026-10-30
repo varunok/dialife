@@ -102,6 +102,7 @@ dependencies {
     implementation(libs.play.services.code.scanner) // Google's scanner UI: no camera permission in our app
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test) // view models on a test dispatcher
     testImplementation(libs.robolectric)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)

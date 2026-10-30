@@ -16,7 +16,7 @@ import com.lumenarcanus.dialife.liveRepository
 @Composable
 fun WebLoginRoute(onBack: () -> Unit) {
     val ctx = LocalContext.current
-    val vm = viewModel { WebLoginViewModel(WebLoginRepository({ ctx.liveRepository.credentials })) }
+    val vm = viewModel { WebLoginViewModel(DefaultWebLoginRepository({ ctx.liveRepository.credentials })) }
     val uiState by vm.uiState.collectAsStateWithLifecycle()
     fun scan() {
         val options = GmsBarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE).build()

@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.data.PlannedDoseRepository
 import com.lumenarcanus.dialife.core.ui.unitsOf
-import com.lumenarcanus.dialife.live.LiveRepository
+import com.lumenarcanus.dialife.live.LiveSource
 import com.lumenarcanus.dialife.live.withPending
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /** The planned doses on home: from the live state; given, changed or skipped on every phone. */
-class PlannedViewModel(private val live: LiveRepository, private val repository: PlannedDoseRepository) : ViewModel() {
+class PlannedViewModel(private val live: LiveSource, private val repository: PlannedDoseRepository) : ViewModel() {
     private val userMessage = MutableStateFlow<Int?>(null)
     private val clock = flow {
         while (true) {

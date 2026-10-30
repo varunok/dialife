@@ -11,7 +11,7 @@ import com.lumenarcanus.dialife.liveRepository
 @Composable
 fun StatsRoute(onBack: () -> Unit) {
     val ctx = LocalContext.current
-    val vm = viewModel { StatsViewModel(ctx.liveRepository) }
+    val vm = viewModel { StatsViewModel(ctx.liveRepository, DefaultStatsRepository({ ctx.liveRepository.credentials })) }
     val uiState by vm.uiState.collectAsStateWithLifecycle()
     StatsScreen(uiState, onPick = vm::pick, onRetry = vm::retry, onBack = onBack)
 }

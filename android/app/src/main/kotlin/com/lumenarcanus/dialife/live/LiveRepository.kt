@@ -60,7 +60,7 @@ data class Live(
  * foreground service. GET /api/stream (SSE) pushes every reading; on any
  * break we reconnect with Last-Event-ID and the server resends what we missed.
  */
-class LiveRepository(context: Context, private val api: DiaLifeApi = DiaLifeApi()) {
+class LiveRepository(context: Context, private val api: DiaLifeApi = DiaLifeApi()) : LiveSource {
     private val app = context.applicationContext
     private val cache = LiveCache(app.filesDir)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -70,21 +70,19 @@ class LiveRepository(context: Context, private val api: DiaLifeApi = DiaLifeApi(
 
     private val _pending = MutableStateFlow(queue.all())
 
-    /** Food/insulin changes made here that the server has not confirmed yet. */
-    val pending: StateFlow<List<PendingOp>> = _pending.asStateFlow()
+    override val pending: StateFlow<List<PendingOp>> = _pending.asStateFlow()
 
     private val _live = MutableStateFlow(Live())
-    val live: StateFlow<Live> = _live.asStateFlow()
+    override val live: StateFlow<Live> = _live.asStateFlow()
 
     /** Alarm episode events as they arrive, plus "snapshot" after every (re)connect. */
     private val _alarms = MutableSharedFlow<AlarmSignal>(extraBufferCapacity = 32)
     val alarms: SharedFlow<AlarmSignal> = _alarms.asSharedFlow()
 
-    /** This phone's device id: who "I" am in handled_by_id / coming_by_id. */
-    @Volatile var myId: Long = 0
+    @Volatile override var myId: Long = 0
         private set
 
-    @Volatile var credentials: Credentials? = null
+    @Volatile override var credentials: Credentials? = null
         private set
 
     private var job: Job? = null
@@ -133,8 +131,8 @@ class LiveRepository(context: Context, private val api: DiaLifeApi = DiaLifeApi(
         }
     }
 
-    /** Skip the back-off: the network came back or the watchdog lost patience. */
-    fun reconnectNow() {
+    // the network came back or the watchdog lost patience
+    override fun reconnectNow() {
         wake.trySend(Unit)
     }
 
@@ -248,12 +246,12 @@ class LiveRepository(context: Context, private val api: DiaLifeApi = DiaLifeApi(
     suspend fun freshState(): Result<com.lumenarcanus.dialife.data.StateResponse> =
         creds?.let { api.state(it) } ?: Result.failure(ApiException(ApiError.Unauthorized))
 
-    fun saveTreatment(t: Treatment) {
+    override fun saveTreatment(t: Treatment) {
         _pending.value = queue.put(PendingOp(t.id, treatment = t.copy(pending = false)))
         flush()
     }
 
-    fun deleteTreatment(id: String) {
+    override fun deleteTreatment(id: String) {
         _pending.value = queue.put(PendingOp(id, delete = true))
         flush()
     }

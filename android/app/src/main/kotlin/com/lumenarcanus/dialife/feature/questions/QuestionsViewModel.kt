@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.data.QuestionRepository
 import com.lumenarcanus.dialife.core.ui.unitsOf
-import com.lumenarcanus.dialife.live.LiveRepository
+import com.lumenarcanus.dialife.live.LiveSource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /** The questions on home: from the live state; an answer clears its notification here. */
-class QuestionsViewModel(private val live: LiveRepository, private val questions: QuestionRepository) : ViewModel() {
+class QuestionsViewModel(private val live: LiveSource, private val questions: QuestionRepository) : ViewModel() {
     private val userMessage = MutableStateFlow<Int?>(null)
     private val clock = flow {
         while (true) {

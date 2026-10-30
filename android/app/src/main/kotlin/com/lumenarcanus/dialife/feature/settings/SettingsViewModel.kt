@@ -6,7 +6,7 @@ import com.lumenarcanus.dialife.core.data.PreferencesRepository
 import com.lumenarcanus.dialife.core.data.SessionRepository
 import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.feature.alarms.Ringer
-import com.lumenarcanus.dialife.live.LiveRepository
+import com.lumenarcanus.dialife.live.LiveSource
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 /** This phone's settings: its own choices, the alarm sound test, disconnecting. */
 class SettingsViewModel(
     creds: Credentials,
-    live: LiveRepository,
+    live: LiveSource,
     private val prefs: PreferencesRepository,
     private val sessions: SessionRepository,
     private val ringer: Ringer

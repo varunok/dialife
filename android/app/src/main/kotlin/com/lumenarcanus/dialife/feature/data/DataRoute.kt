@@ -17,7 +17,7 @@ fun DataRoute(spanHours: Int, onBack: () -> Unit, onOpenMeal: (Treatment) -> Uni
     val ctx = LocalContext.current
     val vm = viewModel {
         val live = ctx.liveRepository
-        DataViewModel(live, DataRepository({ live.credentials }), spanHours, createSavedStateHandle())
+        DataViewModel(live, DefaultDataRepository({ live.credentials }), spanHours, createSavedStateHandle())
     }
     val uiState by vm.uiState.collectAsStateWithLifecycle()
     DataScreen(

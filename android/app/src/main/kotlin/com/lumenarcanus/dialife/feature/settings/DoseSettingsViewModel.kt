@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.lumenarcanus.dialife.core.data.DoseSettingsRepository
 import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.data.DoseSettings
-import com.lumenarcanus.dialife.live.LiveRepository
+import com.lumenarcanus.dialife.live.LiveSource
 import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
  * Edits the family's dose settings, starting from the ones the phone has now;
  * nothing is saved until [save]. Who changed them last follows the server.
  */
-class DoseSettingsViewModel(private val repository: DoseSettingsRepository, live: LiveRepository, locale: Locale) : ViewModel() {
+class DoseSettingsViewModel(private val repository: DoseSettingsRepository, live: LiveSource, locale: Locale) : ViewModel() {
     private val _uiState = MutableStateFlow(
         live.live.value.state.let { state ->
             val dose = state?.dose ?: DoseSettings()

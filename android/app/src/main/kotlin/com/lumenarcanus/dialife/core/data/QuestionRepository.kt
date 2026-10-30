@@ -13,13 +13,20 @@ import kotlinx.serialization.json.put
  * the food form or a notification button. A question someone already closed
  * counts as done; once done, its notification goes from this phone.
  */
-class QuestionRepository(
+interface QuestionRepository {
+    /** [treatmentId]: the entry it was for, when one is named. */
+    suspend fun answer(id: Long, answer: String, treatmentId: String? = null): Result<Unit>
+
+    /** Clears a suspect mark; it goes from the chart here at once. */
+    suspend fun dismiss(id: Long): Result<Unit>
+}
+
+class DefaultQuestionRepository(
     private val live: LiveRepository,
     private val notifier: QuestionNotifier,
     private val api: DiaLifeApi = DiaLifeApi()
-) {
-    /** [treatmentId]: the entry it was for, when one is named. */
-    suspend fun answer(id: Long, answer: String, treatmentId: String? = null): Result<Unit> = post(
+) : QuestionRepository {
+    override suspend fun answer(id: Long, answer: String, treatmentId: String?): Result<Unit> = post(
         "/api/questions/$id/answer",
         buildJsonObject {
             put("answer", answer)
@@ -27,8 +34,7 @@ class QuestionRepository(
         }.toString()
     ).onSuccess { notifier.cancel(id) }
 
-    /** Clears a suspect mark; it goes from the chart here at once. */
-    suspend fun dismiss(id: Long): Result<Unit> = post("/api/questions/$id/dismiss", "{}").onSuccess {
+    override suspend fun dismiss(id: Long): Result<Unit> = post("/api/questions/$id/dismiss", "{}").onSuccess {
         live.updateState { s -> s.copy(questions = s.questions.filter { it.id != id }) }
     }
 

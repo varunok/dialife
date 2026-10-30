@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.unitsOf
-import com.lumenarcanus.dialife.live.LiveRepository
+import com.lumenarcanus.dialife.live.LiveSource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** The wait on home: the server's state, ticking for the countdown; a close goes at once here. */
-class WaitViewModel(private val live: LiveRepository, private val repository: WaitRepository = WaitRepository({ live.credentials })) :
+class WaitViewModel(private val live: LiveSource, private val repository: WaitRepository = WaitRepository({ live.credentials })) :
     ViewModel() {
     private val closedHere = MutableStateFlow(emptySet<String>())
     private val userMessage = MutableStateFlow<Int?>(null)

@@ -8,7 +8,7 @@ import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.data.DoseSettings
 import com.lumenarcanus.dialife.data.MealRules
 import com.lumenarcanus.dialife.data.Series
-import com.lumenarcanus.dialife.live.LiveRepository
+import com.lumenarcanus.dialife.live.LiveSource
 import com.lumenarcanus.dialife.live.withPending
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
  * server. [onPlanFailed] tells the parent when the planned dose did not get there.
  */
 class MealViewModel(
-    private val live: LiveRepository,
+    private val live: LiveSource,
     private val plannedDoses: PlannedDoseRepository,
     private val questions: QuestionRepository,
     private val onPlanFailed: () -> Unit

@@ -13,7 +13,7 @@ fun AlarmLogRoute(onBack: () -> Unit) {
     val ctx = LocalContext.current
     val vm = viewModel {
         val live = ctx.liveRepository
-        AlarmLogViewModel(live, AlarmLogRepository({ live.credentials }))
+        AlarmLogViewModel(live, DefaultAlarmLogRepository({ live.credentials }))
     }
     val uiState by vm.uiState.collectAsStateWithLifecycle()
     AlarmLogScreen(uiState, onPick = vm::pick, onRetry = vm::retry, onBack = onBack)

@@ -8,7 +8,7 @@ import com.lumenarcanus.dialife.core.data.QuestionRepository
 import com.lumenarcanus.dialife.data.History
 import com.lumenarcanus.dialife.data.StateResponse
 import com.lumenarcanus.dialife.live.Link
-import com.lumenarcanus.dialife.live.LiveRepository
+import com.lumenarcanus.dialife.live.LiveSource
 import com.lumenarcanus.dialife.live.withPending
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,7 +37,7 @@ data class HomeUi(
  * ago"; entries saved and deleted, and answers to "did you forget to log?",
  * go through it.
  */
-class HomeViewModel(private val repo: LiveRepository, private val questions: QuestionRepository? = null) : ViewModel() {
+class HomeViewModel(private val repo: LiveSource, private val questions: QuestionRepository? = null) : ViewModel() {
     private val range = MutableStateFlow(6)
     private val userMessage = MutableStateFlow<Int?>(null)
     private val clock = flow {

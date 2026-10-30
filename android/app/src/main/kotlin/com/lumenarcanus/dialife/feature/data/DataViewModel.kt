@@ -8,7 +8,7 @@ import com.lumenarcanus.dialife.data.History
 import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.live.Live
-import com.lumenarcanus.dialife.live.LiveRepository
+import com.lumenarcanus.dialife.live.LiveSource
 import com.lumenarcanus.dialife.live.PendingOp
 import com.lumenarcanus.dialife.live.withPending
 import kotlinx.coroutines.delay
@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
  * rotation and the process being let go.
  */
 class DataViewModel(
-    private val live: LiveRepository,
+    private val live: LiveSource,
     private val repository: DataRepository,
     private val spanHours: Int,
     private val saved: SavedStateHandle,

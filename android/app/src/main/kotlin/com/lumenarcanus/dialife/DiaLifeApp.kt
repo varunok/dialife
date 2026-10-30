@@ -1,6 +1,9 @@
 package com.lumenarcanus.dialife
 
 import android.app.Application
+import com.lumenarcanus.dialife.core.data.DefaultDoseSettingsRepository
+import com.lumenarcanus.dialife.core.data.DefaultQuestionRepository
+import com.lumenarcanus.dialife.core.data.DefaultSessionRepository
 import com.lumenarcanus.dialife.core.data.DoseSettingsRepository
 import com.lumenarcanus.dialife.core.data.FoodRepository
 import com.lumenarcanus.dialife.core.data.InsulinIntentRepository
@@ -16,15 +19,15 @@ import kotlinx.coroutines.launch
 class DiaLifeApp : Application() {
     /** One connection per process: the screen and the foreground service share it. */
     val live by lazy { LiveRepository(this) }
-    val sessions by lazy { SessionRepository(this) }
+    val sessions: SessionRepository by lazy { DefaultSessionRepository(this) }
     val preferences by lazy { PreferencesRepository(this) }
     val alarms by lazy { AlarmController(this, live) }
     val questions by lazy { com.lumenarcanus.dialife.feature.questions.QuestionNotifier(this) }
     val plannedDoses by lazy { PlannedDoseRepository({ live.credentials }) }
-    val questionAnswers by lazy { QuestionRepository(live, questions) }
+    val questionAnswers: QuestionRepository by lazy { DefaultQuestionRepository(live, questions) }
     val foods by lazy { FoodRepository({ live.credentials }) }
     val insulinIntents by lazy { InsulinIntentRepository({ live.credentials }, kotlinx.coroutines.MainScope()) }
-    val doseSettings by lazy { DoseSettingsRepository({ live.credentials }) }
+    val doseSettings: DoseSettingsRepository by lazy { DefaultDoseSettingsRepository({ live.credentials }) }
 
     override fun onCreate() {
         super.onCreate()

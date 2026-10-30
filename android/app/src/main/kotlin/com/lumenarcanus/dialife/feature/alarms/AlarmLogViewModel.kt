@@ -3,7 +3,7 @@ package com.lumenarcanus.dialife.feature.alarms
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lumenarcanus.dialife.core.ui.unitsOf
-import com.lumenarcanus.dialife.live.LiveRepository
+import com.lumenarcanus.dialife.live.LiveSource
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** Loads the episodes of the picked period (again on retry). */
-class AlarmLogViewModel(live: LiveRepository, private val repository: AlarmLogRepository) : ViewModel() {
+class AlarmLogViewModel(live: LiveSource, private val repository: AlarmLogRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(
         AlarmLogUiState(units = unitsOf(live.live.value.state?.displayUnits ?: live.credentials?.displayUnits))
     )
