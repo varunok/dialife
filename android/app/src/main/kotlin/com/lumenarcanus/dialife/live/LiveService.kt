@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.IBinder
 import android.util.Log
+import com.lumenarcanus.dialife.feature.wait.EatReminder
 import com.lumenarcanus.dialife.data.CredentialStore
 import com.lumenarcanus.dialife.alarmController
 import com.lumenarcanus.dialife.questionNotifier

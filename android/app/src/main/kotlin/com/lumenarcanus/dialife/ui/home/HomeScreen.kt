@@ -228,7 +228,7 @@ fun HomeScreen(
     onOpenWebLogin: () -> Unit = {},
     onOpenMeal: (editing: Treatment?, question: Question?) -> Unit = { _, _ -> }, // the food screen
     onPlanned: (com.lumenarcanus.dialife.ui.meal.PlannedAction) -> Unit = {}, // given, changed or not given
-    onCloseWait: (doseId: String, kind: String) -> Unit = { _, _ -> }, // "already ate" / the warning closed, for every phone
+    waitSection: @Composable () -> Unit = {}, // when to eat: a feature with its own state (feature/wait)
 ) {
     val c = DiaTheme.colors
     val locale = LocalConfiguration.current.locales[0]
@@ -351,11 +351,7 @@ fun HomeScreen(
                 )
             }
         }
-        // a rapid dose with food beside it: when to start eating, and apart from it more insulin than food
-        ui.state?.wait?.let { w ->
-            com.lumenarcanus.dialife.ui.meal.WaitCard(w, state?.units ?: fallbackUnits, ui.now) { onCloseWait(w.doseId, "wait") }
-            com.lumenarcanus.dialife.ui.meal.MoreCard(w, ui.state.dose.ratio) { onCloseWait(w.doseId, "more") }
-        }
+        waitSection()
         ui.state?.questions.orEmpty().filter { it.state == "open" && it.kind != "planned" }.forEach { q ->
             androidx.compose.runtime.key("q", q.id) {
                 QuestionCard(

@@ -11,6 +11,7 @@ import (
 	"dialife/internal/auth"
 	"dialife/internal/httpx"
 	"dialife/internal/store"
+	"dialife/internal/wait"
 )
 
 // The family's dose calculation: one for every phone, kept in settings.
@@ -163,6 +164,11 @@ func (h *Handlers) PutDose(w http.ResponseWriter, r *http.Request) {
 	slog.Info("dose settings", "by", dev.Person)
 	h.PublishState(r.Context())
 	httpx.WriteJSON(w, http.StatusOK, d)
+}
+
+// wait is the part of the dose settings the wait for food goes by.
+func (d doseSettings) wait() wait.Settings {
+	return wait.Settings{Ratio: d.Ratio, WaitMin: d.WaitMin, WaitHighMin: d.WaitHighMin, WaitHighFrom: d.WaitHighFrom, WaitLowBelow: d.WaitLowBelow}
 }
 
 // PublishState sends every phone a fresh snapshot: something in it changed

@@ -101,10 +101,6 @@ class DiaLifeApi(
 
     suspend fun plannedSkip(c: Credentials, id: String): Result<Unit> = post(c, "/api/planned/$id/skip", "{}")
 
-    /** "wait": already ate; "more": the warning beside it. Closed for every phone. */
-    suspend fun closeWait(c: Credentials, doseId: String, kind: String): Result<Unit> =
-        post(c, "/api/wait/$doseId/close", buildJsonObject { put("kind", kind) }.toString())
-
     /** The carb tables and the family's most logged foods, for the food form. */
     suspend fun foods(c: Credentials): Result<FoodCatalog> = get(c.server, c.token, "/api/foods")
 
@@ -198,7 +194,8 @@ class DiaLifeApi(
     }
 
     /** Alarm actions; 404 (episode already over) counts as done, 409 is a refused quiet. */
-    private suspend fun post(c: Credentials, path: String, body: String): Result<Unit> = withContext(Dispatchers.IO) {
+    /** A JSON request whose answer is only "done"; for the features' own requests too. */
+    suspend fun post(c: Credentials, path: String, body: String): Result<Unit> = withContext(Dispatchers.IO) {
         val req = Request.Builder()
             .url(c.server + path)
             .header("Authorization", "Bearer ${c.token}")

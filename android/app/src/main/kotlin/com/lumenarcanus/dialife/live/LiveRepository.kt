@@ -273,19 +273,6 @@ class LiveRepository(context: Context, private val api: DiaLifeApi = DiaLifeApi(
     suspend fun freshState(): Result<com.lumenarcanus.dialife.data.StateResponse> =
         creds?.let { api.state(it) } ?: Result.failure(ApiException(ApiError.Unauthorized))
 
-    /** Closes the wait ("wait") or its warning ("more") here at once; the server tells the other phones. */
-    suspend fun closeWait(doseId: String, kind: String): Result<Unit> {
-        val c = creds ?: return Result.failure(ApiException(ApiError.Unauthorized))
-        return api.closeWait(c, doseId, kind).onSuccess {
-            _live.update { cur ->
-                cur.copy(state = cur.state?.let { s ->
-                    val w = s.wait?.takeIf { it.doseId == doseId }
-                    s.copy(wait = w?.let { if (kind == "wait") it.copy(closed = true) else it.copy(moreClosed = true) } ?: s.wait)
-                })
-            }
-        }
-    }
-
     suspend fun putDose(d: com.lumenarcanus.dialife.data.DoseSettings): Result<com.lumenarcanus.dialife.data.DoseSettings> =
         creds?.let { api.putDose(it, d) } ?: Result.failure(ApiException(ApiError.Unauthorized))
 

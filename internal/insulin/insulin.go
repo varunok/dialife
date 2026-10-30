@@ -60,3 +60,15 @@ func isBasalName(s string) bool {
 	}
 	return false
 }
+
+// Role reads what the app marked a rapid dose for: "meal" or "corr"; "" when
+// unmarked (xDrip+ never marks it).
+func Role(raw []byte) string {
+	var d struct {
+		Role string `json:"insulinRole"`
+	}
+	if json.Unmarshal(raw, &d) != nil || (d.Role != "meal" && d.Role != "corr") {
+		return ""
+	}
+	return d.Role
+}

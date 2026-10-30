@@ -1,4 +1,4 @@
-package com.lumenarcanus.dialife.live
+package com.lumenarcanus.dialife.feature.wait
 
 import android.app.AlarmManager
 import android.app.Notification
@@ -9,13 +9,18 @@ import android.content.Context
 import android.content.Intent
 import com.lumenarcanus.dialife.MainActivity
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.alarmController
 import com.lumenarcanus.dialife.data.CredentialStore
 import com.lumenarcanus.dialife.data.Wait
+import com.lumenarcanus.dialife.live.AlarmText
+import com.lumenarcanus.dialife.live.LiveRepository
+import com.lumenarcanus.dialife.live.Notifications
 import com.lumenarcanus.dialife.liveRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 /**
  * "You can eat": an ordinary notification when the wait on home runs out, on
@@ -34,32 +39,43 @@ object EatReminder {
     /** (Re)arms it for the wait the server sends, or takes it away. Call on every change of the wait. */
     fun sync(context: Context, wait: Wait?) {
         val am = context.getSystemService(AlarmManager::class.java)
-        am.cancel(pending(context, null))
-        val due = wait?.takeIf { it.counts() }
+        am.cancel(timer(context, null))
+        val due = wait?.takeIf { it.sounds() }
         if (due == null || shownFor(context) != due.doseId) cancel(context)
         if (due == null) return
         val now = System.currentTimeMillis()
         when {
-            due.eatFrom > now -> am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, due.eatFrom, pending(context, due.doseId))
+            due.eatFrom > now -> am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, due.eatFrom, timer(context, due.doseId))
             now - due.eatFrom < LATE_MS && shownFor(context) != due.doseId -> show(context, due)
         }
     }
 
     fun cancel(context: Context) = context.getSystemService(NotificationManager::class.java).cancel(ID)
 
-    private fun Wait.counts() = !closed && reason != "low" && reason != "falling"
-
     /**
      * Time is up: asks the server first, so an entry deleted or "already ate"
      * pressed while this phone was out of touch makes no sound. No answer, no sound.
      */
     internal suspend fun fire(context: Context, doseId: String) {
-        val repo = context.liveRepository
-        // the process may have been started just for this
-        if (repo.credentials == null) CredentialStore(context).credentials.first()?.let { repo.start(it) }
-        val wait = repo.freshState().getOrNull()?.wait
-        if (wait == null || wait.doseId != doseId || !wait.counts() || shownFor(context) == doseId) return
+        val wait = repo(context).freshState().getOrNull()?.wait
+        if (wait == null || wait.doseId != doseId || !wait.sounds() || shownFor(context) == doseId) return
         show(context, wait)
+    }
+
+    /** "Already ate" on the notification. */
+    internal suspend fun eaten(context: Context, doseId: String) {
+        val live = repo(context)
+        val repository = WaitRepository({ live.credentials })
+        val eaten = WaitAction.Eaten(doseId)
+        val r = repository.close(eaten).recoverCatching { repository.close(eaten).getOrThrow() } // one retry
+        if (r.isFailure) context.alarmController.failed() else cancel(context)
+    }
+
+    /** The process may have been started just for this. */
+    private suspend fun repo(context: Context): LiveRepository {
+        val repo = context.liveRepository
+        if (repo.credentials == null) CredentialStore(context).credentials.first()?.let { repo.start(it) }
+        return repo
     }
 
     private fun show(context: Context, w: Wait) {
@@ -68,43 +84,54 @@ object EatReminder {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         val eaten = PendingIntent.getBroadcast(
-            context, 6,
-            Intent(context, ActionReceiver::class.java)
-                .putExtra(ActionReceiver.EXTRA_ACTION, ActionReceiver.EATEN)
-                .putExtra(ActionReceiver.EXTRA_DOSE, w.doseId),
+            context, 6, Intent(context, EatenReceiver::class.java).putExtra(EXTRA_DOSE, w.doseId),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
-        val units = if (w.units % 1.0 == 0.0) w.units.toInt().toString() else w.units.toString()
         val n = Notification.Builder(context, Notifications.CHANNEL_EAT)
             .setSmallIcon(R.drawable.ic_stat_drop)
             .setContentTitle(context.getString(R.string.wait_go))
-            .setContentText(context.getString(R.string.wait_fact_dose, units, AlarmText.clock(context, w.doseAt)))
+            .setContentText(context.getString(R.string.wait_fact_dose, formatUnits(w.units, Locale.getDefault()), AlarmText.clock(context, w.doseAt)))
             .setAutoCancel(true)
             .setContentIntent(open)
             .addAction(Notification.Action.Builder(null, context.getString(R.string.wait_eaten), eaten).build())
             .build()
         context.getSystemService(NotificationManager::class.java).notify(ID, n)
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_SHOWN, w.doseId).apply()
+        prefs(context).edit().putString(KEY_SHOWN, w.doseId).apply()
     }
 
-    private fun shownFor(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_SHOWN, null)
+    private fun shownFor(context: Context) = prefs(context).getString(KEY_SHOWN, null)
 
-    private fun pending(context: Context, doseId: String?) = PendingIntent.getBroadcast(
+    private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+
+    private fun timer(context: Context, doseId: String?) = PendingIntent.getBroadcast(
         context, 4, Intent(context, EatReminderReceiver::class.java).apply { doseId?.let { putExtra(EXTRA_DOSE, it) } },
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
 }
 
+/** The wait ran out: maybe "you can eat". */
 class EatReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val dose = intent.getStringExtra(EatReminder.EXTRA_DOSE) ?: return
-        val done = goAsync()
-        CoroutineScope(Dispatchers.Main).launch {
-            try {
-                EatReminder.fire(context, dose)
-            } finally {
-                done.finish()
-            }
+        async { EatReminder.fire(context, dose) }
+    }
+}
+
+/** "Already ate" pressed on the notification. */
+class EatenReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val dose = intent.getStringExtra(EatReminder.EXTRA_DOSE) ?: return
+        async { EatReminder.eaten(context, dose) }
+    }
+}
+
+private fun BroadcastReceiver.async(block: suspend () -> Unit) {
+    val done = goAsync()
+    CoroutineScope(Dispatchers.Main).launch {
+        try {
+            block()
+        } finally {
+            done.finish()
         }
     }
 }

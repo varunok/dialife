@@ -56,6 +56,11 @@ func Open(path string) (*Store, error) {
 	return s, nil
 }
 
+// Writer and Reader are for a module's own tables (its SQL lives with it);
+// the shared ones go through the methods here.
+func (s *Store) Writer() *sql.DB { return s.w }
+func (s *Store) Reader() *sql.DB { return s.r }
+
 func (s *Store) Close() error {
 	return errors.Join(s.r.Close(), s.w.Close())
 }

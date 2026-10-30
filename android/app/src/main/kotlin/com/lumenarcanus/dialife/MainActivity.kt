@@ -262,11 +262,7 @@ class MainActivity : AppCompatActivity() {
             onOpenWebLogin = { onOpen(Screen.WebLogin) },
             onOpenMeal = onMeal,
             onPlanned = { act -> planned(act) },
-            onCloseWait = { id, kind ->
-                lifecycleScope.launch {
-                    liveRepository.closeWait(id, kind).onFailure { Toast.makeText(this@MainActivity, R.string.q_failed, Toast.LENGTH_LONG).show() }
-                }
-            },
+            waitSection = { com.lumenarcanus.dialife.feature.wait.WaitSection() },
             onOpenSettings = { onOpen(Screen.Settings) },
             onOpenHandling = { id -> openHandling = id },
             onRetry = liveRepository::reconnectNow,
