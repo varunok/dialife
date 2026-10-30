@@ -46,6 +46,7 @@ import com.lumenarcanus.dialife.core.data.FoodRepository
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.core.ui.theme.GlucoseHero
 import com.lumenarcanus.dialife.data.CarbSuggestion
+import com.lumenarcanus.dialife.data.CarbSuggestions
 import com.lumenarcanus.dialife.data.CarbTableHit
 import com.lumenarcanus.dialife.data.FoodCatalog
 import com.lumenarcanus.dialife.data.FoodItem
@@ -129,7 +130,7 @@ suspend fun lookUp(row: FoodRow, repo: FoodRepository, update: ((FoodRow) -> Foo
  * following it when a suggestion of the same source was picked before (a new
  * portion changes them); a carb value typed in stays as it is.
  */
-fun FoodRow.withSuggestions(r: Result<com.lumenarcanus.dialife.data.CarbSuggestions>): FoodRow {
+fun FoodRow.withSuggestions(r: Result<CarbSuggestions>): FoodRow {
     val res = r.getOrNull()
     val s = res?.items?.firstOrNull()
     val follow = when (source) {

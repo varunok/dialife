@@ -30,14 +30,20 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.data.FoodRepository
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.theme.DiaLifeTheme
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
+import com.lumenarcanus.dialife.data.DoseSettings
+import com.lumenarcanus.dialife.data.InsulinType
+import com.lumenarcanus.dialife.data.MealRules
 import com.lumenarcanus.dialife.data.Question
 import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.data.Treatment
+import com.lumenarcanus.dialife.feature.entry.IntentWarning
 import com.lumenarcanus.dialife.feature.entry.TreatmentKind
 import com.lumenarcanus.dialife.feature.entry.TreatmentSheet
+import com.lumenarcanus.dialife.feature.entry.kindLook
 
 @Composable
 fun HomeScreen(
@@ -71,8 +77,8 @@ fun HomeScreen(
     // when to eat: a feature with its own state (feature/wait)
     waitSection: @Composable () -> Unit = {},
     // the entry sheet's: "… is giving insulin" on the other phones, food suggestions
-    onAnnounceInsulin: (com.lumenarcanus.dialife.data.InsulinType?) -> Unit = {},
-    foods: com.lumenarcanus.dialife.core.data.FoodRepository? = null,
+    onAnnounceInsulin: (InsulinType?) -> Unit = {},
+    foods: FoodRepository? = null,
     // the chart's "≈ meter" switch
     onMeterLine: (Boolean) -> Unit = {}
 ) {
@@ -115,8 +121,8 @@ fun HomeScreen(
             initialTime = sheetFor?.from,
             recent = ui.history?.treatments.orEmpty(),
             units = state?.units ?: fallbackUnits,
-            dose = ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
-            mealRules = ui.state?.mealRules ?: com.lumenarcanus.dialife.data.MealRules(),
+            dose = ui.state?.dose ?: DoseSettings(),
+            mealRules = ui.state?.mealRules ?: MealRules(),
             state = ui.state,
             myId = ui.myId,
             onAnnounce = onAnnounceInsulin,
@@ -156,9 +162,9 @@ fun HomeScreen(
                 meter = ui.meter,
                 suspects = ui.state?.questions.orEmpty(),
                 onDismissSuspect = onDismissQuestion,
-                dose = ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
+                dose = ui.state?.dose ?: DoseSettings(),
                 planned = ui.state?.planned.orEmpty(),
-                mealRules = ui.state?.mealRules ?: com.lumenarcanus.dialife.data.MealRules()
+                mealRules = ui.state?.mealRules ?: MealRules()
             )
         }
         return
@@ -193,7 +199,7 @@ fun HomeScreen(
         }
         // someone else has the insulin form open: talk before reaching for a pen too
         ui.state?.intents.orEmpty().filter { it.deviceId != ui.myId && it.until > ui.now }.takeIf { it.isNotEmpty() }?.let {
-            com.lumenarcanus.dialife.feature.entry.IntentWarning(it, ui.now)
+            IntentWarning(it, ui.now)
         }
         watchSection()
         plannedSection()
@@ -220,9 +226,9 @@ fun HomeScreen(
             meter = ui.meter,
             suspects = ui.state?.questions.orEmpty(),
             onDismissSuspect = onDismissQuestion,
-            dose = ui.state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings(),
+            dose = ui.state?.dose ?: DoseSettings(),
             planned = ui.state?.planned.orEmpty(),
-            mealRules = ui.state?.mealRules ?: com.lumenarcanus.dialife.data.MealRules(),
+            mealRules = ui.state?.mealRules ?: MealRules(),
             onOpenTable = onOpenData
         )
         state?.let { Tiles(it, onOpenStats, onOpenLog) }
@@ -234,7 +240,7 @@ fun HomeScreen(
             val measurer = androidx.compose.ui.text.rememberTextMeasurer()
             val density = androidx.compose.ui.platform.LocalDensity.current
             val kinds = listOf(TreatmentKind.Insulin, TreatmentKind.Food, TreatmentKind.Meter)
-            val labels = kinds.map { stringResource(com.lumenarcanus.dialife.feature.entry.kindLook(it).name) }
+            val labels = kinds.map { stringResource(kindLook(it).name) }
             val style = androidx.compose.material3.LocalTextStyle.current.merge(
                 androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
             )

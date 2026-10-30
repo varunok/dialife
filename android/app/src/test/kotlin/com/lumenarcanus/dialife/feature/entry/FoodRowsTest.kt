@@ -1,5 +1,9 @@
 package com.lumenarcanus.dialife.feature.entry
 
+import com.lumenarcanus.dialife.data.CarbMine
+import com.lumenarcanus.dialife.data.CarbSuggestion
+import com.lumenarcanus.dialife.data.CarbSuggestions
+import com.lumenarcanus.dialife.data.CarbTableHit
 import com.lumenarcanus.dialife.data.FoodItem
 import com.lumenarcanus.dialife.data.Treatment
 import org.junit.Assert.assertEquals
@@ -38,11 +42,11 @@ class FoodRowsTest {
         )
     }
 
-    private val answer = com.lumenarcanus.dialife.data.CarbSuggestions(
+    private val answer = CarbSuggestions(
         items = listOf(
-            com.lumenarcanus.dialife.data.CarbSuggestion(
-                mine = com.lumenarcanus.dialife.data.CarbMine(30),
-                table = listOf(com.lumenarcanus.dialife.data.CarbTableHit("t1", 25))
+            CarbSuggestion(
+                mine = CarbMine(30),
+                table = listOf(CarbTableHit("t1", 25))
             )
         )
     )

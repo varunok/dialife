@@ -5,6 +5,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.unitsOf
+import com.lumenarcanus.dialife.data.ForecastQuality
+import com.lumenarcanus.dialife.data.Iob
 
 /** Nightscout trend names, as the server sends them. */
 enum class Trend(val degrees: Float, val double: Boolean = false) {
@@ -29,9 +31,9 @@ data class HomeState(
     val low: Int,
     val high: Int,
     val forecast30: Int?,
-    val forecastQuality: com.lumenarcanus.dialife.data.ForecastQuality? = null,
-    val iob: com.lumenarcanus.dialife.data.Iob? = null,
-    val iobQuality: com.lumenarcanus.dialife.data.ForecastQuality? = null,
+    val forecastQuality: ForecastQuality? = null,
+    val iob: Iob? = null,
+    val iobQuality: ForecastQuality? = null,
     val phoneBattery: Int?,
     val uploaderName: String? = null, // the family's name for the xDrip+ phone, from the server
     val alarms: Int = 0,

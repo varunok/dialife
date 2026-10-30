@@ -14,9 +14,13 @@ import com.lumenarcanus.dialife.core.data.PlannedDoseRepository
 import com.lumenarcanus.dialife.core.data.PreferencesRepository
 import com.lumenarcanus.dialife.core.data.QuestionRepository
 import com.lumenarcanus.dialife.core.data.SessionRepository
+import com.lumenarcanus.dialife.data.Prefs
 import com.lumenarcanus.dialife.feature.alarms.AlarmController
+import com.lumenarcanus.dialife.feature.questions.QuestionNotifier
+import com.lumenarcanus.dialife.live.BasalReminder
 import com.lumenarcanus.dialife.live.LiveRepository
 import com.lumenarcanus.dialife.live.Notifications
+import com.lumenarcanus.dialife.widget.GlucoseWidget
 import kotlinx.coroutines.launch
 
 class DiaLifeApp : Application() {
@@ -25,7 +29,7 @@ class DiaLifeApp : Application() {
     val sessions: SessionRepository by lazy { DefaultSessionRepository(this) }
     val preferences: PreferencesRepository by lazy { DefaultPreferencesRepository(this) }
     val alarms by lazy { AlarmController(this, live) }
-    val questions by lazy { com.lumenarcanus.dialife.feature.questions.QuestionNotifier(this) }
+    val questions by lazy { QuestionNotifier(this) }
     val plannedDoses: PlannedDoseRepository by lazy { DefaultPlannedDoseRepository({ live.credentials }) }
     val questionAnswers: QuestionRepository by lazy { DefaultQuestionRepository(live, questions) }
     val foods: FoodRepository by lazy { DefaultFoodRepository({ live.credentials }) }
@@ -34,10 +38,10 @@ class DiaLifeApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        com.lumenarcanus.dialife.data.Prefs.init(this)
+        Prefs.init(this)
         Notifications.createChannels(this)
-        com.lumenarcanus.dialife.live.BasalReminder.schedule(this) // alarms do not survive a reboot or an update
-        kotlinx.coroutines.MainScope().launch { com.lumenarcanus.dialife.widget.GlucoseWidget.publishPreviews(this@DiaLifeApp) }
+        BasalReminder.schedule(this) // alarms do not survive a reboot or an update
+        kotlinx.coroutines.MainScope().launch { GlucoseWidget.publishPreviews(this@DiaLifeApp) }
     }
 }
 
@@ -68,5 +72,5 @@ val android.content.Context.doseSettings: DoseSettingsRepository
 val android.content.Context.alarmController: AlarmController
     get() = (applicationContext as DiaLifeApp).alarms
 
-val android.content.Context.questionNotifier: com.lumenarcanus.dialife.feature.questions.QuestionNotifier
+val android.content.Context.questionNotifier: QuestionNotifier
     get() = (applicationContext as DiaLifeApp).questions

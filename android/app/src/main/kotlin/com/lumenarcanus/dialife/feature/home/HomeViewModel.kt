@@ -6,7 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.data.QuestionRepository
 import com.lumenarcanus.dialife.data.History
+import com.lumenarcanus.dialife.data.MeterReport
 import com.lumenarcanus.dialife.data.StateResponse
+import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.live.Link
 import com.lumenarcanus.dialife.live.LiveSource
 import com.lumenarcanus.dialife.live.withPending
@@ -26,7 +28,7 @@ data class HomeUi(
     val offline: Boolean = false, // cannot reach the server; data shown is what we had
     val unauthorized: Boolean = false, // token revoked: back to the connect screen
     val myId: Long = 0, // this phone's device id: "you" in the episode banners
-    val meter: com.lumenarcanus.dialife.data.MeterReport? = null, // sensor vs glucometer
+    val meter: MeterReport? = null, // sensor vs glucometer
     val now: Long = System.currentTimeMillis(),
     // shown once, then HomeViewModel.userMessageShown()
     @androidx.annotation.StringRes val userMessage: Int? = null
@@ -71,7 +73,7 @@ class HomeViewModel(private val repo: LiveSource, private val questions: Questio
         range.value = hours
     }
 
-    fun save(t: com.lumenarcanus.dialife.data.Treatment) = repo.saveTreatment(t)
+    fun save(t: Treatment) = repo.saveTreatment(t)
 
     fun delete(id: String) = repo.deleteTreatment(id)
 

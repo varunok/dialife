@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.SystemClock
+import com.lumenarcanus.dialife.MainActivity
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.unitsOf
@@ -199,7 +200,7 @@ class AlarmController(context: Context, private val repo: LiveRepository, privat
     private fun openApp(): PendingIntent = PendingIntent.getActivity(
         app,
         0,
-        Intent(app, com.lumenarcanus.dialife.MainActivity::class.java).addFlags(
+        Intent(app, MainActivity::class.java).addFlags(
             Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
         ),
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT

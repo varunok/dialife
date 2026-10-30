@@ -42,6 +42,7 @@ import com.lumenarcanus.dialife.core.ui.formatDelta
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.core.ui.theme.GlucoseHero
+import com.lumenarcanus.dialife.data.ForecastQuality
 import java.util.Locale
 
 @Composable
@@ -175,7 +176,7 @@ private fun ForecastNotes(state: HomeState, locale: Locale) {
     // how often it came true, apart for the quiet hours and after food: one number hides the second
     state.forecastQuality?.takeIf { state.forecast30 != null && (it.quiet != null || it.afterFood != null) }?.let { q ->
         val few = stringResource(R.string.forecast_few)
-        val pct = { f: com.lumenarcanus.dialife.data.ForecastQuality? -> f?.takeIf { it.n >= 50 }?.let { "${it.hitPct}%" } ?: few }
+        val pct = { f: ForecastQuality? -> f?.takeIf { it.n >= 50 }?.let { "${it.hitPct}%" } ?: few }
         Text(stringResource(R.string.forecast_hits, pct(q.quiet), pct(q.afterFood)), color = c.textFaint, fontSize = 12.5.sp)
     }
     // insulin and carbs still acting, from what was logged

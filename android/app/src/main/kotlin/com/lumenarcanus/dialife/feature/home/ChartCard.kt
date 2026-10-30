@@ -37,10 +37,18 @@ import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
+import com.lumenarcanus.dialife.data.DoseSettings
 import com.lumenarcanus.dialife.data.Forecast
 import com.lumenarcanus.dialife.data.History
+import com.lumenarcanus.dialife.data.MealRules
+import com.lumenarcanus.dialife.data.MeterReport
+import com.lumenarcanus.dialife.data.PlannedDose
+import com.lumenarcanus.dialife.data.Prefs
+import com.lumenarcanus.dialife.data.Question
+import com.lumenarcanus.dialife.data.Series
 import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.data.Treatment
+import com.lumenarcanus.dialife.feature.meal.EntryDetail
 import java.util.Date
 import kotlin.math.min
 
@@ -59,23 +67,23 @@ fun ChartCard(
     highlightFrom: Long? = null, // a live episode: shade it from its start to now
     expanded: Boolean = false, // the whole screen: the chart takes all the height left
     onExpand: () -> Unit = {}, // the corner button: open full screen, or close it when expanded
-    meter: com.lumenarcanus.dialife.data.MeterReport? = null, // sensor vs glucometer: the "≈ meter" switch
-    meterLine: Boolean = com.lumenarcanus.dialife.data.Prefs.meterLine,
+    meter: MeterReport? = null, // sensor vs glucometer: the "≈ meter" switch
+    meterLine: Boolean = Prefs.meterLine,
     // the "≈ meter" switch turned on or off
     onMeterLine: (Boolean) -> Unit = {},
-    suspects: List<com.lumenarcanus.dialife.data.Question> = emptyList(), // unanswered questions: "?" marks
+    suspects: List<Question> = emptyList(), // unanswered questions: "?" marks
     onDismissSuspect: (Long) -> Unit = {},
     onOpenTable: (() -> Unit)? = null, // the same data as a table
-    dose: com.lumenarcanus.dialife.data.DoseSettings = com.lumenarcanus.dialife.data.DoseSettings(), // for a meal's worked-out dose
-    planned: List<com.lumenarcanus.dialife.data.PlannedDose> = emptyList(),
+    dose: DoseSettings = DoseSettings(), // for a meal's worked-out dose
+    planned: List<PlannedDose> = emptyList(),
     // the server's: what makes one meal
-    mealRules: com.lumenarcanus.dialife.data.MealRules = com.lumenarcanus.dialife.data.MealRules()
+    mealRules: MealRules = MealRules()
 ) {
     val c = DiaTheme.colors
     val context = LocalContext.current
     var window by remember { mutableStateOf<ChartWindow?>(null) }
     var selected by remember { mutableStateOf<Treatment?>(null) }
-    var suspect by remember { mutableStateOf<com.lumenarcanus.dialife.data.Question?>(null) }
+    var suspect by remember { mutableStateOf<Question?>(null) }
     var whyNot by remember { mutableStateOf(false) } // the switch tapped before there is enough data
     val estimate = meter?.model?.takeIf { meter.ready && meterLine }
     Column(
@@ -167,13 +175,13 @@ fun ChartCard(
         }
         // full screen: the entry says what it is over the chart, like a reading; no editing there
         selected?.takeIf { !expanded }?.let { tr ->
-            com.lumenarcanus.dialife.feature.meal.EntryDetail(
+            EntryDetail(
                 tr,
                 history?.treatments.orEmpty(),
                 dose,
                 units,
                 mealRules,
-                mbg = history?.mbg ?: com.lumenarcanus.dialife.data.Series()
+                mbg = history?.mbg ?: Series()
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 androidx.compose.material3.OutlinedButton(onClick = { onEdit(tr) }, modifier = Modifier.weight(1f)) {

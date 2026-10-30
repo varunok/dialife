@@ -38,6 +38,9 @@ import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.feature.entry.basalColor
 import com.lumenarcanus.dialife.feature.entry.basalContainer
+import com.lumenarcanus.dialife.feature.home.Origin
+import com.lumenarcanus.dialife.feature.home.originOf
+import com.lumenarcanus.dialife.feature.questions.QuestionNotifier
 
 // What the upright list and the wide table share: the controls, the colours and the entry chips.
 
@@ -153,7 +156,7 @@ internal fun suspectText(e: Entry, units: Units): String {
     if (q.kind == "double") {
         return stringResource(
             R.string.data_suspect_double,
-            com.lumenarcanus.dialife.feature.questions.QuestionNotifier.doubleInsulin(ctx, q),
+            QuestionNotifier.doubleInsulin(ctx, q),
             formatClock(ctx, q.from),
             formatClock(ctx, q.to)
         )
@@ -173,8 +176,8 @@ internal fun suspectText(e: Entry, units: Units): String {
 internal fun whoOf(e: Entry): Pair<String, Boolean>? {
     val tr = e.treatment
     if (tr != null) {
-        return when (val o = com.lumenarcanus.dialife.feature.home.originOf(tr)) {
-            is com.lumenarcanus.dialife.feature.home.Origin.Here -> o.who.takeIf { it.isNotBlank() }?.let { it to false }
+        return when (val o = originOf(tr)) {
+            is Origin.Here -> o.who.takeIf { it.isNotBlank() }?.let { it to false }
             else -> "xDrip" to true
         }
     }

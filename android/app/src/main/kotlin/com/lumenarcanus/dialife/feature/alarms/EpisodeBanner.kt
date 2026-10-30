@@ -24,6 +24,7 @@ import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.data.AlarmView
+import com.lumenarcanus.dialife.data.EpisodeRules
 import com.lumenarcanus.dialife.feature.alarms.ActionReceiver
 import com.lumenarcanus.dialife.feature.alarms.AlarmText
 
@@ -70,7 +71,7 @@ internal fun EpisodeBanner(a: AlarmView, ui: AlarmsUiState, onAction: (String, L
         }
         // someone else has it: say exactly when this phone would ring again
         if (a.state == "handled" && !mine) {
-            val rules = ui.episode ?: com.lumenarcanus.dialife.data.EpisodeRules()
+            val rules = ui.episode ?: EpisodeRules()
             val locale = ctx.resources.configuration.locales[0]
             val reasons = buildList {
                 if (a.handledSgv != null && (a.kind == "low" || a.kind == "high")) {

@@ -48,6 +48,7 @@ import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.data.AlarmView
 import com.lumenarcanus.dialife.data.CredentialStore
 import com.lumenarcanus.dialife.data.Credentials
+import com.lumenarcanus.dialife.data.History
 import com.lumenarcanus.dialife.data.StateResponse
 import com.lumenarcanus.dialife.feature.alarms.AlarmText
 import com.lumenarcanus.dialife.feature.home.STALE_MIN
@@ -107,12 +108,7 @@ class GlucoseWidget : GlanceAppWidget() {
         provideContent { Content(sample) }
     }
 
-    private fun build(
-        context: Context,
-        state: StateResponse?,
-        creds: Credentials?,
-        history: com.lumenarcanus.dialife.data.History? = null
-    ): WidgetData {
+    private fun build(context: Context, state: StateResponse?, creds: Credentials?, history: History? = null): WidgetData {
         val units = unitsOf(state?.displayUnits ?: creds?.displayUnits)
         val unit = context.getString(if (units == Units.MgDl) R.string.unit_mgdl else R.string.unit_mmol)
         val bg = state?.bg

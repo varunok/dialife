@@ -33,8 +33,11 @@ import com.lumenarcanus.dialife.core.ui.theme.GlucoseHero
 import com.lumenarcanus.dialife.data.DoseCalc
 import com.lumenarcanus.dialife.data.DoseSettings
 import com.lumenarcanus.dialife.data.InsulinType
+import com.lumenarcanus.dialife.data.MealRules
 import com.lumenarcanus.dialife.data.Meals
+import com.lumenarcanus.dialife.data.Meters
 import com.lumenarcanus.dialife.data.Prefs
+import com.lumenarcanus.dialife.data.Series
 import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.feature.entry.basalColor
 
@@ -48,8 +51,8 @@ fun EntryDetail(
     treatments: List<Treatment>,
     dose: DoseSettings,
     units: Units,
-    mealRules: com.lumenarcanus.dialife.data.MealRules = com.lumenarcanus.dialife.data.MealRules(),
-    mbg: com.lumenarcanus.dialife.data.Series = com.lumenarcanus.dialife.data.Series()
+    mealRules: MealRules = MealRules(),
+    mbg: Series = Series()
 ) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
@@ -134,7 +137,7 @@ fun EntryDetail(
                 Text(stringResource(R.string.detail_meal, meal.foods.size, meal.carbs), color = c.textMuted, fontSize = 13.sp)
             }
             val first = meal.foods.first().t
-            val meter = com.lumenarcanus.dialife.data.Meters.latest(
+            val meter = Meters.latest(
                 treatments,
                 mbg,
                 to = first + 5 * 60_000L,

@@ -11,20 +11,45 @@ import com.github.takahirom.roborazzi.captureRoboImage
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.theme.DiaLifeTheme
 import com.lumenarcanus.dialife.data.AlarmView
+import com.lumenarcanus.dialife.data.CarbEstimate
+import com.lumenarcanus.dialife.data.CarbSuggestion
+import com.lumenarcanus.dialife.data.CarbTableHit
 import com.lumenarcanus.dialife.data.Caregiver
 import com.lumenarcanus.dialife.data.Credentials
+import com.lumenarcanus.dialife.data.DoseSettings
+import com.lumenarcanus.dialife.data.FoodItem
+import com.lumenarcanus.dialife.data.PlannedDose
 import com.lumenarcanus.dialife.data.Question
+import com.lumenarcanus.dialife.data.Treatment
+import com.lumenarcanus.dialife.data.Wait
+import com.lumenarcanus.dialife.data.WebLoginInfo
+import com.lumenarcanus.dialife.data.WebSession
 import com.lumenarcanus.dialife.feature.alarms.HandlingScreen
+import com.lumenarcanus.dialife.feature.data.DataScreen
+import com.lumenarcanus.dialife.feature.data.dataUiState
+import com.lumenarcanus.dialife.feature.entry.FoodSuggestions
+import com.lumenarcanus.dialife.feature.entry.newFoodRow
 import com.lumenarcanus.dialife.feature.home.BackgroundSetup
+import com.lumenarcanus.dialife.feature.home.ChartCard
 import com.lumenarcanus.dialife.feature.home.sampleHomeUi
+import com.lumenarcanus.dialife.feature.home.sampleMeter
+import com.lumenarcanus.dialife.feature.meal.EntryDetail
 import com.lumenarcanus.dialife.feature.meal.MealInputs
+import com.lumenarcanus.dialife.feature.meal.MealScreen
 import com.lumenarcanus.dialife.feature.planned.PlannedCard
 import com.lumenarcanus.dialife.feature.planned.PlannedCardUiState
+import com.lumenarcanus.dialife.feature.settings.DoseSettingsScreen
+import com.lumenarcanus.dialife.feature.settings.DoseSettingsUiState
 import com.lumenarcanus.dialife.feature.settings.SettingsScreen
+import com.lumenarcanus.dialife.feature.settings.SettingsUiState
+import com.lumenarcanus.dialife.feature.settings.doseSettingsForm
+import com.lumenarcanus.dialife.feature.stats.MeterCard
 import com.lumenarcanus.dialife.feature.wait.CountdownCard
 import com.lumenarcanus.dialife.feature.wait.CountdownUiState
 import com.lumenarcanus.dialife.feature.wait.WarningCard
 import com.lumenarcanus.dialife.feature.wait.warningUiState
+import com.lumenarcanus.dialife.feature.weblogin.Approve
+import com.lumenarcanus.dialife.feature.weblogin.Sessions
 import java.util.TimeZone
 import org.junit.Before
 import org.junit.Rule
@@ -66,28 +91,28 @@ class ScreenshotTest {
     @Test
     @Config(qualifiers = "uk-w412dp-h915dp-xxhdpi")
     fun foodOtherPortionUk() = shot("food_other_portion_dark_uk", dark = true) {
-        val hit = com.lumenarcanus.dialife.data.CarbTableHit(
+        val hit = CarbTableHit(
             "fruit-frutillas-1-taza",
             15,
             names = mapOf("uk" to "Полуниця"),
             portions = mapOf("uk" to "1 чашка (250 мл)")
         )
-        val row = com.lumenarcanus.dialife.feature.entry.newFoodRow("Полуниця", portion = "100 грам").copy(
+        val row = newFoodRow("Полуниця", portion = "100 грам").copy(
             asked = true,
             models = true,
-            suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(
+            suggestion = CarbSuggestion(
                 table = listOf(hit),
-                estimate = com.lumenarcanus.dialife.data.CarbEstimate(8, 7, 9, 1)
+                estimate = CarbEstimate(8, 7, 9, 1)
             )
         )
         androidx.compose.foundation.layout.Column(
             androidx.compose.ui.Modifier.padding(16.dp),
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
         ) {
-            com.lumenarcanus.dialife.feature.entry.FoodSuggestions(row, "uk") {}
-            com.lumenarcanus.dialife.feature.entry.FoodSuggestions(
+            FoodSuggestions(row, "uk") {}
+            FoodSuggestions(
                 row.copy(
-                    suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(
+                    suggestion = CarbSuggestion(
                         table = listOf(
                             hit.copy(carbs = 8, scaled = true, per100 = 7.7, per100Src = "SARA 2 (AR)", fiber100 = 2.0, avail100 = 5.7)
                         )
@@ -102,7 +127,7 @@ class ScreenshotTest {
     @Config(qualifiers = "uk-w412dp-h1200dp-xxhdpi")
     fun waitCardsUk() = shot("wait_cards_dark_uk", dark = true) {
         val dose = now - 10 * 60_000
-        val w = com.lumenarcanus.dialife.data.Wait("d", dose, 3.0, dose + 15 * 60_000, "range", 142, 60.0, 0.0)
+        val w = Wait("d", dose, 3.0, dose + 15 * 60_000, "range", 142, 60.0, 0.0)
         androidx.compose.foundation.layout.Column(
             androidx.compose.ui.Modifier.padding(16.dp),
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)
@@ -144,7 +169,7 @@ class ScreenshotTest {
     @Config(qualifiers = "uk-w915dp-h412dp-land-xxhdpi")
     fun chartFullScreenUk() = shot("chart_full_dark_uk", dark = true) {
         val ui = sampleHomeUi(now)
-        com.lumenarcanus.dialife.feature.home.ChartCard(
+        ChartCard(
             ui.history, ui.state?.ar2, ui.state!!.thresholds, Units.MgDl, ui.rangeHours, ui.now, onRange = {},
             modifier = androidx.compose.ui.Modifier.fillMaxSize(), expanded = true,
             suspects = ui.state!!.questions
@@ -155,10 +180,10 @@ class ScreenshotTest {
     @Config(qualifiers = "uk-w915dp-h412dp-land-xxhdpi")
     fun chartMeterLineUk() = shot("chart_meter_dark_uk", dark = true) {
         val ui = sampleHomeUi(now)
-        com.lumenarcanus.dialife.feature.home.ChartCard(
+        ChartCard(
             ui.history, ui.state?.ar2, ui.state!!.thresholds, Units.MgDl, ui.rangeHours, ui.now, onRange = {},
             modifier = androidx.compose.ui.Modifier.fillMaxSize(), expanded = true,
-            meter = com.lumenarcanus.dialife.feature.home.sampleMeter(now), meterLine = true
+            meter = sampleMeter(now), meterLine = true
         )
     }
 
@@ -166,7 +191,7 @@ class ScreenshotTest {
     @Config(qualifiers = "+uk")
     fun meterCardUk() = shot("meter_card_dark_uk", dark = true) {
         androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.padding(16.dp)) {
-            com.lumenarcanus.dialife.feature.stats.MeterCard(com.lumenarcanus.dialife.feature.home.sampleMeter(now), Units.MgDl)
+            MeterCard(sampleMeter(now), Units.MgDl)
         }
     }
 
@@ -174,8 +199,8 @@ class ScreenshotTest {
     @Config(qualifiers = "+uk")
     fun dataListUk() = shot("data_list_dark_uk", dark = true) {
         val ui = sampleHomeUi(now)
-        com.lumenarcanus.dialife.feature.data.DataScreen(
-            com.lumenarcanus.dialife.feature.data.dataUiState(
+        DataScreen(
+            dataUiState(
                 ui.history,
                 null,
                 ui.state!!.questions,
@@ -201,14 +226,14 @@ class ScreenshotTest {
             androidx.compose.ui.Modifier.padding(20.dp),
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
         ) {
-            com.lumenarcanus.dialife.feature.weblogin.Approve(
-                com.lumenarcanus.dialife.data.WebLoginInfo("x", "Firefox", "Linux", now + 120_000, ip = "198.51.100.9"),
+            Approve(
+                WebLoginInfo("x", "Firefox", "Linux", now + 120_000, ip = "198.51.100.9"),
                 now = now
             ) {
             }
-            com.lumenarcanus.dialife.feature.weblogin.Sessions(
+            Sessions(
                 listOf(
-                    com.lumenarcanus.dialife.data.WebSession(
+                    WebSession(
                         1,
                         "Chrome",
                         "Windows",
@@ -259,7 +284,7 @@ class ScreenshotTest {
     @Config(qualifiers = "+uk")
     fun settingsUk() = shot("settings_uk", dark = true) {
         SettingsScreen(
-            com.lumenarcanus.dialife.feature.settings.SettingsUiState(creds, sampleHomeUi(now).state),
+            SettingsUiState(creds, sampleHomeUi(now).state),
             setup = BackgroundSetup(battery = true),
             onAction = {},
             onFixNotifications = {},
@@ -271,14 +296,14 @@ class ScreenshotTest {
         )
     }
 
-    private fun meal(now: Long) = com.lumenarcanus.dialife.data.Treatment(
+    private fun meal(now: Long) = Treatment(
         id = "m1",
         t = now - 25 * 60_000L,
         carbs = 45.0,
         foodItems = listOf(
-            com.lumenarcanus.dialife.data.FoodItem("Борщ", "тарілка", 18.0, "mine"),
-            com.lumenarcanus.dialife.data.FoodItem("Хліб чорний", "2 скибки", 22.0, "table"),
-            com.lumenarcanus.dialife.data.FoodItem("Салат", null, 5.0, "manual")
+            FoodItem("Борщ", "тарілка", 18.0, "mine"),
+            FoodItem("Хліб чорний", "2 скибки", 22.0, "table"),
+            FoodItem("Салат", null, 5.0, "manual")
         )
     )
 
@@ -286,13 +311,13 @@ class ScreenshotTest {
     @Config(qualifiers = "+uk")
     fun mealUk() = shot("meal_dark_uk", dark = true) {
         val t = sampleHomeUi(now).history?.treatments.orEmpty() +
-            com.lumenarcanus.dialife.data.Treatment(id = "g1", t = now - 6 * 60_000L, glucose = 186)
-        com.lumenarcanus.dialife.feature.meal.MealScreen(
+            Treatment(id = "g1", t = now - 6 * 60_000L, glucose = 186)
+        MealScreen(
             repo = null,
             inputs = MealInputs(treatments = t, units = Units.MgDl),
             editing = meal(now).copy(
                 foodItems =
-                meal(now).foodItems!! + com.lumenarcanus.dialife.data.FoodItem("Гречка з котлетою", null, null, null)
+                meal(now).foodItems!! + FoodItem("Гречка з котлетою", null, null, null)
             ),
             initialTime = null,
             onSave = {},
@@ -308,7 +333,7 @@ class ScreenshotTest {
             androidx.compose.ui.Modifier.padding(16.dp),
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
         ) {
-            val p = com.lumenarcanus.dialife.data.PlannedDose(
+            val p = PlannedDose(
                 id = "p1", mealId = "m1", dose = 4.0, food = 2.25, corr = 2.0, carbs = 45, meter = 186,
                 meterAt =
                 now - 30 * 60_000L,
@@ -317,7 +342,7 @@ class ScreenshotTest {
             PlannedCard(
                 PlannedCardUiState(
                     dose = p,
-                    settings = com.lumenarcanus.dialife.data.DoseSettings(),
+                    settings = DoseSettings(),
                     now = now,
                     mealAt = meal(now).t,
                     question = null,
@@ -331,7 +356,7 @@ class ScreenshotTest {
             PlannedCard(
                 PlannedCardUiState(
                     dose = p.copy(id = "p2", createdAt = now - 65 * 60_000L),
-                    settings = com.lumenarcanus.dialife.data.DoseSettings(),
+                    settings = DoseSettings(),
                     now = now,
                     mealAt = meal(now).t,
                     question = Question(
@@ -350,11 +375,11 @@ class ScreenshotTest {
                 ),
                 Units.MgDl
             ) {}
-            com.lumenarcanus.dialife.feature.meal.EntryDetail(
+            EntryDetail(
                 meal(now),
                 listOf(
                     meal(now),
-                    com.lumenarcanus.dialife.data.Treatment(
+                    Treatment(
                         id = "i1",
                         t = now - 30 * 60_000L,
                         insulin = 2.0,
@@ -363,7 +388,7 @@ class ScreenshotTest {
                         enteredBy = "Тато"
                     )
                 ),
-                com.lumenarcanus.dialife.data.DoseSettings(),
+                DoseSettings(),
                 Units.MgDl
             )
         }
@@ -378,28 +403,28 @@ class ScreenshotTest {
     @Test
     @Config(qualifiers = "en-w412dp-h915dp-xxhdpi")
     fun foodOtherPortionEnAll() = shot("food_other_portion_dark_en_all", dark = true) {
-        val hit = com.lumenarcanus.dialife.data.CarbTableHit(
+        val hit = CarbTableHit(
             "fruit-frutillas-1-taza",
             15,
             names = mapOf("uk" to "Полуниця"),
             portions = mapOf("uk" to "1 чашка (250 мл)")
         )
-        val row = com.lumenarcanus.dialife.feature.entry.newFoodRow("Полуниця", portion = "100 грам").copy(
+        val row = newFoodRow("Полуниця", portion = "100 грам").copy(
             asked = true,
             models = true,
-            suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(
+            suggestion = CarbSuggestion(
                 table = listOf(hit),
-                estimate = com.lumenarcanus.dialife.data.CarbEstimate(8, 7, 9, 1)
+                estimate = CarbEstimate(8, 7, 9, 1)
             )
         )
         androidx.compose.foundation.layout.Column(
             androidx.compose.ui.Modifier.padding(16.dp),
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
         ) {
-            com.lumenarcanus.dialife.feature.entry.FoodSuggestions(row, "uk") {}
-            com.lumenarcanus.dialife.feature.entry.FoodSuggestions(
+            FoodSuggestions(row, "uk") {}
+            FoodSuggestions(
                 row.copy(
-                    suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(
+                    suggestion = CarbSuggestion(
                         table = listOf(
                             hit.copy(carbs = 8, scaled = true, per100 = 7.7, per100Src = "SARA 2 (AR)", fiber100 = 2.0, avail100 = 5.7)
                         )
@@ -413,28 +438,28 @@ class ScreenshotTest {
     @Test
     @Config(qualifiers = "es-w412dp-h915dp-xxhdpi")
     fun foodOtherPortionEsAll() = shot("food_other_portion_dark_es_all", dark = true) {
-        val hit = com.lumenarcanus.dialife.data.CarbTableHit(
+        val hit = CarbTableHit(
             "fruit-frutillas-1-taza",
             15,
             names = mapOf("uk" to "Полуниця"),
             portions = mapOf("uk" to "1 чашка (250 мл)")
         )
-        val row = com.lumenarcanus.dialife.feature.entry.newFoodRow("Полуниця", portion = "100 грам").copy(
+        val row = newFoodRow("Полуниця", portion = "100 грам").copy(
             asked = true,
             models = true,
-            suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(
+            suggestion = CarbSuggestion(
                 table = listOf(hit),
-                estimate = com.lumenarcanus.dialife.data.CarbEstimate(8, 7, 9, 1)
+                estimate = CarbEstimate(8, 7, 9, 1)
             )
         )
         androidx.compose.foundation.layout.Column(
             androidx.compose.ui.Modifier.padding(16.dp),
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
         ) {
-            com.lumenarcanus.dialife.feature.entry.FoodSuggestions(row, "uk") {}
-            com.lumenarcanus.dialife.feature.entry.FoodSuggestions(
+            FoodSuggestions(row, "uk") {}
+            FoodSuggestions(
                 row.copy(
-                    suggestion = com.lumenarcanus.dialife.data.CarbSuggestion(
+                    suggestion = CarbSuggestion(
                         table = listOf(
                             hit.copy(carbs = 8, scaled = true, per100 = 7.7, per100Src = "SARA 2 (AR)", fiber100 = 2.0, avail100 = 5.7)
                         )
@@ -449,7 +474,7 @@ class ScreenshotTest {
     @Config(qualifiers = "en-w412dp-h1200dp-xxhdpi")
     fun waitCardsEnAll() = shot("wait_cards_dark_en_all", dark = true) {
         val dose = now - 10 * 60_000
-        val w = com.lumenarcanus.dialife.data.Wait("d", dose, 3.0, dose + 15 * 60_000, "range", 142, 60.0, 0.0)
+        val w = Wait("d", dose, 3.0, dose + 15 * 60_000, "range", 142, 60.0, 0.0)
         androidx.compose.foundation.layout.Column(
             androidx.compose.ui.Modifier.padding(16.dp),
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)
@@ -467,7 +492,7 @@ class ScreenshotTest {
     @Config(qualifiers = "es-w412dp-h1200dp-xxhdpi")
     fun waitCardsEsAll() = shot("wait_cards_dark_es_all", dark = true) {
         val dose = now - 10 * 60_000
-        val w = com.lumenarcanus.dialife.data.Wait("d", dose, 3.0, dose + 15 * 60_000, "range", 142, 60.0, 0.0)
+        val w = Wait("d", dose, 3.0, dose + 15 * 60_000, "range", 142, 60.0, 0.0)
         androidx.compose.foundation.layout.Column(
             androidx.compose.ui.Modifier.padding(16.dp),
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)
@@ -485,7 +510,7 @@ class ScreenshotTest {
     @Config(qualifiers = "en-w412dp-h2600dp-xxhdpi")
     fun meterCardEnAll() = shot("meter_card_dark_en_all", dark = true) {
         androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.padding(16.dp)) {
-            com.lumenarcanus.dialife.feature.stats.MeterCard(com.lumenarcanus.dialife.feature.home.sampleMeter(now), Units.MgDl)
+            MeterCard(sampleMeter(now), Units.MgDl)
         }
     }
 
@@ -493,7 +518,7 @@ class ScreenshotTest {
     @Config(qualifiers = "es-w412dp-h2600dp-xxhdpi")
     fun meterCardEsAll() = shot("meter_card_dark_es_all", dark = true) {
         androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.padding(16.dp)) {
-            com.lumenarcanus.dialife.feature.stats.MeterCard(com.lumenarcanus.dialife.feature.home.sampleMeter(now), Units.MgDl)
+            MeterCard(sampleMeter(now), Units.MgDl)
         }
     }
 
@@ -501,8 +526,8 @@ class ScreenshotTest {
     @Config(qualifiers = "en-w412dp-h2600dp-xxhdpi")
     fun dataListEnAll() = shot("data_list_dark_en_all", dark = true) {
         val ui = sampleHomeUi(now)
-        com.lumenarcanus.dialife.feature.data.DataScreen(
-            com.lumenarcanus.dialife.feature.data.dataUiState(
+        DataScreen(
+            dataUiState(
                 ui.history,
                 null,
                 ui.state!!.questions,
@@ -521,8 +546,8 @@ class ScreenshotTest {
     @Config(qualifiers = "es-w412dp-h2600dp-xxhdpi")
     fun dataListEsAll() = shot("data_list_dark_es_all", dark = true) {
         val ui = sampleHomeUi(now)
-        com.lumenarcanus.dialife.feature.data.DataScreen(
-            com.lumenarcanus.dialife.feature.data.dataUiState(
+        DataScreen(
+            dataUiState(
                 ui.history,
                 null,
                 ui.state!!.questions,
@@ -579,7 +604,7 @@ class ScreenshotTest {
     @Config(qualifiers = "en-w412dp-h2600dp-xxhdpi")
     fun settingsEnAll() = shot("settings_en_all", dark = true) {
         SettingsScreen(
-            com.lumenarcanus.dialife.feature.settings.SettingsUiState(creds, sampleHomeUi(now).state),
+            SettingsUiState(creds, sampleHomeUi(now).state),
             setup = BackgroundSetup(battery = true),
             onAction = {},
             onFixNotifications = {},
@@ -595,7 +620,7 @@ class ScreenshotTest {
     @Config(qualifiers = "es-w412dp-h2600dp-xxhdpi")
     fun settingsEsAll() = shot("settings_es_all", dark = true) {
         SettingsScreen(
-            com.lumenarcanus.dialife.feature.settings.SettingsUiState(creds, sampleHomeUi(now).state),
+            SettingsUiState(creds, sampleHomeUi(now).state),
             setup = BackgroundSetup(battery = true),
             onAction = {},
             onFixNotifications = {},
@@ -611,13 +636,13 @@ class ScreenshotTest {
     @Config(qualifiers = "en-w412dp-h2600dp-xxhdpi")
     fun mealEnAll() = shot("meal_dark_en_all", dark = true) {
         val t = sampleHomeUi(now).history?.treatments.orEmpty() +
-            com.lumenarcanus.dialife.data.Treatment(id = "g1", t = now - 6 * 60_000L, glucose = 186)
-        com.lumenarcanus.dialife.feature.meal.MealScreen(
+            Treatment(id = "g1", t = now - 6 * 60_000L, glucose = 186)
+        MealScreen(
             repo = null,
             inputs = MealInputs(treatments = t, units = Units.MgDl),
             editing = meal(now).copy(
                 foodItems =
-                meal(now).foodItems!! + com.lumenarcanus.dialife.data.FoodItem("Гречка з котлетою", null, null, null)
+                meal(now).foodItems!! + FoodItem("Гречка з котлетою", null, null, null)
             ),
             initialTime = null,
             onSave = {},
@@ -630,13 +655,13 @@ class ScreenshotTest {
     @Config(qualifiers = "es-w412dp-h2600dp-xxhdpi")
     fun mealEsAll() = shot("meal_dark_es_all", dark = true) {
         val t = sampleHomeUi(now).history?.treatments.orEmpty() +
-            com.lumenarcanus.dialife.data.Treatment(id = "g1", t = now - 6 * 60_000L, glucose = 186)
-        com.lumenarcanus.dialife.feature.meal.MealScreen(
+            Treatment(id = "g1", t = now - 6 * 60_000L, glucose = 186)
+        MealScreen(
             repo = null,
             inputs = MealInputs(treatments = t, units = Units.MgDl),
             editing = meal(now).copy(
                 foodItems =
-                meal(now).foodItems!! + com.lumenarcanus.dialife.data.FoodItem("Гречка з котлетою", null, null, null)
+                meal(now).foodItems!! + FoodItem("Гречка з котлетою", null, null, null)
             ),
             initialTime = null,
             onSave = {},
@@ -652,7 +677,7 @@ class ScreenshotTest {
             androidx.compose.ui.Modifier.padding(16.dp),
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
         ) {
-            val p = com.lumenarcanus.dialife.data.PlannedDose(
+            val p = PlannedDose(
                 id = "p1", mealId = "m1", dose = 4.0, food = 2.25, corr = 2.0, carbs = 45, meter = 186,
                 meterAt =
                 now - 30 * 60_000L,
@@ -661,7 +686,7 @@ class ScreenshotTest {
             PlannedCard(
                 PlannedCardUiState(
                     dose = p,
-                    settings = com.lumenarcanus.dialife.data.DoseSettings(),
+                    settings = DoseSettings(),
                     now = now,
                     mealAt = meal(now).t,
                     question = null,
@@ -675,7 +700,7 @@ class ScreenshotTest {
             PlannedCard(
                 PlannedCardUiState(
                     dose = p.copy(id = "p2", createdAt = now - 65 * 60_000L),
-                    settings = com.lumenarcanus.dialife.data.DoseSettings(),
+                    settings = DoseSettings(),
                     now = now,
                     mealAt = meal(now).t,
                     question = Question(
@@ -694,11 +719,11 @@ class ScreenshotTest {
                 ),
                 Units.MgDl
             ) {}
-            com.lumenarcanus.dialife.feature.meal.EntryDetail(
+            EntryDetail(
                 meal(now),
                 listOf(
                     meal(now),
-                    com.lumenarcanus.dialife.data.Treatment(
+                    Treatment(
                         id = "i1",
                         t = now - 30 * 60_000L,
                         insulin = 2.0,
@@ -707,7 +732,7 @@ class ScreenshotTest {
                         enteredBy = "Тато"
                     )
                 ),
-                com.lumenarcanus.dialife.data.DoseSettings(),
+                DoseSettings(),
                 Units.MgDl
             )
         }
@@ -720,7 +745,7 @@ class ScreenshotTest {
             androidx.compose.ui.Modifier.padding(16.dp),
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
         ) {
-            val p = com.lumenarcanus.dialife.data.PlannedDose(
+            val p = PlannedDose(
                 id = "p1", mealId = "m1", dose = 4.0, food = 2.25, corr = 2.0, carbs = 45, meter = 186,
                 meterAt =
                 now - 30 * 60_000L,
@@ -729,7 +754,7 @@ class ScreenshotTest {
             PlannedCard(
                 PlannedCardUiState(
                     dose = p,
-                    settings = com.lumenarcanus.dialife.data.DoseSettings(),
+                    settings = DoseSettings(),
                     now = now,
                     mealAt = meal(now).t,
                     question = null,
@@ -743,7 +768,7 @@ class ScreenshotTest {
             PlannedCard(
                 PlannedCardUiState(
                     dose = p.copy(id = "p2", createdAt = now - 65 * 60_000L),
-                    settings = com.lumenarcanus.dialife.data.DoseSettings(),
+                    settings = DoseSettings(),
                     now = now,
                     mealAt = meal(now).t,
                     question = Question(
@@ -762,11 +787,11 @@ class ScreenshotTest {
                 ),
                 Units.MgDl
             ) {}
-            com.lumenarcanus.dialife.feature.meal.EntryDetail(
+            EntryDetail(
                 meal(now),
                 listOf(
                     meal(now),
-                    com.lumenarcanus.dialife.data.Treatment(
+                    Treatment(
                         id = "i1",
                         t = now - 30 * 60_000L,
                         insulin = 2.0,
@@ -775,7 +800,7 @@ class ScreenshotTest {
                         enteredBy = "Тато"
                     )
                 ),
-                com.lumenarcanus.dialife.data.DoseSettings(),
+                DoseSettings(),
                 Units.MgDl
             )
         }
@@ -788,14 +813,14 @@ class ScreenshotTest {
             androidx.compose.ui.Modifier.padding(20.dp),
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
         ) {
-            com.lumenarcanus.dialife.feature.weblogin.Approve(
-                com.lumenarcanus.dialife.data.WebLoginInfo("x", "Firefox", "Linux", now + 120_000, ip = "198.51.100.9"),
+            Approve(
+                WebLoginInfo("x", "Firefox", "Linux", now + 120_000, ip = "198.51.100.9"),
                 now = now
             ) {
             }
-            com.lumenarcanus.dialife.feature.weblogin.Sessions(
+            Sessions(
                 listOf(
-                    com.lumenarcanus.dialife.data.WebSession(
+                    WebSession(
                         1,
                         "Chrome",
                         "Windows",
@@ -817,14 +842,14 @@ class ScreenshotTest {
             androidx.compose.ui.Modifier.padding(20.dp),
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
         ) {
-            com.lumenarcanus.dialife.feature.weblogin.Approve(
-                com.lumenarcanus.dialife.data.WebLoginInfo("x", "Firefox", "Linux", now + 120_000, ip = "198.51.100.9"),
+            Approve(
+                WebLoginInfo("x", "Firefox", "Linux", now + 120_000, ip = "198.51.100.9"),
                 now = now
             ) {
             }
-            com.lumenarcanus.dialife.feature.weblogin.Sessions(
+            Sessions(
                 listOf(
-                    com.lumenarcanus.dialife.data.WebSession(
+                    WebSession(
                         1,
                         "Chrome",
                         "Windows",
@@ -861,10 +886,10 @@ class ScreenshotTest {
 
     @Composable
     private fun DoseSettingsSample() {
-        val dose = com.lumenarcanus.dialife.data.DoseSettings(updatedBy = "Тато")
-        val form = com.lumenarcanus.dialife.feature.settings.doseSettingsForm(dose, Units.MgDl, LocalConfiguration.current.locales[0])
-        com.lumenarcanus.dialife.feature.settings.DoseSettingsScreen(
-            com.lumenarcanus.dialife.feature.settings.DoseSettingsUiState(form, Units.MgDl, dose.updatedBy),
+        val dose = DoseSettings(updatedBy = "Тато")
+        val form = doseSettingsForm(dose, Units.MgDl, LocalConfiguration.current.locales[0])
+        DoseSettingsScreen(
+            DoseSettingsUiState(form, Units.MgDl, dose.updatedBy),
             onEdit = {},
             onSave = {},
             onBack = {}

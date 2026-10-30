@@ -21,6 +21,8 @@ import com.lumenarcanus.dialife.core.ui.theme.PlexMono
 import com.lumenarcanus.dialife.data.Forecast
 import com.lumenarcanus.dialife.data.MeterModel
 import com.lumenarcanus.dialife.data.PlannedDose
+import com.lumenarcanus.dialife.feature.entry.basalColor
+import com.lumenarcanus.dialife.feature.entry.basalContainer
 import java.util.TimeZone
 import kotlin.math.ceil
 import kotlin.math.max
@@ -182,8 +184,8 @@ internal fun DrawScope.drawReadings(s: ChartScale, c: DiaColors) {
 
 /** Insulin, carbs and notes along the bottom, each in its row. */
 internal fun DrawScope.drawMarkers(s: ChartScale, c: DiaColors, measurer: TextMeasurer, text: ChartText, pick: Pick?) {
-    val basalInk = com.lumenarcanus.dialife.feature.entry.basalColor(c.isDark)
-    val basalFill = com.lumenarcanus.dialife.feature.entry.basalContainer(c.isDark)
+    val basalInk = basalColor(c.isDark)
+    val basalFill = basalContainer(c.isDark)
     s.view.treatments.forEach { tr ->
         val insulin = isInsulin(tr)
         val basal = isBasal(tr)

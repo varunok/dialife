@@ -45,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.lumenarcanus.dialife.MainActivity
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.alarmController
 import com.lumenarcanus.dialife.core.ui.Units
@@ -56,8 +57,13 @@ import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.core.ui.theme.GlucoseHero
 import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.data.AlarmView
+import com.lumenarcanus.dialife.data.StateResponse
+import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.feature.alarms.ActionReceiver
 import com.lumenarcanus.dialife.feature.alarms.AlarmText
+import com.lumenarcanus.dialife.feature.home.ChartWindow
+import com.lumenarcanus.dialife.feature.home.GlucoseChart
+import com.lumenarcanus.dialife.live.Notifications
 import com.lumenarcanus.dialife.liveRepository
 import kotlinx.coroutines.launch
 
@@ -119,7 +125,7 @@ class AlarmActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_ID = "alarm_id"
         const val EXTRA_HELP = "help"
-        const val ACTION_CLOSE = "com.lumenarcanus.dialife.CLOSE_ALARM"
+        const val ACTION_CLOSE = "CLOSE_ALARM"
 
         fun intent(context: Context, alarmId: Long, help: Boolean): Intent = Intent(context, AlarmActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_USER_ACTION)
@@ -132,7 +138,7 @@ class AlarmActivity : AppCompatActivity() {
 private fun AlarmScreen(
     alarm: AlarmView,
     help: Boolean,
-    state: com.lumenarcanus.dialife.data.StateResponse?,
+    state: StateResponse?,
     current: Int?,
     units: Units,
     onAct: suspend (String) -> Result<Unit>,
@@ -158,9 +164,9 @@ private fun AlarmScreen(
                 // took it: open "you are handling" (after unlock)
                 if (action == ActionReceiver.HANDLE || action == ActionReceiver.QUIET) {
                     ctx.startActivity(
-                        android.content.Intent(ctx, com.lumenarcanus.dialife.MainActivity::class.java)
+                        android.content.Intent(ctx, MainActivity::class.java)
                             .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                            .putExtra(com.lumenarcanus.dialife.MainActivity.EXTRA_HANDLING, alarm.id)
+                            .putExtra(MainActivity.EXTRA_HANDLING, alarm.id)
                     )
                 }
                 onDone()
@@ -223,7 +229,7 @@ private fun AlarmScreen(
                             val bg = state?.bg
                             Text(
                                 listOfNotNull(
-                                    com.lumenarcanus.dialife.live.Notifications.arrowOf(bg?.direction).ifBlank { null },
+                                    Notifications.arrowOf(bg?.direction).ifBlank { null },
                                     bg?.delta?.let { formatDelta(it, units, locale) },
                                     stringResource(
                                         if (units == Units.MgDl) {
@@ -279,14 +285,14 @@ private fun AlarmScreen(
                 val live by ctx.liveRepository.live.collectAsStateWithLifecycle()
                 val from = (alarm.handledAt ?: alarm.startedAt) - 15 * 60_000L
                 val now = System.currentTimeMillis()
-                com.lumenarcanus.dialife.feature.home.GlucoseChart(
+                GlucoseChart(
                     history = live.history,
                     forecast = state?.ar2,
-                    thresholds = state?.thresholds ?: com.lumenarcanus.dialife.data.Thresholds(),
+                    thresholds = state?.thresholds ?: Thresholds(),
                     units = units,
                     rangeHours = 3,
                     now = now,
-                    window = com.lumenarcanus.dialife.feature.home.ChartWindow(
+                    window = ChartWindow(
                         from,
                         maxOf(now + 30 * 60_000L, from + 3_600_000L),
                         followsNow = true
@@ -308,7 +314,7 @@ private fun AlarmScreen(
         TextButton(
             onClick = {
                 ctx.startActivity(
-                    android.content.Intent(ctx, com.lumenarcanus.dialife.MainActivity::class.java)
+                    android.content.Intent(ctx, MainActivity::class.java)
                         .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 )
             },

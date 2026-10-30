@@ -46,7 +46,10 @@ import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.core.ui.theme.PlexMono
+import com.lumenarcanus.dialife.data.AgpPoint
+import com.lumenarcanus.dialife.data.DayTotal
 import com.lumenarcanus.dialife.data.Stats
+import com.lumenarcanus.dialife.feature.entry.basalColor
 import java.util.Locale
 
 @Composable
@@ -171,7 +174,7 @@ internal fun DailyTotals(s: Stats) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
     fun n(v: Double) = formatAmount(v, locale)
-    val basal = com.lumenarcanus.dialife.feature.entry.basalColor(c.isDark)
+    val basal = basalColor(c.isDark)
     Card {
         Text(stringResource(R.string.stats_daily), color = c.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         @Composable
@@ -243,7 +246,7 @@ internal fun DailyTotals(s: Stats) {
         }
         if (s.daily.size > 1) {
             val k = s.daily.size.toDouble()
-            fun avg(f: (com.lumenarcanus.dialife.data.DayTotal) -> Double) = Math.round(s.daily.sumOf(f) / k * 10) / 10.0
+            fun avg(f: (DayTotal) -> Double) = Math.round(s.daily.sumOf(f) / k * 10) / 10.0
             RowOf(
                 stringResource(R.string.stats_avg),
                 "${n(
@@ -341,7 +344,7 @@ internal fun Agp(s: Stats, units: Units, modifier: Modifier, startMinute: Int = 
 
         // slots are 30 min; draw at their middle. Hours without data break the bands:
         // a straight line across them would invent a day nobody saw.
-        val runs = mutableListOf<MutableList<com.lumenarcanus.dialife.data.AgpPoint>>()
+        val runs = mutableListOf<MutableList<AgpPoint>>()
         for (a in s.agp.sortedBy { pos(it.minute) }) {
             val last = runs.lastOrNull()?.last()
             if (last != null && pos(a.minute) - pos(last.minute) == 30) runs.last().add(a) else runs.add(mutableListOf(a))
@@ -352,11 +355,7 @@ internal fun Agp(s: Stats, units: Units, modifier: Modifier, startMinute: Int = 
                     drawCircle(c.inRange, 3.dp.toPx(), Offset((x(pts[0].minute) + 15f / 1440f * w), y(pts[0].p50)))
                     continue
                 }
-                fun band(
-                    top: (com.lumenarcanus.dialife.data.AgpPoint) -> Int,
-                    bottom: (com.lumenarcanus.dialife.data.AgpPoint) -> Int,
-                    color: Color
-                ) {
+                fun band(top: (AgpPoint) -> Int, bottom: (AgpPoint) -> Int, color: Color) {
                     val p = Path()
                     pts.forEachIndexed { i, a ->
                         if (i == 0) {

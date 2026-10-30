@@ -24,6 +24,7 @@ import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
+import com.lumenarcanus.dialife.data.Meals
 import com.lumenarcanus.dialife.data.Question
 import com.lumenarcanus.dialife.data.Treatment
 
@@ -56,13 +57,13 @@ internal fun QuestionCard(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
-            com.lumenarcanus.dialife.feature.questions.QuestionNotifier.questionTitle(ctx, q),
+            QuestionNotifier.questionTitle(ctx, q),
             color = c.text,
             fontSize = 17.sp,
             fontWeight = FontWeight.SemiBold
         )
         Text(
-            com.lumenarcanus.dialife.feature.questions.QuestionNotifier.questionBody(ctx, q, units),
+            QuestionNotifier.questionBody(ctx, q, units),
             color = c.text,
             fontSize = 14.sp
         )
@@ -74,7 +75,7 @@ internal fun QuestionCard(
                         ctx.getString(
                             R.string.q_said,
                             it.person,
-                            com.lumenarcanus.dialife.feature.questions.QuestionNotifier.answerText(ctx, it.answer)
+                            QuestionNotifier.answerText(ctx, it.answer)
                         )
                     }
                 ),
@@ -120,7 +121,7 @@ internal fun QuestionCard(
                 val foodIds = treatments.filter { (it.carbs ?: 0.0) > 0 }.map { it.id }.toSet()
                 val before = food?.let { f ->
                     treatments.filter {
-                        com.lumenarcanus.dialife.data.Meals.isRapid(it) &&
+                        Meals.isRapid(it) &&
                             it.t in (f.t - 3 * 3_600_000L)..f.t &&
                             (it.mealId == null || it.mealId == f.id || it.mealId !in foodIds)
                     }.maxByOrNull { it.t }
@@ -186,6 +187,6 @@ internal fun WatchCard(q: Question) {
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text(stringResource(R.string.watch_title), color = c.low, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-        Text(com.lumenarcanus.dialife.feature.questions.QuestionNotifier.watchBody(ctx, q), color = c.text, fontSize = 14.sp)
+        Text(QuestionNotifier.watchBody(ctx, q), color = c.text, fontSize = 14.sp)
     }
 }

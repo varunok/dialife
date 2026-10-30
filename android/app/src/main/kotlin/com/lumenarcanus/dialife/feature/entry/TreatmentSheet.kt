@@ -52,6 +52,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.data.FoodRepository
 import com.lumenarcanus.dialife.core.ui.Confirm
 import com.lumenarcanus.dialife.core.ui.LimitAlert
 import com.lumenarcanus.dialife.core.ui.Units
@@ -59,8 +60,12 @@ import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.core.ui.theme.GlucoseHero
+import com.lumenarcanus.dialife.data.DoseCalc
+import com.lumenarcanus.dialife.data.DoseSettings
 import com.lumenarcanus.dialife.data.InsulinType
+import com.lumenarcanus.dialife.data.MealRules
 import com.lumenarcanus.dialife.data.Prefs
+import com.lumenarcanus.dialife.data.StateResponse
 import com.lumenarcanus.dialife.data.Treatment
 
 enum class TreatmentKind { Insulin, Food, Meter, Activity, Note }
@@ -108,17 +113,17 @@ fun TreatmentSheet(
     recent: List<Treatment> = emptyList(), // the day's entries: last basal dose, what is due now
     units: Units = Units.MgDl, // a glucometer value is typed in these
     initialTime: Long? = null, // a question's "log it": when the rise or fall began
-    dose: com.lumenarcanus.dialife.data.DoseSettings = com.lumenarcanus.dialife.data.DoseSettings(), // the dose limits
+    dose: DoseSettings = DoseSettings(), // the dose limits
     // the server's: what makes one meal
-    mealRules: com.lumenarcanus.dialife.data.MealRules = com.lumenarcanus.dialife.data.MealRules(),
+    mealRules: MealRules = MealRules(),
     // the live state: who else is giving insulin, the doses on board
-    state: com.lumenarcanus.dialife.data.StateResponse? = null,
+    state: StateResponse? = null,
     // this phone's device id: its own "giving insulin" is not a warning
     myId: Long = 0,
     // "… is giving insulin" on the other phones: the type while this form is on insulin, null when it stops
     onAnnounce: (InsulinType?) -> Unit = {},
     // food suggestions and the carb tables; null in previews and tests
-    foods: com.lumenarcanus.dialife.core.data.FoodRepository? = null
+    foods: FoodRepository? = null
 ) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
@@ -237,8 +242,8 @@ fun TreatmentSheet(
                     }
                     val lv = form.level(dose)
                     LimitAlert(lv, form.insulin, form.limit(dose), units, locale)
-                    if (lv == com.lumenarcanus.dialife.data.DoseCalc.Level.High ||
-                        lv == com.lumenarcanus.dialife.data.DoseCalc.Level.Absurd
+                    if (lv == DoseCalc.Level.High ||
+                        lv == DoseCalc.Level.Absurd
                     ) {
                         Confirm(
                             form.okBig,

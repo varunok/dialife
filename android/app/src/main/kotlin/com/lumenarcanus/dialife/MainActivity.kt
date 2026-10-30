@@ -45,11 +45,20 @@ import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.theme.DiaLifeTheme
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.data.Credentials
+import com.lumenarcanus.dialife.data.Prefs
+import com.lumenarcanus.dialife.data.ThemeChoice
+import com.lumenarcanus.dialife.feature.alarms.AlarmLogRoute
+import com.lumenarcanus.dialife.feature.alarms.HandlingRoute
 import com.lumenarcanus.dialife.feature.connect.ConnectRoute
 import com.lumenarcanus.dialife.feature.connect.ConnectViewModel
 import com.lumenarcanus.dialife.feature.data.DataRoute
 import com.lumenarcanus.dialife.feature.home.BackgroundSetup
 import com.lumenarcanus.dialife.feature.home.HomeRoute
+import com.lumenarcanus.dialife.feature.meal.MealRoute
+import com.lumenarcanus.dialife.feature.settings.DoseSettingsRoute
+import com.lumenarcanus.dialife.feature.settings.SettingsRoute
+import com.lumenarcanus.dialife.feature.stats.StatsRoute
+import com.lumenarcanus.dialife.feature.weblogin.WebLoginRoute
 import com.lumenarcanus.dialife.live.LiveService
 import com.lumenarcanus.dialife.navigation.Destination
 
@@ -66,10 +75,10 @@ class MainActivity : AppCompatActivity() {
             intent?.getLongExtra(EXTRA_HANDLING, 0L)?.takeIf { it != 0L }?.let { openHandling = it }
         }
         setContent {
-            val dark = when (com.lumenarcanus.dialife.data.Prefs.theme) {
-                com.lumenarcanus.dialife.data.ThemeChoice.Light -> false
-                com.lumenarcanus.dialife.data.ThemeChoice.Dark -> true
-                com.lumenarcanus.dialife.data.ThemeChoice.System -> androidx.compose.foundation.isSystemInDarkTheme()
+            val dark = when (Prefs.theme) {
+                ThemeChoice.Light -> false
+                ThemeChoice.Dark -> true
+                ThemeChoice.System -> androidx.compose.foundation.isSystemInDarkTheme()
             }
             DiaLifeTheme(dark = dark) {
                 val session by vm.session.collectAsStateWithLifecycle()
@@ -132,7 +141,7 @@ class MainActivity : AppCompatActivity() {
             composable<Destination.Home> { Home(creds, onOpen = ::open) }
             composable<Destination.Meal>(typeMap = Destination.Meal.typeMap) { entry ->
                 val m = entry.toRoute<Destination.Meal>()
-                com.lumenarcanus.dialife.feature.meal.MealRoute(
+                MealRoute(
                     editingId = m.editingId,
                     entry = m.entry,
                     initialTime = m.initialTime,
@@ -141,15 +150,15 @@ class MainActivity : AppCompatActivity() {
                     onDone = back
                 )
             }
-            composable<Destination.DoseSettings> { com.lumenarcanus.dialife.feature.settings.DoseSettingsRoute(onBack = back) }
-            composable<Destination.Stats> { com.lumenarcanus.dialife.feature.stats.StatsRoute(onBack = back) }
+            composable<Destination.DoseSettings> { DoseSettingsRoute(onBack = back) }
+            composable<Destination.Stats> { StatsRoute(onBack = back) }
             composable<Destination.Settings> {
                 var setup by remember { mutableStateOf(backgroundSetup()) }
                 LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { setup = backgroundSetup() }
                 val askNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
                     setup = backgroundSetup()
                 }
-                com.lumenarcanus.dialife.feature.settings.SettingsRoute(
+                SettingsRoute(
                     creds = creds,
                     setup = setup,
                     onFixNotifications = { askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS) },
@@ -161,7 +170,7 @@ class MainActivity : AppCompatActivity() {
                 )
             }
             composable<Destination.Handling> { entry ->
-                com.lumenarcanus.dialife.feature.alarms.HandlingRoute(
+                HandlingRoute(
                     alarmId = entry.toRoute<Destination.Handling>().alarmId,
                     onBack = back,
                     onOpenMeal = { open(Destination.Meal(forLow = true)) }
@@ -174,9 +183,9 @@ class MainActivity : AppCompatActivity() {
                     onOpenMeal = { tr -> open(Destination.Meal(editingId = tr.id, entry = tr)) }
                 )
             }
-            composable<Destination.WebLogin> { com.lumenarcanus.dialife.feature.weblogin.WebLoginRoute(onBack = back) }
+            composable<Destination.WebLogin> { WebLoginRoute(onBack = back) }
             composable<Destination.Log> {
-                com.lumenarcanus.dialife.feature.alarms.AlarmLogRoute(onBack = back)
+                AlarmLogRoute(onBack = back)
             }
         }
     }

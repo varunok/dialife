@@ -12,6 +12,7 @@ import com.lumenarcanus.dialife.data.ApiException
 import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.data.DiaLifeApi
 import com.lumenarcanus.dialife.data.History
+import com.lumenarcanus.dialife.data.IntentEvent
 import com.lumenarcanus.dialife.data.MeterReport
 import com.lumenarcanus.dialife.data.Question
 import com.lumenarcanus.dialife.data.Series
@@ -223,7 +224,7 @@ class LiveRepository(context: Context, private val api: DiaLifeApi = DiaLifeApi(
                 _questions.tryEmit(q)
             }
             "intent" -> {
-                val ev = DiaLifeApi.json.decodeFromString<com.lumenarcanus.dialife.data.IntentEvent>(data)
+                val ev = DiaLifeApi.json.decodeFromString<IntentEvent>(data)
                 _live.update { cur -> cur.copy(state = cur.state?.copy(intents = ev.intents)) }
             }
             "uploader" -> {
@@ -238,13 +239,12 @@ class LiveRepository(context: Context, private val api: DiaLifeApi = DiaLifeApi(
     val questions: SharedFlow<Question> = _questions.asSharedFlow()
 
     /** A change made here shows at once; the server's next state replaces it anyway. */
-    fun updateState(f: (com.lumenarcanus.dialife.data.StateResponse) -> com.lumenarcanus.dialife.data.StateResponse) {
+    fun updateState(f: (StateResponse) -> StateResponse) {
         _live.update { cur -> cur.copy(state = cur.state?.let(f)) }
     }
 
     /** The server's state right now, past whatever the stream has brought (or missed). */
-    suspend fun freshState(): Result<com.lumenarcanus.dialife.data.StateResponse> =
-        creds?.let { api.state(it) } ?: Result.failure(ApiException(ApiError.Unauthorized))
+    suspend fun freshState(): Result<StateResponse> = creds?.let { api.state(it) } ?: Result.failure(ApiException(ApiError.Unauthorized))
 
     override fun saveTreatment(t: Treatment) {
         _pending.value = queue.put(PendingOp(t.id, treatment = t.copy(pending = false)))

@@ -46,6 +46,7 @@ import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.core.ui.theme.GlucoseHero
 import com.lumenarcanus.dialife.data.DoseCalc
+import com.lumenarcanus.dialife.feature.meal.ruleName
 
 private val Rules = listOf("nearest", "halfDown", "down", "up")
 private val Samples = mapOf(1.0 to listOf(2.1, 2.4, 2.5, 2.6, 2.9), 0.5 to listOf(2.1, 2.25, 2.3, 2.7, 2.8))
@@ -122,7 +123,7 @@ fun DoseSettingsScreen(uiState: DoseSettingsUiState, onEdit: (DoseSettingsForm) 
                         RadioButton(selected = on, onClick = null, modifier = Modifier.padding(top = 2.dp, end = 10.dp))
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(
-                                com.lumenarcanus.dialife.feature.meal.ruleName(id).replaceFirstChar {
+                                ruleName(id).replaceFirstChar {
                                     it.uppercase()
                                 },
                                 color = c.text,

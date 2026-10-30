@@ -43,9 +43,13 @@ import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.core.ui.unitsOf
+import com.lumenarcanus.dialife.data.DoseSettings
+import com.lumenarcanus.dialife.data.InsulinType
+import com.lumenarcanus.dialife.data.Insulins
 import com.lumenarcanus.dialife.data.ThemeChoice
 import com.lumenarcanus.dialife.feature.alarms.AlarmText
 import com.lumenarcanus.dialife.feature.home.BackgroundSetup
+import com.lumenarcanus.dialife.feature.meal.ruleName
 
 /** This phone's settings: how it looks, alarms (view only in v1), permissions, connection. */
 @Composable
@@ -143,11 +147,11 @@ fun SettingsScreen(
         }
 
         Section(stringResource(R.string.set_insulins)) {
-            InsulinPicker(com.lumenarcanus.dialife.data.InsulinType.Rapid, prefs.nameOf(com.lumenarcanus.dialife.data.InsulinType.Rapid)) {
-                onAction(SettingsAction.ChooseInsulin(com.lumenarcanus.dialife.data.InsulinType.Rapid, it))
+            InsulinPicker(InsulinType.Rapid, prefs.nameOf(InsulinType.Rapid)) {
+                onAction(SettingsAction.ChooseInsulin(InsulinType.Rapid, it))
             }
-            InsulinPicker(com.lumenarcanus.dialife.data.InsulinType.Basal, prefs.nameOf(com.lumenarcanus.dialife.data.InsulinType.Basal)) {
-                onAction(SettingsAction.ChooseInsulin(com.lumenarcanus.dialife.data.InsulinType.Basal, it))
+            InsulinPicker(InsulinType.Basal, prefs.nameOf(InsulinType.Basal)) {
+                onAction(SettingsAction.ChooseInsulin(InsulinType.Basal, it))
             }
             Label(stringResource(R.string.set_basal_times))
             var adding by remember { mutableStateOf(false) }
@@ -182,11 +186,11 @@ fun SettingsScreen(
         }
 
         Section(stringResource(R.string.dose_title)) {
-            val d = state?.dose ?: com.lumenarcanus.dialife.data.DoseSettings()
+            val d = state?.dose ?: DoseSettings()
             Line(stringResource(R.string.dose_ratio_short), stringResource(R.string.meal_ratio, d.ratio))
             Line(
                 stringResource(R.string.dose_rounding),
-                com.lumenarcanus.dialife.feature.meal.ruleName(d.rule) + " · " + formatAmount(d.step, locale)
+                ruleName(d.rule) + " · " + formatAmount(d.step, locale)
             )
             Line(
                 stringResource(R.string.dose_limits_short),
@@ -253,13 +257,13 @@ fun SettingsScreen(
 
 /** "Rapid: NovoRapid ▾" — the family's insulin from the list, or any name typed in. */
 @Composable
-private fun InsulinPicker(type: com.lumenarcanus.dialife.data.InsulinType, chosen: String?, onChoose: (String) -> Unit) {
+private fun InsulinPicker(type: InsulinType, chosen: String?, onChoose: (String) -> Unit) {
     val c = DiaTheme.colors
     var open by remember { mutableStateOf(false) }
     var typing by remember { mutableStateOf(false) }
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
-            stringResource(if (type == com.lumenarcanus.dialife.data.InsulinType.Basal) R.string.ins_basal else R.string.ins_rapid),
+            stringResource(if (type == InsulinType.Basal) R.string.ins_basal else R.string.ins_rapid),
             color = c.textMuted,
             fontSize = 14.sp,
             modifier = Modifier.weight(1f)
@@ -269,7 +273,7 @@ private fun InsulinPicker(type: com.lumenarcanus.dialife.data.InsulinType, chose
                 open = true
             }) { Text((chosen ?: stringResource(R.string.set_insulin_choose)) + "  ▾", color = c.text) }
             androidx.compose.material3.DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-                com.lumenarcanus.dialife.data.Insulins.of(type).forEach { name ->
+                Insulins.of(type).forEach { name ->
                     androidx.compose.material3.DropdownMenuItem(text = { Text(name) }, onClick = {
                         open = false
                         onChoose(name)

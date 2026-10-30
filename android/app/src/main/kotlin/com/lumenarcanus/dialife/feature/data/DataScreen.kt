@@ -34,11 +34,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.data.FoodRepository
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.data.InsulinType
 import com.lumenarcanus.dialife.data.Treatment
+import com.lumenarcanus.dialife.feature.entry.TreatmentKind
+import com.lumenarcanus.dialife.feature.entry.TreatmentSheet
 
 /**
  * The chart as a table: every reading (or one per step) with what was logged
@@ -54,8 +57,8 @@ fun DataScreen(
     // food has a screen of its own
     onOpenMeal: (Treatment) -> Unit = {},
     // the entry sheet's: "… is giving insulin" on the other phones, food suggestions
-    onAnnounceInsulin: (com.lumenarcanus.dialife.data.InsulinType?) -> Unit = {},
-    foods: com.lumenarcanus.dialife.core.data.FoodRepository? = null
+    onAnnounceInsulin: (InsulinType?) -> Unit = {},
+    foods: FoodRepository? = null
 ) {
     val c = DiaTheme.colors
     val units = uiState.units
@@ -69,8 +72,8 @@ fun DataScreen(
         }
     }
     editing?.takeIf { !((it.carbs ?: 0.0) > 0 && (it.insulin ?: 0.0) <= 0 && it.glucose == null && it.duration == null) }?.let { tr ->
-        com.lumenarcanus.dialife.feature.entry.TreatmentSheet(
-            com.lumenarcanus.dialife.feature.entry.TreatmentKind.Insulin,
+        TreatmentSheet(
+            TreatmentKind.Insulin,
             tr,
             onSave = {
                 onSaveTreatment(it)

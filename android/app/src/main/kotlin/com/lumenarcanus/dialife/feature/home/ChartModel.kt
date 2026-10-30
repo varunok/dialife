@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.core.ui.theme.Onest
 import com.lumenarcanus.dialife.core.ui.theme.PlexMono
 import com.lumenarcanus.dialife.data.History
+import com.lumenarcanus.dialife.data.Question
+import com.lumenarcanus.dialife.data.Series
 import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.data.Treatment
 import kotlin.math.max
@@ -45,7 +47,7 @@ internal sealed interface Pick {
     data class Reading(val index: Int) : Pick
     data class Event(val treatment: Treatment) : Pick
     data class Meter(val point: MeterPoint) : Pick // uploaded by xDrip+: nothing to edit here
-    data class Suspect(val question: com.lumenarcanus.dialife.data.Question) : Pick
+    data class Suspect(val question: Question) : Pick
 }
 
 /**
@@ -86,17 +88,10 @@ internal data class ChartView(
     val lo: Float,
     val hi: Float,
     val activities: List<Treatment>,
-    val suspects: List<com.lumenarcanus.dialife.data.Question>
+    val suspects: List<Question>
 )
 
-internal fun chartView(
-    history: History?,
-    suspects: List<com.lumenarcanus.dialife.data.Question>,
-    thresholds: Thresholds,
-    start: Long,
-    end: Long,
-    now: Long
-): ChartView {
+internal fun chartView(history: History?, suspects: List<Question>, thresholds: Thresholds, start: Long, end: Long, now: Long): ChartView {
     val ts = history?.sgv?.t.orEmpty()
     val vs = history?.sgv?.v.orEmpty()
     val until = min(end, now)
@@ -111,7 +106,7 @@ internal fun chartView(
             a.t + a.duration * 60_000L >= start
     }
     val marks = suspects.filter { it.state == "unknown" && it.from in start..until }
-    val mbg = history?.mbg ?: com.lumenarcanus.dialife.data.Series()
+    val mbg = history?.mbg ?: Series()
     val meters = inView.mapNotNull { tr -> tr.glucose?.let { MeterPoint(tr.t, it, tr) } } +
         mbg.t.indices.filter { mbg.t[it] in start..until }.map { MeterPoint(mbg.t[it], mbg.v[it], src = mbg.d.getOrNull(it)) }
     val maxV = max(visible.maxOfOrNull { vs[it] } ?: 0, meters.maxOfOrNull { it.v } ?: 0)

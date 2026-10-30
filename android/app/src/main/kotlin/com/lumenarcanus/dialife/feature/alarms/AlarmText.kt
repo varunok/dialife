@@ -7,6 +7,7 @@ import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.data.AlarmEvent
 import com.lumenarcanus.dialife.data.AlarmView
+import com.lumenarcanus.dialife.data.StateResponse
 
 /** The words of an alarm, shared by notifications, the alarm screen and the home banner. */
 object AlarmText {
@@ -35,21 +36,15 @@ object AlarmText {
     }
 
     /** The xDrip+ phone as a title: the family's own name for it from the server, else a neutral one. */
-    fun uploader(ctx: Context, st: com.lumenarcanus.dialife.data.StateResponse?): String =
+    fun uploader(ctx: Context, st: StateResponse?): String =
         st?.uploaderName?.takeIf { it.isNotBlank() } ?: ctx.getString(R.string.tile_uploader_phone)
 
     /** The same inside a sentence: the family's name in quotes, or "телефон із xDrip+". */
-    fun uploaderInSentence(ctx: Context, st: com.lumenarcanus.dialife.data.StateResponse?): String =
+    fun uploaderInSentence(ctx: Context, st: StateResponse?): String =
         st?.uploaderName?.takeIf { it.isNotBlank() }?.let { "«$it»" } ?: ctx.getString(R.string.uploader_in_sentence)
 
     /** Why it rings (again), as the server's reason says; [st] names the xDrip+ phone for a stale one. */
-    fun reason(
-        ctx: Context,
-        e: AlarmEvent?,
-        a: AlarmView,
-        st: com.lumenarcanus.dialife.data.StateResponse?,
-        now: Long = System.currentTimeMillis()
-    ): String {
+    fun reason(ctx: Context, e: AlarmEvent?, a: AlarmView, st: StateResponse?, now: Long = System.currentTimeMillis()): String {
         val was = e?.wasHandledBy?.takeIf { it.isNotBlank() } ?: ctx.getString(R.string.someone)
         val since = formatClock(ctx, a.startedAt)
         return when (e?.reason ?: a.reason) {

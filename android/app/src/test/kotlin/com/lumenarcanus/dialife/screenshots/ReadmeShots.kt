@@ -27,6 +27,7 @@ import com.lumenarcanus.dialife.data.Series
 import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.feature.alarms.HandlingScreen
 import com.lumenarcanus.dialife.feature.data.DataScreen
+import com.lumenarcanus.dialife.feature.data.dataUiState
 import com.lumenarcanus.dialife.feature.entry.FoodList
 import com.lumenarcanus.dialife.feature.entry.FoodRow
 import com.lumenarcanus.dialife.feature.home.ChartCard
@@ -180,7 +181,7 @@ class ReadmeShots {
     fun table() = shot("app_table") {
         val ui = day()
         DataScreen(
-            com.lumenarcanus.dialife.feature.data.dataUiState(ui.history, null, emptyList(), ui.state!!.thresholds, Units.MgDl, 3, now),
+            dataUiState(ui.history, null, emptyList(), ui.state!!.thresholds, Units.MgDl, 3, now),
             onAction = {},
             onSaveTreatment = {},
             onBack = {}

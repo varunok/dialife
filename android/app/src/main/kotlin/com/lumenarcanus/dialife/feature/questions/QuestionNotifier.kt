@@ -11,7 +11,9 @@ import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatGlucose
+import com.lumenarcanus.dialife.data.InsulinType
 import com.lumenarcanus.dialife.data.Question
+import com.lumenarcanus.dialife.feature.entry.insulinLabel
 import com.lumenarcanus.dialife.live.Notifications
 
 /**
@@ -145,9 +147,9 @@ class QuestionNotifier(private val app: Context) {
             )
         }
 
-        fun doubleInsulin(ctx: Context, q: Question): String = com.lumenarcanus.dialife.feature.entry.insulinLabel(
+        fun doubleInsulin(ctx: Context, q: Question): String = insulinLabel(
             ctx,
-            com.lumenarcanus.dialife.data.InsulinType.of(q.insulin)
+            InsulinType.of(q.insulin)
         )
 
         private fun units(ctx: Context, u: Double) = formatAmount(u, ctx.resources.configuration.locales[0]) + " " +
