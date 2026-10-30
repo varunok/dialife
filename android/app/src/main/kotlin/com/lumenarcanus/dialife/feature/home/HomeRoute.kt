@@ -19,6 +19,7 @@ import com.lumenarcanus.dialife.feature.wait.WaitSection
 import com.lumenarcanus.dialife.foodRepository
 import com.lumenarcanus.dialife.insulinIntents
 import com.lumenarcanus.dialife.liveRepository
+import com.lumenarcanus.dialife.preferencesRepository
 import com.lumenarcanus.dialife.questionAnswers
 
 /**
@@ -80,6 +81,7 @@ fun HomeRoute(
         onDismissQuestion = vm::dismiss,
         onDisconnect = onDisconnect,
         onAnnounceInsulin = ctx.insulinIntents::announce,
-        foods = ctx.foodRepository
+        foods = ctx.foodRepository,
+        onMeterLine = ctx.preferencesRepository::chooseMeterLine
     )
 }

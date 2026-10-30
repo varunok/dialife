@@ -61,6 +61,8 @@ fun ChartCard(
     onExpand: () -> Unit = {}, // the corner button: open full screen, or close it when expanded
     meter: com.lumenarcanus.dialife.data.MeterReport? = null, // sensor vs glucometer: the "≈ meter" switch
     meterLine: Boolean = com.lumenarcanus.dialife.data.Prefs.meterLine,
+    // the "≈ meter" switch turned on or off
+    onMeterLine: (Boolean) -> Unit = {},
     suspects: List<com.lumenarcanus.dialife.data.Question> = emptyList(), // unanswered questions: "?" marks
     onDismissSuspect: (Long) -> Unit = {},
     onOpenTable: (() -> Unit)? = null, // the same data as a table
@@ -98,7 +100,7 @@ fun ChartCard(
             }
             MeterSwitch(on = estimate != null, ready = meter?.ready == true) {
                 if (meter?.ready == true) {
-                    com.lumenarcanus.dialife.data.Prefs.chooseMeterLine(!com.lumenarcanus.dialife.data.Prefs.meterLine)
+                    onMeterLine(!meterLine)
                 } else {
                     whyNot = !whyNot
                 }

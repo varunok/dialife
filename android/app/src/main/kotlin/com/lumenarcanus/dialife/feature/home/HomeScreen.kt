@@ -72,7 +72,9 @@ fun HomeScreen(
     waitSection: @Composable () -> Unit = {},
     // the entry sheet's: "… is giving insulin" on the other phones, food suggestions
     onAnnounceInsulin: (com.lumenarcanus.dialife.data.InsulinType?) -> Unit = {},
-    foods: com.lumenarcanus.dialife.core.data.FoodRepository? = null
+    foods: com.lumenarcanus.dialife.core.data.FoodRepository? = null,
+    // the chart's "≈ meter" switch
+    onMeterLine: (Boolean) -> Unit = {}
 ) {
     val c = DiaTheme.colors
     val locale = LocalConfiguration.current.locales[0]
@@ -143,6 +145,7 @@ fun HomeScreen(
                 units = state?.units ?: fallbackUnits,
                 rangeHours = ui.rangeHours,
                 now = ui.now,
+                onMeterLine = onMeterLine,
                 onRange = onRange,
                 modifier = Modifier.fillMaxSize(),
                 onEdit = { sheet = TreatmentKind.Insulin to it },
@@ -207,6 +210,7 @@ fun HomeScreen(
             units = state?.units ?: fallbackUnits,
             rangeHours = ui.rangeHours,
             now = ui.now,
+            onMeterLine = onMeterLine,
             onRange = onRange,
             modifier = Modifier.fillMaxWidth(),
             onEdit = { sheet = TreatmentKind.Insulin to it },
