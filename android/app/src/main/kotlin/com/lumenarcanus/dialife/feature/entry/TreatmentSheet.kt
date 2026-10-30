@@ -36,11 +36,8 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableDoubleStateOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,13 +57,11 @@ import com.lumenarcanus.dialife.core.ui.LimitAlert
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.formatClock
-import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.core.ui.theme.GlucoseHero
 import com.lumenarcanus.dialife.data.InsulinType
 import com.lumenarcanus.dialife.data.Prefs
 import com.lumenarcanus.dialife.data.Treatment
-import com.lumenarcanus.dialife.live.TreatmentQueue
 
 enum class TreatmentKind { Insulin, Food, Meter, Activity, Note }
 
@@ -77,10 +72,10 @@ private val BasalQuick = listOf(4.0, 6.0, 8.0, 10.0, 12.0, 14.0)
  * Which insulin a new entry most likely is: long-acting when a scheduled basal
  * time is within 90 min and today's dose for it is not in yet; otherwise rapid.
  */
-fun guessInsulinType(now: Long, recent: List<Treatment>): InsulinType {
+fun guessInsulinType(now: Long, recent: List<Treatment>, basalTimes: List<Int> = Prefs.basalTimes): InsulinType {
     val cal = java.util.Calendar.getInstance().apply { timeInMillis = now }
     val minute = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)
-    val near = Prefs.basalTimes.any { kotlin.math.abs(it - minute) <= 90 || kotlin.math.abs(it - minute) >= 1440 - 90 }
+    val near = basalTimes.any { kotlin.math.abs(it - minute) <= 90 || kotlin.math.abs(it - minute) >= 1440 - 90 }
     val givenLately = recent.any {
         InsulinType.of(it.insulinType) == InsulinType.Basal &&
             (it.insulin ?: 0.0) > 0 &&
@@ -129,41 +124,18 @@ fun TreatmentSheet(
     val ctx = LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
     val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val startKind = when {
-        editing == null -> initialKind
-        editing.glucose != null -> TreatmentKind.Meter
-        editing.duration != null -> TreatmentKind.Activity
-        (editing.insulin ?: 0.0) > 0 -> TreatmentKind.Insulin
-        (editing.carbs ?: 0.0) > 0 -> TreatmentKind.Food
-        else -> TreatmentKind.Note
-    }
-    val kind = startKind
-    var insulin by rememberSaveable { mutableDoubleStateOf(editing?.insulin ?: 0.0) }
-    val lastBasal = recent.lastOrNull { InsulinType.of(it.insulinType) == InsulinType.Basal && (it.insulin ?: 0.0) > 0 }?.insulin
-    var insType by rememberSaveable {
-        mutableStateOf(editing?.let { InsulinType.of(it.insulinType) } ?: guessInsulinType(System.currentTimeMillis(), recent))
-    }
+    val form = rememberTreatmentFormState(initialKind, editing, recent, units, initialTime)
+    val kind = form.kind
     // long-acting is usually the same dose every day: start from the last one
-    androidx.compose.runtime.LaunchedEffect(insType) {
-        if (editing == null && insType == InsulinType.Basal && insulin == 0.0 && lastBasal != null) insulin = lastBasal
-    }
-    val foodRows =
-        remember { androidx.compose.runtime.mutableStateListOf<FoodRow>().apply { addAll(foodRowsOf(editing?.foodItems, editing?.carbs)) } }
-    val carbs = foodRows.sumOf { it.grams ?: 0 }.toDouble()
-    var meter by rememberSaveable { mutableStateOf(editing?.glucose?.let { formatGlucose(it, units, locale) }.orEmpty()) }
-    var minutes by rememberSaveable { mutableDoubleStateOf(editing?.duration?.toDouble() ?: 30.0) }
-    var intensity by rememberSaveable { mutableStateOf(editing?.intensity ?: "moderate") }
-    var note by rememberSaveable { mutableStateOf(editing?.notes.orEmpty()) }
-    val now = remember { System.currentTimeMillis() }
-    var time by rememberSaveable { mutableLongStateOf(editing?.t ?: initialTime ?: now) }
+    androidx.compose.runtime.LaunchedEffect(form.insType) { form.startFromLastBasal() }
 
     // "… is giving insulin" on the other phones while this form is on insulin
     val live = state
     val announce = editing == null && kind == TreatmentKind.Insulin
     var announced by remember { mutableStateOf(false) }
-    androidx.compose.runtime.LaunchedEffect(announce, insType) {
+    androidx.compose.runtime.LaunchedEffect(announce, form.insType) {
         if (announce) {
-            onAnnounce(insType)
+            onAnnounce(form.insType)
         } else if (announced) {
             onAnnounce(null)
         }
@@ -171,9 +143,6 @@ fun TreatmentSheet(
     }
     androidx.compose.runtime.DisposableEffect(Unit) { onDispose { if (announced) onAnnounce(null) } }
     val others = live?.intents.orEmpty().filter { it.deviceId != myId && it.until > System.currentTimeMillis() }
-    var confirming by remember { mutableStateOf<NearDose?>(null) }
-    var insRole by rememberSaveable { mutableStateOf(editing?.insulinRole) } // null: chosen by the meal near it
-    var okBig by remember { mutableStateOf(false) } // a dose over the limit, confirmed
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheet, containerColor = c.surface) {
         Column(
@@ -186,7 +155,7 @@ fun TreatmentSheet(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // the kind was chosen by the button that opened the form (or by the entry being edited)
-            val look = kindLook(kind, insType)
+            val look = kindLook(kind, form.insType)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 KindSign(look.glyph, look.ink, 30.dp, background = look.fill)
                 Column {
@@ -201,13 +170,15 @@ fun TreatmentSheet(
                     if (editing ==
                         null
                     ) {
-                        nearDose(recent, insType, time, null)?.takeIf { it.level == DoseLevel.Recent }?.let { RecentDoseNote(it, live) }
+                        nearDose(recent, form.insType, form.time, null)?.takeIf {
+                            it.level == DoseLevel.Recent
+                        }?.let { RecentDoseNote(it, live) }
                     }
                     SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                         InsulinType.entries.forEachIndexed { i, t ->
                             SegmentedButton(
-                                selected = insType == t,
-                                onClick = { insType = t },
+                                selected = form.insType == t,
+                                onClick = { form.insType = t },
                                 shape = SegmentedButtonDefaults.itemShape(i, InsulinType.entries.size),
                                 // its chart letter instead of the tick: І or Д, so a wrong one is seen
                                 icon = {
@@ -223,25 +194,20 @@ fun TreatmentSheet(
                             }
                         }
                     }
-                    val basal = insType == InsulinType.Basal
+                    val basal = form.insType == InsulinType.Basal
                     // rapid: for a meal or a correction; the meal near it chooses, a tap changes it
-                    val nearMeal = remember(recent, time) {
-                        com.lumenarcanus.dialife.data.Meals.group(recent, mealRules).lastOrNull {
-                            time in
-                                (it.from - mealRules.beforeMs)..(it.to + mealRules.afterMs)
-                        }
-                    }
+                    val nearMeal = remember(recent, form.time) { form.nearMeal(mealRules) }
                     if (!basal) {
-                        val role = insRole ?: if (nearMeal != null) "meal" else "corr"
+                        val role = form.role(mealRules)
                         Text(stringResource(R.string.ins_for), color = c.textMuted, fontSize = 13.sp)
                         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                             listOf("meal" to R.string.ins_for_meal, "corr" to R.string.ins_for_corr).forEachIndexed { i, (r, label) ->
                                 SegmentedButton(selected = role == r, onClick = {
-                                    insRole = r
+                                    form.insRole = r
                                 }, shape = SegmentedButtonDefaults.itemShape(i, 2)) { Text(stringResource(label)) }
                             }
                         }
-                        if (insRole == null) {
+                        if (form.insRole == null) {
                             Text(
                                 if (nearMeal !=
                                     null
@@ -261,7 +227,7 @@ fun TreatmentSheet(
                         }
                     }
                     Amount(
-                        value = insulin, step = if (basal) 1.0 else 0.5, max = 80.0, unit = stringResource(R.string.unit_insulin),
+                        value = form.insulin, step = if (basal) 1.0 else 0.5, max = 80.0, unit = stringResource(R.string.unit_insulin),
                         quick = if (basal) BasalQuick else InsulinQuick,
                         accent = if (basal) {
                             basalColor(
@@ -273,169 +239,104 @@ fun TreatmentSheet(
                         container = if (basal) basalContainer(c.isDark) else c.insulinContainer, locale = locale,
                         label = stringResource(R.string.tr_insulin)
                     ) {
-                        insulin = it
-                        okBig = false
+                        form.changeInsulin(it)
                     }
-                    val lv = com.lumenarcanus.dialife.data.DoseCalc.level(insulin, if (basal) dose.maxBasal else dose.maxRapid, null)
-                    LimitAlert(lv, insulin, if (basal) dose.maxBasal else dose.maxRapid, units, locale)
+                    val lv = form.level(dose)
+                    LimitAlert(lv, form.insulin, form.limit(dose), units, locale)
                     if (lv == com.lumenarcanus.dialife.data.DoseCalc.Level.High ||
                         lv == com.lumenarcanus.dialife.data.DoseCalc.Level.Absurd
                     ) {
                         Confirm(
-                            okBig,
-                            stringResource(R.string.planned_ok_given, formatAmount(insulin, locale))
+                            form.okBig,
+                            stringResource(R.string.planned_ok_given, formatAmount(form.insulin, locale))
                         ) {
-                            okBig =
-                                it
+                            form.okBig = it
                         }
                     }
                 }
-                TreatmentKind.Food -> FoodList(foodRows, foods)
-                TreatmentKind.Meter -> MeterField(meter, units) { meter = it }
+                TreatmentKind.Food -> FoodList(form.foodRows, foods)
+                TreatmentKind.Meter -> MeterField(form.meter, units) { form.meter = it }
                 TreatmentKind.Activity -> {
                     Text(stringResource(R.string.act_intensity), color = c.textMuted, fontSize = 13.sp)
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Intensities.forEach { (key, label) ->
-                            FilterChip(selected = intensity == key, onClick = { intensity = key }, label = { Text(stringResource(label)) })
+                            FilterChip(selected = form.intensity == key, onClick = {
+                                form.intensity = key
+                            }, label = { Text(stringResource(label)) })
                         }
                     }
                     Amount(
-                        value = minutes, step = 5.0, max = 600.0, unit = stringResource(R.string.unit_min),
+                        value = form.minutes, step = 5.0, max = 600.0, unit = stringResource(R.string.unit_min),
                         quick = MinutesQuick, accent = c.inRange, container = c.inRangeContainer, locale = locale,
                         label = stringResource(R.string.act_duration)
-                    ) { minutes = it }
+                    ) { form.minutes = it }
                 }
                 TreatmentKind.Note -> {}
             }
 
             // when: now, a little earlier, or any time picked on the clock
             Text(stringResource(R.string.tr_when), color = c.textMuted, fontSize = 13.sp)
-            var picking by remember { mutableStateOf(false) }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                val shifts = if (editing == null) TimeShifts.map { now - it * 60_000L } else emptyList()
+                val shifts = if (editing == null) TimeShifts.map { form.openedAt - it * 60_000L } else emptyList()
                 if (editing == null) {
                     TimeShifts.forEachIndexed { i, m ->
                         FilterChip(
-                            selected = time == shifts[i],
-                            onClick = { time = shifts[i] },
+                            selected = form.time == shifts[i],
+                            onClick = { form.time = shifts[i] },
                             label = {
                                 Text(if (m == 0) stringResource(R.string.tr_now) else stringResource(R.string.tr_minutes_ago, m))
                             }
                         )
                     }
                 }
-                val custom = time !in shifts
+                val custom = form.time !in shifts
                 FilterChip(
                     selected = custom,
-                    onClick = { picking = true },
+                    onClick = { form.picking = true },
                     label = {
-                        Text(if (custom) atLabel(time) else stringResource(R.string.tr_other_time))
+                        Text(if (custom) atLabel(form.time) else stringResource(R.string.tr_other_time))
                     }
                 )
             }
-            if (picking) {
-                TimeDialog(initial = time, onPick = {
-                    time = it
-                    picking = false
-                }, onDismiss = { picking = false })
+            if (form.picking) {
+                TimeDialog(initial = form.time, onPick = {
+                    form.time = it
+                    form.picking = false
+                }, onDismiss = { form.picking = false })
             }
 
             OutlinedTextField(
-                value = note,
-                onValueChange = { note = it.take(200) },
+                value = form.note,
+                onValueChange = { form.note = it.take(200) },
                 label = { Text(stringResource(R.string.tr_note_hint)) },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = if (kind == TreatmentKind.Note) 3 else 1,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
             )
 
-            val amountOk = when (kind) {
-                TreatmentKind.Insulin ->
-                    insulin > 0 &&
-                        run {
-                            val lv = com.lumenarcanus.dialife.data.DoseCalc.level(
-                                insulin,
-                                if (insType ==
-                                    InsulinType.Basal
-                                ) {
-                                    dose.maxBasal
-                                } else {
-                                    dose.maxRapid
-                                },
-                                null
-                            )
-                            lv == com.lumenarcanus.dialife.data.DoseCalc.Level.Ok ||
-                                lv == com.lumenarcanus.dialife.data.DoseCalc.Level.Unusual ||
-                                okBig
-                        }
-                TreatmentKind.Food -> carbs > 0
-                TreatmentKind.Meter -> parseMeter(meter, units) != null
-                TreatmentKind.Activity -> minutes > 0
-                TreatmentKind.Note -> note.isNotBlank()
-            }
-            fun build(confirmedNew: String?) = Treatment(
-                id = editing?.id ?: TreatmentQueue.newId(),
-                t = time,
-                // an edit keeps the other half of a meal bolus untouched
-                insulin = if (kind == TreatmentKind.Insulin) insulin else editing?.insulin?.takeIf { kind == TreatmentKind.Food },
-                carbs = if (kind == TreatmentKind.Food) carbs else editing?.carbs?.takeIf { kind == TreatmentKind.Insulin },
-                glucose = if (kind == TreatmentKind.Meter) parseMeter(meter, units) else null,
-                duration = if (kind == TreatmentKind.Activity) minutes.toInt() else null,
-                intensity = if (kind == TreatmentKind.Activity) intensity else null,
-                notes = note.trim().ifBlank { null },
-                insulinType = if (kind == TreatmentKind.Insulin) insType.wire else editing?.insulinType,
-                insulinName = if (kind == TreatmentKind.Insulin) {
-                    editing?.insulinName?.takeIf { InsulinType.of(editing.insulinType) == insType } ?: Prefs.nameOf(insType)
-                } else {
-                    editing?.insulinName
-                },
-                confirmedNew = confirmedNew,
-                foodItems = if (kind ==
-                    TreatmentKind.Food
-                ) {
-                    foodItemsOf(foodRows)
-                } else {
-                    editing?.foodItems?.takeIf { kind == TreatmentKind.Insulin }
-                },
-                insulinRole = if (kind == TreatmentKind.Insulin && insType == InsulinType.Rapid) {
-                    insRole
-                        ?: if (com.lumenarcanus.dialife.data.Meals.group(recent, mealRules).any {
-                                time in
-                                    (it.from - mealRules.beforeMs)..(it.to + mealRules.afterMs)
-                            }
-                        ) {
-                            "meal"
-                        } else {
-                            "corr"
-                        }
-                } else {
-                    editing?.insulinRole
-                },
-                mealId = editing?.mealId
-            )
-            confirming?.let { near ->
+            form.confirming?.let { near ->
                 SameDoseDialog(
                     near,
-                    insType,
+                    form.insType,
                     live,
                     onSame = {
-                        confirming = null
+                        form.confirming = null
                         onDismiss()
                     }, // the same injection: nothing new to log
                     onNew = {
-                        confirming = null
-                        onSave(build(near.dose.id))
+                        form.confirming = null
+                        onSave(form.build(near.dose.id, mealRules))
                     },
-                    onBack = { confirming = null }
+                    onBack = { form.confirming = null }
                 )
             }
-            if (kind == TreatmentKind.Food) FoodTotal(foodRows)
+            if (kind == TreatmentKind.Food) FoodTotal(form.foodRows)
             Button(
                 onClick = {
-                    val near = if (editing == null && kind == TreatmentKind.Insulin) nearDose(recent, insType, time, null) else null
-                    if (near != null) confirming = near else onSave(build(null))
+                    val near = form.nearOnSave()
+                    if (near != null) form.confirming = near else onSave(form.build(null, mealRules))
                 },
-                enabled = amountOk,
+                enabled = form.amountOk(dose),
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(18.dp)
             ) { Text(stringResource(R.string.tr_save), fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
