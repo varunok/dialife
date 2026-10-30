@@ -23,7 +23,7 @@ import com.lumenarcanus.dialife.live.Notifications
  * an alarm, the check-in goes to the handler only, a help request to everyone
  * but the handler, and "is on it" / "is coming" to the others.
  */
-class AlarmController(context: Context, private val repo: LiveRepository, private val api: DiaLifeApi = DiaLifeApi()) {
+class AlarmController(context: Context, private val repo: LiveRepository, private val api: DiaLifeApi = DiaLifeApi()) : AlarmActions {
     private val app = context.applicationContext
     private val nm = app.getSystemService(NotificationManager::class.java)
     val ringer = Ringer(app)
@@ -172,8 +172,8 @@ class AlarmController(context: Context, private val repo: LiveRepository, privat
         app.sendBroadcast(Intent(AlarmActivity.ACTION_CLOSE).setPackage(app.packageName).putExtra(AlarmActivity.EXTRA_ID, alarmId))
     }
 
-    /** A button on a notification, the alarm screen or the home banner. */
-    suspend fun act(action: String, alarmId: Long): Result<Unit> {
+    // a button on a notification, the alarm screen or the home banner
+    override suspend fun act(action: String, alarmId: Long): Result<Unit> {
         val c = repo.credentials ?: return Result.failure(IllegalStateException("not connected"))
         val r = when (action) {
             ActionReceiver.HANDLE -> api.handle(c, alarmId)

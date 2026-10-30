@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.lumenarcanus.dialife.core.data.PreferencesRepository
 import com.lumenarcanus.dialife.core.data.SessionRepository
 import com.lumenarcanus.dialife.data.Credentials
-import com.lumenarcanus.dialife.feature.alarms.Ringer
+import com.lumenarcanus.dialife.feature.alarms.AlarmSound
 import com.lumenarcanus.dialife.live.LiveSource
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -21,7 +21,7 @@ class SettingsViewModel(
     live: LiveSource,
     private val prefs: PreferencesRepository,
     private val sessions: SessionRepository,
-    private val ringer: Ringer
+    private val ringer: AlarmSound
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SettingsUiState(creds, live.live.value.state, prefs.current()))
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
@@ -33,7 +33,7 @@ class SettingsViewModel(
     }
 
     fun onAction(action: SettingsAction) {
-        val p = _uiState.value.prefs
+        val p = prefs.current() // the stored choices: the UI state may not have caught up with the last tap
         when (action) {
             is SettingsAction.ChooseUnits -> prefs.chooseUnits(action.units)
             is SettingsAction.ChooseTheme -> prefs.chooseTheme(action.theme)

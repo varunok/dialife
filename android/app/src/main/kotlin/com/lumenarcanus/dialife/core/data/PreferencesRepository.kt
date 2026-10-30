@@ -27,10 +27,30 @@ data class LocalPrefs(
 }
 
 /** This phone's own choices: read as they change, written with what follows from them (the basal reminder, the app's language). */
-class PreferencesRepository(private val context: Context) {
-    val prefs: Flow<LocalPrefs> = snapshotFlow { current() }
+interface PreferencesRepository {
+    val prefs: Flow<LocalPrefs>
 
-    fun current() = LocalPrefs(
+    fun current(): LocalPrefs
+
+    fun chooseUnits(u: Units?)
+
+    fun chooseTheme(t: ThemeChoice)
+
+    fun chooseLanguage(tag: String)
+
+    fun chooseMeterLine(on: Boolean)
+
+    fun chooseInsulin(type: InsulinType, name: String)
+
+    fun chooseBasalTimes(times: List<Int>)
+
+    fun chooseBasalReminder(on: Boolean)
+}
+
+class DefaultPreferencesRepository(private val context: Context) : PreferencesRepository {
+    override val prefs: Flow<LocalPrefs> = snapshotFlow { current() }
+
+    override fun current() = LocalPrefs(
         units = Prefs.units,
         theme = Prefs.theme,
         language = AppCompatDelegate.getApplicationLocales().toLanguageTags().substringBefore('-'),
@@ -41,22 +61,22 @@ class PreferencesRepository(private val context: Context) {
         basalReminder = Prefs.basalReminder
     )
 
-    fun chooseUnits(u: Units?) = Prefs.chooseUnits(u)
+    override fun chooseUnits(u: Units?) = Prefs.chooseUnits(u)
 
-    fun chooseTheme(t: ThemeChoice) = Prefs.chooseTheme(t)
+    override fun chooseTheme(t: ThemeChoice) = Prefs.chooseTheme(t)
 
-    fun chooseLanguage(tag: String) = AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
+    override fun chooseLanguage(tag: String) = AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
 
-    fun chooseMeterLine(on: Boolean) = Prefs.chooseMeterLine(on)
+    override fun chooseMeterLine(on: Boolean) = Prefs.chooseMeterLine(on)
 
-    fun chooseInsulin(type: InsulinType, name: String) = Prefs.chooseInsulin(type, name)
+    override fun chooseInsulin(type: InsulinType, name: String) = Prefs.chooseInsulin(type, name)
 
-    fun chooseBasalTimes(times: List<Int>) {
+    override fun chooseBasalTimes(times: List<Int>) {
         Prefs.chooseBasalTimes(times)
         BasalReminder.schedule(context)
     }
 
-    fun chooseBasalReminder(on: Boolean) {
+    override fun chooseBasalReminder(on: Boolean) {
         Prefs.chooseBasalReminder(on)
         BasalReminder.schedule(context)
     }

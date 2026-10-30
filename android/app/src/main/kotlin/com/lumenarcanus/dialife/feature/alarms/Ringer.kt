@@ -18,7 +18,7 @@ import android.util.Log
  * One alarm sounds at a time; it stops on its own after a while because the
  * server rings again if nobody answered.
  */
-class Ringer(context: Context) {
+class Ringer(context: Context) : AlarmSound {
     private val app = context.applicationContext
     private val audio = app.getSystemService(AudioManager::class.java)
     private val vibrator = app.getSystemService(VibratorManager::class.java).defaultVibrator
@@ -32,7 +32,7 @@ class Ringer(context: Context) {
     var ringingId: Long = 0
         private set
 
-    fun start(alarmId: Long) {
+    override fun start(alarmId: Long) {
         main.post {
             stopNow()
             ringingId = alarmId
@@ -81,8 +81,7 @@ class Ringer(context: Context) {
         }
     }
 
-    /** Stops if [alarmId] is the one sounding (0: whatever sounds). */
-    fun stop(alarmId: Long = 0) {
+    override fun stop(alarmId: Long) {
         main.post { if (alarmId == 0L || alarmId == ringingId) stopNow() }
     }
 

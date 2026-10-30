@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /** The live episodes on home: from the live state; an action goes through the alarm controller (it also stops the sound). */
-class AlarmsViewModel(private val live: LiveSource, private val controller: AlarmController) : ViewModel() {
+class AlarmsViewModel(private val live: LiveSource, private val controller: AlarmActions) : ViewModel() {
     private val userMessage = MutableStateFlow<Int?>(null)
 
     val uiState: StateFlow<AlarmsUiState> = combine(live.live, userMessage) { l, message ->
