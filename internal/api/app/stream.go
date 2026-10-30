@@ -41,11 +41,7 @@ func (h *Handlers) Stream(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	rc := http.NewResponseController(w)
-	hdr := w.Header()
-	hdr.Set("Content-Type", "text/event-stream")
-	hdr.Set("Cache-Control", "no-cache")
-	hdr.Set("X-Accel-Buffering", "no")
-	w.WriteHeader(http.StatusOK)
+	openEventStream(w)
 
 	now := h.Now()
 	snap, err := h.snapshot(ctx, now)
@@ -81,24 +77,16 @@ func (h *Handlers) Stream(w http.ResponseWriter, r *http.Request) {
 			if !ok { // too slow or server shutting down: client reconnects and resyncs
 				return
 			}
-			if ev.Type == weblogin.EventLogout {
-				var lo weblogin.LogoutEvent
-				if json.Unmarshal(ev.Data, &lo) == nil && web && lo.Session == dev.WebSessionID {
-					h.send(w, bus.Event{ID: ev.ID, Type: weblogin.EventLogout, Data: []byte("{}")})
-					rc.Flush()
-					return
-				}
-				continue // about another browser: nothing for this stream
+			out, verdict := forStream(ev, web, dev.WebSessionID)
+			switch verdict {
+			case skipEvent:
+				continue
+			case logOut:
+				h.send(w, out)
+				rc.Flush()
+				return
 			}
-			if web {
-				if ev.Type == questions.EventQuestion {
-					continue
-				}
-				if ev.Type == EventBG || ev.Type == EventState {
-					ev.Data = withoutQuestions(ev.Data)
-				}
-			}
-			if !h.send(w, ev) || rc.Flush() != nil {
+			if !h.send(w, out) || rc.Flush() != nil {
 				return
 			}
 		case <-ping.C:
@@ -113,6 +101,45 @@ func (h *Handlers) Stream(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+}
+
+// openEventStream starts a server-sent event stream: no caching, no proxy buffering.
+func openEventStream(w http.ResponseWriter) {
+	hdr := w.Header()
+	hdr.Set("Content-Type", "text/event-stream")
+	hdr.Set("Cache-Control", "no-cache")
+	hdr.Set("X-Accel-Buffering", "no")
+	w.WriteHeader(http.StatusOK)
+}
+
+type streamVerdict int
+
+const (
+	sendEvent streamVerdict = iota
+	skipEvent
+	logOut // send it, then end the stream
+)
+
+// forStream: what an event becomes on one stream. A logout is only for the
+// browser it names; the web viewer ([web]) gets no questions, in any form.
+func forStream(ev bus.Event, web bool, session int64) (bus.Event, streamVerdict) {
+	if ev.Type == weblogin.EventLogout {
+		var lo weblogin.LogoutEvent
+		if json.Unmarshal(ev.Data, &lo) == nil && web && lo.Session == session {
+			return bus.Event{ID: ev.ID, Type: weblogin.EventLogout, Data: []byte("{}")}, logOut
+		}
+		return ev, skipEvent // about another browser: nothing for this stream
+	}
+	if !web {
+		return ev, sendEvent
+	}
+	switch ev.Type {
+	case questions.EventQuestion:
+		return ev, skipEvent
+	case EventBG, EventState:
+		ev.Data = withoutQuestions(ev.Data)
+	}
+	return ev, sendEvent
 }
 
 func (h *Handlers) replay(w http.ResponseWriter, r *http.Request, since int64) bool {
