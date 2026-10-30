@@ -1,6 +1,7 @@
 package carbs
 
 import (
+	"cmp"
 	"context"
 	"log/slog"
 	"slices"
@@ -90,16 +91,48 @@ func (s *Service) similarMin() float32 {
 // similar fills in, for the items nothing matched by name, the table portions
 // and the family's own food that mean the same thing in other words.
 func (s *Service) similar(ctx context.Context, index []tableEntry, foods []store.FoodItem, items []Item, out []Suggestion) {
+	need := unmatched(items, out)
+	if s.Embed == nil || len(need) == 0 {
+		return
+	}
+	family := familyNames(foods)
+	vecs := s.vectors(ctx, textsToEmbed(index, family, items, need))
+	least := s.similarMin()
+	for _, i := range need {
+		q, ok := vecs[norm(items[i].Name)]
+		if !ok {
+			continue
+		}
+		for _, h := range closestTable(q, index, vecs, least) {
+			th := hitFor(h.e, items[i].Portion)
+			th.Score = h.score
+			out[i].Similar = append(out[i].Similar, th)
+		}
+		bestName, bestScore := closestFamily(q, family, vecs, least)
+		if bestName != "" {
+			if m := recall(foods, Item{Name: bestName, Portion: items[i].Portion}); m != nil {
+				m.Like, m.Score = bestName, bestScore
+				out[i].Mine = m
+			}
+		}
+		slog.Info("food similar", "table", len(out[i].Similar), "mine", bestName != "")
+	}
+}
+
+// unmatched: the items with a name that nothing matched by name.
+func unmatched(items []Item, out []Suggestion) []int {
 	var need []int
 	for i := range items {
 		if out[i].Mine == nil && len(out[i].Table) == 0 && norm(items[i].Name) != "" {
 			need = append(need, i)
 		}
 	}
-	if s.Embed == nil || len(need) == 0 {
-		return
-	}
-	family := map[string]string{} // normalized → as logged (newest spelling)
+	return need
+}
+
+// familyNames: the family's foods, normalized → as logged (the newest spelling).
+func familyNames(foods []store.FoodItem) map[string]string {
+	family := map[string]string{}
 	for _, f := range foods {
 		if k := norm(f.Name); k != "" {
 			if _, ok := family[k]; !ok {
@@ -107,6 +140,11 @@ func (s *Service) similar(ctx context.Context, index []tableEntry, foods []store
 			}
 		}
 	}
+	return family
+}
+
+// textsToEmbed: every table name, every family food and every typed name looked for, once each.
+func textsToEmbed(index []tableEntry, family map[string]string, items []Item, need []int) []string {
 	texts := map[string]bool{}
 	for _, e := range index {
 		for _, k := range e.keys {
@@ -119,60 +157,43 @@ func (s *Service) similar(ctx context.Context, index []tableEntry, foods []store
 	for _, i := range need {
 		texts[norm(items[i].Name)] = true
 	}
-	vecs := s.vectors(ctx, mapKeys(texts))
-	least := s.similarMin()
-	for _, i := range need {
-		q, ok := vecs[norm(items[i].Name)]
-		if !ok {
-			continue
-		}
-		type scored struct {
-			e     tableEntry
-			score float32
-		}
-		var hits []scored
-		for _, e := range index {
-			best := float32(-1)
-			for _, k := range e.keys {
-				if v, ok := vecs[k]; ok {
-					best = max(best, dot(q, v))
-				}
-			}
-			if best >= least {
-				hits = append(hits, scored{e, best})
-			}
-		}
-		slices.SortStableFunc(hits, func(a, b scored) int {
-			switch {
-			case a.score > b.score:
-				return -1
-			case a.score < b.score:
-				return 1
-			}
-			return 0
-		})
-		for _, h := range hits[:min(len(hits), maxSimilar)] {
-			th := hitFor(h.e, items[i].Portion)
-			th.Score = h.score
-			out[i].Similar = append(out[i].Similar, th)
-		}
+	return mapKeys(texts)
+}
 
-		bestName, bestScore := "", least
-		for k, name := range family {
+type scoredEntry struct {
+	e     tableEntry
+	score float32
+}
+
+// closestTable: the table portions whose best name is at least least alike, the closest first, at most maxSimilar.
+func closestTable(q []float32, index []tableEntry, vecs map[string][]float32, least float32) []scoredEntry {
+	var hits []scoredEntry
+	for _, e := range index {
+		best := float32(-1)
+		for _, k := range e.keys {
 			if v, ok := vecs[k]; ok {
-				if d := dot(q, v); d >= bestScore {
-					bestName, bestScore = name, d
-				}
+				best = max(best, dot(q, v))
 			}
 		}
-		if bestName != "" {
-			if m := recall(foods, Item{Name: bestName, Portion: items[i].Portion}); m != nil {
-				m.Like, m.Score = bestName, bestScore
-				out[i].Mine = m
-			}
+		if best >= least {
+			hits = append(hits, scoredEntry{e, best})
 		}
-		slog.Info("food similar", "table", len(out[i].Similar), "mine", bestName != "")
 	}
+	slices.SortStableFunc(hits, func(a, b scoredEntry) int { return cmp.Compare(b.score, a.score) })
+	return hits[:min(len(hits), maxSimilar)]
+}
+
+// closestFamily: the family's food most alike, if at least least alike.
+func closestFamily(q []float32, family map[string]string, vecs map[string][]float32, least float32) (string, float32) {
+	bestName, bestScore := "", least
+	for k, name := range family {
+		if v, ok := vecs[k]; ok {
+			if d := dot(q, v); d >= bestScore {
+				bestName, bestScore = name, d
+			}
+		}
+	}
+	return bestName, bestScore
 }
 
 func mapKeys(m map[string]bool) []string {
