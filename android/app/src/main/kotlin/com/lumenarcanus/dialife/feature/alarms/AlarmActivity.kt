@@ -196,70 +196,7 @@ internal fun AlarmScreen(
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive }
             )
             val sgv = current ?: alarm.sgv
-            if (sgv != null && alarm.kind != "stale") {
-                // the number in a ring of the alarm's colour: readable from across the room
-                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Box(Modifier.size(250.dp), contentAlignment = Alignment.Center) {
-                        androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
-                            drawCircle(accent.copy(alpha = 0.18f), radius = size.minDimension / 2)
-                            drawCircle(
-                                accent,
-                                radius = size.minDimension / 2 - 5.dp.toPx(),
-                                style = androidx.compose.ui.graphics.drawscope.Stroke(8.dp.toPx())
-                            )
-                        }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            // fits the ring even with the largest system font
-                            androidx.compose.foundation.text.BasicText(
-                                formatGlucose(sgv, units, locale),
-                                style = GlucoseHero.copy(
-                                    fontSize = 92.sp,
-                                    lineHeight = 92.sp,
-                                    color = c.text,
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                ),
-                                maxLines = 1,
-                                autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(
-                                    minFontSize = 40.sp,
-                                    maxFontSize = 92.sp,
-                                    stepSize = 4.sp
-                                ),
-                                modifier = Modifier.width(190.dp)
-                            )
-                            val bg = state?.bg
-                            Text(
-                                listOfNotNull(
-                                    Notifications.arrowOf(bg?.direction).ifBlank { null },
-                                    bg?.delta?.let { formatDelta(it, units, locale) },
-                                    stringResource(
-                                        if (units == Units.MgDl) {
-                                            R.string.unit_mgdl
-                                        } else {
-                                            R.string.unit_mmol
-                                        }
-                                    )
-                                ).joinToString("  "),
-                                color = c.textMuted,
-                                fontSize = 18.sp,
-                                maxLines = 1,
-                                modifier = Modifier.width(170.dp),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                softWrap = false,
-                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-                }
-                state?.ar2?.predicted?.lastOrNull()?.let {
-                    Text(
-                        stringResource(R.string.forecast_30, formatGlucose(it.sgv, units, locale)),
-                        color = c.textMuted,
-                        fontSize = 16.sp,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
-                }
-            }
+            if (sgv != null && alarm.kind != "stale") AlarmReading(sgv, accent, state, units)
             Text(
                 if (help) {
                     listOfNotNull(
@@ -281,25 +218,7 @@ internal fun AlarmScreen(
                     Text(stringResource(R.string.al_notified, names.joinToString(", ")), color = c.textMuted, fontSize = 15.sp)
                 }
             }
-            if (help) {
-                val live by ctx.liveRepository.live.collectAsStateWithLifecycle()
-                val from = (alarm.handledAt ?: alarm.startedAt) - 15 * 60_000L
-                val now = System.currentTimeMillis()
-                GlucoseChart(
-                    history = live.history,
-                    forecast = state?.ar2,
-                    thresholds = state?.thresholds ?: Thresholds(),
-                    units = units,
-                    rangeHours = 3,
-                    now = now,
-                    window = ChartWindow(
-                        from,
-                        maxOf(now + 30 * 60_000L, from + 3_600_000L),
-                        followsNow = true
-                    ),
-                    modifier = Modifier.fillMaxWidth().height(170.dp)
-                )
-            }
+            if (help) HelpChart(alarm, state, units)
         }
         if (failed) {
             Text(
@@ -320,18 +239,116 @@ internal fun AlarmScreen(
             },
             modifier = Modifier.fillMaxWidth()
         ) { Text(stringResource(R.string.al_open_chart), color = c.textMuted, fontSize = 15.sp) }
-        if (help) {
-            BigButton(stringResource(R.string.act_coming), accent, c.background, busy) { act(ActionReceiver.COMING) }
-        } else {
-            BigButton(stringResource(R.string.act_handle), accent, Color.White, busy) { act(ActionReceiver.HANDLE) }
-            if (!alarm.urgentLow) {
-                OutlinedButton(
-                    onClick = { act(ActionReceiver.QUIET) },
-                    enabled = !busy,
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(18.dp)
-                ) { Text(stringResource(R.string.act_quiet), color = c.text, fontSize = 16.sp) }
+        AlarmButtons(help, alarm.urgentLow, accent, busy, ::act)
+    }
+}
+
+/** The number in a ring of the alarm's colour, readable from across the room, and where it is heading in 30 min. */
+@Composable
+private fun AlarmReading(sgv: Int, accent: Color, state: StateResponse?, units: Units) {
+    val c = DiaTheme.colors
+    val locale = LocalContext.current.resources.configuration.locales[0]
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(250.dp), contentAlignment = Alignment.Center) {
+            androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+                drawCircle(accent.copy(alpha = 0.18f), radius = size.minDimension / 2)
+                drawCircle(
+                    accent,
+                    radius = size.minDimension / 2 - 5.dp.toPx(),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(8.dp.toPx())
+                )
             }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // fits the ring even with the largest system font
+                androidx.compose.foundation.text.BasicText(
+                    formatGlucose(sgv, units, locale),
+                    style = GlucoseHero.copy(
+                        fontSize = 92.sp,
+                        lineHeight = 92.sp,
+                        color = c.text,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    ),
+                    maxLines = 1,
+                    autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(
+                        minFontSize = 40.sp,
+                        maxFontSize = 92.sp,
+                        stepSize = 4.sp
+                    ),
+                    modifier = Modifier.width(190.dp)
+                )
+                val bg = state?.bg
+                Text(
+                    listOfNotNull(
+                        Notifications.arrowOf(bg?.direction).ifBlank { null },
+                        bg?.delta?.let { formatDelta(it, units, locale) },
+                        stringResource(
+                            if (units == Units.MgDl) {
+                                R.string.unit_mgdl
+                            } else {
+                                R.string.unit_mmol
+                            }
+                        )
+                    ).joinToString("  "),
+                    color = c.textMuted,
+                    fontSize = 18.sp,
+                    maxLines = 1,
+                    modifier = Modifier.width(170.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    softWrap = false,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+    state?.ar2?.predicted?.lastOrNull()?.let {
+        Text(
+            stringResource(R.string.forecast_30, formatGlucose(it.sgv, units, locale)),
+            color = c.textMuted,
+            fontSize = 16.sp,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+    }
+}
+
+/** Someone asked for help: the episode on a chart, from a little before it was taken. */
+@Composable
+private fun HelpChart(alarm: AlarmView, state: StateResponse?, units: Units) {
+    val ctx = LocalContext.current
+    val live by ctx.liveRepository.live.collectAsStateWithLifecycle()
+    val from = (alarm.handledAt ?: alarm.startedAt) - 15 * 60_000L
+    val now = System.currentTimeMillis()
+    GlucoseChart(
+        history = live.history,
+        forecast = state?.ar2,
+        thresholds = state?.thresholds ?: Thresholds(),
+        units = units,
+        rangeHours = 3,
+        now = now,
+        window = ChartWindow(
+            from,
+            maxOf(now + 30 * 60_000L, from + 3_600_000L),
+            followsNow = true
+        ),
+        modifier = Modifier.fillMaxWidth().height(170.dp)
+    )
+}
+
+/** "I'm coming" for a help request; else "I'm on it" and, unless it is an urgent low, "quiet". */
+@Composable
+private fun AlarmButtons(help: Boolean, urgentLow: Boolean, accent: Color, busy: Boolean, act: (String) -> Unit) {
+    val c = DiaTheme.colors
+    if (help) {
+        BigButton(stringResource(R.string.act_coming), accent, c.background, busy) { act(ActionReceiver.COMING) }
+    } else {
+        BigButton(stringResource(R.string.act_handle), accent, Color.White, busy) { act(ActionReceiver.HANDLE) }
+        if (!urgentLow) {
+            OutlinedButton(
+                onClick = { act(ActionReceiver.QUIET) },
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(18.dp)
+            ) { Text(stringResource(R.string.act_quiet), color = c.text, fontSize = 16.sp) }
         }
     }
 }
