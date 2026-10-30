@@ -38,8 +38,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -72,15 +70,11 @@ import com.lumenarcanus.dialife.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.ui.theme.GlucoseHero
 import com.lumenarcanus.dialife.ui.treatment.FoodLookup
 import com.lumenarcanus.dialife.ui.treatment.FoodPicker
-import com.lumenarcanus.dialife.ui.treatment.FoodRow
 import com.lumenarcanus.dialife.ui.treatment.TimeDialog
 import com.lumenarcanus.dialife.ui.treatment.atLabel
 import com.lumenarcanus.dialife.ui.treatment.foodItemsOf
-import com.lumenarcanus.dialife.ui.treatment.foodRowsOf
 import com.lumenarcanus.dialife.ui.treatment.newFoodRow
 import com.lumenarcanus.dialife.ui.treatment.parseMeter
-
-private val TimeShifts = listOf(0, 15, 30) // minutes ago; the last chip picks a time
 
 /**
  * The meal: every dish its own line, the rapid dose worked out from the
@@ -115,61 +109,27 @@ fun MealScreen(
     val scope = rememberCoroutineScope()
 
     val keepsDraft = editing == null && !forLow
-    val draft = remember { if (keepsDraft) MealDrafts.load(ctx) else null }
-    val rows = remember {
-        mutableStateListOf<FoodRow>().apply {
-            when {
-                draft != null -> addAll(draft.rows.map { newFoodRow(it.name, it.carbs, it.source, it.portion, it.tableId) })
-                editing != null -> addAll(foodRowsOf(editing.foodItems, editing.carbs))
-            }
-        }
-    }
-    val startedAt = remember { draft?.startedAt?.takeIf { it > 0 } ?: clock() }
-    var whenIdx by remember { mutableStateOf(draft?.whenIdx ?: if (editing != null || initialTime != null) 3 else 0) }
-    var pickedAt by remember { mutableStateOf(draft?.pickedAt ?: editing?.t ?: initialTime) }
-    var plan by remember { mutableStateOf(draft?.plan ?: false) }
-    var join by remember { mutableStateOf(draft?.join ?: true) }
-    var meterText by remember { mutableStateOf(draft?.meterText.orEmpty()) }
-    var newName by remember { mutableStateOf("") }
-    var open by remember { mutableStateOf<Long?>(null) }
-    var removed by remember { mutableStateOf<Pair<Int, FoodRow>?>(null) }
-    var closing by remember { mutableStateOf(false) } // "discard?" asked
-    var asking by remember { mutableStateOf(false) } // the save dialog
-    var okBig by remember { mutableStateOf(false) }
-    var picking by remember { mutableStateOf(false) }
-    var pickingTime by remember { mutableStateOf(false) }
+    val form = rememberMealFormState(editing, initialTime, keepsDraft, clock)
 
     // the draft follows every change
     if (keepsDraft) {
         LaunchedEffect(Unit) {
-            snapshotFlow {
-                MealDraft(
-                    rows.map {
-                        MealDraft.Row(it.name, it.portion, it.carbs, it.source, it.tableId)
-                    },
-                    whenIdx,
-                    pickedAt,
-                    plan,
-                    join,
-                    meterText,
-                    startedAt
-                )
-            }.collect { if (it.isEmpty) MealDrafts.clear(ctx) else MealDrafts.save(ctx, it) }
+            snapshotFlow { form.toDraft() }.collect { if (it.isEmpty) MealDrafts.clear(ctx) else MealDrafts.save(ctx, it) }
         }
     }
-    LaunchedEffect(removed) {
-        if (removed != null) {
+    LaunchedEffect(form.removed) {
+        if (form.removed != null) {
             kotlinx.coroutines.delay(6000)
-            removed = null
+            form.removed = null
         }
     }
 
     val now = clock()
-    val time = if (whenIdx == 3) pickedAt ?: now else now - TimeShifts[whenIdx] * 60_000L
-    val current = rows.sumOf { it.grams ?: 0 }
+    val time = form.time(now)
+    val current = form.current
 
-    val typed = parseMeter(meterText, units)
-    val d = mealDose(inputs, editing, time, now, join, current, typed)
+    val typed = parseMeter(form.meterText, units)
+    val d = mealDose(inputs, editing, time, now, form.join, current, typed)
     val meal = d.meal
     val joined = d.joined
     val earlier = d.earlier
@@ -177,37 +137,16 @@ fun MealScreen(
     val meter = d.meter
     val m = d.calc
     val given = if (joined) meal!!.given else 0.0
-    val planOn = plan && m.canPlan
+    val planOn = form.plan && m.canPlan
 
-    fun place(row: FoodRow) {
-        val last = rows.lastOrNull()
-        if (last != null && last.name.isBlank() && last.carbs.isBlank()) rows[rows.lastIndex] = row else rows.add(row)
-        open = row.id
-    }
-    fun update(id: Long, f: (FoodRow) -> FoodRow) {
-        val i = rows.indexOfFirst { it.id == id }
-        if (i >= 0) rows[i] = f(rows[i])
-    }
-    fun remove(id: Long) {
-        val i = rows.indexOfFirst { it.id == id }
-        if (i < 0) return
-        removed = i to rows.removeAt(i)
-        if (open == id) open = null
-    }
-    fun addTyped() {
-        val (name, portion) = parseEntry(newName)
-        if (name.isBlank()) return
-        place(newFoodRow(name = name.replaceFirstChar { it.uppercase() }, portion = portion))
-        newName = ""
-    }
     fun finish(withPlan: Boolean) {
-        asking = false
+        form.asking = false
         val food = Treatment(
             id = editing?.id ?: TreatmentQueue.newId(),
             t = time,
             carbs = current.toDouble(),
             notes = editing?.notes,
-            foodItems = foodItemsOf(rows)
+            foodItems = foodItemsOf(form.rows)
         )
         // a fresh glucometer value typed here is a reading of its own
         val reading = typed?.let { Treatment(id = TreatmentQueue.newId(), t = now, glucose = it) }
@@ -222,8 +161,8 @@ fun MealScreen(
             planOn && !m.asks -> finish(true)
             !m.canPlan && !m.asks -> finish(false)
             else -> {
-                okBig = false
-                asking = true
+                form.okBig = false
+                form.asking = true
             }
         }
     }
@@ -267,8 +206,8 @@ fun MealScreen(
             }
             if (keepsDraft) {
                 TextButton(onClick = {
-                    if (rows.any { it.name.isNotBlank() }) {
-                        closing = true
+                    if (form.rows.any { it.name.isNotBlank() }) {
+                        form.closing = true
                     } else {
                         MealDrafts.clear(ctx)
                         onClose()
@@ -294,13 +233,13 @@ fun MealScreen(
                         fontSize = 14.sp
                     )
                     SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                        SegmentedButton(selected = join, onClick = {
-                            join = true
+                        SegmentedButton(selected = form.join, onClick = {
+                            form.join = true
                         }, shape = SegmentedButtonDefaults.itemShape(0, 2)) {
                             Text(stringResource(R.string.meal_join_yes), fontSize = 13.sp)
                         }
-                        SegmentedButton(selected = !join, onClick = {
-                            join = false
+                        SegmentedButton(selected = !form.join, onClick = {
+                            form.join = false
                         }, shape = SegmentedButtonDefaults.itemShape(1, 2)) {
                             Text(stringResource(R.string.meal_join_no), fontSize = 13.sp)
                         }
@@ -316,7 +255,7 @@ fun MealScreen(
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f)
                 )
-                val n = rows.count { it.name.isNotBlank() || it.grams != null }
+                val n = form.rows.count { it.name.isNotBlank() || it.grams != null }
                 Text(
                     if (n ==
                         0
@@ -330,12 +269,12 @@ fun MealScreen(
                     fontSize = 13.sp
                 )
             }
-            if (rows.isNotEmpty()) Text(stringResource(R.string.meal_swipe_hint), color = c.textFaint, fontSize = 11.5.sp)
+            if (form.rows.isNotEmpty()) Text(stringResource(R.string.meal_swipe_hint), color = c.textFaint, fontSize = 11.5.sp)
 
             Column(
                 Modifier.fillMaxWidth().background(c.surface, RoundedCornerShape(18.dp)).border(1.dp, c.line, RoundedCornerShape(18.dp))
             ) {
-                if (rows.isEmpty()) {
+                if (form.rows.isEmpty()) {
                     Text(
                         stringResource(R.string.meal_empty),
                         color = c.textMuted,
@@ -343,24 +282,24 @@ fun MealScreen(
                         modifier = Modifier.padding(14.dp)
                     )
                 }
-                rows.forEach { row ->
+                form.rows.forEach { row ->
                     key(row.id) {
-                        FoodLookup(row, repo) { f -> update(row.id, f) }
+                        FoodLookup(row, repo) { f -> form.update(row.id, f) }
                         DishRow(
                             row,
                             lang,
-                            open = open == row.id,
-                            onToggle = { open = if (open == row.id) null else row.id },
-                            onChange = { f -> update(row.id, f) },
+                            open = form.open == row.id,
+                            onToggle = { form.open = if (form.open == row.id) null else row.id },
+                            onChange = { f -> form.update(row.id, f) },
                             onSplit = { parts ->
-                                val i = rows.indexOfFirst { it.id == row.id }
+                                val i = form.rows.indexOfFirst { it.id == row.id }
                                 val made = parts.map { newFoodRow(name = it.replaceFirstChar { ch -> ch.uppercase() }) }
-                                rows.removeAt(i)
-                                rows.addAll(i, made)
-                                open = made.first().id
+                                form.rows.removeAt(i)
+                                form.rows.addAll(i, made)
+                                form.open = made.first().id
                             },
-                            onRemove = { remove(row.id) },
-                            onDone = { open = null }
+                            onRemove = { form.remove(row.id) },
+                            onDone = { form.open = null }
                         )
                     }
                 }
@@ -371,22 +310,22 @@ fun MealScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     OutlinedTextField(
-                        value = newName,
-                        onValueChange = { newName = it.replace('\n', ' ').take(80) },
+                        value = form.newName,
+                        onValueChange = { form.newName = it.replace('\n', ' ').take(80) },
                         placeholder = {
                             Text(
-                                stringResource(if (rows.isEmpty()) R.string.meal_add_first else R.string.meal_add_more),
+                                stringResource(if (form.rows.isEmpty()) R.string.meal_add_first else R.string.meal_add_more),
                                 color = c.textFaint
                             )
                         },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = { addTyped() }),
+                        keyboardActions = KeyboardActions(onDone = { form.addTyped() }),
                         modifier = Modifier.weight(1f).focusRequester(addFocus)
                     )
                     val add = stringResource(R.string.meal_add)
                     Button(
-                        onClick = { addTyped() },
+                        onClick = { form.addTyped() },
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = c.carbs, contentColor = c.background),
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
@@ -394,7 +333,7 @@ fun MealScreen(
                     ) { Text("+", fontSize = 26.sp, fontWeight = FontWeight.SemiBold) }
                 }
             }
-            removed?.let { (at, row) ->
+            form.removed?.let { (at, row) ->
                 Row(
                     Modifier.fillMaxWidth().background(c.surfaceRaised, RoundedCornerShape(14.dp)).padding(start = 14.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -411,15 +350,15 @@ fun MealScreen(
                         modifier = Modifier.weight(1f)
                     )
                     TextButton(onClick = {
-                        rows.add(at.coerceAtMost(rows.size), row)
-                        removed = null
+                        form.rows.add(at.coerceAtMost(form.rows.size), row)
+                        form.removed = null
                     }) { Text(stringResource(R.string.meal_undo), color = c.carbs, fontWeight = FontWeight.SemiBold) }
                 }
             }
 
             QuickFoods(repo, lang, onAdd = { name, portion ->
-                place(newFoodRow(name = name, portion = portion))
-            }, onAll = { picking = true })
+                form.place(newFoodRow(name = name, portion = portion))
+            }, onAll = { form.picking = true })
 
             if (forLow) {
                 Text(
@@ -430,11 +369,11 @@ fun MealScreen(
                 )
             } else {
                 DoseCard(
-                    m, dose, units, locale, earlier, given, typedMeter = meterText, onMeter = {
-                        meterText =
+                    m, dose, units, locale, earlier, given, typedMeter = form.meterText, onMeter = {
+                        form.meterText =
                             it.filter { ch -> ch.isDigit() || ch == ',' || ch == '.' }.take(5)
                     },
-                    plan = planOn, onPlan = { plan = it }, openPlan = openPlan
+                    plan = planOn, onPlan = { form.plan = it }, openPlan = openPlan
                 )
             }
 
@@ -442,13 +381,13 @@ fun MealScreen(
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (editing == null) {
                     TimeShifts.forEachIndexed { i, mins ->
-                        FilterChip(selected = whenIdx == i, onClick = { whenIdx = i }, label = {
+                        FilterChip(selected = form.whenIdx == i, onClick = { form.whenIdx = i }, label = {
                             Text(if (mins == 0) stringResource(R.string.tr_now) else stringResource(R.string.tr_minutes_ago, mins))
                         })
                     }
                 }
-                FilterChip(selected = whenIdx == 3, onClick = { pickingTime = true }, label = {
-                    Text(if (whenIdx == 3) atLabel(time) else stringResource(R.string.tr_other_time))
+                FilterChip(selected = form.whenIdx == 3, onClick = { form.pickingTime = true }, label = {
+                    Text(if (form.whenIdx == 3) atLabel(time) else stringResource(R.string.tr_other_time))
                 })
             }
             Text(stringResource(R.string.meal_not_advice), color = c.textFaint, fontSize = 11.5.sp)
@@ -458,7 +397,7 @@ fun MealScreen(
             Modifier.fillMaxWidth().background(c.surface).padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            val empty = rows.count { it.grams == null && it.name.isNotBlank() }
+            val empty = form.rows.count { it.grams == null && it.name.isNotBlank() }
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
                     if (empty > 0) pluralStringResource(R.plurals.food_empty, empty, empty) else stringResource(R.string.food_total),
@@ -486,13 +425,13 @@ fun MealScreen(
         }
     }
 
-    if (picking) {
+    if (form.picking) {
         FoodPicker(
             tables = rememberCatalog(repo)?.tables.orEmpty(),
             lang = lang,
             onPick = { f, _ ->
-                picking = false
-                place(
+                form.picking = false
+                form.place(
                     newFoodRow(
                         name = f.names.inLang(lang),
                         carbs = f.carbs.toString(),
@@ -501,41 +440,41 @@ fun MealScreen(
                         tableId = f.id
                     )
                 )
-                open = null
+                form.open = null
             },
-            onDismiss = { picking = false }
+            onDismiss = { form.picking = false }
         )
     }
-    if (pickingTime) {
+    if (form.pickingTime) {
         TimeDialog(initial = time, onPick = {
-            pickedAt = it
-            whenIdx = 3
-            pickingTime = false
+            form.pickedAt = it
+            form.whenIdx = 3
+            form.pickingTime = false
         }, onDismiss = {
-            pickingTime =
+            form.pickingTime =
                 false
         })
     }
-    if (closing) {
+    if (form.closing) {
         AlertDialog(
-            onDismissRequest = { closing = false },
+            onDismissRequest = { form.closing = false },
             title = { Text(stringResource(R.string.meal_discard_title)) },
-            text = { Text(pluralStringResource(R.plurals.meal_discard_text, rows.size, rows.size)) },
+            text = { Text(pluralStringResource(R.plurals.meal_discard_text, form.rows.size, form.rows.size)) },
             confirmButton = {
                 TextButton(onClick = {
-                    closing = false
+                    form.closing = false
                     MealDrafts.clear(ctx)
                     onClose()
                 }) { Text(stringResource(R.string.meal_discard_yes), color = c.low) }
             },
-            dismissButton = { TextButton(onClick = { closing = false }) { Text(stringResource(R.string.meal_discard_no)) } }
+            dismissButton = { TextButton(onClick = { form.closing = false }) { Text(stringResource(R.string.meal_discard_no)) } }
         )
     }
-    if (asking) {
-        SaveSheet(m, dose, units, locale, planOn, okBig, onOkBig = {
-            okBig = it
+    if (form.asking) {
+        SaveSheet(m, dose, units, locale, planOn, form.okBig, onOkBig = {
+            form.okBig = it
         }, onPlan = { finish(true) }, onFoodOnly = { finish(false) }, onBack = {
-            asking =
+            form.asking =
                 false
         })
     }
