@@ -47,7 +47,7 @@ import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.data.Treatment
 
 /** The columns' widths, left to right: time, sensor, change, glucometer, rapid, long, carbs, activity, notes. */
-private val Widths = listOf(96.dp, 110.dp, 52.dp, 64.dp, 110.dp, 104.dp, 70.dp, 90.dp, 200.dp)
+private val Widths = listOf(96.dp, 110.dp, 52.dp, 104.dp, 110.dp, 104.dp, 70.dp, 90.dp, 200.dp)
 
 /** The inks of the entry columns: the same as their marks on the chart. */
 private data class Inks(val rapid: Color, val basal: Color, val carbs: Color, val activity: Color)
@@ -179,13 +179,7 @@ private fun WideRow(r: DataRow, units: Units, th: Thresholds, inks: Inks, onEdit
             },
             {
                 Cell(of(EntryKind.Meter), c.text) {
-                    formatGlucose(it.meter ?: 0, units, locale) + if (whoOf(it)?.second ==
-                        true
-                    ) {
-                        " •"
-                    } else {
-                        ""
-                    }
+                    formatGlucose(it.meter ?: 0, units, locale) + if (whoOf(it)?.second == true) " •" else ""
                 }
             },
             {
@@ -240,7 +234,6 @@ private fun EntryCell(es: List<Entry>, ink: Color, withTime: Boolean, onEdit: (T
         color = if (es.isEmpty()) c.textFaint else ink,
         fontSize = 12.5.sp,
         fontFamily = PlexMono,
-        maxLines = 2,
         modifier = if (tr != null) Modifier.clickable { onEdit(tr) } else Modifier
     )
 }

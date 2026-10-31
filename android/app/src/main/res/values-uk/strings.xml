@@ -606,7 +606,7 @@
     <string name="meal_split">Розділити: %1$s</string>
     <string name="meal_need_carbs">Вкажіть вуглеводи або виберіть підказку</string>
     <string name="meal_done">Готово · %1$d г</string>
-    <string name="meal_dose_title">Розрахунок rapid</string>
+    <string name="meal_dose_title">Розрахунок короткого</string>
     <string name="meal_ratio">1 од на %1$d г</string>
     <string name="meal_step">крок %1$s</string>
     <string name="meal_line_carbs_join">Раніше %1$d + зараз %2$d = %3$d г</string>
@@ -634,7 +634,7 @@
     <string name="alert_low_text">Спершу підніміть цукор. Від дози нічого не віднімається автоматично: вирішуєте ви.</string>
     <string name="alert_very_high">Дуже високий: %1$s</string>
     <string name="alert_very_high_text">Понад 350. Таблиця дає щонайбільше +%1$s од. Перевірте кетони і дійте за планом лікаря.</string>
-    <string name="alert_recent">Rapid %1$s од о %2$s</string>
+    <string name="alert_recent">Короткий %1$s од о %2$s</string>
     <string name="alert_recent_text">Менше 3 год тому: він ще діє, корекція може накластися. Нічого не віднято автоматично.</string>
     <string name="alert_given_less">Вколото менше на %1$s од</string>
     <string name="alert_given_text">Вколото %1$s од, а за розрахунком %2$s од.</string>
@@ -650,7 +650,7 @@
     <string name="alert_dose_high">Більше за найбільшу дозу: %1$s од</string>
     <string name="alert_dose_high_text">Найбільша доза за раз у налаштуваннях — %1$s од. Внести можна тільки з окремим підтвердженням.</string>
     <string name="alert_dose_unusual">Більше, ніж зазвичай: %1$s од</string>
-    <string name="alert_dose_unusual_text">Найбільша доза rapid останнім часом — %1$s од.</string>
+    <string name="alert_dose_unusual_text">Найбільша доза короткого останнім часом — %1$s од.</string>
     <string name="meal_check_title">Перевірте перед збереженням</string>
     <string name="meal_plan_q">Внести дозу як очікувану?</string>
     <string name="meal_plan_q_text">Розраховано %1$s од. Поки ви не натиснете «Вкололи», вона не вважається вколотою.</string>
@@ -686,7 +686,7 @@
     <string name="rule_up_1">Будь-що після коми — до наступної одиниці.</string>
     <string name="rule_up_5">Вгору до половини або цілої.</string>
     <string name="dose_limits">Межі безпеки</string>
-    <string name="dose_max_rapid">Найбільша доза rapid за раз</string>
+    <string name="dose_max_rapid">Найбільша доза короткого за раз</string>
     <string name="dose_max_basal">Найбільша доза довгого за раз</string>
     <string name="dose_max_carbs">Найбільше вуглеводів за прийом</string>
     <string name="dose_limits_note">Більше за межу — червона картка й окреме підтвердження щоразу. Доза більша ніж удвічі — вважається помилкою, як очікувану її не внести. Звичайний прийом у дітей — близько 50 г; 150 г — найбільший прийом, який перевіряли в дослідженнях доз інсуліну.</string>
@@ -699,12 +699,12 @@
     <string name="dose_fresh_note">Старший замір — таблиця не застосовується, екран їжі попросить свіжий.</string>
     <string name="dose_err_ratio">Коефіцієнт — від 1 до 100 г на одиницю.</string>
     <string name="dose_err_fresh">Свіжість заміру — від 1 до 60 хв.</string>
-    <string name="dose_err_max_rapid">Найбільша доза rapid — від 0,5 до 100 од.</string>
+    <string name="dose_err_max_rapid">Найбільша доза короткого — від 0,5 до 100 од.</string>
     <string name="dose_err_max_basal">Найбільша доза довгого — від 0,5 до 200 од.</string>
     <string name="dose_err_max_carbs">Найбільше вуглеводів за прийом — від 20 до 500 г.</string>
     <string name="dose_err_table">У кожному рядку таблиці — значення глюкометра від 40 до 600 мг/дл і від 0 до 50 од.</string>
     <string name="dose_err_twice">Два рядки з однаковим значенням глюкометра.</string>
-    <string name="dose_err_table_max">Рядок додає більше за найбільшу дозу rapid (%1$s од).</string>
+    <string name="dose_err_table_max">Рядок додає більше за найбільшу дозу короткого (%1$s од).</string>
     <string name="dose_saved">Збережено для всієї сім\'ї.</string>
     <string name="dose_save_failed">Не збережено: немає зв\'язку з сервером. Спробуйте ще раз.</string>
     <string name="dose_save">Зберегти</string>
@@ -729,18 +729,18 @@
     <string name="planned_recorded_hint">Наприклад, звичайною кнопкою «Інсулін» або з xDrip+.</string>
     <string name="planned_recorded_yes">Так, записано</string>
     <string name="planned_recorded_no">Ні, записати</string>
-    <string name="planned_missing">Поруч з їжею нема запису rapid</string>
+    <string name="planned_missing">Поруч з їжею нема запису короткого</string>
     <string name="planned_missing_text">Без запису розрахунок, графік і захист від подвійної дози не бачать укол. Внесіть його.</string>
     <string name="planned_record">Внести укол</string>
     <string name="planned_skip_q">Не кололи?</string>
     <string name="planned_skip_text">Очікувану дозу %1$s од до їжі о %2$s буде знято. У журналі лишиться «не кололи».</string>
     <string name="planned_skip_yes">Так, не кололи</string>
     <string name="planned_too_early">Раніше ніж за годину до їжі: це, мабуть, інший укол. Внесіть його звичайною кнопкою «Інсулін».</string>
-    <string name="planned_same_q">Вже є rapid %1$s од о %2$s · %3$s</string>
+    <string name="planned_same_q">Вже є короткий %1$s од о %2$s · %3$s</string>
     <string name="planned_same_text">Це той самий укол, чи вкололи ще раз?</string>
     <string name="planned_same_yes">Той самий укол: нічого не записувати</string>
     <string name="planned_same_no">Ні, це ще один укол</string>
-    <string name="planned_given_title">Вкололи rapid</string>
+    <string name="planned_given_title">Вкололи короткий</string>
     <string name="planned_given_note">Записується тільки те, що вже зроблено. Свіжий замір тут не потрібен.</string>
     <string name="planned_given_differs">Розраховано %1$s од, вводите %2$s од.</string>
     <string name="planned_ok_given">Так, справді вкололи %1$s од</string>
@@ -757,7 +757,7 @@
     <string name="detail_meal">Прийом: %1$d записи їжі, %2$d г</string>
     <string name="detail_worked_out">Розраховано: %1$d г → %2$s од</string>
     <string name="detail_given_at">Вколото о %1$s</string>
-    <string name="detail_none_given">До цього прийому rapid не записано</string>
+    <string name="detail_none_given">До цього прийому короткий не записано</string>
     <string name="detail_none_given_text">Розраховано %1$s од. Якщо кололи, внесіть укол, щоб його бачили графік і захист від подвійної дози.</string>
     <string name="detail_added_after">Після уколу додали ще %1$d г.</string>
     <string name="ins_for">Для чого укол</string>
@@ -776,7 +776,7 @@
     <string name="dose_dia">Короткий діє</string>
     <string name="dose_carb_min">Вуглеводи засвоюються за</string>
     <string name="dose_err_isf">1 од знижує на 5–400 мг/дл (або лишіть порожнім).</string>
-    <string name="dose_err_dia">Rapid діє від 120 до 480 хв.</string>
+    <string name="dose_err_dia">Короткий діє від 120 до 480 хв.</string>
     <string name="dose_err_carb_min">Вуглеводи засвоюються за 60–360 хв.</string>
     <string name="iob_insulin">Активного інсуліну %1$s %2$s</string>
     <string name="iob_carbs">вуглеводів засвоюється %1$d г</string>
