@@ -269,7 +269,7 @@ internal fun WhenChips(form: MealFormState, isNew: Boolean, time: Long) {
 
 /** The total (and dishes still without carbs), and "Save" with the dose to plan when there is one. */
 @Composable
-internal fun SaveBar(form: MealFormState, current: Int, toPlan: Double?, onSave: () -> Unit) {
+internal fun SaveBar(form: MealFormState, current: Int, toPlan: Double?, saving: Boolean, onSave: () -> Unit) {
     val c = DiaTheme.colors
     val locale = LocalConfiguration.current.locales[0]
     Column(
@@ -289,14 +289,18 @@ internal fun SaveBar(form: MealFormState, current: Int, toPlan: Double?, onSave:
         }
         Button(
             onClick = onSave,
-            enabled = current > 0,
+            enabled = current > 0 && !saving,
             modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = RoundedCornerShape(18.dp),
             colors = ButtonDefaults.buttonColors(containerColor = c.carbs, contentColor = c.background)
         ) {
             Text(
-                stringResource(R.string.meal_save, current) +
-                    toPlan?.let { " " + stringResource(R.string.meal_save_plan, formatAmount(it, locale)) }.orEmpty(),
+                if (saving) {
+                    stringResource(R.string.meal_saving)
+                } else {
+                    stringResource(R.string.meal_save, current) +
+                        toPlan?.let { " " + stringResource(R.string.meal_save_plan, formatAmount(it, locale)) }.orEmpty()
+                },
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold
             )

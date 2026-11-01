@@ -596,7 +596,8 @@
     <string name="meal_discard_title">Викинути чернетку?</string>
     <string name="meal_discard_yes">Так, викинути</string>
     <string name="meal_discard_no">Ні, продовжити</string>
-    <string name="meal_plan_failed">Їжу збережено, але очікувана доза не дійшла до сервера. Спробуйте ще раз із картки їжі під графіком.</string>
+    <string name="meal_plan_failed">Їжу ще не збережено: очікувана доза або відповідь не дійшла до сервера. Перевірте зв\'язок і спробуйте ще раз.</string>
+    <string name="meal_saving">Зберігаю…</string>
     <string name="meal_swipe_remove">Прибрати</string>
     <string name="meal_no_portion">порція не вказана</string>
     <string name="meal_from_hint">з підказки</string>

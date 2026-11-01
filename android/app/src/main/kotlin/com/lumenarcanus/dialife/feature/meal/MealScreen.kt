@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -60,7 +62,10 @@ fun MealScreen(
     // carbs given for a low: no insulin is worked out, no planned dose, no meal draft
     forLow: Boolean = false,
     // a fixed moment in the screenshot tests
-    clock: () -> Long = System::currentTimeMillis
+    clock: () -> Long = System::currentTimeMillis,
+    // the form waits on the server: no second save, no leaving half way
+    saveStatus: MealSaveStatus = MealSaveStatus.Editing,
+    onFailureSeen: () -> Unit = {}
 ) {
     val dose = inputs.dose
     val units = inputs.units
@@ -100,11 +105,12 @@ fun MealScreen(
     val m = d.calc
     val given = d.given
     val planOn = form.plan && m.canPlan
+    val saving = saveStatus == MealSaveStatus.Saving
 
     fun finish(withPlan: Boolean) {
         form.asking = false
         val food = Treatment(
-            id = editing?.id ?: TreatmentQueue.newId(),
+            id = editing?.id ?: form.newFoodId,
             t = time,
             carbs = current.toDouble(),
             notes = editing?.notes,
@@ -112,12 +118,11 @@ fun MealScreen(
         )
         // a fresh glucometer value typed here is a reading of its own
         val reading = typed?.let { Treatment(id = TreatmentQueue.newId(), t = now, glucose = it) }
-        val pd = if (forLow) null else plannedFor(d, food.id, now, withPlan) { java.util.UUID.randomUUID().toString() }
-        if (keepsDraft) MealDrafts.clear(ctx)
+        val pd = if (forLow) null else plannedFor(d, food.id, now, withPlan) { form.newPlanId }
         onSave(MealSave(food, reading, pd))
     }
     fun save() {
-        if (current <= 0) return
+        if (current <= 0 || saving) return
         if (forLow) return finish(false)
         when {
             planOn && !m.asks -> finish(true)
@@ -129,16 +134,18 @@ fun MealScreen(
         }
     }
 
-    // back closes and keeps the draft
-    BackHandler(onBack = onClose)
+    // back closes and keeps the draft; not while the server is being asked
+    BackHandler(onBack = { if (!saving) onClose() })
 
     Column(Modifier.fillMaxSize().background(c.background).safeDrawingPadding().imePadding()) {
-        MealTopBar(forLow, editing != null, keepsDraft, onClose, onDiscard = {
-            if (form.rows.any { it.name.isNotBlank() }) {
-                form.closing = true
-            } else {
-                MealDrafts.clear(ctx)
-                onClose()
+        MealTopBar(forLow, editing != null, keepsDraft, onClose = { if (!saving) onClose() }, onDiscard = {
+            when {
+                saving -> Unit // the server is being asked: nothing to discard yet
+                form.rows.any { it.name.isNotBlank() } -> form.closing = true
+                else -> {
+                    MealDrafts.clear(ctx)
+                    onClose()
+                }
             }
         })
 
@@ -179,11 +186,18 @@ fun MealScreen(
             Text(stringResource(R.string.meal_not_advice), color = c.textFaint, fontSize = 11.5.sp)
         }
 
-        SaveBar(form, current, if (planOn) m.toGive else null, onSave = ::save)
+        SaveBar(form, current, if (planOn) m.toGive else null, saving, onSave = ::save)
     }
     MealDialogs(form, repo, lang, time, m, dose, units, locale, planOn, onDiscard = {
         form.closing = false
         MealDrafts.clear(ctx)
         onClose()
     }, onFinish = ::finish)
+    if (saveStatus == MealSaveStatus.Failed) {
+        AlertDialog(
+            onDismissRequest = onFailureSeen,
+            title = { Text(stringResource(R.string.meal_plan_failed)) },
+            confirmButton = { TextButton(onClick = onFailureSeen) { Text(stringResource(R.string.tr_ok)) } }
+        )
+    }
 }

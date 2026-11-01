@@ -27,12 +27,12 @@ class MealViewModelTest {
         override suspend fun skip(id: String) = Result.success(Unit)
     }
 
-    private class FakeQuestions : QuestionRepository {
+    private class FakeQuestions(val ok: Boolean = true) : QuestionRepository {
         val answers = mutableListOf<Triple<Long, String, String?>>()
 
         override suspend fun answer(id: Long, answer: String, treatmentId: String?): Result<Unit> {
             answers += Triple(id, answer, treatmentId)
-            return Result.success(Unit)
+            return if (ok) Result.success(Unit) else Result.failure(RuntimeException())
         }
 
         override suspend fun dismiss(id: Long) = Result.success(Unit)
@@ -47,25 +47,73 @@ class MealViewModelTest {
         val live = FakeLiveSource()
         val planned = FakePlanned()
         val questions = FakeQuestions()
-        MealViewModel(live, planned, questions) {}.save(MealSave(food, reading, plan), questionId = 0)
+        val vm = MealViewModel(live, planned, questions)
+        vm.save(MealSave(food, reading, plan), questionId = 0)
         assertEquals(listOf(food, reading), live.saved)
         assertEquals(listOf(plan), planned.saved)
         assertTrue(questions.answers.isEmpty())
+        assertEquals(MealSaveStatus.Saved, vm.status.value)
+    }
+
+    @Test
+    fun foodAloneGoesToTheQueueWithoutTheServer() {
+        val live = FakeLiveSource()
+        val vm = MealViewModel(live, FakePlanned(ok = false), FakeQuestions(ok = false))
+        vm.save(MealSave(food, null, null), questionId = 0)
+        assertEquals(listOf(food), live.saved)
+        assertEquals(MealSaveStatus.Saved, vm.status.value)
     }
 
     @Test
     fun foodForAQuestionAnswersIt() {
         val questions = FakeQuestions()
-        MealViewModel(FakeLiveSource(), FakePlanned(), questions) {}.save(MealSave(food, null, null), questionId = 9)
+        MealViewModel(FakeLiveSource(), FakePlanned(), questions).save(MealSave(food, null, null), questionId = 9)
         assertEquals(listOf(Triple(9L, "food", "f")), questions.answers)
     }
 
     @Test
-    fun aPlanThatDidNotReachTheServerIsTold() {
-        var told = 0
-        MealViewModel(FakeLiveSource(), FakePlanned(ok = false), FakeQuestions()) {
-            told++
-        }.save(MealSave(food, null, plan), questionId = 0)
-        assertEquals(1, told)
+    fun aPlanThatDidNotReachTheServerSavesNothingAndKeepsTheForm() {
+        val live = FakeLiveSource()
+        val vm = MealViewModel(live, FakePlanned(ok = false), FakeQuestions())
+        vm.save(MealSave(food, reading, plan), questionId = 0)
+        assertTrue(live.saved.isEmpty())
+        assertEquals(MealSaveStatus.Failed, vm.status.value)
+        vm.failureSeen()
+        assertEquals(MealSaveStatus.Editing, vm.status.value)
+    }
+
+    @Test
+    fun anAnswerThatDidNotReachTheServerSavesNothing() {
+        val live = FakeLiveSource()
+        val vm = MealViewModel(live, FakePlanned(), FakeQuestions(ok = false))
+        vm.save(MealSave(food, null, null), questionId = 9)
+        assertTrue(live.saved.isEmpty())
+        assertEquals(MealSaveStatus.Failed, vm.status.value)
+    }
+
+    @Test
+    fun tryingAgainAfterAFailureSavesTheMealOnce() {
+        val live = FakeLiveSource()
+        val planned = object : PlannedDoseRepository {
+            var calls = 0
+
+            override suspend fun save(p: PlannedDose): Result<Unit> = if (++calls ==
+                1
+            ) {
+                Result.failure(RuntimeException())
+            } else {
+                Result.success(Unit)
+            }
+
+            override suspend fun given(id: String, insulinId: String) = Result.success(Unit)
+
+            override suspend fun skip(id: String) = Result.success(Unit)
+        }
+        val vm = MealViewModel(live, planned, FakeQuestions())
+        vm.save(MealSave(food, null, plan), questionId = 0)
+        vm.failureSeen()
+        vm.save(MealSave(food, null, plan), questionId = 0)
+        assertEquals(listOf(food), live.saved)
+        assertEquals(MealSaveStatus.Saved, vm.status.value)
     }
 }

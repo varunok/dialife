@@ -576,7 +576,8 @@
     <string name="meal_discard_title">Discard the draft?</string>
     <string name="meal_discard_yes">Yes, discard</string>
     <string name="meal_discard_no">No, go on</string>
-    <string name="meal_plan_failed">The food is saved, the planned dose did not reach the server. Try again from the meal\'s card under the chart.</string>
+    <string name="meal_plan_failed">The food is not saved yet: the planned dose or the answer did not reach the server. Check the connection and try again.</string>
+    <string name="meal_saving">Saving…</string>
     <string name="meal_swipe_remove">Remove</string>
     <string name="meal_no_portion">no portion</string>
     <string name="meal_from_hint">from a suggestion</string>

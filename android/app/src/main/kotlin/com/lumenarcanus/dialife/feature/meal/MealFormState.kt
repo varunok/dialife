@@ -12,6 +12,8 @@ import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.feature.entry.FoodRow
 import com.lumenarcanus.dialife.feature.entry.foodRowsOf
 import com.lumenarcanus.dialife.feature.entry.newFoodRow
+import com.lumenarcanus.dialife.live.TreatmentQueue
+import java.util.UUID
 
 /** Minutes ago for the time chips; the last chip picks a time. */
 internal val TimeShifts = listOf(0, 15, 30)
@@ -41,6 +43,10 @@ class MealFormState(draft: MealDraft?, editing: Treatment?, initialTime: Long?, 
     var plan by mutableStateOf(draft?.plan ?: false)
     var join by mutableStateOf(draft?.join ?: true)
     var meterText by mutableStateOf(draft?.meterText.orEmpty())
+
+    // a new meal's ids, the same on every try: a save that failed and is tried again makes no second entry
+    val newFoodId = TreatmentQueue.newId()
+    val newPlanId = UUID.randomUUID().toString()
 
     // the "add a dish" field
     var newName by mutableStateOf("")
