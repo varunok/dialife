@@ -55,6 +55,9 @@
         <receiver android:name=".live.BasalReminderReceiver" android:exported="false" />
         <receiver android:name=".feature.wait.EatReminderReceiver" android:exported="false" />
         <receiver android:name=".feature.wait.EatenReceiver" android:exported="false" />
+        <!-- the class names notifications and timers from before 2026-11 point at -->
+        <receiver android:name=".live.ActionReceiver" android:exported="false" />
+        <receiver android:name=".live.EatReminderReceiver" android:exported="false" />
 
         <receiver
             android:name=".widget.GlucoseWidgetReceiver"
@@ -77,6 +80,11 @@
             android:showWhenLocked="true"
             android:taskAffinity=".alarm"
             android:turnScreenOn="true" />
+        <!-- the full-screen alarm's name in notifications from before 2026-11 -->
+        <activity-alias
+            android:name=".ui.alarm.AlarmActivity"
+            android:exported="false"
+            android:targetActivity=".feature.alarms.AlarmActivity" />
 
         <receiver android:name=".live.BootReceiver" android:exported="true">
             <intent-filter>

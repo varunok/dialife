@@ -125,7 +125,7 @@ class AlarmActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_ID = "alarm_id"
         const val EXTRA_HELP = "help"
-        const val ACTION_CLOSE = "CLOSE_ALARM"
+        const val ACTION_CLOSE = "com.lumenarcanus.dialife.CLOSE_ALARM"
 
         fun intent(context: Context, alarmId: Long, help: Boolean): Intent = Intent(context, AlarmActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_USER_ACTION)

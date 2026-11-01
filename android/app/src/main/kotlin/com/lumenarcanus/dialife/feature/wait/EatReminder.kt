@@ -10,6 +10,7 @@ import android.content.Intent
 import com.lumenarcanus.dialife.MainActivity
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.alarmController
+import com.lumenarcanus.dialife.core.platform.runAsync
 import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.data.CredentialStore
 import com.lumenarcanus.dialife.data.Wait
@@ -17,10 +18,7 @@ import com.lumenarcanus.dialife.live.LiveRepository
 import com.lumenarcanus.dialife.live.Notifications
 import com.lumenarcanus.dialife.liveRepository
 import java.util.Locale
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 
 /**
  * "You can eat": an ordinary notification when the wait on home runs out, on
@@ -121,7 +119,7 @@ object EatReminder {
 class EatReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val dose = intent.getStringExtra(EatReminder.EXTRA_DOSE) ?: return
-        async { EatReminder.fire(context, dose) }
+        runAsync { EatReminder.fire(context, dose) }
     }
 }
 
@@ -129,17 +127,6 @@ class EatReminderReceiver : BroadcastReceiver() {
 class EatenReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val dose = intent.getStringExtra(EatReminder.EXTRA_DOSE) ?: return
-        async { EatReminder.eaten(context, dose) }
-    }
-}
-
-private fun BroadcastReceiver.async(block: suspend () -> Unit) {
-    val done = goAsync()
-    CoroutineScope(Dispatchers.Main).launch {
-        try {
-            block()
-        } finally {
-            done.finish()
-        }
+        runAsync { EatReminder.eaten(context, dose) }
     }
 }
