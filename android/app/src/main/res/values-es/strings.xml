@@ -737,7 +737,7 @@
     <string name="planned_when_range">Desde las %1$s (una hora antes de la comida) hasta ahora.</string>
     <string name="planned_given_save">Confirmar: %1$s u puestas a las %2$s</string>
     <string name="planned_failed">No llegó al servidor. Probad de nuevo.</string>
-    <string name="detail_food">Comida %1$d g</string>
+    <string name="detail_food">Carbohidratos %1$d g</string>
     <string name="detail_meter">Glucómetro %1$s</string>
     <string name="detail_for_corr">Para: corrección</string>
     <string name="detail_for_meal">Para la comida de las %1$s, %2$d g</string>
@@ -782,7 +782,7 @@
     <string name="wait_why_range">%1$d min tras la insulina, glucosa en rango</string>
     <string name="wait_fact_dose">Insulina %1$s u a las %2$s</string>
     <string name="wait_fact_sugar">Glucosa %1$s</string>
-    <string name="wait_fact_food">Comida %1$d g</string>
+    <string name="wait_fact_food">Carbohidratos %1$d g</string>
     <string name="wait_note">Una sugerencia, no una regla. Igual en todos los teléfonos.</string>
     <string name="wait_eaten">Ya comió</string>
     <string name="wait_close">Cerrar</string>

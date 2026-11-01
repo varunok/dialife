@@ -729,7 +729,7 @@
     <string name="planned_when_range">From %1$s (an hour before the meal) up to now.</string>
     <string name="planned_given_save">Confirm: %1$s u given at %2$s</string>
     <string name="planned_failed">Did not reach the server. Try again.</string>
-    <string name="detail_food">Food %1$d g</string>
+    <string name="detail_food">Carbs %1$d g</string>
     <string name="detail_meter">Glucometer %1$s</string>
     <string name="detail_for_corr">For: correction</string>
     <string name="detail_for_meal">For the meal at %1$s, %2$d g</string>
@@ -774,7 +774,7 @@
     <string name="wait_why_range">%1$d min after the insulin, sugar in range</string>
     <string name="wait_fact_dose">Insulin %1$s u at %2$s</string>
     <string name="wait_fact_sugar">Sugar %1$s</string>
-    <string name="wait_fact_food">Food %1$d g</string>
+    <string name="wait_fact_food">Carbs %1$d g</string>
     <string name="wait_note">A suggestion, not a rule. Every phone shows the same.</string>
     <string name="wait_eaten">Already ate</string>
     <string name="wait_close">Close</string>

@@ -749,7 +749,7 @@
     <string name="planned_when_range">Можна від %1$s (за годину до їжі) до зараз.</string>
     <string name="planned_given_save">Підтвердити: вколото %1$s од о %2$s</string>
     <string name="planned_failed">Не дійшло до сервера. Спробуйте ще раз.</string>
-    <string name="detail_food">Їжа %1$d г</string>
+    <string name="detail_food">Вуглеводи %1$d г</string>
     <string name="detail_meter">Глюкометр %1$s</string>
     <string name="detail_for_corr">Для чого: корекція</string>
     <string name="detail_for_meal">До їжі о %1$s, %2$d г</string>
@@ -794,7 +794,7 @@
     <string name="wait_why_range">%1$d хв після уколу, цукор у нормі</string>
     <string name="wait_fact_dose">Укол %1$s од о %2$s</string>
     <string name="wait_fact_sugar">Цукор %1$s</string>
-    <string name="wait_fact_food">Їжа %1$d г</string>
+    <string name="wait_fact_food">Вуглеводи %1$d г</string>
     <string name="wait_note">Порада, не правило. На всіх телефонах однаково.</string>
     <string name="wait_eaten">Вже поїли</string>
     <string name="wait_close">Закрити</string>
