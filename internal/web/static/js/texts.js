@@ -1,5 +1,5 @@
 // Texts of the web viewer in Ukrainian, English and Spanish. {0}, {1}… are filled in by t().
-window.DL_TEXTS = {
+export const TEXTS = {
   uk: {
     langName: 'Українська',
     loginTitle: 'Вхід через застосунок на телефоні',
