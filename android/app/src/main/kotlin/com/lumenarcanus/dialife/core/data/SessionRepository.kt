@@ -6,10 +6,12 @@ import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.data.DiaLifeApi
 import com.lumenarcanus.dialife.live.LiveService
 import com.lumenarcanus.dialife.widget.GlucoseWidget
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 
 /** An uploader's key: it sends readings, it cannot sign a family phone in. */
 class UploaderTokenException : Exception("an uploader key cannot sign a family phone in")
@@ -24,9 +26,10 @@ interface SessionRepository {
     /** Keeps the key once the server knows it; fails with [UploaderTokenException] or the API's error. */
     suspend fun connect(server: String, token: String): Result<Unit>
 
-    /** The server stopped accepting the stored key: forget it. */
+    /** The server stopped accepting the stored key: forget it. Runs to the end even if the caller is gone. */
     suspend fun revoke()
 
+    /** Signs this phone out. Runs to the end even if the caller is gone (the screen that asked closes at once). */
     suspend fun disconnect()
 }
 
@@ -48,13 +51,14 @@ class DefaultSessionRepository(
         }
     }
 
-    override suspend fun revoke() {
+    // a half sign-out (the service stopped, the key still kept) must never happen
+    override suspend fun revoke() = withContext(NonCancellable) {
         _revoked.value = true
         LiveService.stop(context)
         store.clear()
     }
 
-    override suspend fun disconnect() {
+    override suspend fun disconnect() = withContext(NonCancellable) {
         LiveService.stop(context)
         store.clear()
         GlucoseWidget.refresh(context)
