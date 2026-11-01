@@ -2,14 +2,20 @@
 // the forecast, the uploader's battery, time in range and an open alarm.
 
 import { logout, session } from './api.js';
-import { clock, dayTime, g, signed, t, unit } from './format.js';
+import { MIN, clock, dayTime, g, signed, t, unit } from './format.js';
+import { alarmName } from './entries.js';
 import { V } from './model.js';
 import { prefs, setPref } from './prefs.js';
 import { LangPicker, arrowIcon } from './widgets.js';
 
+const STALE_MIN = 15; // no newer reading this long: crossed out, "no fresh data"
+
+// minutes since the reading was taken, counted on to now: no new reading must not look fresh
+function ageMin(bg) { return Math.floor((Date.now() - bg.mills) / MIN); }
+
 export const Top = {
   view() {
-    const st = V.state, stale = st && st.bg && st.bg.age_sec > 15 * 60;
+    const st = V.state, stale = st && st.bg && ageMin(st.bg) >= STALE_MIN;
     const status = V.link === 'offline' ? ['offline', t('offline')] : stale ? ['offline', t('stale')] : ['live', t('live')];
     return m('header.top', [
       m('span.brand', 'DiaLife'),
@@ -29,7 +35,7 @@ export const Now = {
     if (!st) return m('section.card.now', t('loading'));
     const bg = st.bg, th = st.thresholds || {};
     if (!bg) return m('section.card.now', t('noData'));
-    const ageMin = Math.floor(bg.age_sec / 60), stale = ageMin >= 15;
+    const age = ageMin(bg), stale = age >= STALE_MIN;
     const range = bg.sgv < th.bgTargetBottom ? ['lo', t('low', g(th.bgTargetBottom))]
       : bg.sgv > th.bgTargetTop ? ['hi', t('high', g(th.bgTargetTop))]
       : ['in', t('inRange', g(th.bgTargetBottom) + '–' + g(th.bgTargetTop))];
@@ -40,14 +46,14 @@ export const Now = {
         m('div', [m('span.v' + (stale ? '.stale' : ''), g(bg.sgv)), m('span.u', unit())]),
         !stale && m('span.arrow', { 'aria-label': bg.direction || '' }, arrowIcon(bg.delta_exact != null ? bg.delta_exact : bg.delta))
       ]),
-      m('.sub', [bg.delta != null && m('b', signed(bg.delta) + ' ' + t('in5')), m('span', ' · ' + (ageMin < 1 ? t('justNow') : t('ago', ageMin)))]),
+      m('.sub', [bg.delta != null && m('b', signed(bg.delta) + ' ' + t('in5')), m('span', ' · ' + (age < 1 ? t('justNow') : t('ago', age)))]),
       !stale && forecast(st, range, f30),
       m('.tiles', [
         m('.tile', [m('span.k', st.uploader_name || t('uploader')), m('span.n', st.uploader && st.uploader.battery != null ? st.uploader.battery + '%' : '—')]),
         m('.tile', [m('span.k', t('tir')), m('span.n', V.tir != null ? Math.round(V.tir) + '%' : '—')])
       ]),
       a && m('.alarm' + (a.level === 'urgent' ? '.urgent' : ''), [
-        m('b', t('alarmSince', t('kind_' + a.kind) || t('kind_other'), clock(a.started_at))),
+        m('b', t('alarmSince', alarmName(a), clock(a.started_at))),
         m('span', a.handled_by ? t('handledBy', a.handled_by) : t('nobodyYet'))
       ])
     ]);

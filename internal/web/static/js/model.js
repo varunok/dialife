@@ -85,8 +85,8 @@ export function startViewer() {
   loadState(); loadHistory(); loadMeter(); loadTir();
   runStream(onEvent, (link) => { V.link = link; m.redraw(); });
   clearInterval(tick);
-  // minutes-ago and the "last N hours" window move on without new readings
-  tick = setInterval(() => { if (V.period.last) m.redraw(); }, 30000);
+  // minutes-ago, "no fresh data" and the "last N hours" window move on without new readings
+  tick = setInterval(() => m.redraw(), 30000);
   clearInterval(tirTick);
   tirTick = setInterval(loadTir, 15 * MIN);
 }

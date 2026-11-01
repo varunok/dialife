@@ -20,7 +20,7 @@ export async function api(path, opts = {}) {
   if (session) headers.Authorization = 'Bearer ' + session.token;
   const r = await fetch(path, Object.assign({}, opts, { headers }));
   if (r.status === 401 && session) { logout(false); throw new Error('unauthorized'); }
-  if (!r.ok) throw new Error('http ' + r.status);
+  if (!r.ok) throw Object.assign(new Error('http ' + r.status), { status: r.status });
   return r.status === 204 ? null : r.json();
 }
 

@@ -33,7 +33,8 @@ export const Login = {
     try {
       r = await api('/api/web/login/' + c.id + '/poll', { method: 'POST', body: JSON.stringify({ secret: c.secret }) });
     } catch (e) {
-      r = { state: Date.now() > c.expires_at ? 'expired' : 'pending' };
+      // 404: the server no longer knows this code (it restarted): a new one at once
+      r = { state: e.status === 404 || Date.now() > c.expires_at ? 'expired' : 'pending' };
     }
     if (r.state === 'approved') {
       signIn({ token: r.token, expires: r.expires_at, by: r.by });

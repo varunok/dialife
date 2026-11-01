@@ -50,7 +50,7 @@ export function alarmRowClass(al) {
   return al.kind === 'low' || al.kind === 'predicted_low' ? 'alarm-low' : al.kind === 'stale' ? 'alarm-stale' : 'alarm-high';
 }
 
-function alarmName(al) { return hasText('kind_' + al.kind) ? t('kind_' + al.kind) : t('kind_other'); }
+export function alarmName(al) { return hasText('kind_' + al.kind) ? t('kind_' + al.kind) : t('kind_other'); }
 
 function alarmText(al) {
   return al.cleared_at ? t('alarmSpan', alarmName(al), clock(al.started_at), clock(al.cleared_at)) : t('alarmOn', alarmName(al), clock(al.started_at));

@@ -1,10 +1,14 @@
-.PHONY: test lint build build-linux run deploy
+.PHONY: test test-web lint build build-linux run deploy
 
 # the same version on every machine, no install needed
 GOLANGCI = go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0
 
-test: lint
+test: lint test-web
 	go test ./...
+
+# the web viewer's own tests; node is not needed anywhere else, so without it they are skipped
+test-web:
+	@if command -v node >/dev/null; then node --test internal/web/test/; else echo "node not found: web viewer tests skipped"; fi
 
 # go vet, staticcheck, errcheck, unused, gofmt, goimports (.golangci.yml)
 lint:
