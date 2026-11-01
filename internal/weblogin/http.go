@@ -36,7 +36,7 @@ type HTTP struct {
 	Bus   *bus.Bus
 	Now   func() time.Time
 
-	codes webCodes // the codes, in memory for their QR pictures
+	codes codeCache // the codes, in memory for their QR pictures
 }
 
 // Routes adds the requests: the browser's (no token yet), the parent's
@@ -54,13 +54,13 @@ func (h *HTTP) Routes(mux *http.ServeMux, anyRole, caregiver func(http.Handler) 
 }
 
 const (
-	webCodeTTL        = 2 * time.Minute
-	webScannedTTL     = 5 * time.Minute // once scanned, the parent has this long to choose and allow
-	webMaxPending     = 50              // unanswered codes at once: a cap on floods
-	webMaxSessionMins = 90 * 24 * 60
+	codeTTL        = 2 * time.Minute
+	scannedTTL     = 5 * time.Minute // once scanned, the parent has this long to choose and allow
+	maxPending     = 50              // unanswered codes at once: a cap on floods
+	maxSessionMins = 90 * 24 * 60
 )
 
-type webLoginStarted struct {
+type loginStarted struct {
 	ID        string `json:"id"`
 	Secret    string `json:"secret"` // the browser keeps it in memory and polls with it
 	ExpiresAt int64  `json:"expires_at"`
@@ -73,7 +73,7 @@ func (h *HTTP) start(w http.ResponseWriter, r *http.Request) {
 	if n, err := h.Store.CountPendingWebLogins(ctx, now); err != nil {
 		fail(w, "web login count", err)
 		return
-	} else if n >= webMaxPending {
+	} else if n >= maxPending {
 		httpx.Error(w, http.StatusTooManyRequests)
 		return
 	}
@@ -82,7 +82,7 @@ func (h *HTTP) start(w http.ResponseWriter, r *http.Request) {
 		UserAgent: truncate(r.UserAgent(), 300),
 		IP:        httpx.ClientIP(r),
 		CreatedAt: now.UnixMilli(),
-		ExpiresAt: now.Add(webCodeTTL).UnixMilli(),
+		ExpiresAt: now.Add(codeTTL).UnixMilli(),
 	}
 	code, secret := randomHex(20), randomHex(20)
 	l.CodeSHA, l.BrowserSHA = auth.Hash(code), auth.Hash(secret)
@@ -90,8 +90,8 @@ func (h *HTTP) start(w http.ResponseWriter, r *http.Request) {
 		fail(w, "web login insert", err)
 		return
 	}
-	h.codes.put(l.ID, code, now.Add(webCodeTTL))
-	httpx.WriteJSON(w, http.StatusOK, webLoginStarted{ID: l.ID, Secret: secret, ExpiresAt: l.ExpiresAt})
+	h.codes.put(l.ID, code, now.Add(codeTTL), now)
+	httpx.WriteJSON(w, http.StatusOK, loginStarted{ID: l.ID, Secret: secret, ExpiresAt: l.ExpiresAt})
 }
 
 // qr serves GET /api/web/login/{id}/qr.svg: the code to scan, while it lives.
@@ -113,11 +113,11 @@ func (h *HTTP) qr(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, qrSVG(c))
 }
 
-type webPollRequest struct {
+type pollRequest struct {
 	Secret string `json:"secret"`
 }
 
-type webPollResponse struct {
+type pollResponse struct {
 	State     string `json:"state"` // "pending" | "scanned" | "approved" | "rejected" | "expired"
 	Token     string `json:"token,omitempty"`
 	ExpiresAt int64  `json:"expires_at,omitempty"`
@@ -126,7 +126,7 @@ type webPollResponse struct {
 
 // poll serves POST /api/web/login/{id}/poll: has a parent answered yet?
 func (h *HTTP) poll(w http.ResponseWriter, r *http.Request) {
-	var req webPollRequest
+	var req pollRequest
 	if !decode(w, r, &req) {
 		return
 	}
@@ -143,7 +143,7 @@ func (h *HTTP) poll(w http.ResponseWriter, r *http.Request) {
 	}
 	switch {
 	case l.State == "rejected":
-		httpx.WriteJSON(w, http.StatusOK, webPollResponse{State: "rejected"})
+		httpx.WriteJSON(w, http.StatusOK, pollResponse{State: "rejected"})
 	case l.State == "approved":
 		token, err := auth.NewWebToken()
 		if err != nil {
@@ -160,25 +160,25 @@ func (h *HTTP) poll(w http.ResponseWriter, r *http.Request) {
 			by = d.Person
 		}
 		slog.Info("web session", "by", by, "minutes", l.Minutes, "agent", l.UserAgent)
-		httpx.WriteJSON(w, http.StatusOK, webPollResponse{State: "approved", Token: token, By: by,
+		httpx.WriteJSON(w, http.StatusOK, pollResponse{State: "approved", Token: token, By: by,
 			ExpiresAt: now.Add(time.Duration(l.Minutes) * time.Minute).UnixMilli()})
 	case l.State == "used" || now.UnixMilli() > l.ExpiresAt:
-		httpx.WriteJSON(w, http.StatusOK, webPollResponse{State: "expired"})
+		httpx.WriteJSON(w, http.StatusOK, pollResponse{State: "expired"})
 	case l.ScannedAt > 0:
 		// a parent has it on the phone: keep this code, it lives until they answer
-		httpx.WriteJSON(w, http.StatusOK, webPollResponse{State: "scanned", ExpiresAt: l.ExpiresAt})
+		httpx.WriteJSON(w, http.StatusOK, pollResponse{State: "scanned", ExpiresAt: l.ExpiresAt})
 	default:
-		httpx.WriteJSON(w, http.StatusOK, webPollResponse{State: "pending", ExpiresAt: l.ExpiresAt})
+		httpx.WriteJSON(w, http.StatusOK, pollResponse{State: "pending", ExpiresAt: l.ExpiresAt})
 	}
 }
 
-type webCodeRequest struct {
+type codeRequest struct {
 	ID      string `json:"id"`
 	Code    string `json:"code"`
 	Minutes int    `json:"minutes,omitempty"`
 }
 
-type webLoginInfo struct {
+type loginInfo struct {
 	ID        string `json:"id"`
 	Browser   string `json:"browser"`
 	OS        string `json:"os"`
@@ -197,25 +197,25 @@ func (h *HTTP) inspect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// scanned: the parent now needs time to choose, and the browser must not swap the code
-	exp := h.Now().Add(webScannedTTL).UnixMilli()
+	exp := h.Now().Add(scannedTTL).UnixMilli()
 	if err := h.Store.ScanWebLogin(r.Context(), l.ID, h.Now(), exp); err != nil {
 		fail(w, "web login scan", err)
 		return
 	}
 	h.codes.extend(l.ID, time.UnixMilli(exp))
 	b, o := describeAgent(l.UserAgent)
-	httpx.WriteJSON(w, http.StatusOK, webLoginInfo{ID: l.ID, Browser: b, OS: o, ExpiresAt: max(l.ExpiresAt, exp), MaxMin: webMaxSessionMins,
+	httpx.WriteJSON(w, http.StatusOK, loginInfo{ID: l.ID, Browser: b, OS: o, ExpiresAt: max(l.ExpiresAt, exp), MaxMin: maxSessionMins,
 		IP: l.IP, SameNetwork: l.IP != "" && l.IP == httpx.ClientIP(r)})
 }
 
 // approve serves POST /api/web/approve {id, code, minutes}.
 func (h *HTTP) approve(w http.ResponseWriter, r *http.Request) {
-	var req webCodeRequest
+	var req codeRequest
 	l, ok := h.pendingLogin(w, r, &req)
 	if !ok {
 		return
 	}
-	if req.Minutes < 1 || req.Minutes > webMaxSessionMins {
+	if req.Minutes < 1 || req.Minutes > maxSessionMins {
 		httpx.Error(w, http.StatusBadRequest)
 		return
 	}
@@ -248,8 +248,8 @@ func (h *HTTP) decideLogin(w http.ResponseWriter, r *http.Request, l store.WebLo
 }
 
 // pendingLogin finds the unexpired, unanswered code a scanned QR carries.
-func (h *HTTP) pendingLogin(w http.ResponseWriter, r *http.Request, into *webCodeRequest) (store.WebLogin, bool) {
-	var req webCodeRequest
+func (h *HTTP) pendingLogin(w http.ResponseWriter, r *http.Request, into *codeRequest) (store.WebLogin, bool) {
+	var req codeRequest
 	if into == nil {
 		into = &req
 	}
@@ -277,7 +277,7 @@ type LogoutEvent struct {
 	Session int64 `json:"session"`
 }
 
-type webSessionView struct {
+type sessionView struct {
 	ID         int64  `json:"id"`
 	Browser    string `json:"browser"`
 	OS         string `json:"os"`
@@ -294,10 +294,10 @@ func (h *HTTP) sessions(w http.ResponseWriter, r *http.Request) {
 		fail(w, "web sessions", err)
 		return
 	}
-	out := []webSessionView{}
+	out := []sessionView{}
 	for _, s := range ss {
 		b, o := describeAgent(s.UserAgent)
-		out = append(out, webSessionView{ID: s.ID, Browser: b, OS: o, By: s.ApproverName, CreatedAt: s.CreatedAt, ExpiresAt: s.ExpiresAt, LastSeenAt: s.LastSeenAt})
+		out = append(out, sessionView{ID: s.ID, Browser: b, OS: o, By: s.ApproverName, CreatedAt: s.CreatedAt, ExpiresAt: s.ExpiresAt, LastSeenAt: s.LastSeenAt})
 	}
 	httpx.WriteJSON(w, http.StatusOK, out)
 }
@@ -398,33 +398,33 @@ func truncate(s string, n int) string {
 	return s
 }
 
-// webCodes keeps each code in memory only for drawing its QR picture; the
+// codeCache keeps each code in memory only for drawing its QR picture; the
 // database has just its hash. A restart forgets them: the page asks again.
-type webCodes struct {
+type codeCache struct {
 	mu sync.Mutex
-	m  map[string]webCode
+	m  map[string]cachedCode
 }
 
-type webCode struct {
+type cachedCode struct {
 	code    string
 	expires time.Time
 }
 
-func (c *webCodes) put(id, code string, expires time.Time) {
+func (c *codeCache) put(id, code string, expires, now time.Time) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.m == nil {
-		c.m = map[string]webCode{}
+		c.m = map[string]cachedCode{}
 	}
 	for k, v := range c.m {
-		if time.Now().After(v.expires.Add(time.Minute)) {
+		if now.After(v.expires.Add(time.Minute)) {
 			delete(c.m, k)
 		}
 	}
-	c.m[id] = webCode{code, expires}
+	c.m[id] = cachedCode{code, expires}
 }
 
-func (c *webCodes) get(id string, now time.Time) (string, bool) {
+func (c *codeCache) get(id string, now time.Time) (string, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	v, ok := c.m[id]
@@ -434,7 +434,7 @@ func (c *webCodes) get(id string, now time.Time) (string, bool) {
 	return v.code, true
 }
 
-func (c *webCodes) extend(id string, expires time.Time) {
+func (c *codeCache) extend(id string, expires time.Time) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if v, ok := c.m[id]; ok && expires.After(v.expires) {
@@ -443,7 +443,7 @@ func (c *webCodes) extend(id string, expires time.Time) {
 	}
 }
 
-func (c *webCodes) drop(id string) {
+func (c *codeCache) drop(id string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	delete(c.m, id)
