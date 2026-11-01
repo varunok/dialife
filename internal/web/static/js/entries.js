@@ -65,7 +65,7 @@ export function entryText(tr) {
   if (tr.duration) return t('activity') + ' · ' + t('intensity_' + (tr.intensity || 'moderate')) + ' · ' + tr.duration + ' ' + t('minutes');
   const parts = [];
   if ((tr.insulin || 0) > 0) parts.push((tr.insulin_name || t(isBasal(tr) ? 'basal' : 'rapid')) + ' ' + amount(tr.insulin) + ' ' + t('insulinU'));
-  if ((tr.carbs || 0) > 0) parts.push(amount(tr.carbs) + ' ' + t('carbsG'));
+  if ((tr.carbs || 0) > 0) parts.push(t('carbsAmount', amount(tr.carbs)));
   if (!parts.length) return tr.notes || t('note');
   return parts.join(' · ');
 }

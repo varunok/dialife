@@ -72,7 +72,7 @@ test('long-acting insulin by its type, else by the Nightscout event', () => {
 });
 
 test('an entry reads as insulin and carbs, activity, or its note', () => {
-  assert.equal(entryText({ insulin: 2, insulin_name: 'Humalog', carbs: 45 }), 'Humalog 2 u · 45 g');
+  assert.equal(entryText({ insulin: 2, insulin_name: 'Humalog', carbs: 45 }), 'Humalog 2 u · Carbs 45 g');
   assert.equal(entryText({ insulin: 1.5, insulin_type: 'basal' }), 'Long-acting 1.5 u');
   assert.equal(entryText({ notes: 'sick' }), 'sick');
   assert.match(entryText({ duration: 30, intensity: 'vigorous' }), /30 min$/);
