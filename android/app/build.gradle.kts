@@ -16,8 +16,8 @@ android {
         applicationId = "com.lumenarcanus.dialife"
         minSdk = 31
         targetSdk = 36
-        versionCode = 8
-        versionName = "0.5.2"
+        versionCode = 9
+        versionName = "0.5.3"
     }
 
     // Two builds, never mixed: "release" for the family's own phones, signed with the
