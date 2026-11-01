@@ -42,6 +42,7 @@ import com.lumenarcanus.dialife.data.Prefs
 import com.lumenarcanus.dialife.data.Series
 import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.feature.entry.basalColor
+import kotlin.math.round
 
 /**
  * What a tapped chart mark is, under the chart: a meal's dishes and how its
@@ -131,7 +132,7 @@ private fun DishLine(item: FoodItem) {
         )
         Spacer(Modifier.width(10.dp))
         Text(
-            (if (item.suggested) "≈ " else "") + (item.carbs?.let { kotlin.math.round(it).toInt().toString() } ?: "—") + " $g",
+            (if (item.suggested) "≈ " else "") + (item.carbs?.let { round(it).toInt().toString() } ?: "—") + " $g",
             style = GlucoseHero.copy(fontSize = 14.sp, lineHeight = 18.sp, color = c.carbs),
             modifier = Modifier.alignByBaseline()
         )

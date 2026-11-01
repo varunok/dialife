@@ -38,6 +38,7 @@ import com.lumenarcanus.dialife.data.DoseSettings
 import com.lumenarcanus.dialife.data.PlannedDose
 import com.lumenarcanus.dialife.feature.meal.MealDraft
 import com.lumenarcanus.dialife.feature.meal.MealDrafts
+import java.util.Locale
 
 /** The worked-out dose, line by line, with what to look at before injecting. */
 @Composable
@@ -45,7 +46,7 @@ internal fun DoseCard(
     m: DoseCalc.Meal,
     dose: DoseSettings,
     units: Units,
-    locale: java.util.Locale,
+    locale: Locale,
     earlier: Int,
     given: Double,
     typedMeter: String,
@@ -72,7 +73,7 @@ internal fun DoseCard(
 
 /** How the dose was worked out: carbs ÷ ratio, the correction (or why none), the total, what was given already. */
 @Composable
-private fun DoseWorkings(m: DoseCalc.Meal, dose: DoseSettings, units: Units, locale: java.util.Locale, earlier: Int, given: Double) {
+private fun DoseWorkings(m: DoseCalc.Meal, dose: DoseSettings, units: Units, locale: Locale, earlier: Int, given: Double) {
     val c = DiaTheme.colors
     val u = stringResource(R.string.unit_insulin)
     fun f(x: Double) = formatAmount(x, locale)
@@ -141,7 +142,7 @@ private fun FreshMeterField(typedMeter: String, units: Units, onMeter: (String) 
 
 /** What to inject (more, when some was given). */
 @Composable
-private fun ToGive(m: DoseCalc.Meal, given: Double, locale: java.util.Locale) {
+private fun ToGive(m: DoseCalc.Meal, given: Double, locale: Locale) {
     val c = DiaTheme.colors
     val u = stringResource(R.string.unit_insulin)
     fun f(x: Double) = formatAmount(x, locale)
@@ -174,7 +175,7 @@ private fun ToGive(m: DoseCalc.Meal, given: Double, locale: java.util.Locale) {
 
 /** Plan the dose (it waits on home until given), a plan already open, or why it cannot be planned. */
 @Composable
-private fun PlanChoice(m: DoseCalc.Meal, openPlan: PlannedDose?, plan: Boolean, onPlan: (Boolean) -> Unit, locale: java.util.Locale) {
+private fun PlanChoice(m: DoseCalc.Meal, openPlan: PlannedDose?, plan: Boolean, onPlan: (Boolean) -> Unit, locale: Locale) {
     val c = DiaTheme.colors
     fun f(x: Double) = formatAmount(x, locale)
     when {

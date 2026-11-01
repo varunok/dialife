@@ -25,6 +25,7 @@ import com.lumenarcanus.dialife.feature.stats.StatsLoad
 import com.lumenarcanus.dialife.feature.stats.StatsScreen
 import com.lumenarcanus.dialife.feature.stats.StatsUiState
 import java.util.TimeZone
+import kotlin.math.sin
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -57,7 +58,7 @@ class MoreShots {
         from = now - 14 * 86_400_000L, to = now, days = 14, count = 3900, coverage = 97.0, mean = 152.0, sd = 48.0, cv = 31.6, gmi = 7.0,
         zones = Zones(veryLow = 0.5, low = 3.0, inRange = 68.0, high = 22.0, veryHigh = 6.5), tir70 = 68.0, hypos = 4,
         agp = (0 until 96).map { i ->
-            val m = 150 + (40 * kotlin.math.sin(i / 15.0)).toInt()
+            val m = 150 + (40 * sin(i / 15.0)).toInt()
             AgpPoint(i * 15, m - 60, m - 30, m, m + 35, m + 80, 14)
         },
         daily = (0 until 14).map {

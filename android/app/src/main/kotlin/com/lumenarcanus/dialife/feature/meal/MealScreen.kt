@@ -39,6 +39,7 @@ import com.lumenarcanus.dialife.feature.entry.parseMeter
 import com.lumenarcanus.dialife.feature.meal.MealDraft
 import com.lumenarcanus.dialife.feature.meal.MealDrafts
 import com.lumenarcanus.dialife.live.TreatmentQueue
+import kotlinx.coroutines.delay
 
 /**
  * The meal: every dish its own line, the rapid dose worked out from the
@@ -86,7 +87,7 @@ fun MealScreen(
     }
     LaunchedEffect(form.removed) {
         if (form.removed != null) {
-            kotlinx.coroutines.delay(6000)
+            delay(6000)
             form.removed = null
         }
     }

@@ -1,6 +1,9 @@
 package com.lumenarcanus.dialife.widget
 
 import android.content.Context
+import android.content.res.Configuration
+import android.graphics.Bitmap
+import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -16,6 +19,7 @@ import androidx.glance.LocalSize
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.cornerRadius
@@ -73,7 +77,7 @@ private data class WidgetData(
     val description: String,
     val forecast: String? = null, // "за 30 хв ≈ 243"
     // the last 3 h
-    val chart: android.graphics.Bitmap? = null
+    val chart: Bitmap? = null
 )
 
 /**
@@ -142,8 +146,8 @@ class GlucoseWidget : GlanceAppWidget() {
             context.getString(R.string.forecast_30, formatGlucose(it.sgv, units, locale))
         }
         val dark =
-            (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
-                android.content.res.Configuration.UI_MODE_NIGHT_YES
+            (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+                Configuration.UI_MODE_NIGHT_YES
         return WidgetData(
             value, unit, Notifications.arrowOf(bg.direction), delta, time, stateText, band, stale, alarm,
             description = listOfNotNull(alarm, "$value $unit", delta, time, stateText, forecast).joinToString(", "),
@@ -160,8 +164,8 @@ class GlucoseWidget : GlanceAppWidget() {
 
         /** Publishes the picker previews (Android 15+); the system rate-limits it, so once per app start is plenty. */
         suspend fun publishPreviews(context: Context) {
-            if (android.os.Build.VERSION.SDK_INT >= 35) {
-                runCatching { androidx.glance.appwidget.GlanceAppWidgetManager(context).setWidgetPreviews(GlucoseWidgetReceiver::class) }
+            if (Build.VERSION.SDK_INT >= 35) {
+                runCatching { GlanceAppWidgetManager(context).setWidgetPreviews(GlucoseWidgetReceiver::class) }
             }
         }
 

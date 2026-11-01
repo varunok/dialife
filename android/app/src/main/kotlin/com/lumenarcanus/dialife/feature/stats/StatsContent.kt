@@ -1,5 +1,6 @@
 package com.lumenarcanus.dialife.feature.stats
 
+import android.text.format.DateUtils
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,12 +25,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -50,6 +54,9 @@ import com.lumenarcanus.dialife.data.AgpPoint
 import com.lumenarcanus.dialife.data.DayTotal
 import com.lumenarcanus.dialife.data.Stats
 import com.lumenarcanus.dialife.feature.entry.basalColor
+import java.time.LocalDate
+import java.time.ZoneId
+import java.util.Calendar
 import java.util.Locale
 
 @Composable
@@ -133,16 +140,16 @@ private fun ClinicNumbers(s: Stats, units: Units) {
     }
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.height(IntrinsicSize.Min)) {
         Metric(stringResource(R.string.stats_tir70), pct(s.tir70), stringResource(R.string.stats_tir70_hint), Modifier.weight(1f))
-        val readings = androidx.compose.ui.res.pluralStringResource(R.plurals.stats_readings, s.count, s.count)
+        val readings = pluralStringResource(R.plurals.stats_readings, s.count, s.count)
         // a young history makes coverage look alarming: say when the data starts
         val since = s.first?.takeIf { it - s.from > 6 * 3_600_000L }?.let {
             stringResource(
                 R.string.stats_since,
-                android.text.format.DateUtils.formatDateTime(
-                    androidx.compose.ui.platform.LocalContext.current,
+                DateUtils.formatDateTime(
+                    LocalContext.current,
                     it,
-                    android.text.format.DateUtils.FORMAT_SHOW_DATE or android.text.format.DateUtils.FORMAT_NO_YEAR or
-                        android.text.format.DateUtils.FORMAT_ABBREV_MONTH
+                    DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_NO_YEAR or
+                        DateUtils.FORMAT_ABBREV_MONTH
                 )
             )
         }
@@ -163,20 +170,20 @@ private fun DailyPattern(s: Stats, units: Units) {
         Text(stringResource(R.string.stats_agp), color = c.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         // folding fewer than ~3 days onto one makes a "day" out of yesterday's evening and this morning
         val dataDays = (s.to - (s.first ?: s.from)) / 86_400_000.0
-        val ctx = androidx.compose.ui.platform.LocalContext.current
+        val ctx = LocalContext.current
         if (dataDays <= 1.0) {
             // everything fits in one day: show it in order, starting from the oldest reading,
             // so yesterday evening comes before this morning instead of after "now"
-            val cal = java.util.Calendar.getInstance().apply { timeInMillis = s.first ?: s.from }
-            val start = (cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)) / 30 * 30
+            val cal = Calendar.getInstance().apply { timeInMillis = s.first ?: s.from }
+            val start = (cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)) / 30 * 30
             Text(stringResource(R.string.stats_agp_short), color = c.textMuted, fontSize = 13.sp)
             Agp(s, units, Modifier.fillMaxWidth().height(220.dp), startMinute = start)
         } else if (dataDays < 3) {
-            val since = android.text.format.DateUtils.formatDateTime(
+            val since = DateUtils.formatDateTime(
                 ctx,
                 s.first ?: s.from,
-                android.text.format.DateUtils.FORMAT_SHOW_DATE or android.text.format.DateUtils.FORMAT_NO_YEAR or
-                    android.text.format.DateUtils.FORMAT_ABBREV_MONTH
+                DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_NO_YEAR or
+                    DateUtils.FORMAT_ABBREV_MONTH
             )
             Text(stringResource(R.string.stats_agp_wait, since), color = c.textMuted, fontSize = 14.sp)
         } else {
@@ -190,7 +197,7 @@ private fun DailyPattern(s: Stats, units: Units) {
 @Composable
 internal fun DailyTotals(s: Stats) {
     val c = DiaTheme.colors
-    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val ctx = LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
     fun n(v: Double) = formatAmount(v, locale)
     val basal = basalColor(c.isDark)
@@ -239,12 +246,12 @@ internal fun DailyTotals(s: Stats) {
         )
         s.daily.forEach { d ->
             val day = runCatching {
-                val t = java.time.LocalDate.parse(d.date).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
-                android.text.format.DateUtils.formatDateTime(
+                val t = LocalDate.parse(d.date).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                DateUtils.formatDateTime(
                     ctx,
                     t,
-                    android.text.format.DateUtils.FORMAT_SHOW_DATE or android.text.format.DateUtils.FORMAT_NO_YEAR or
-                        android.text.format.DateUtils.FORMAT_ABBREV_MONTH
+                    DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_NO_YEAR or
+                        DateUtils.FORMAT_ABBREV_MONTH
                 )
             }.getOrDefault(d.date)
             RowOf(
@@ -337,7 +344,7 @@ internal fun Agp(s: Stats, units: Units, modifier: Modifier, startMinute: Int = 
         fun y(v: Int) = topPad + (h - topPad) * (1 - (v - lo) / (hi - lo))
         val label = TextStyle(fontFamily = PlexMono, fontSize = 10.sp, color = c.textFaint)
 
-        drawRect(c.inRange.copy(alpha = 0.07f), Offset(0f, y(th.high)), androidx.compose.ui.geometry.Size(w, y(th.low) - y(th.high)))
+        drawRect(c.inRange.copy(alpha = 0.07f), Offset(0f, y(th.high)), Size(w, y(th.low) - y(th.high)))
         val dash = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 5.dp.toPx()))
         drawLine(c.high.copy(alpha = 0.5f), Offset(0f, y(th.high)), Offset(w, y(th.high)), 1.dp.toPx(), pathEffect = dash)
         drawLine(c.low.copy(alpha = 0.55f), Offset(0f, y(th.low)), Offset(w, y(th.low)), 1.dp.toPx(), pathEffect = dash)

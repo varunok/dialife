@@ -3,10 +3,14 @@ package com.lumenarcanus.dialife.feature.questions
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.FlowRowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,7 +36,7 @@ import com.lumenarcanus.dialife.data.Treatment
  * "Did you forget to log?" Everyone answers; whoever has answered sees who is
  * still to; when the answers differ, the card shows what each said and asks again.
  */
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun QuestionCard(
     q: Question,
@@ -45,7 +49,7 @@ internal fun QuestionCard(
     onLink: (Treatment) -> Unit = {}
 ) {
     val c = DiaTheme.colors
-    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val ctx = LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
     fun g(v: Int) = formatGlucose(v, units, locale)
     val rise = q.kind == "rise"
@@ -89,7 +93,7 @@ internal fun QuestionCard(
         val entry = q.treatmentId?.takeIf { !double }?.let { id -> treatments.firstOrNull { it.id == id } }
         entry?.let { EnteredFor(it) }
         if (q.asks(myId)) {
-            androidx.compose.foundation.layout.FlowRow(
+            FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -105,7 +109,7 @@ internal fun QuestionCard(
 @Composable
 private fun EnteredFor(tr: Treatment) {
     val c = DiaTheme.colors
-    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val ctx = LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
     val what = listOfNotNull(
         tr.carbs?.takeIf { it > 0 }?.let {
@@ -140,9 +144,9 @@ internal fun doseBeforeFood(q: Question, treatments: List<Treatment>): Pair<Trea
 }
 
 /** The answers this question takes, from this phone. */
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun androidx.compose.foundation.layout.FlowRowScope.AnswerButtons(
+private fun FlowRowScope.AnswerButtons(
     q: Question,
     entry: Treatment?,
     treatments: List<Treatment>,
@@ -151,12 +155,12 @@ private fun androidx.compose.foundation.layout.FlowRowScope.AnswerButtons(
     onLink: (Treatment) -> Unit
 ) {
     val c = DiaTheme.colors
-    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val ctx = LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
     val rise = q.kind == "rise"
     if (q.kind == "double") {
         Button(onClick = { onAnswer("one", null) }) { Text(stringResource(R.string.q_btn_one)) }
-        androidx.compose.material3.OutlinedButton(onClick = {
+        OutlinedButton(onClick = {
             onAnswer("two", null)
         }) { Text(stringResource(R.string.q_btn_two), color = c.text) }
         return
@@ -178,24 +182,24 @@ private fun androidx.compose.foundation.layout.FlowRowScope.AnswerButtons(
                 )
             )
         }
-        androidx.compose.material3.OutlinedButton(onClick = onLog) {
+        OutlinedButton(onClick = onLog) {
             Text(stringResource(R.string.q_btn_insulin), color = c.text)
         }
     } else {
         Button(onClick = onLog) { Text(stringResource(if (rise) R.string.q_btn_food else R.string.q_btn_insulin)) }
     }
     if (rise) {
-        androidx.compose.material3.OutlinedButton(onClick = {
+        OutlinedButton(onClick = {
             onAnswer("food_unknown", null)
         }) { Text(stringResource(R.string.q_btn_food_unknown), color = c.text) }
     }
     // asleep she eats nothing: the rise is not food, and no more questions about it for a while
     if (rise) {
-        androidx.compose.material3.OutlinedButton(onClick = {
+        OutlinedButton(onClick = {
             onAnswer("asleep", null)
         }) { Text(stringResource(R.string.q_btn_asleep), color = c.text) }
     }
-    androidx.compose.material3.OutlinedButton(onClick = { onAnswer("nothing", null) }) {
+    OutlinedButton(onClick = { onAnswer("nothing", null) }) {
         Text(
             stringResource(
                 if (q.kind == "bolus") {
@@ -213,7 +217,7 @@ private fun androidx.compose.foundation.layout.FlowRowScope.AnswerButtons(
 @Composable
 internal fun WatchCard(q: Question) {
     val c = DiaTheme.colors
-    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val ctx = LocalContext.current
     Column(
         Modifier.fillMaxWidth().background(c.lowContainer, RoundedCornerShape(22.dp)).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)

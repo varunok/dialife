@@ -15,14 +15,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,7 +48,7 @@ internal fun Tiles(state: HomeState, onOpenStats: () -> Unit, onOpenLog: () -> U
         )
     )
     // three tiles in a row cut words in half with a large system font: then one per line
-    if (androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.3f) {
+    if (LocalDensity.current.fontScale > 1.3f) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             tiles.forEach { (label, value, open) -> WideTile(label, value, open) }
         }
@@ -90,13 +93,13 @@ internal fun Tile(label: String, value: String, modifier: Modifier) {
         Text(label, color = c.textMuted, fontSize = 12.sp)
         Spacer(Modifier.weight(1f))
         // "Todo tranquilo" stays whole: up to two lines, shrinking rather than being cut
-        androidx.compose.foundation.text.BasicText(
+        BasicText(
             value,
-            style = androidx.compose.material3.LocalTextStyle.current.merge(
-                androidx.compose.ui.text.TextStyle(color = c.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+            style = LocalTextStyle.current.merge(
+                TextStyle(color = c.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
             ),
             maxLines = 2,
-            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 13.sp, maxFontSize = 20.sp, stepSize = 0.5.sp)
+            autoSize = TextAutoSize.StepBased(minFontSize = 13.sp, maxFontSize = 20.sp, stepSize = 0.5.sp)
         )
     }
 }

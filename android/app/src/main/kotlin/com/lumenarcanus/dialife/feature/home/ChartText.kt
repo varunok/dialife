@@ -1,5 +1,6 @@
 package com.lumenarcanus.dialife.feature.home
 
+import android.text.format.DateFormat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
@@ -59,7 +60,7 @@ internal class ChartText(
 internal fun rememberChartText(units: Units): ChartText {
     val context = LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
-    val timeFormat = remember(locale) { android.text.format.DateFormat.getTimeFormat(context) }
+    val timeFormat = remember(locale) { DateFormat.getTimeFormat(context) }
     return ChartText(
         locale = locale,
         units = units,

@@ -8,6 +8,7 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,7 +20,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -36,12 +40,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -153,10 +162,10 @@ internal fun AlarmScreen(
     val background = if (help) Color(0xFF241605) else c.urgentBackground
     val locale = ctx.resources.configuration.locales[0]
 
-    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val haptics = LocalHapticFeedback.current
     fun act(action: String) {
         if (busy) return
-        haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.Confirm)
+        haptics.performHapticFeedback(HapticFeedbackType.Confirm)
         busy = true
         failed = false
         scope.launch {
@@ -164,8 +173,8 @@ internal fun AlarmScreen(
                 // took it: open "you are handling" (after unlock)
                 if (action == ActionReceiver.HANDLE || action == ActionReceiver.QUIET) {
                     ctx.startActivity(
-                        android.content.Intent(ctx, MainActivity::class.java)
-                            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                        Intent(ctx, MainActivity::class.java)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                             .putExtra(MainActivity.EXTRA_HANDLING, alarm.id)
                     )
                 }
@@ -185,7 +194,7 @@ internal fun AlarmScreen(
     ) {
         // the details scroll; the buttons below never do, whatever the font size
         Column(
-            Modifier.weight(1f).verticalScroll(androidx.compose.foundation.rememberScrollState()),
+            Modifier.weight(1f).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Text(
@@ -233,8 +242,8 @@ internal fun AlarmScreen(
         TextButton(
             onClick = {
                 ctx.startActivity(
-                    android.content.Intent(ctx, MainActivity::class.java)
-                        .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    Intent(ctx, MainActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 )
             },
             modifier = Modifier.fillMaxWidth()
@@ -250,26 +259,26 @@ private fun AlarmReading(sgv: Int, accent: Color, state: StateResponse?, units: 
     val locale = LocalContext.current.resources.configuration.locales[0]
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         Box(Modifier.size(250.dp), contentAlignment = Alignment.Center) {
-            androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+            Canvas(Modifier.fillMaxSize()) {
                 drawCircle(accent.copy(alpha = 0.18f), radius = size.minDimension / 2)
                 drawCircle(
                     accent,
                     radius = size.minDimension / 2 - 5.dp.toPx(),
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(8.dp.toPx())
+                    style = Stroke(8.dp.toPx())
                 )
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 // fits the ring even with the largest system font
-                androidx.compose.foundation.text.BasicText(
+                BasicText(
                     formatGlucose(sgv, units, locale),
                     style = GlucoseHero.copy(
                         fontSize = 92.sp,
                         lineHeight = 92.sp,
                         color = c.text,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        textAlign = TextAlign.Center
                     ),
                     maxLines = 1,
-                    autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(
+                    autoSize = TextAutoSize.StepBased(
                         minFontSize = 40.sp,
                         maxFontSize = 92.sp,
                         stepSize = 4.sp
@@ -293,9 +302,9 @@ private fun AlarmReading(sgv: Int, accent: Color, state: StateResponse?, units: 
                     fontSize = 18.sp,
                     maxLines = 1,
                     modifier = Modifier.width(170.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    textAlign = TextAlign.Center,
                     softWrap = false,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -306,7 +315,7 @@ private fun AlarmReading(sgv: Int, accent: Color, state: StateResponse?, units: 
             color = c.textMuted,
             fontSize = 16.sp,
             modifier = Modifier.fillMaxWidth(),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            textAlign = TextAlign.Center
         )
     }
 }

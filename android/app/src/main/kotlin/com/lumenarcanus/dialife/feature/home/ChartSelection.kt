@@ -1,6 +1,7 @@
 package com.lumenarcanus.dialife.feature.home
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.unit.dp
@@ -13,6 +14,7 @@ import com.lumenarcanus.dialife.data.MeterModel
 import com.lumenarcanus.dialife.data.Question
 import com.lumenarcanus.dialife.data.Treatment
 import kotlin.math.abs
+import kotlin.math.round
 
 /**
  * What is picked, told over the chart: a crosshair and a tooltip for a reading,
@@ -28,7 +30,7 @@ internal fun DrawScope.drawSelection(
     estimate: MeterModel?,
     entryTooltip: Boolean
 ) {
-    fun tip(lines: List<String>, ax: Float, ay: Float, border: androidx.compose.ui.graphics.Color) =
+    fun tip(lines: List<String>, ax: Float, ay: Float, border: Color) =
         tooltip(measurer, lines, ax, ay, s.plotW, s.plotH, c.background, border, c.text, c.textMuted)
 
     when (pick) {
@@ -108,7 +110,7 @@ private fun entryLines(tr: Treatment, text: ChartText): List<String> {
         ?: amounts.ifBlank { tr.notes ?: text.noteLabel }
     val dishes = tr.foodItems.orEmpty().map { f ->
         listOfNotNull(f.name, f.portion?.takeIf { it.isNotBlank() }).joinToString(", ") +
-            (f.carbs?.let { " — " + (if (f.suggested) "≈ " else "") + kotlin.math.round(it).toInt() + " ${text.unitCarbs}" } ?: "")
+            (f.carbs?.let { " — " + (if (f.suggested) "≈ " else "") + round(it).toInt() + " ${text.unitCarbs}" } ?: "")
     }
     return listOfNotNull(what) + dishes + listOfNotNull(
         text.corrLabel.takeIf { tr.insulinRole == "corr" && (tr.insulin ?: 0.0) > 0 },

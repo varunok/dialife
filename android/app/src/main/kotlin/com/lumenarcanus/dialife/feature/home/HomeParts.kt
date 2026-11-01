@@ -1,5 +1,8 @@
 package com.lumenarcanus.dialife.feature.home
 
+import android.app.Activity
+import android.content.pm.ActivityInfo
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,10 +26,12 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,9 +41,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.feature.entry.InsulinSigns
@@ -53,19 +62,19 @@ import com.lumenarcanus.dialife.feature.entry.kindLook
 @Composable
 internal fun FullScreenChart(onClose: () -> Unit, content: @Composable () -> Unit) {
     val c = DiaTheme.colors
-    val activity = androidx.compose.ui.platform.LocalContext.current as? android.app.Activity
-    androidx.compose.runtime.DisposableEffect(activity) {
+    val activity = LocalContext.current as? Activity
+    DisposableEffect(activity) {
         val window = activity?.window
-        val bars = window?.let { androidx.core.view.WindowCompat.getInsetsController(it, it.decorView) }
-        activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        bars?.systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        bars?.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+        val bars = window?.let { WindowCompat.getInsetsController(it, it.decorView) }
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        bars?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        bars?.hide(WindowInsetsCompat.Type.systemBars())
         onDispose {
-            activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-            bars?.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            bars?.show(WindowInsetsCompat.Type.systemBars())
         }
     }
-    androidx.activity.compose.BackHandler(onBack = onClose)
+    BackHandler(onBack = onClose)
     Box(
         Modifier
             .fillMaxSize()
@@ -212,15 +221,15 @@ internal fun ActionButton(kind: TreatmentKind, modifier: Modifier, small: Boolea
         }
         // the label stays whole: past what the layout allows (a very large font), it shrinks rather than being cut
         val label = @Composable { m: Modifier ->
-            androidx.compose.foundation.text.BasicText(
+            BasicText(
                 stringResource(look.name),
                 modifier = m,
-                style = androidx.compose.material3.LocalTextStyle.current.merge(
-                    androidx.compose.ui.text.TextStyle(color = look.ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                style = LocalTextStyle.current.merge(
+                    TextStyle(color = look.ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 ),
                 maxLines = 1,
                 softWrap = false,
-                autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(
+                autoSize = TextAutoSize.StepBased(
                     minFontSize = 9.sp,
                     maxFontSize = 14.sp,
                     stepSize = 0.5.sp

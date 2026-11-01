@@ -1,5 +1,7 @@
 package com.lumenarcanus.dialife.feature.weblogin
 
+import android.content.Context
+import android.text.format.DateUtils
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -42,6 +44,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -51,6 +54,7 @@ import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.data.WebLoginInfo
 import com.lumenarcanus.dialife.data.WebSession
+import java.util.Locale
 
 private enum class SpanUnit(val minutes: Int, val label: Int) {
     Min(
@@ -91,7 +95,7 @@ fun WebLoginScreen(uiState: WebLoginUiState, onScan: () -> Unit, onDecide: (Int?
     }
 }
 
-private fun noteText(ctx: android.content.Context, note: WebLoginNote): String = when (note) {
+private fun noteText(ctx: Context, note: WebLoginNote): String = when (note) {
     WebLoginNote.NotCode -> ctx.getString(R.string.web_not_code)
     WebLoginNote.Expired -> ctx.getString(R.string.web_expired)
     WebLoginNote.Failed -> ctx.getString(R.string.err_network)
@@ -99,12 +103,12 @@ private fun noteText(ctx: android.content.Context, note: WebLoginNote): String =
     is WebLoginNote.Allowed -> ctx.getString(R.string.web_allowed, untilText(ctx, note.until))
 }
 
-private fun untilText(ctx: android.content.Context, ms: Long): String = android.text.format.DateUtils.formatDateTime(
+private fun untilText(ctx: Context, ms: Long): String = DateUtils.formatDateTime(
     ctx,
     ms,
-    android.text.format.DateUtils.FORMAT_SHOW_DATE or android.text.format.DateUtils.FORMAT_SHOW_TIME or
-        android.text.format.DateUtils.FORMAT_ABBREV_MONTH or
-        android.text.format.DateUtils.FORMAT_NO_YEAR
+    DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_TIME or
+        DateUtils.FORMAT_ABBREV_MONTH or
+        DateUtils.FORMAT_NO_YEAR
 )
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -205,7 +209,7 @@ private fun CountField(text: String, onText: (String) -> Unit, onLess: () -> Uni
             onValueChange = onText,
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            textStyle = androidx.compose.ui.text.TextStyle(
+            textStyle = TextStyle(
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center,
@@ -281,12 +285,12 @@ internal fun Sessions(sessions: List<WebSession>, now: Long = System.currentTime
                     Text("${s.browser} · ${s.os}", color = c.text, fontSize = 14.sp)
                     val seen =
                         s.lastSeenAt?.let {
-                            android.text.format.DateUtils.getRelativeTimeSpanString(
+                            DateUtils.getRelativeTimeSpanString(
                                 it,
                                 now,
-                                android.text.format.DateUtils.MINUTE_IN_MILLIS
+                                DateUtils.MINUTE_IN_MILLIS
                             ).toString()
-                                .replaceFirstChar { c -> c.lowercase(java.util.Locale.getDefault()) }
+                                .replaceFirstChar { c -> c.lowercase(Locale.getDefault()) }
                         } ?: never // mid-sentence
                     Text(
                         stringResource(R.string.web_session_line, s.by, untilText(ctx, s.expiresAt), seen),

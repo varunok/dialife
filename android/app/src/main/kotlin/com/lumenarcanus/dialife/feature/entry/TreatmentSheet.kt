@@ -1,5 +1,6 @@
 package com.lumenarcanus.dialife.feature.entry
 
+import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -35,13 +36,17 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -49,6 +54,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
@@ -68,6 +74,14 @@ import com.lumenarcanus.dialife.data.MealRules
 import com.lumenarcanus.dialife.data.Prefs
 import com.lumenarcanus.dialife.data.StateResponse
 import com.lumenarcanus.dialife.data.Treatment
+import java.time.Instant
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.round
 
 enum class TreatmentKind { Insulin, Food, Meter, Activity, Note }
 
@@ -79,9 +93,9 @@ private val BasalQuick = listOf(4.0, 6.0, 8.0, 10.0, 12.0, 14.0)
  * time is within 90 min and today's dose for it is not in yet; otherwise rapid.
  */
 fun guessInsulinType(now: Long, recent: List<Treatment>, basalTimes: List<Int> = Prefs.basalTimes): InsulinType {
-    val cal = java.util.Calendar.getInstance().apply { timeInMillis = now }
-    val minute = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)
-    val near = basalTimes.any { kotlin.math.abs(it - minute) <= 90 || kotlin.math.abs(it - minute) >= 1440 - 90 }
+    val cal = Calendar.getInstance().apply { timeInMillis = now }
+    val minute = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
+    val near = basalTimes.any { abs(it - minute) <= 90 || abs(it - minute) >= 1440 - 90 }
     val givenLately = recent.any {
         InsulinType.of(it.insulinType) == InsulinType.Basal &&
             (it.insulin ?: 0.0) > 0 &&
@@ -96,7 +110,7 @@ private val TimeShifts = listOf(0, 15, 30, 60) // minutes ago
 /** A typed glucometer value in mg/dL, or null when it is not a plausible reading. */
 fun parseMeter(text: String, units: Units): Int? {
     val v = text.trim().replace(',', '.').toDoubleOrNull() ?: return null
-    val mg = if (units == Units.Mmol) kotlin.math.round(v * 18.0).toInt() else kotlin.math.round(v).toInt()
+    val mg = if (units == Units.Mmol) round(v * 18.0).toInt() else round(v).toInt()
     return mg.takeIf { it in 20..600 }
 }
 
@@ -133,13 +147,13 @@ fun TreatmentSheet(
     val form = rememberTreatmentFormState(initialKind, editing, recent, units, initialTime)
     val kind = form.kind
     // long-acting is usually the same dose every day: start from the last one
-    androidx.compose.runtime.LaunchedEffect(form.insType) { form.startFromLastBasal() }
+    LaunchedEffect(form.insType) { form.startFromLastBasal() }
 
     // "… is giving insulin" on the other phones while this form is on insulin
     val live = state
     val announce = editing == null && kind == TreatmentKind.Insulin
     var announced by remember { mutableStateOf(false) }
-    androidx.compose.runtime.LaunchedEffect(announce, form.insType) {
+    LaunchedEffect(announce, form.insType) {
         if (announce) {
             onAnnounce(form.insType)
         } else if (announced) {
@@ -147,7 +161,7 @@ fun TreatmentSheet(
         }
         announced = announce
     }
-    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { if (announced) onAnnounce(null) } }
+    DisposableEffect(Unit) { onDispose { if (announced) onAnnounce(null) } }
     val others = live?.intents.orEmpty().filter { it.deviceId != myId && it.until > System.currentTimeMillis() }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheet, containerColor = c.surface) {
@@ -388,21 +402,21 @@ private fun EntryWhen(form: TreatmentFormState, isNew: Boolean) {
  * "23:40". Null for a time still to come, which no entry can have.
  */
 fun pickedTime(now: Long, hour: Int, minute: Int): Long? {
-    val cal = java.util.Calendar.getInstance().apply {
+    val cal = Calendar.getInstance().apply {
         timeInMillis = now
-        set(java.util.Calendar.HOUR_OF_DAY, hour)
-        set(java.util.Calendar.MINUTE, minute)
-        set(java.util.Calendar.SECOND, 0)
-        set(java.util.Calendar.MILLISECOND, 0)
-        if (timeInMillis - now > 12 * 3_600_000L) add(java.util.Calendar.DAY_OF_YEAR, -1)
+        set(Calendar.HOUR_OF_DAY, hour)
+        set(Calendar.MINUTE, minute)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+        if (timeInMillis - now > 12 * 3_600_000L) add(Calendar.DAY_OF_YEAR, -1)
     }
     return cal.timeInMillis.takeIf { it <= now + 60_000L }
 }
 
 /** Days from [t]'s calendar day to [now]'s: 0 today, 1 yesterday. */
 fun daysAgo(t: Long, now: Long): Int {
-    fun day(ms: Long) = java.time.Instant.ofEpochMilli(ms).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
-    return java.time.temporal.ChronoUnit.DAYS.between(day(t), day(now)).toInt()
+    fun day(ms: Long) = Instant.ofEpochMilli(ms).atZone(ZoneId.systemDefault()).toLocalDate()
+    return ChronoUnit.DAYS.between(day(t), day(now)).toInt()
 }
 
 /** "At 14:30", "Yesterday at 14:30", or with the date when older. */
@@ -413,7 +427,7 @@ fun atLabel(t: Long): String {
     return when (daysAgo(t, System.currentTimeMillis())) {
         0 -> stringResource(R.string.tr_at, clock)
         1 -> stringResource(R.string.tr_yesterday_at, clock)
-        else -> stringResource(R.string.tr_at, android.text.format.DateFormat.getDateFormat(ctx).format(java.util.Date(t)) + " " + clock)
+        else -> stringResource(R.string.tr_at, DateFormat.getDateFormat(ctx).format(Date(t)) + " " + clock)
     }
 }
 
@@ -422,11 +436,11 @@ fun atLabel(t: Long): String {
 @Composable
 fun TimeDialog(initial: Long, onPick: (Long) -> Unit, onDismiss: () -> Unit) {
     val ctx = LocalContext.current
-    val start = java.util.Calendar.getInstance().apply { timeInMillis = initial }
+    val start = Calendar.getInstance().apply { timeInMillis = initial }
     val state = rememberTimePickerState(
-        initialHour = start.get(java.util.Calendar.HOUR_OF_DAY),
-        initialMinute = start.get(java.util.Calendar.MINUTE),
-        is24Hour = android.text.format.DateFormat.is24HourFormat(ctx)
+        initialHour = start.get(Calendar.HOUR_OF_DAY),
+        initialMinute = start.get(Calendar.MINUTE),
+        is24Hour = DateFormat.is24HourFormat(ctx)
     )
     val picked = pickedTime(System.currentTimeMillis(), state.hour, state.minute)
     AlertDialog(
@@ -456,9 +470,9 @@ private fun Amount(
     max: Double,
     unit: String,
     quick: List<Double>,
-    accent: androidx.compose.ui.graphics.Color,
-    container: androidx.compose.ui.graphics.Color,
-    locale: java.util.Locale,
+    accent: Color,
+    container: Color,
+    locale: Locale,
     label: String,
     onChange: (Double) -> Unit
 ) {
@@ -518,8 +532,8 @@ private fun MeterField(text: String, units: Units, onChange: (String) -> Unit) {
     val c = DiaTheme.colors
     val unit = if (units == Units.Mmol) stringResource(R.string.unit_mmol) else "mg/dL"
     val label = stringResource(R.string.tr_meter_value, unit)
-    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
-    androidx.compose.runtime.LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     OutlinedTextField(
         value = text,
         onValueChange = { v -> onChange(v.filter { it.isDigit() || it == ',' || it == '.' }.take(5)) },
@@ -529,9 +543,9 @@ private fun MeterField(text: String, units: Units, onChange: (String) -> Unit) {
         suffix = { Text(unit, color = c.textMuted, fontSize = 18.sp) },
         keyboardOptions = KeyboardOptions(
             keyboardType = if (units == Units.Mmol) {
-                androidx.compose.ui.text.input.KeyboardType.Decimal
+                KeyboardType.Decimal
             } else {
-                androidx.compose.ui.text.input.KeyboardType.Number
+                KeyboardType.Number
             }
         ),
         modifier = Modifier.fillMaxWidth().focusRequester(focus)
@@ -539,6 +553,5 @@ private fun MeterField(text: String, units: Units, onChange: (String) -> Unit) {
 }
 
 /** Long-acting insulin's own colour: blue, so it never reads as the rapid one. */
-fun basalColor(dark: Boolean) = if (dark) androidx.compose.ui.graphics.Color(0xFF7FB2FF) else androidx.compose.ui.graphics.Color(0xFF1F5FCC)
-fun basalContainer(dark: Boolean) =
-    if (dark) androidx.compose.ui.graphics.Color(0xFF0E1C33) else androidx.compose.ui.graphics.Color(0xFFE3EDFF)
+fun basalColor(dark: Boolean) = if (dark) Color(0xFF7FB2FF) else Color(0xFF1F5FCC)
+fun basalContainer(dark: Boolean) = if (dark) Color(0xFF0E1C33) else Color(0xFFE3EDFF)

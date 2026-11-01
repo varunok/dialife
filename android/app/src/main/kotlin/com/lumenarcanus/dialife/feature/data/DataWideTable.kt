@@ -1,5 +1,6 @@
 package com.lumenarcanus.dialife.feature.data
 
+import android.app.Activity
 import android.content.pm.ActivityInfo
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -33,6 +34,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatAmount
@@ -103,15 +107,15 @@ internal fun WideTable(
 /** The table wants the whole screen sideways: landscape, system bars hidden, while it is shown. */
 @Composable
 private fun LandscapeWhileShown() {
-    val activity = LocalContext.current as? android.app.Activity
+    val activity = LocalContext.current as? Activity
     DisposableEffect(activity) {
-        val bars = activity?.window?.let { androidx.core.view.WindowCompat.getInsetsController(it, it.decorView) }
+        val bars = activity?.window?.let { WindowCompat.getInsetsController(it, it.decorView) }
         activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        bars?.systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        bars?.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+        bars?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        bars?.hide(WindowInsetsCompat.Type.systemBars())
         onDispose {
             activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-            bars?.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            bars?.show(WindowInsetsCompat.Type.systemBars())
         }
     }
 }

@@ -24,11 +24,12 @@ import com.lumenarcanus.dialife.data.StateResponse
 import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.data.Uploader
+import kotlin.math.sin
 
 // An evening like the mockups, for previews.
 fun sampleHomeUi(now: Long = 1_761_400_000_000L, dad: String = "Тато", mom: String = "Мама"): HomeUi {
     val t = (0 until 288).map { now - (287 - it) * 300_000L }
-    val v = t.indices.map { i -> (150 + 70 * kotlin.math.sin(i / 22.0) + 20 * kotlin.math.sin(i / 5.0)).toInt() }
+    val v = t.indices.map { i -> (150 + 70 * sin(i / 22.0) + 20 * sin(i / 5.0)).toInt() }
     val bg = Bg(sgv = v.last(), mills = t.last(), direction = "Flat", delta = v.last() - v[v.size - 2])
     val ar2 = Forecast(
         predicted = (1..6).map { ForecastPoint(now + it * 300_000L, bg.sgv + it) },

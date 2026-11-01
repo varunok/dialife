@@ -3,6 +3,7 @@ package com.lumenarcanus.dialife.feature.data
 import com.lumenarcanus.dialife.data.History
 import com.lumenarcanus.dialife.data.Series
 import com.lumenarcanus.dialife.data.Treatment
+import java.util.TimeZone
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -36,7 +37,7 @@ class DataRowsTest {
     @Test
     fun longerStepIsIntervalsOnTheClock() {
         val es = entriesOf(h, emptyList(), t0, t0 + 60 * m)
-        val rows = rowsOf(h, es, t0, t0 + 60 * m, 15, java.util.TimeZone.getTimeZone("UTC"))
+        val rows = rowsOf(h, es, t0, t0 + 60 * m, 15, TimeZone.getTimeZone("UTC"))
         assertEquals(listOf(60, 45, 30, 15, 0).map { t0 + it * m }, rows.map { it.t })
         val first = rows.last() // 00–15: readings 100, 105, 110 and the entry at +7
         assertEquals(105, first.sgv)

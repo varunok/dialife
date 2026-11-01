@@ -1,5 +1,6 @@
 package com.lumenarcanus.dialife.data
 
+import kotlin.math.round
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -33,7 +34,7 @@ data class Treatment(
             f.name.ifBlank {
                 null
             },
-            f.carbs?.let { kotlin.math.round(it).toInt().toString() + if (f.suggested) " ≈" else "" }
+            f.carbs?.let { round(it).toInt().toString() + if (f.suggested) " ≈" else "" }
         ).joinToString(" ")
     }
 }

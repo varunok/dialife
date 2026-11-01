@@ -1,8 +1,12 @@
 package com.lumenarcanus.dialife.screenshots
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
@@ -105,9 +109,9 @@ class ScreenshotTest {
                 estimate = CarbEstimate(8, 7, 9, 1)
             )
         )
-        androidx.compose.foundation.layout.Column(
-            androidx.compose.ui.Modifier.padding(16.dp),
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+        Column(
+            Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             FoodSuggestions(row, "uk") {}
             FoodSuggestions(
@@ -128,9 +132,9 @@ class ScreenshotTest {
     fun waitCardsUk() = shot("wait_cards_dark_uk", dark = true) {
         val dose = now - 10 * 60_000
         val w = Wait("d", dose, 3.0, dose + 15 * 60_000, "range", 142, 60.0, 0.0)
-        androidx.compose.foundation.layout.Column(
-            androidx.compose.ui.Modifier.padding(16.dp),
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)
+        Column(
+            Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             CountdownCard(CountdownUiState(w, now), Units.MgDl) {}
             CountdownCard(CountdownUiState(w.copy(reason = "high", sgv = 214, eatFrom = dose + 20 * 60_000), now), Units.MgDl) {}
@@ -171,7 +175,7 @@ class ScreenshotTest {
         val ui = sampleHomeUi(now)
         ChartCard(
             ui.history, ui.state?.ar2, ui.state!!.thresholds, Units.MgDl, ui.rangeHours, ui.now, onRange = {},
-            modifier = androidx.compose.ui.Modifier.fillMaxSize(), expanded = true,
+            modifier = Modifier.fillMaxSize(), expanded = true,
             suspects = ui.state!!.questions
         )
     }
@@ -182,7 +186,7 @@ class ScreenshotTest {
         val ui = sampleHomeUi(now)
         ChartCard(
             ui.history, ui.state?.ar2, ui.state!!.thresholds, Units.MgDl, ui.rangeHours, ui.now, onRange = {},
-            modifier = androidx.compose.ui.Modifier.fillMaxSize(), expanded = true,
+            modifier = Modifier.fillMaxSize(), expanded = true,
             meter = sampleMeter(now), meterLine = true
         )
     }
@@ -190,7 +194,7 @@ class ScreenshotTest {
     @Test
     @Config(qualifiers = "+uk")
     fun meterCardUk() = shot("meter_card_dark_uk", dark = true) {
-        androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.padding(16.dp)) {
+        Box(Modifier.padding(16.dp)) {
             MeterCard(sampleMeter(now), Units.MgDl)
         }
     }
@@ -247,9 +251,9 @@ class ScreenshotTest {
     @Test
     @Config(qualifiers = "+uk")
     fun webLoginUk() = shot("web_login_uk", dark = true) {
-        androidx.compose.foundation.layout.Column(
-            androidx.compose.ui.Modifier.padding(20.dp),
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
+        Column(
+            Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Approve(
                 WebLoginInfo("x", "Firefox", "Linux", now + 120_000, ip = "198.51.100.9"),
@@ -354,9 +358,9 @@ class ScreenshotTest {
     @Test
     @Config(qualifiers = "+uk")
     fun plannedUk() = shot("planned_dark_uk", dark = true) {
-        androidx.compose.foundation.layout.Column(
-            androidx.compose.ui.Modifier.padding(16.dp),
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
+        Column(
+            Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             val p = PlannedDose(
                 id = "p1", mealId = "m1", dose = 4.0, food = 2.25, corr = 2.0, carbs = 45, meter = 186,
@@ -442,9 +446,9 @@ class ScreenshotTest {
                 estimate = CarbEstimate(8, 7, 9, 1)
             )
         )
-        androidx.compose.foundation.layout.Column(
-            androidx.compose.ui.Modifier.padding(16.dp),
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+        Column(
+            Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             FoodSuggestions(row, "uk") {}
             FoodSuggestions(
@@ -477,9 +481,9 @@ class ScreenshotTest {
                 estimate = CarbEstimate(8, 7, 9, 1)
             )
         )
-        androidx.compose.foundation.layout.Column(
-            androidx.compose.ui.Modifier.padding(16.dp),
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+        Column(
+            Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             FoodSuggestions(row, "uk") {}
             FoodSuggestions(
@@ -500,9 +504,9 @@ class ScreenshotTest {
     fun waitCardsEnAll() = shot("wait_cards_dark_en_all", dark = true) {
         val dose = now - 10 * 60_000
         val w = Wait("d", dose, 3.0, dose + 15 * 60_000, "range", 142, 60.0, 0.0)
-        androidx.compose.foundation.layout.Column(
-            androidx.compose.ui.Modifier.padding(16.dp),
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)
+        Column(
+            Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             CountdownCard(CountdownUiState(w, now), Units.MgDl) {}
             CountdownCard(CountdownUiState(w.copy(reason = "high", sgv = 214, eatFrom = dose + 20 * 60_000), now), Units.MgDl) {}
@@ -518,9 +522,9 @@ class ScreenshotTest {
     fun waitCardsEsAll() = shot("wait_cards_dark_es_all", dark = true) {
         val dose = now - 10 * 60_000
         val w = Wait("d", dose, 3.0, dose + 15 * 60_000, "range", 142, 60.0, 0.0)
-        androidx.compose.foundation.layout.Column(
-            androidx.compose.ui.Modifier.padding(16.dp),
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)
+        Column(
+            Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             CountdownCard(CountdownUiState(w, now), Units.MgDl) {}
             CountdownCard(CountdownUiState(w.copy(reason = "high", sgv = 214, eatFrom = dose + 20 * 60_000), now), Units.MgDl) {}
@@ -534,7 +538,7 @@ class ScreenshotTest {
     @Test
     @Config(qualifiers = "en-w412dp-h2600dp-xxhdpi")
     fun meterCardEnAll() = shot("meter_card_dark_en_all", dark = true) {
-        androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.padding(16.dp)) {
+        Box(Modifier.padding(16.dp)) {
             MeterCard(sampleMeter(now), Units.MgDl)
         }
     }
@@ -542,7 +546,7 @@ class ScreenshotTest {
     @Test
     @Config(qualifiers = "es-w412dp-h2600dp-xxhdpi")
     fun meterCardEsAll() = shot("meter_card_dark_es_all", dark = true) {
-        androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.padding(16.dp)) {
+        Box(Modifier.padding(16.dp)) {
             MeterCard(sampleMeter(now), Units.MgDl)
         }
     }
@@ -698,9 +702,9 @@ class ScreenshotTest {
     @Test
     @Config(qualifiers = "en-w412dp-h2600dp-xxhdpi")
     fun plannedEnAll() = shot("planned_dark_en_all", dark = true) {
-        androidx.compose.foundation.layout.Column(
-            androidx.compose.ui.Modifier.padding(16.dp),
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
+        Column(
+            Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             val p = PlannedDose(
                 id = "p1", mealId = "m1", dose = 4.0, food = 2.25, corr = 2.0, carbs = 45, meter = 186,
@@ -766,9 +770,9 @@ class ScreenshotTest {
     @Test
     @Config(qualifiers = "es-w412dp-h2600dp-xxhdpi")
     fun plannedEsAll() = shot("planned_dark_es_all", dark = true) {
-        androidx.compose.foundation.layout.Column(
-            androidx.compose.ui.Modifier.padding(16.dp),
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
+        Column(
+            Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             val p = PlannedDose(
                 id = "p1", mealId = "m1", dose = 4.0, food = 2.25, corr = 2.0, carbs = 45, meter = 186,
@@ -834,9 +838,9 @@ class ScreenshotTest {
     @Test
     @Config(qualifiers = "en-w412dp-h2600dp-xxhdpi")
     fun webLoginEnAll() = shot("web_login_en_all", dark = true) {
-        androidx.compose.foundation.layout.Column(
-            androidx.compose.ui.Modifier.padding(20.dp),
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
+        Column(
+            Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Approve(
                 WebLoginInfo("x", "Firefox", "Linux", now + 120_000, ip = "198.51.100.9"),
@@ -863,9 +867,9 @@ class ScreenshotTest {
     @Test
     @Config(qualifiers = "es-w412dp-h2600dp-xxhdpi")
     fun webLoginEsAll() = shot("web_login_es_all", dark = true) {
-        androidx.compose.foundation.layout.Column(
-            androidx.compose.ui.Modifier.padding(20.dp),
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
+        Column(
+            Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Approve(
                 WebLoginInfo("x", "Firefox", "Linux", now + 120_000, ip = "198.51.100.9"),

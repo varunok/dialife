@@ -19,6 +19,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.AlertDialog
@@ -78,7 +79,7 @@ class MainActivity : AppCompatActivity() {
             val dark = when (Prefs.theme) {
                 ThemeChoice.Light -> false
                 ThemeChoice.Dark -> true
-                ThemeChoice.System -> androidx.compose.foundation.isSystemInDarkTheme()
+                ThemeChoice.System -> isSystemInDarkTheme()
             }
             DiaLifeTheme(dark = dark) {
                 val session by vm.session.collectAsStateWithLifecycle()

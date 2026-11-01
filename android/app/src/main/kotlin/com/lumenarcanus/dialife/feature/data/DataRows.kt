@@ -5,6 +5,7 @@ import com.lumenarcanus.dialife.data.InsulinType
 import com.lumenarcanus.dialife.data.Question
 import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.data.Treatment
+import java.util.TimeZone
 
 enum class EntryKind { Rapid, Basal, Carbs, Meter, Activity, Note, Suspect }
 
@@ -73,14 +74,7 @@ fun entriesOf(h: History?, questions: List<Question>, from: Long, to: Long): Lis
  * one before. Longer: intervals on the clock (10:00–10:15…), every reading in
  * them averaged, every entry in the interval it falls in.
  */
-fun rowsOf(
-    h: History?,
-    entries: List<Entry>,
-    from: Long,
-    to: Long,
-    stepMin: Int,
-    zone: java.util.TimeZone = java.util.TimeZone.getDefault()
-): List<DataRow> {
+fun rowsOf(h: History?, entries: List<Entry>, from: Long, to: Long, stepMin: Int, zone: TimeZone = TimeZone.getDefault()): List<DataRow> {
     val ts = h?.sgv?.t.orEmpty()
     val vs = h?.sgv?.v.orEmpty()
     val idx = ts.indices.filter { ts[it] in from..to }

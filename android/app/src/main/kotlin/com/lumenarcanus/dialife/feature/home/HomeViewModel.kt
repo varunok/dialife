@@ -1,6 +1,7 @@
 package com.lumenarcanus.dialife.feature.home
 
 import android.os.SystemClock
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lumenarcanus.dialife.R
@@ -31,7 +32,7 @@ data class HomeUi(
     val meter: MeterReport? = null, // sensor vs glucometer
     val now: Long = System.currentTimeMillis(),
     // shown once, then HomeViewModel.userMessageShown()
-    @androidx.annotation.StringRes val userMessage: Int? = null
+    @StringRes val userMessage: Int? = null
 )
 
 /**

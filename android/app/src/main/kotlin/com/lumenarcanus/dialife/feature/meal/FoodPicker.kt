@@ -3,6 +3,7 @@ package com.lumenarcanus.dialife.feature.meal
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.FilledTonalButton
@@ -52,7 +53,7 @@ internal fun QuickFoods(repo: FoodRepository?, lang: String, onAdd: (String, Str
                 onClick = { onAdd(f.name, f.portion) },
                 shape = CircleShape,
                 modifier = Modifier.heightIn(min = 40.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp)
+                contentPadding = PaddingValues(horizontal = 12.dp)
             ) {
                 Text("+ " + f.name, color = c.text, fontSize = 13.sp)
             }

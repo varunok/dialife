@@ -1,5 +1,6 @@
 package com.lumenarcanus.dialife.feature.data
 
+import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -62,7 +64,7 @@ internal fun <T> Segments(
                 fontSize = 12.sp,
                 maxLines = 1,
                 fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                textAlign = TextAlign.Center,
                 modifier = Modifier
                     .then(if (fill) Modifier.weight(1f) else Modifier)
                     .background(if (on) c.surfaceRaised else Color.Transparent, RoundedCornerShape(9.dp))
@@ -195,7 +197,7 @@ internal fun EntryChip(e: Entry, units: Units, onEdit: (Treatment) -> Unit, show
     val who = whoOf(e)
     Row(
         Modifier
-            .background(bg, androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+            .background(bg, RoundedCornerShape(12.dp))
             .then(if (e.treatment != null && e.kind != EntryKind.Suspect) Modifier.clickable { onEdit(e.treatment) } else Modifier)
             .padding(horizontal = 8.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -221,5 +223,4 @@ internal fun EntryChip(e: Entry, units: Units, onEdit: (Treatment) -> Unit, show
 
 /** The time column: "10:46", or "10:46 AM" on a 12-hour clock, on one line. */
 @Composable
-internal fun timeColumn() =
-    if (android.text.format.DateFormat.is24HourFormat(androidx.compose.ui.platform.LocalContext.current)) 50.dp else 68.dp
+internal fun timeColumn() = if (DateFormat.is24HourFormat(LocalContext.current)) 50.dp else 68.dp

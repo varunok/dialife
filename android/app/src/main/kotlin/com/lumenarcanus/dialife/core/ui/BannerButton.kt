@@ -12,6 +12,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -19,7 +20,7 @@ import androidx.compose.ui.unit.sp
 /** A banner's one button: filled, in the banner's own colours. */
 @Composable
 fun BannerButton(text: String, container: Color, content: Color, onClick: () -> Unit) {
-    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val haptics = LocalHapticFeedback.current
     Button(
         onClick = {
             haptics.performHapticFeedback(HapticFeedbackType.Confirm)

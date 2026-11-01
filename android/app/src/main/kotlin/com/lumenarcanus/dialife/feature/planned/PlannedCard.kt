@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -204,7 +205,7 @@ private fun ChangeDose(p: PlannedDose, dose: DoseSettings, units: Units, onCance
 @Composable
 private fun PlannedButtons(onGiven: () -> Unit, onChange: () -> Unit, onSkip: () -> Unit) {
     val c = DiaTheme.colors
-    val pad = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp)
+    val pad = PaddingValues(horizontal = 6.dp)
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         Button(
             onClick = onGiven,

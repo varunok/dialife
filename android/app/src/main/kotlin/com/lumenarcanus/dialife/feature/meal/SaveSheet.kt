@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -38,6 +39,7 @@ import com.lumenarcanus.dialife.data.DoseCalc
 import com.lumenarcanus.dialife.data.DoseSettings
 import com.lumenarcanus.dialife.feature.meal.MealDraft
 import com.lumenarcanus.dialife.feature.meal.MealDrafts
+import java.util.Locale
 
 /** Before saving: what to know, an extra tap for a dose over the limit, and the choice to plan the dose or not. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,7 +48,7 @@ internal fun SaveSheet(
     m: DoseCalc.Meal,
     dose: DoseSettings,
     units: Units,
-    locale: java.util.Locale,
+    locale: Locale,
     planOn: Boolean,
     okBig: Boolean,
     onOkBig: (Boolean) -> Unit,
@@ -85,7 +87,7 @@ internal fun SaveSheet(
                     Modifier.fillMaxWidth().border(1.5.dp, c.low, RoundedCornerShape(14.dp)).clickable { onOkBig(!okBig) }.padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    androidx.compose.material3.Checkbox(checked = okBig, onCheckedChange = onOkBig)
+                    Checkbox(checked = okBig, onCheckedChange = onOkBig)
                     Text(
                         stringResource(R.string.meal_ok_big, f(m.toGive)),
                         color = c.text,

@@ -28,6 +28,7 @@ import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.core.ui.theme.GlucoseHero
 import com.lumenarcanus.dialife.data.DoseCalc
+import java.util.Locale
 
 @Composable
 fun Stepper(value: Double, step: Double, unit: String, onChange: (Double) -> Unit) {
@@ -68,7 +69,7 @@ fun Stepper(value: Double, step: Double, unit: String, onChange: (Double) -> Uni
 
 /** The dose limits' card: red over the limit, red "a mistake?" over twice it. */
 @Composable
-fun LimitAlert(level: DoseCalc.Level, dose: Double, max: Double, units: Units, locale: java.util.Locale) {
+fun LimitAlert(level: DoseCalc.Level, dose: Double, max: Double, units: Units, locale: Locale) {
     when (level) {
         DoseCalc.Level.Absurd -> AlertCard(DoseCalc.Alert.DoseAbsurd(dose, max), units, locale)
         DoseCalc.Level.High -> AlertCard(DoseCalc.Alert.DoseHigh(dose, max), units, locale)

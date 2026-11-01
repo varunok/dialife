@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -31,15 +32,16 @@ import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.core.ui.theme.PlexMono
 import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.data.Treatment
+import java.util.Calendar
 
 // The upright table: rows grouped by hour, each with what was logged around it.
 
 internal fun hourOf(t: Long): Long {
-    val cal = java.util.Calendar.getInstance().apply {
+    val cal = Calendar.getInstance().apply {
         timeInMillis = t
-        set(java.util.Calendar.MINUTE, 0)
-        set(java.util.Calendar.SECOND, 0)
-        set(java.util.Calendar.MILLISECOND, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
     }
     return cal.timeInMillis
 }
@@ -86,7 +88,7 @@ internal fun ListRow(r: DataRow, units: Units, th: Thresholds, onEdit: (Treatmen
     val stripe = r.span || r.entries.any { it.kind == EntryKind.Suspect }
     Row(
         Modifier.fillMaxWidth().heightIn(min = 36.dp)
-            .drawBehind { if (stripe) drawRect(c.high, size = androidx.compose.ui.geometry.Size(3.dp.toPx(), size.height)) }
+            .drawBehind { if (stripe) drawRect(c.high, size = Size(3.dp.toPx(), size.height)) }
             .padding(horizontal = 14.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically

@@ -1,6 +1,7 @@
 package com.lumenarcanus.dialife.data
 
 import java.io.IOException
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -8,6 +9,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.put
@@ -59,7 +61,7 @@ class DiaLifeApi(private val http: OkHttpClient = defaultClient) {
         buildJsonObject {
             put(
                 "items",
-                kotlinx.serialization.json.buildJsonArray {
+                buildJsonArray {
                     items.forEach { (name, portion) ->
                         add(
                             buildJsonObject {
@@ -90,7 +92,7 @@ class DiaLifeApi(private val http: OkHttpClient = defaultClient) {
             put("carb_min", d.carbMin)
             put(
                 "table",
-                kotlinx.serialization.json.buildJsonArray {
+                buildJsonArray {
                     d.table.forEach { r ->
                         add(
                             buildJsonObject {
@@ -127,7 +129,7 @@ class DiaLifeApi(private val http: OkHttpClient = defaultClient) {
         val doc = buildJsonObject {
             put("_id", t.id)
             put("eventType", t.eventType ?: eventTypeOf(t))
-            put("created_at", java.time.Instant.ofEpochMilli(t.t).toString())
+            put("created_at", Instant.ofEpochMilli(t.t).toString())
             t.insulin?.let { put("insulin", it) }
             t.carbs?.let { put("carbs", it) }
             t.glucose?.let {

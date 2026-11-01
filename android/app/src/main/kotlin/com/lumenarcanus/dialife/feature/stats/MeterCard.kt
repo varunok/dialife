@@ -1,8 +1,12 @@
 package com.lumenarcanus.dialife.feature.stats
 
+import android.content.Context
+import android.text.format.DateUtils
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -20,6 +24,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -36,6 +41,9 @@ import com.lumenarcanus.dialife.core.ui.theme.PlexMono
 import com.lumenarcanus.dialife.data.MeterReport
 import com.lumenarcanus.dialife.feature.entry.basalColor
 import com.lumenarcanus.dialife.feature.home.meterInk
+import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.round
 
 @Composable
 internal fun MeterCard(m: MeterReport, units: Units) {
@@ -83,7 +91,7 @@ private fun Bias(m: MeterReport) {
 /** The current sensor, each range of values, and the typical difference (MARD). */
 @Composable
 private fun MeterLines(m: MeterReport, units: Units) {
-    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val ctx = LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
     fun g(v: Int) = formatGlucose(v, units, locale)
     m.current?.let { cur ->
@@ -110,7 +118,7 @@ private fun MeterLines(m: MeterReport, units: Units) {
                     ""
                 }
                 ) +
-                formatGlucose(kotlin.math.round(kotlin.math.abs(b.bias)).toInt(), units, locale) +
+                formatGlucose(round(abs(b.bias)).toInt(), units, locale) +
                 (if (units == Units.MgDl) " mg/dL" else "")
         } else {
             signed(b.bias, "%", locale)
@@ -136,20 +144,20 @@ private fun Line(label: String, sub: String?, value: String, valueSub: String?) 
 }
 
 /** Which colour is which sensor. */
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SensorLegend(m: MeterReport) {
     val c = DiaTheme.colors
-    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val ctx = LocalContext.current
     val inks = sensorInks()
     val current = m.starts.size
-    androidx.compose.foundation.layout.FlowRow(
+    FlowRow(
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         m.pairs.map { it.sensorNo }.distinct().sorted().forEach { k ->
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                androidx.compose.foundation.Canvas(Modifier.size(8.dp)) {
+                Canvas(Modifier.size(8.dp)) {
                     drawPath(
                         diamondPath(center, size.width / 2),
                         inks[
@@ -173,7 +181,7 @@ private fun SensorLegend(m: MeterReport) {
 }
 
 /** "+6%", "−3 mg/dL": with its sign, no decimals. */
-private fun signed(v: Double, unit: String, locale: java.util.Locale) = (
+private fun signed(v: Double, unit: String, locale: Locale) = (
     if (v > 0) {
         "+"
     } else if (v < 0) {
@@ -181,13 +189,13 @@ private fun signed(v: Double, unit: String, locale: java.util.Locale) = (
     } else {
         ""
     }
-    ) + String.format(locale, "%.0f", kotlin.math.abs(v)) + unit
+    ) + String.format(locale, "%.0f", abs(v)) + unit
 
-private fun shortDate(ctx: android.content.Context, t: Long) = android.text.format.DateUtils.formatDateTime(
+private fun shortDate(ctx: Context, t: Long) = DateUtils.formatDateTime(
     ctx,
     t,
-    android.text.format.DateUtils.FORMAT_SHOW_DATE or android.text.format.DateUtils.FORMAT_NO_YEAR or
-        android.text.format.DateUtils.FORMAT_ABBREV_MONTH
+    DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_NO_YEAR or
+        DateUtils.FORMAT_ABBREV_MONTH
 )
 
 @Composable
@@ -196,7 +204,7 @@ internal fun sensorInks(): List<Color> {
     return listOf(c.textMuted, basalColor(c.isDark), c.carbs, c.inRange, c.insulin, c.high)
 }
 
-internal fun diamondPath(at: androidx.compose.ui.geometry.Offset, half: Float) = androidx.compose.ui.graphics.Path().apply {
+internal fun diamondPath(at: Offset, half: Float) = Path().apply {
     moveTo(at.x, at.y - half)
     lineTo(at.x + half, at.y)
     lineTo(at.x, at.y + half)
@@ -209,14 +217,14 @@ internal fun diamondPath(at: androidx.compose.ui.geometry.Offset, half: Float) =
 internal fun MeterScatter(m: MeterReport, units: Units, modifier: Modifier) {
     val c = DiaTheme.colors
     val locale = LocalConfiguration.current.locales[0]
-    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val measurer = rememberTextMeasurer()
     val inks = sensorInks()
     val est = meterInk(c.isDark)
     val axisSensor = stringResource(R.string.meter_axis_sensor)
     val axisMeter = stringResource(R.string.meter_axis_meter)
     val current = m.starts.size
-    androidx.compose.foundation.Canvas(modifier) {
-        val label = androidx.compose.ui.text.TextStyle(
+    Canvas(modifier) {
+        val label = TextStyle(
             fontFamily = PlexMono,
             fontSize = 10.sp,
             color = c.textFaint
@@ -235,27 +243,27 @@ internal fun MeterScatter(m: MeterReport, units: Units, modifier: Modifier) {
         while (v < hi) {
             drawLine(
                 c.line,
-                androidx.compose.ui.geometry.Offset(left, sy(v.toDouble())),
-                androidx.compose.ui.geometry.Offset(left + w, sy(v.toDouble())),
+                Offset(left, sy(v.toDouble())),
+                Offset(left + w, sy(v.toDouble())),
                 1.dp.toPx()
             )
             val t = measurer.measure(formatGlucose(v, units, locale), label)
             drawText(
                 t,
-                topLeft = androidx.compose.ui.geometry.Offset(
+                topLeft = Offset(
                     left - t.size.width - 6.dp.toPx(),
                     sy(v.toDouble()) - t.size.height / 2f
                 )
             )
-            drawText(t, topLeft = androidx.compose.ui.geometry.Offset(sx(v.toDouble()) - t.size.width / 2f, size.height - t.size.height))
+            drawText(t, topLeft = Offset(sx(v.toDouble()) - t.size.width / 2f, size.height - t.size.height))
             v += 50
         }
         val axis = label.copy(fontFamily = Onest, color = c.textMuted)
-        drawText(measurer.measure(axisMeter, axis), topLeft = androidx.compose.ui.geometry.Offset(left + 4.dp.toPx(), 0f))
+        drawText(measurer.measure(axisMeter, axis), topLeft = Offset(left + 4.dp.toPx(), 0f))
         val xs = measurer.measure(axisSensor, axis)
         drawText(
             xs,
-            topLeft = androidx.compose.ui.geometry.Offset(
+            topLeft = Offset(
                 left + w - xs.size.width,
                 size.height - bottom - xs.size.height - 2.dp.toPx()
             )
@@ -264,10 +272,10 @@ internal fun MeterScatter(m: MeterReport, units: Units, modifier: Modifier) {
             // agreement, and the fitted relation once there is one
             drawLine(
                 c.textFaint,
-                androidx.compose.ui.geometry.Offset(sx(lo), sy(lo)),
-                androidx.compose.ui.geometry.Offset(sx(hi), sy(hi)),
+                Offset(sx(lo), sy(lo)),
+                Offset(sx(hi), sy(hi)),
                 1.dp.toPx(),
-                pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 4.dp.toPx()))
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 4.dp.toPx()))
             )
             m.model?.let { f ->
                 val a = 60.0
@@ -275,18 +283,18 @@ internal fun MeterScatter(m: MeterReport, units: Units, modifier: Modifier) {
                 fun fit(s: Double) = s * (1 + f.b) + f.a
                 drawLine(
                     est,
-                    androidx.compose.ui.geometry.Offset(sx(a), sy(fit(a).coerceIn(lo, hi))),
-                    androidx.compose.ui.geometry.Offset(sx(b), sy(fit(b).coerceIn(lo, hi))),
+                    Offset(sx(a), sy(fit(a).coerceIn(lo, hi))),
+                    Offset(sx(b), sy(fit(b).coerceIn(lo, hi))),
                     1.6.dp.toPx()
                 )
             }
             m.pairs.forEach { p ->
-                val at = androidx.compose.ui.geometry.Offset(sx(p.sensor), sy(p.meter.toDouble()))
+                val at = Offset(sx(p.sensor), sy(p.meter.toDouble()))
                 val ink = inks[p.sensorNo % inks.size].copy(alpha = if (p.sensorNo == current) 1f else 0.7f)
                 if (p.used) {
                     drawPath(diamondPath(at, 5.dp.toPx()), ink)
                 } else {
-                    drawPath(diamondPath(at, 5.dp.toPx()), ink, style = androidx.compose.ui.graphics.drawscope.Stroke(1.2.dp.toPx()))
+                    drawPath(diamondPath(at, 5.dp.toPx()), ink, style = Stroke(1.2.dp.toPx()))
                 }
             }
         }

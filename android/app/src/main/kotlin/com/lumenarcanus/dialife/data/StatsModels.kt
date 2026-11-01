@@ -1,5 +1,6 @@
 package com.lumenarcanus.dialife.data
 
+import kotlin.math.round
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -80,6 +81,6 @@ data class MeterModel(val a: Double, val b: Double, val offset: Double = 0.0, va
     /** What the glucometer would most likely show for a sensor value, and the typical spread. */
     fun estimate(sensor: Int): Pair<Int, Int> {
         val sc = maxOf(sensor.toDouble(), 100.0)
-        return kotlin.math.round(sensor * (1 + b) + a + offset * sc).toInt() to kotlin.math.round(sd * sc).toInt()
+        return round(sensor * (1 + b) + a + offset * sc).toInt() to round(sd * sc).toInt()
     }
 }

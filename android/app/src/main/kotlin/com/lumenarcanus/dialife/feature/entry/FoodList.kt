@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -15,11 +16,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,6 +35,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -51,6 +57,9 @@ import com.lumenarcanus.dialife.data.CarbTableHit
 import com.lumenarcanus.dialife.data.FoodCatalog
 import com.lumenarcanus.dialife.data.FoodItem
 import com.lumenarcanus.dialife.data.inLang
+import java.util.Locale
+import kotlin.math.round
+import kotlinx.coroutines.delay
 
 /** One line of the meal being typed. carbs is the field's text; source says where it came from. */
 data class FoodRow(
@@ -119,7 +128,7 @@ suspend fun lookUp(row: FoodRow, repo: FoodRepository, update: ((FoodRow) -> Foo
         update { it.copy(loading = false, asked = false, suggestion = null) }
         return
     }
-    kotlinx.coroutines.delay(LOOKUP_PAUSE_MS)
+    delay(LOOKUP_PAUSE_MS)
     update { it.copy(loading = true) }
     val r = repo.suggest(name, row.portion.trim())
     update { it.withSuggestions(r) }
@@ -151,10 +160,10 @@ fun FoodRow.withSuggestions(r: Result<CarbSuggestions>): FoodRow {
 /** The rows of a saved meal, or one row for an entry logged with only a total. */
 fun foodRowsOf(items: List<FoodItem>?, carbs: Double?): List<FoodRow> = when {
     !items.isNullOrEmpty() -> items.map {
-        newFoodRow(it.name, it.carbs?.let { c -> kotlin.math.round(c).toInt().toString() }.orEmpty(), it.source, it.portion.orEmpty())
+        newFoodRow(it.name, it.carbs?.let { c -> round(c).toInt().toString() }.orEmpty(), it.source, it.portion.orEmpty())
     }
     else -> listOf(
-        carbs?.takeIf { it > 0 }?.let { newFoodRow(carbs = kotlin.math.round(it).toInt().toString(), source = "manual") } ?: newFoodRow()
+        carbs?.takeIf { it > 0 }?.let { newFoodRow(carbs = round(it).toInt().toString(), source = "manual") } ?: newFoodRow()
     )
 }
 
@@ -175,7 +184,7 @@ private val QuickCarbs = listOf(10, 15, 20, 30)
 @Composable
 fun FoodList(rows: SnapshotStateList<FoodRow>, repo: FoodRepository?) {
     val c = DiaTheme.colors
-    val lang = androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language
+    val lang = LocalConfiguration.current.locales[0].language
     fun update(id: Long, f: (FoodRow) -> FoodRow) {
         val i = rows.indexOfFirst { it.id == id }
         if (i >= 0) rows[i] = f(rows[i])
@@ -218,12 +227,12 @@ fun FoodList(rows: SnapshotStateList<FoodRow>, repo: FoodRepository?) {
                 OutlinedButton(
                     onClick = { place(newFoodRow(name = f.name, portion = f.portion)) },
                     shape = CircleShape,
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp),
                     modifier = Modifier.heightIn(min = 40.dp)
                 ) { Text("+ " + f.name, color = c.text, fontSize = 13.sp) }
             }
             if (tables.isNotEmpty()) {
-                androidx.compose.material3.FilledTonalButton(
+                FilledTonalButton(
                     onClick = { picking = true },
                     shape = CircleShape,
                     modifier = Modifier.heightIn(min = 40.dp)
@@ -339,7 +348,7 @@ fun FoodSuggestions(row: FoodRow, lang: String, onChange: ((FoodRow) -> FoodRow)
             stringResource(R.string.food_stale, row.portion.trim()),
             color = c.high,
             fontSize = 13.sp,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+            fontWeight = FontWeight.SemiBold,
             modifier = Modifier.fillMaxWidth().background(
                 c.highContainer,
                 RoundedCornerShape(12.dp)
@@ -412,7 +421,7 @@ fun FoodSuggestions(row: FoodRow, lang: String, onChange: ((FoodRow) -> FoodRow)
  */
 @Composable
 private fun per100Note(h: CarbTableHit): String {
-    val n = { v: Double -> "%.1f".format(java.util.Locale.ROOT, v).removeSuffix(".0") }
+    val n = { v: Double -> "%.1f".format(Locale.ROOT, v).removeSuffix(".0") }
     val main = stringResource(R.string.food_table_per100, n(h.per100 ?: 0.0), h.per100Src)
     val info = when {
         h.fiber100 != null && h.avail100 != null -> stringResource(R.string.food_fiber_avail, n(h.fiber100), n(h.avail100))
@@ -429,7 +438,7 @@ private fun otherPortion(row: FoodRow, h: CarbTableHit, portion: String): String
 
 /** Fields that stand out on the card: the default outline is lost on the raised surface. */
 @Composable
-private fun fieldColors() = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+private fun fieldColors() = OutlinedTextFieldDefaults.colors(
     unfocusedBorderColor = DiaTheme.colors.textFaint,
     focusedBorderColor = DiaTheme.colors.carbs,
     focusedLabelColor = DiaTheme.colors.carbs
@@ -443,10 +452,10 @@ fun SuggestionButton(value: String, label: String, note: String, on: Boolean, wa
         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
         shape = RoundedCornerShape(12.dp),
         border = BorderStroke(1.dp, if (on) c.carbs else c.textFaint),
-        colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-            containerColor = if (on) c.carbsContainer else androidx.compose.ui.graphics.Color.Transparent
+        colors = ButtonDefaults.outlinedButtonColors(
+            containerColor = if (on) c.carbsContainer else Color.Transparent
         ),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
     ) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(

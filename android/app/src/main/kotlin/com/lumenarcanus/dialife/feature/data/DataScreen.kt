@@ -1,5 +1,6 @@
 package com.lumenarcanus.dialife.feature.data
 
+import android.text.format.DateUtils
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -136,14 +137,14 @@ fun DataScreen(
 @Composable
 private fun windowText(from: Long, to: Long): String {
     val ctx = LocalContext.current
-    val day = if (android.text.format.DateUtils.isToday(to)) {
+    val day = if (DateUtils.isToday(to)) {
         stringResource(R.string.data_today)
     } else {
-        android.text.format.DateUtils.formatDateTime(
+        DateUtils.formatDateTime(
             ctx,
             to,
-            android.text.format.DateUtils.FORMAT_SHOW_DATE or android.text.format.DateUtils.FORMAT_NO_YEAR or
-                android.text.format.DateUtils.FORMAT_ABBREV_MONTH
+            DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_NO_YEAR or
+                DateUtils.FORMAT_ABBREV_MONTH
         )
     }
     return stringResource(R.string.data_window, day, formatClock(ctx, from), formatClock(ctx, to))

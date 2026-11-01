@@ -1,8 +1,11 @@
 package com.lumenarcanus.dialife.feature.home
 
+import android.content.res.Configuration
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,18 +17,25 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -86,11 +96,11 @@ fun HomeScreen(
     val locale = LocalConfiguration.current.locales[0]
     val state = ui.toHomeState(fallbackUnits)
     val thresholds = ui.state?.thresholds ?: Thresholds()
-    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val haptics = LocalHapticFeedback.current
     // the add/edit sheet: which tab it opened on, what it edits, the question it answers
     var sheet by remember { mutableStateOf<SheetRequest?>(null) }
     var confirmDelete by remember { mutableStateOf<Treatment?>(null) }
-    var fullChart by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var fullChart by rememberSaveable { mutableStateOf(false) }
     EntrySheetHost(
         sheet,
         ui,
@@ -145,8 +155,8 @@ fun HomeScreen(
             Empty(loading = ui.state == null && !ui.offline)
         }
         // banners come and go without making the page jump
-        androidx.compose.animation.AnimatedVisibility(ui.offline) { OfflineBanner(ui, onRetry) }
-        androidx.compose.animation.AnimatedVisibility(!ui.offline && state != null && state.ageMin >= STALE_MIN) {
+        AnimatedVisibility(ui.offline) { OfflineBanner(ui, onRetry) }
+        AnimatedVisibility(!ui.offline && state != null && state.ageMin >= STALE_MIN) {
             state?.let { StaleBanner(ui, it) }
         }
         Column(Modifier.animateContentSize(), verticalArrangement = Arrangement.spacedBy(18.dp)) {
@@ -167,7 +177,7 @@ fun HomeScreen(
     }
 }
 
-@Preview(name = "Dark · uk", locale = "uk", uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES, widthDp = 412, heightDp = 915)
+@Preview(name = "Dark · uk", locale = "uk", uiMode = Configuration.UI_MODE_NIGHT_YES, widthDp = 412, heightDp = 915)
 @Composable
 private fun PreviewDarkUk() = DiaLifeTheme(dark = true) { HomeScreen(sampleHomeUi()) }
 
@@ -234,14 +244,14 @@ private fun DeleteDialog(onDelete: () -> Unit, onDismiss: () -> Unit) {
  */
 @Composable
 private fun EntryButtons(onOpen: (TreatmentKind) -> Unit) {
-    androidx.compose.foundation.layout.BoxWithConstraints {
+    BoxWithConstraints {
         val gap = 10.dp
-        val measurer = androidx.compose.ui.text.rememberTextMeasurer()
-        val density = androidx.compose.ui.platform.LocalDensity.current
+        val measurer = rememberTextMeasurer()
+        val density = LocalDensity.current
         val kinds = listOf(TreatmentKind.Insulin, TreatmentKind.Food, TreatmentKind.Meter)
         val labels = kinds.map { stringResource(kindLook(it).name) }
-        val style = androidx.compose.material3.LocalTextStyle.current.merge(
-            androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+        val style = LocalTextStyle.current.merge(
+            TextStyle(fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
         )
         val stacked = kinds.zip(labels).any { (k, l) ->
             // insulin carries two signs, overlapping
@@ -281,7 +291,7 @@ private fun EntrySheetHost(
     foods: FoodRepository?
 ) {
     val food = request?.isFood == true
-    androidx.compose.runtime.LaunchedEffect(food) {
+    LaunchedEffect(food) {
         if (food) {
             onOpenMeal(request?.editing, request?.question)
             onClose()

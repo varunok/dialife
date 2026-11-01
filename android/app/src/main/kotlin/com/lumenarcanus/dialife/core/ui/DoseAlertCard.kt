@@ -22,10 +22,11 @@ import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.data.DoseCalc
+import java.util.Locale
 
 /** A bright card: red for what must be seen before injecting, amber for a note, green when all agrees. */
 @Composable
-fun AlertCard(a: DoseCalc.Alert, units: Units, locale: java.util.Locale, title: String? = null, text: String? = null) {
+fun AlertCard(a: DoseCalc.Alert, units: Units, locale: Locale, title: String? = null, text: String? = null) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
     val u = stringResource(R.string.unit_insulin)

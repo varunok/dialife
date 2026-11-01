@@ -1,5 +1,6 @@
 package com.lumenarcanus.dialife.feature.home
 
+import android.text.format.DateFormat
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -14,6 +15,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -27,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -94,7 +99,7 @@ fun ChartCard(
         verticalArrangement = Arrangement.spacedBy(if (expanded) 6.dp else 10.dp)
     ) {
         val title = window?.at(now)?.let { w ->
-            val f = android.text.format.DateFormat.getTimeFormat(context)
+            val f = DateFormat.getTimeFormat(context)
             stringResource(R.string.chart_window, f.format(Date(w.start)), f.format(Date(min(w.end, now))))
         } ?: stringResource(R.string.chart_last_hours, rangeHours)
         ChartHeader(
@@ -135,7 +140,7 @@ fun ChartCard(
         // the tapped marker's actions: the canvas tooltip says what it is, these say what to do
         // a suspect mark: anyone may clear it, no questions asked
         suspect?.let { q ->
-            androidx.compose.material3.OutlinedButton(onClick = {
+            OutlinedButton(onClick = {
                 suspect = null
                 onDismissSuspect(q.id)
             }, modifier = Modifier.fillMaxWidth()) {
@@ -181,18 +186,18 @@ private fun ChartHeader(
         if (expanded) RangeTabs(followsRange, rangeHours, Modifier.width(320.dp), onRange)
         MeterSwitch(on = meterOn, ready = meterReady, onClick = onMeter)
         onOpenTable?.let { open ->
-            androidx.compose.material3.IconButton(onClick = open, modifier = Modifier.size(40.dp)) {
-                androidx.compose.material3.Icon(
-                    androidx.compose.ui.res.painterResource(R.drawable.ic_table),
+            IconButton(onClick = open, modifier = Modifier.size(40.dp)) {
+                Icon(
+                    painterResource(R.drawable.ic_table),
                     stringResource(R.string.chart_table),
                     tint = c.textMuted
                 )
             }
         }
         val what = stringResource(if (expanded) R.string.chart_close else R.string.chart_expand)
-        androidx.compose.material3.IconButton(onClick = onExpand, modifier = Modifier.size(40.dp)) {
-            androidx.compose.material3.Icon(
-                androidx.compose.ui.res.painterResource(if (expanded) R.drawable.ic_close else R.drawable.ic_fullscreen),
+        IconButton(onClick = onExpand, modifier = Modifier.size(40.dp)) {
+            Icon(
+                painterResource(if (expanded) R.drawable.ic_close else R.drawable.ic_fullscreen),
                 contentDescription = what,
                 tint = c.textMuted
             )
@@ -222,10 +227,10 @@ private fun MeterNotReady(meter: MeterReport?) {
 private fun EntryActions(onEdit: () -> Unit, onDelete: () -> Unit) {
     val c = DiaTheme.colors
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-        androidx.compose.material3.OutlinedButton(onClick = onEdit, modifier = Modifier.weight(1f)) {
+        OutlinedButton(onClick = onEdit, modifier = Modifier.weight(1f)) {
             Text(stringResource(R.string.tr_edit), color = c.text)
         }
-        androidx.compose.material3.OutlinedButton(onClick = onDelete, modifier = Modifier.weight(1f)) {
+        OutlinedButton(onClick = onDelete, modifier = Modifier.weight(1f)) {
             Text(stringResource(R.string.tr_delete), color = c.low)
         }
     }

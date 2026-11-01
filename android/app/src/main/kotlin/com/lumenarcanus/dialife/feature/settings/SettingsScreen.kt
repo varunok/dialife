@@ -1,9 +1,13 @@
 package com.lumenarcanus.dialife.feature.settings
 
+import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,9 +21,19 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,10 +43,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.BuildConfig
@@ -163,7 +181,7 @@ private fun LookSection(uiState: SettingsUiState, onAction: (SettingsAction) -> 
             Text(stringResource(R.string.set_meter_line), color = c.text, fontSize = 14.sp)
             Text(stringResource(R.string.set_meter_line_sub), color = c.textMuted, fontSize = 12.sp)
         }
-        androidx.compose.material3.Switch(checked = prefs.meterLine, onCheckedChange = {
+        Switch(checked = prefs.meterLine, onCheckedChange = {
             onAction(SettingsAction.ChooseMeterLine(it))
         })
     }
@@ -181,19 +199,19 @@ private fun InsulinsSection(prefs: LocalPrefs, onAction: (SettingsAction) -> Uni
     }
     Label(stringResource(R.string.set_basal_times))
     var adding by remember { mutableStateOf(false) }
-    androidx.compose.foundation.layout.FlowRow(
+    FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         prefs.basalTimes.forEach { m ->
-            androidx.compose.material3.InputChip(
+            InputChip(
                 selected = false,
                 onClick = { onAction(SettingsAction.RemoveBasalTime(m)) },
-                label = { Text(String.format(java.util.Locale.ROOT, "%02d:%02d", m / 60, m % 60)) },
+                label = { Text(String.format(Locale.ROOT, "%02d:%02d", m / 60, m % 60)) },
                 trailingIcon = { Text("✕", color = c.textMuted) }
             )
         }
-        androidx.compose.material3.AssistChip(onClick = { adding = true }, label = { Text(stringResource(R.string.set_basal_add)) })
+        AssistChip(onClick = { adding = true }, label = { Text(stringResource(R.string.set_basal_add)) })
     }
     if (adding) {
         BasalTimeDialog(onPick = { m ->
@@ -203,7 +221,7 @@ private fun InsulinsSection(prefs: LocalPrefs, onAction: (SettingsAction) -> Uni
     }
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(stringResource(R.string.set_basal_remind), color = c.text, fontSize = 14.sp, modifier = Modifier.weight(1f))
-        androidx.compose.material3.Switch(
+        Switch(
             checked = prefs.basalReminder,
             enabled = prefs.basalTimes.isNotEmpty(),
             onCheckedChange = { onAction(SettingsAction.ChooseBasalReminder(it)) }
@@ -296,18 +314,18 @@ private fun InsulinPicker(type: InsulinType, chosen: String?, onChoose: (String)
             fontSize = 14.sp,
             modifier = Modifier.weight(1f)
         )
-        androidx.compose.foundation.layout.Box {
+        Box {
             TextButton(onClick = {
                 open = true
             }) { Text((chosen ?: stringResource(R.string.set_insulin_choose)) + "  ▾", color = c.text) }
-            androidx.compose.material3.DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
                 Insulins.of(type).forEach { name ->
-                    androidx.compose.material3.DropdownMenuItem(text = { Text(name) }, onClick = {
+                    DropdownMenuItem(text = { Text(name) }, onClick = {
                         open = false
                         onChoose(name)
                     })
                 }
-                androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.set_insulin_other)) }, onClick = {
+                DropdownMenuItem(text = { Text(stringResource(R.string.set_insulin_other)) }, onClick = {
                     open = false
                     typing = true
                 })
@@ -320,7 +338,7 @@ private fun InsulinPicker(type: InsulinType, chosen: String?, onChoose: (String)
             onDismissRequest = { typing = false },
             title = { Text(stringResource(R.string.set_insulin_other)) },
             text = {
-                androidx.compose.material3.OutlinedTextField(value = name, onValueChange = { name = it.take(40) }, singleLine = true)
+                OutlinedTextField(value = name, onValueChange = { name = it.take(40) }, singleLine = true)
             },
             confirmButton = {
                 TextButton(enabled = name.isNotBlank(), onClick = {
@@ -333,15 +351,15 @@ private fun InsulinPicker(type: InsulinType, chosen: String?, onChoose: (String)
     }
 }
 
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BasalTimeDialog(onPick: (Int) -> Unit, onDismiss: () -> Unit) {
     val ctx = LocalContext.current
-    val state = androidx.compose.material3.rememberTimePickerState(21, 0, android.text.format.DateFormat.is24HourFormat(ctx))
+    val state = rememberTimePickerState(21, 0, DateFormat.is24HourFormat(ctx))
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.set_basal_add)) },
-        text = { androidx.compose.material3.TimePicker(state = state) },
+        text = { TimePicker(state = state) },
         confirmButton = { TextButton(onClick = { onPick(state.hour * 60 + state.minute) }) { Text(stringResource(R.string.tr_ok)) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.tr_cancel)) } }
     )
@@ -390,19 +408,19 @@ private fun Line(label: String, value: String) {
 @Composable
 private fun <T> Choice(options: List<Pair<T, String>>, selected: T, onPick: (T) -> Unit) {
     val c = DiaTheme.colors
-    androidx.compose.foundation.layout.BoxWithConstraints {
+    BoxWithConstraints {
         // all in one row while every label fits its share whole (no word split, at most
         // two lines); else two to a row when they pair up; else one under another
-        val measurer = androidx.compose.ui.text.rememberTextMeasurer()
-        val density = androidx.compose.ui.platform.LocalDensity.current
-        val style = androidx.compose.material3.LocalTextStyle.current.merge(
-            androidx.compose.ui.text.TextStyle(fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        val measurer = rememberTextMeasurer()
+        val density = LocalDensity.current
+        val style = LocalTextStyle.current.merge(
+            TextStyle(fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         )
         val fitsIn = { per: Int ->
             val slot = with(density) { ((maxWidth - 6.dp - 4.dp * (per - 1)) / per - 8.dp).roundToPx() }.coerceAtLeast(1)
             options.all { (_, label) ->
                 label.split(' ').all { measurer.measure(it, style).size.width <= slot } &&
-                    measurer.measure(label, style, constraints = androidx.compose.ui.unit.Constraints(maxWidth = slot)).lineCount <= 2
+                    measurer.measure(label, style, constraints = Constraints(maxWidth = slot)).lineCount <= 2
             }
         }
         val per = when {

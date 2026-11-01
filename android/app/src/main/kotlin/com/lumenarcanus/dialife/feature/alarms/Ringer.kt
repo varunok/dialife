@@ -5,9 +5,11 @@ import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.media.RingtoneManager
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
+import android.os.VibrationAttributes
 import android.os.VibrationEffect
 import android.os.VibratorManager
 import android.util.Log
@@ -67,14 +69,14 @@ class Ringer(context: Context) : AlarmSound {
                 null
             }
             val pattern = VibrationEffect.createWaveform(longArrayOf(0, 800, 400, 800, 1200), 0)
-            if (android.os.Build.VERSION.SDK_INT >= 33) {
-                vibrator.vibrate(pattern, android.os.VibrationAttributes.createForUsage(android.os.VibrationAttributes.USAGE_ALARM))
+            if (Build.VERSION.SDK_INT >= 33) {
+                vibrator.vibrate(pattern, VibrationAttributes.createForUsage(VibrationAttributes.USAGE_ALARM))
             } else {
                 // Android 12: alarm usage through the audio attributes, so Do Not Disturb lets it through
                 @Suppress("DEPRECATION")
                 vibrator.vibrate(
                     pattern,
-                    android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_ALARM).build()
+                    AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build()
                 )
             }
             main.postDelayed(timeout, MAX_RING_MS)

@@ -12,9 +12,11 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.core.ui.theme.Onest
@@ -121,7 +123,7 @@ internal fun DrawScope.syncedDot(at: Offset, ink: Color, halo: Color) {
 }
 
 internal fun DrawScope.tooltip(
-    measurer: androidx.compose.ui.text.TextMeasurer,
+    measurer: TextMeasurer,
     lines: List<String>,
     ax: Float,
     ay: Float,
@@ -136,7 +138,7 @@ internal fun DrawScope.tooltip(
     val rest = TextStyle(fontFamily = PlexMono, fontSize = 11.sp, color = muted)
     val pad = 10.dp.toPx()
     // a long line (a meal typed as one long name) wraps instead of growing past the plot
-    val fit = androidx.compose.ui.unit.Constraints(maxWidth = (plotW - pad * 2).toInt().coerceAtLeast(1))
+    val fit = Constraints(maxWidth = (plotW - pad * 2).toInt().coerceAtLeast(1))
     val ms = lines.mapIndexed { i, s -> measurer.measure(s, if (i == 0) first else rest, constraints = fit) }
     val w = ms.maxOf { it.size.width } + pad * 2
     val h = ms.sumOf { it.size.height } + pad * 2 + 2.dp.toPx() * (ms.size - 1)

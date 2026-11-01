@@ -1,5 +1,10 @@
 package com.lumenarcanus.dialife.feature.home
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -7,6 +12,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
@@ -32,6 +38,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
@@ -73,17 +80,17 @@ private fun BigValue(state: HomeState, units: String, locale: Locale, modifier: 
     Row(verticalAlignment = Alignment.Bottom, modifier = modifier) {
         // weighted, so the units label is measured first and the number shrinks to what is left
         // a new reading slides in: up when it rose, down when it fell
-        androidx.compose.animation.AnimatedContent(
+        AnimatedContent(
             targetState = state.sgv,
             transitionSpec = {
                 val up = targetState > initialState
                 (
-                    androidx.compose.animation.slideInVertically { h -> if (up) h / 2 else -h / 2 } +
-                        androidx.compose.animation.fadeIn()
+                    slideInVertically { h -> if (up) h / 2 else -h / 2 } +
+                        fadeIn()
                     )
                     .togetherWith(
-                        androidx.compose.animation.slideOutVertically { h -> if (up) -h / 2 else h / 2 } +
-                            androidx.compose.animation.fadeOut()
+                        slideOutVertically { h -> if (up) -h / 2 else h / 2 } +
+                            fadeOut()
                     )
             },
             modifier = Modifier.weight(1f, fill = false),
@@ -95,7 +102,7 @@ private fun BigValue(state: HomeState, units: String, locale: Locale, modifier: 
                     color = if (state.ageMin >= STALE_MIN) c.textFaint else c.text,
                     // an old number must not be read as the current one
                     textDecoration = if (state.ageMin >= STALE_MIN) {
-                        androidx.compose.ui.text.style.TextDecoration.LineThrough
+                        TextDecoration.LineThrough
                     } else {
                         null
                     }
@@ -143,10 +150,10 @@ private fun ChangeAndAge(state: HomeState, locale: Locale) {
 
 /** In range or not (only for a fresh reading), and the 30-minute forecast with its usual error. */
 @Composable
-private fun RangeAndForecast(state: HomeState, stateColor: androidx.compose.ui.graphics.Color, locale: Locale) {
+private fun RangeAndForecast(state: HomeState, stateColor: Color, locale: Locale) {
     val c = DiaTheme.colors
     // wraps onto a second line rather than squeezing a chip into a column of words
-    androidx.compose.foundation.layout.FlowRow(
+    FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -225,7 +232,7 @@ private fun ForecastNotes(state: HomeState, locale: Locale) {
     }
     // what the trend cannot see: food or rapid insulin in the last two hours
     state.forecastQuality?.ignores?.maxByOrNull { it.t }?.let { b ->
-        val ctx = androidx.compose.ui.platform.LocalContext.current
+        val ctx = LocalContext.current
         Text(
             stringResource(
                 if (b.kind == "food") {

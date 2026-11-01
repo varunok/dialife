@@ -6,6 +6,7 @@ import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.data.CorrectionRow
 import com.lumenarcanus.dialife.data.DoseSettings
 import java.util.Locale
+import kotlin.math.round
 
 /** The dose settings as typed: text in this phone's units, checked by [problems] before it becomes [DoseSettings]. */
 data class DoseSettingsForm(
@@ -68,7 +69,7 @@ internal fun num(text: String) = text.trim().replace(',', '.').toDoubleOrNull()
 
 /** A glucose typed in [units], in mg/dL. */
 internal fun mgOf(text: String, units: Units): Int? = num(text)?.let { v ->
-    kotlin.math.round(if (units == Units.Mmol) v * 18.0 else v).toInt()
+    round(if (units == Units.Mmol) v * 18.0 else v).toInt()
 }
 
 private fun DoseSettingsForm.table(units: Units) = rows.map { (mg, u) -> mgOf(mg, units) to num(u) }
