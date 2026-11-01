@@ -15,9 +15,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** The wait on home: the server's state, ticking for the countdown; a close goes at once here. */
+/** The wait on home: the server's state, ticking for the countdown; a card closes here once the server took the close. */
 class WaitViewModel(private val live: LiveSource, private val repository: WaitRepository) : ViewModel() {
     private val closedHere = MutableStateFlow(emptySet<String>())
+    private val sending = mutableSetOf<String>()
     private val userMessage = MutableStateFlow<Int?>(null)
     private val clock = flow {
         while (true) {
@@ -34,12 +35,12 @@ class WaitViewModel(private val live: LiveSource, private val repository: WaitRe
 
     fun onAction(a: WaitAction) {
         val key = "${a.doseId}:${a.kind}"
-        closedHere.update { it + key }
+        if (!sending.add(key)) return // a second tap while the first is on its way
         viewModelScope.launch {
-            repository.close(a).onFailure {
-                closedHere.update { it - key } // the card is back
-                userMessage.value = R.string.q_failed
-            }
+            repository.close(a)
+                .onSuccess { closedHere.update { it + key } } // before the stream brings the state back
+                .onFailure { userMessage.value = R.string.q_failed }
+            sending.remove(key)
         }
     }
 

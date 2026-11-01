@@ -31,20 +31,21 @@ class WaitViewModelTest {
     }
 
     @Test
-    fun alreadyEatenClosesTheCardAtOnceAndOnTheServer() = runTest(main.dispatcher) {
+    fun alreadyEatenClosesTheCardOnlyOnceTheServerTookIt() = runTest(main.dispatcher) {
         val repo = FakeRepo()
         val vm = WaitViewModel(FakeLiveSource(StateResponse(now = now, wait = wait)), repo)
         backgroundScope.launch { vm.uiState.collect {} }
         assertNotNull(vm.uiState.value.countdown)
         vm.onAction(WaitAction.Eaten("d"))
-        assertNull(vm.uiState.value.countdown) // before the server answers
+        vm.onAction(WaitAction.Eaten("d")) // a second tap while the first is on its way
+        assertNotNull(vm.uiState.value.countdown) // the server has not answered
         assertEquals(listOf<WaitAction>(WaitAction.Eaten("d")), repo.closed)
         repo.answer.complete(Result.success(Unit))
         assertNull(vm.uiState.value.countdown)
     }
 
     @Test
-    fun aCloseThatFailedBringsTheCardBack() = runTest(main.dispatcher) {
+    fun aCloseThatFailedKeepsTheCard() = runTest(main.dispatcher) {
         val repo = FakeRepo()
         val vm = WaitViewModel(FakeLiveSource(StateResponse(now = now, wait = wait)), repo)
         backgroundScope.launch { vm.uiState.collect {} }
