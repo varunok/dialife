@@ -30,6 +30,7 @@ import (
 	"dialife/internal/planned"
 	"dialife/internal/questions"
 	"dialife/internal/store"
+	"dialife/internal/trust"
 	"dialife/internal/wait"
 )
 
@@ -68,6 +69,7 @@ type Handlers struct {
 	Forecast   *forecast.Service // the trend forecast for the chart, what is on board, how both did
 	Intents    *intent.Board     // who has the insulin form open
 	Dose       *dose.Service     // the family's dose calculation
+	Trust      *trust.Service    // when the sensor is not believed (after a shower); nil: always
 
 	mealGapQ mealGapCache // how far apart a meal's entries may be
 }
@@ -94,6 +96,7 @@ type stateResponse struct {
 	MealGapMin   int                    `json:"meal_gap_min"`            // food entries this close (minutes) are one meal
 	BolusBefore  int                    `json:"bolus_before_min"`        // rapid this long before a meal's first food is for it
 	BolusAfter   int                    `json:"bolus_after_min"`         // and this long after its last
+	Untrusted    *trust.Window          `json:"untrusted,omitempty"`     // the sensor is not believed now (a shower): trust only the glucometer
 }
 
 type caregiver struct {
@@ -183,6 +186,9 @@ func (h *Handlers) snapshot(ctx context.Context, now time.Time) (stateResponse, 
 		if resp.Questions, err = h.Questions.Recent(ctx); err != nil {
 			return resp, err
 		}
+	}
+	if resp.Untrusted, err = h.Trust.Active(ctx, now); err != nil {
+		return resp, err
 	}
 	resp.Dose = h.Dose.Get(ctx)
 	resp.MealGapMin = h.mealGap(ctx, now)
@@ -398,8 +404,9 @@ type historyResponse struct {
 	MBG        series             `json:"mbg"`            // glucometer readings uploaded by xDrip+, repeats of a BG check left out
 	Treatments []historyTreatment `json:"treatments"`
 	// what happened, to show on the chart and in the table (no actions here)
-	Alarms   []historyAlarm   `json:"alarms"`
-	Suspects []historySuspect `json:"suspects"`
+	Alarms    []historyAlarm   `json:"alarms"`
+	Suspects  []historySuspect `json:"suspects"`
+	Untrusted []trust.Window   `json:"untrusted"` // when the sensor was not believed (showers), oldest first
 }
 
 // History serves GET /api/history?from=&to= (unix ms or ISO; default last 6 h),
@@ -442,6 +449,13 @@ func (h *Handlers) History(w http.ResponseWriter, r *http.Request) {
 		fail(w, "history marks", err)
 		return
 	}
+	if resp.Untrusted, err = h.Trust.Between(ctx, from, to); err != nil {
+		fail(w, "history untrusted", err)
+		return
+	}
+	if resp.Untrusted == nil {
+		resp.Untrusted = []trust.Window{}
+	}
 	httpx.WriteJSON(w, http.StatusOK, resp)
 }
 
@@ -477,7 +491,7 @@ func historyOf(t store.Treatment) historyTreatment {
 		ID: t.ID, T: t.CreatedAt, EventType: t.EventType, Insulin: t.Insulin, Carbs: t.Carbs, Notes: t.Notes, EnteredBy: t.EnteredBy,
 		InsulinType: typ, InsulinName: name,
 	}
-	if t.EventType == "Exercise" {
+	if t.EventType == "Exercise" || t.EventType == trust.Shower {
 		ht.Duration, ht.Intensity = exercise(t.Raw)
 	}
 	if t.Carbs != nil {

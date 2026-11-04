@@ -14,6 +14,7 @@ import (
 	"dialife/internal/insulin"
 	"dialife/internal/planned"
 	"dialife/internal/store"
+	"dialife/internal/trust"
 )
 
 const (
@@ -149,7 +150,8 @@ type loggedEntry struct {
 	Entry
 	ID       string
 	DeviceID int64
-	start    bool // a sensor start
+	start    bool          // a sensor start
+	shower   *trust.Window // a shower: the sensor is not believed in it
 }
 
 func (e *Engine) logged(ctx context.Context, from, to time.Time) ([]loggedEntry, error) {
@@ -162,6 +164,10 @@ func (e *Engine) logged(ctx context.Context, from, to time.Time) ([]loggedEntry,
 	for _, tr := range ts {
 		insulin := tr.Insulin != nil && *tr.Insulin > 0
 		mealID, role := insulinFor(tr.Raw)
+		var shower *trust.Window
+		if w, ok := trust.Of(tr); ok {
+			shower = &w
+		}
 		out = append(out, loggedEntry{
 			Entry: Entry{
 				T:        tr.CreatedAt,
@@ -175,6 +181,7 @@ func (e *Engine) logged(ctx context.Context, from, to time.Time) ([]loggedEntry,
 			ID:       tr.ID,
 			DeviceID: tr.DeviceID,
 			start:    tr.EventType == "Sensor Start" || tr.EventType == "Sensor Change",
+			shower:   shower,
 		})
 	}
 	return out, nil

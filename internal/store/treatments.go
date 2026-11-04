@@ -54,11 +54,12 @@ func (s *Store) UpsertTreatments(ctx context.Context, ts []Treatment, deviceID i
 
 // TreatmentQuery filters on created_at (unix ms); nil bounds are open.
 type TreatmentQuery struct {
-	ID      string
-	UUID    string
-	Gte, Gt *int64
-	Lte, Lt *int64
-	Count   int
+	ID        string
+	UUID      string
+	EventType string // exact; empty: any
+	Gte, Gt   *int64
+	Lte, Lt   *int64
+	Count     int
 }
 
 // ListTreatments returns live (not deleted) treatments, newest first.
@@ -74,6 +75,9 @@ func (s *Store) ListTreatments(ctx context.Context, q TreatmentQuery) ([]Treatme
 	}
 	if q.UUID != "" {
 		add("uuid = ?", q.UUID)
+	}
+	if q.EventType != "" {
+		add("event_type = ?", q.EventType)
 	}
 	if q.Gte != nil {
 		add("created_at >= ?", *q.Gte)

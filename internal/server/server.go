@@ -24,6 +24,7 @@ import (
 	"dialife/internal/questions"
 	"dialife/internal/stats"
 	"dialife/internal/store"
+	"dialife/internal/trust"
 	"dialife/internal/wait"
 	"dialife/internal/web"
 	"dialife/internal/weblogin"
@@ -72,6 +73,7 @@ func New(d Deps) *App {
 	api.Questions.OnPlanned = func() { api.PublishState(context.Background()) }
 	api.Wait = &wait.Service{Store: d.Store, Now: d.Now, OnChange: api.PublishState}
 	api.Forecast = &forecast.Service{Store: d.Store}
+	api.Trust = &trust.Service{Store: d.Store}
 	api.Intents = &intent.Board{Bus: d.Bus, Now: d.Now}
 	api.Dose = &dosecalc.Service{Store: d.Store, Now: d.Now, OnChange: api.PublishState}
 	api.Planned = &planned.Service{Store: d.Store, Now: d.Now, OnChange: api.PublishState, Settle: api.Questions.SettlePlanned}

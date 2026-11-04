@@ -9,6 +9,7 @@ import (
 	"dialife/internal/glucose"
 	"dialife/internal/httpx"
 	"dialife/internal/store"
+	"dialife/internal/trust"
 )
 
 // all of it: the comparison gets better with every check, old sensors included
@@ -46,7 +47,11 @@ func (h HTTP) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var starts []int64
+	var untrusted []trust.Window // a check after a shower says nothing about the sensor
 	for _, t := range ts {
+		if w, ok := trust.Of(t); ok {
+			untrusted = append(untrusted, w)
+		}
 		if v := CheckOf(t.Raw); v != nil {
 			checks = append(checks, Point{T: t.CreatedAt, V: *v, Src: t.EnteredBy})
 		}
@@ -55,7 +60,7 @@ func (h HTTP) get(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	slices.Sort(starts)
-	checks = Dedup(checks)
+	checks = trust.Drop(Dedup(checks), func(p Point) int64 { return p.T }, untrusted)
 
 	// the sensor around each check only, not years of readings
 	var sgv []Point

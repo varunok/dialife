@@ -8,6 +8,7 @@ import (
 
 	"dialife/internal/glucose"
 	"dialife/internal/store"
+	"dialife/internal/trust"
 )
 
 // step moves an open question on: closes it when its reason went away or an
@@ -141,12 +142,19 @@ func (e *Engine) detect(ctx context.Context, qs []store.Question, logged []logge
 	}
 	entries := make([]Entry, len(logged))
 	var starts []int64
+	var untrusted []trust.Window
 	for i, l := range logged {
 		entries[i] = l.Entry
 		if l.start {
 			starts = append(starts, l.T)
 		}
+		if l.shower != nil {
+			untrusted = append(untrusted, *l.shower)
+		}
 	}
+	// a shower moves the sensor, not the sugar: its readings ask nothing
+	// (left out, they leave a hole Detect does not reach across)
+	sgv = trust.Drop(sgv, func(p Point) int64 { return p.T }, untrusted)
 	loc := e.Loc
 	if loc == nil {
 		loc = time.UTC

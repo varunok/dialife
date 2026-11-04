@@ -10,6 +10,7 @@ import (
 	"dialife/internal/glucose"
 	"dialife/internal/insulin"
 	"dialife/internal/store"
+	"dialife/internal/trust"
 )
 
 const (
@@ -128,12 +129,16 @@ func (s *Service) trendQuality(ctx context.Context, now time.Time) (all, quiet, 
 		return c.last, c.quiet, c.afterFood
 	}
 	var foods []int64
+	var untrusted []trust.Window
 	for _, t := range ts {
 		if t.Carbs != nil && *t.Carbs > 0 {
 			foods = append(foods, t.CreatedAt)
 		}
+		if w, ok := trust.Of(t); ok {
+			untrusted = append(untrusted, w)
+		}
 	}
-	rs := points(es)
+	rs := trusted(points(es), untrusted)
 	c.last, c.at = Backtest(rs), now
 	c.quiet, c.afterFood = BacktestSplit(rs, foods)
 	return c.last, c.quiet, c.afterFood
@@ -210,6 +215,17 @@ func (s *Service) OnBoardQuality(ctx context.Context, p Params, now time.Time) Q
 		slog.Error("iob quality entries", "err", err)
 		return c.last
 	}
-	c.last, c.at = BacktestPhysiological(points(es), ds, ms, p), now
+	untrusted, err := (&trust.Service{Store: s.Store}).Between(ctx, from, to)
+	if err != nil {
+		slog.Error("iob quality untrusted", "err", err)
+		return c.last
+	}
+	c.last, c.at = BacktestPhysiological(trusted(points(es), untrusted), ds, ms, p), now
 	return c.last
+}
+
+// trusted leaves out the readings taken while the sensor was not to be
+// believed (a shower): a forecast is scored against what really happened.
+func trusted(rs []Point, untrusted []trust.Window) []Point {
+	return trust.Drop(rs, func(p Point) int64 { return p.T }, untrusted)
 }
