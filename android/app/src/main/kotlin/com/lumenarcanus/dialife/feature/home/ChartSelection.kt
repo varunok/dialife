@@ -106,7 +106,9 @@ private fun entryLines(tr: Treatment, text: ChartText): List<String> {
         },
         tr.carbs?.takeIf { it > 0 }?.let { text.carbsLabel.format(locale, it.toInt()) }
     ).joinToString(" · ")
-    val what = tr.duration?.let { d -> text.activityLabel.format(locale, text.intensityLabel(tr.intensity), d) }
+    val what = tr.duration?.let { d ->
+        if (tr.isShower) text.showerLabel.format(locale, d) else text.activityLabel.format(locale, text.intensityLabel(tr.intensity), d)
+    }
         ?: amounts.ifBlank { tr.notes ?: text.noteLabel }
     val dishes = tr.foodItems.orEmpty().map { f ->
         listOfNotNull(f.name, f.portion?.takeIf { it.isNotBlank() }).joinToString(", ") +

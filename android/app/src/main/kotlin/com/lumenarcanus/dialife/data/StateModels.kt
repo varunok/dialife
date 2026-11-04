@@ -66,7 +66,9 @@ data class StateResponse(
     @SerialName("bolus_before_min") val bolusBeforeMin: Int = MealRules().beforeMin, // rapid this long before a meal is for it
     @SerialName("bolus_after_min") val bolusAfterMin: Int = MealRules().afterMin, // and this long after
     // a rapid dose with food beside it: when to start eating, a suggestion only
-    val wait: Wait? = null
+    val wait: Wait? = null,
+    // the sensor is not believed now (a shower): trust only the glucometer
+    val untrusted: Untrusted? = null
 ) {
     val mealRules get() = MealRules(mealGapMin, bolusBeforeMin, bolusAfterMin)
 }
@@ -124,5 +126,16 @@ data class History(
     val to: Long,
     val sgv: Series = Series(),
     val mbg: Series = Series(),
-    val treatments: List<Treatment> = emptyList()
+    val treatments: List<Treatment> = emptyList(),
+    // when the sensor was not believed (showers), oldest first
+    val untrusted: List<Untrusted> = emptyList()
 )
+
+/** A time the sensor is not to be believed, [from, until): a shower and half an hour after it. */
+@Serializable
+data class Untrusted(val from: Long, val until: Long, val reason: String = "shower") {
+    operator fun contains(t: Long) = t in from until until
+}
+
+/** The window [now] falls in, if any; the state's own once it has passed is not one any more. */
+fun StateResponse.untrustedAt(now: Long): Untrusted? = untrusted?.takeIf { now in it }

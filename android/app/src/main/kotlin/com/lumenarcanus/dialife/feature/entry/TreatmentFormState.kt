@@ -64,6 +64,10 @@ class TreatmentFormState(
     var meter by mutableStateOf(editing?.glucose?.let { formatGlucose(it, units, locale) }.orEmpty())
     var minutes by mutableDoubleStateOf(editing?.duration?.toDouble() ?: 30.0)
     var intensity by mutableStateOf(editing?.intensity ?: "moderate")
+
+    // the Activity sheet's "Shower" tab: how long, in steps of 5 minutes
+    var shower by mutableStateOf(editing?.isShower == true)
+    var showerMinutes by mutableDoubleStateOf(editing?.duration?.takeIf { editing.isShower }?.toDouble() ?: SHOWER_DEFAULT_MIN)
     var note by mutableStateOf(editing?.notes.orEmpty())
     var time by mutableLongStateOf(editing?.t ?: initialTime ?: openedAt)
 
@@ -104,7 +108,7 @@ class TreatmentFormState(
         TreatmentKind.Insulin -> insulin > 0 && level(dose).let { it == DoseCalc.Level.Ok || it == DoseCalc.Level.Unusual || okBig }
         TreatmentKind.Food -> carbs > 0
         TreatmentKind.Meter -> parseMeter(meter, units) != null
-        TreatmentKind.Activity -> minutes > 0
+        TreatmentKind.Activity -> if (shower) showerMinutes > 0 else minutes > 0
         TreatmentKind.Note -> note.isNotBlank()
     }
 
@@ -114,15 +118,21 @@ class TreatmentFormState(
     /** The entry to save; [confirmedNew]: the dose near it that this one is not. */
     fun build(confirmedNew: String?, rules: MealRules, nameOf: (InsulinType) -> String? = Prefs::nameOf): Treatment {
         val e = editing
+        val isShower = kind == TreatmentKind.Activity && shower
         return Treatment(
             id = e?.id ?: TreatmentQueue.newId(),
             t = time,
+            eventType = if (isShower) Treatment.SHOWER else null,
             // an edit keeps the other half of a meal bolus untouched
             insulin = if (kind == TreatmentKind.Insulin) insulin else e?.insulin?.takeIf { kind == TreatmentKind.Food },
             carbs = if (kind == TreatmentKind.Food) carbs else e?.carbs?.takeIf { kind == TreatmentKind.Insulin },
             glucose = if (kind == TreatmentKind.Meter) parseMeter(meter, units) else null,
-            duration = if (kind == TreatmentKind.Activity) minutes.toInt() else null,
-            intensity = if (kind == TreatmentKind.Activity) intensity else null,
+            duration = when {
+                isShower -> showerMinutes.toInt()
+                kind == TreatmentKind.Activity -> minutes.toInt()
+                else -> null
+            },
+            intensity = if (kind == TreatmentKind.Activity && !isShower) intensity else null,
             notes = note.trim().ifBlank { null },
             insulinType = if (kind == TreatmentKind.Insulin) insType.wire else e?.insulinType,
             insulinName = if (kind == TreatmentKind.Insulin) {
@@ -138,9 +148,17 @@ class TreatmentFormState(
     }
 
     companion object {
+        const val SHOWER_DEFAULT_MIN = 10.0
+        const val SHOWER_MAX_MIN = 120.0 // the server caps it the same
+
         /** Keeps what was typed across a rotation (the dishes and dialogs as before: not kept). */
         fun saver(make: () -> TreatmentFormState): Saver<TreatmentFormState, Any> = listSaver(
-            save = { listOf(it.insulin, it.insType.name, it.insRole, it.meter, it.minutes, it.intensity, it.note, it.time) },
+            save = {
+                listOf(
+                    it.insulin, it.insType.name, it.insRole, it.meter, it.minutes, it.intensity, it.note, it.time,
+                    it.shower, it.showerMinutes
+                )
+            },
             restore = { v ->
                 make().apply {
                     insulin = v[0] as Double
@@ -151,6 +169,8 @@ class TreatmentFormState(
                     intensity = v[5] as String
                     note = v[6] as String
                     time = v[7] as Long
+                    shower = v[8] as Boolean
+                    showerMinutes = v[9] as Double
                 }
             }
         )

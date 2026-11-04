@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -53,6 +54,29 @@ internal fun DrawScope.drawHighlight(s: ChartScale, c: DiaColors, from: Long) {
         Offset(hx, 0f),
         Size((s.x(s.view.now).coerceIn(0f, s.plotW) - hx).coerceAtLeast(0f), s.plotH)
     )
+}
+
+/** Where the sensor is not believed (a shower and half an hour after): hatched, labelled at the top. */
+internal fun DrawScope.drawUntrusted(s: ChartScale, c: DiaColors, measurer: TextMeasurer, text: ChartText) {
+    val gap = 8.dp.toPx()
+    s.view.untrusted.forEach { w ->
+        val x0 = s.x(w.from).coerceIn(0f, s.plotW)
+        val x1 = s.x(w.until).coerceIn(0f, s.plotW)
+        if (x1 <= x0) return@forEach
+        drawRect(c.high.copy(alpha = 0.08f), Offset(x0, 0f), Size(x1 - x0, s.plotH))
+        clipRect(left = x0, right = x1, bottom = s.plotH) {
+            var x = x0 - s.plotH
+            while (x < x1) {
+                drawLine(c.high.copy(alpha = 0.22f), Offset(x, s.plotH), Offset(x + s.plotH, 0f), 1.dp.toPx())
+                x += gap
+            }
+        }
+        drawLine(c.high.copy(alpha = 0.6f), Offset(x0, 0f), Offset(x0, s.plotH), 1.dp.toPx(), pathEffect = dashed(3f, 3f))
+        val m = measurer.measure("⚠ " + text.untrustedLabel, labelStyle(c).copy(color = c.high, fontWeight = FontWeight.SemiBold))
+        if (x1 - x0 > m.size.width + 4.dp.toPx()) {
+            drawText(m, topLeft = Offset(x0 + 3.dp.toPx(), ACT_TOP.toPx() + ACT_H.toPx() + 3.dp.toPx()))
+        }
+    }
 }
 
 /** The target band up to now and the two threshold lines, labelled on the right. */
@@ -103,7 +127,10 @@ internal fun DrawScope.drawHourGrid(s: ChartScale, c: DiaColors, measurer: TextM
 /** The forecast cone and line from the last reading; only when that reading is the latest. */
 internal fun DrawScope.drawForecast(s: ChartScale, c: DiaColors, forecast: Forecast?) {
     val v = s.view
-    val f = forecast?.takeIf { it.cone.isNotEmpty() && v.visible.isNotEmpty() && v.visible.last() == v.ts.lastIndex } ?: return
+    // none from a reading that is not believed (a shower): it would only carry the error forward
+    val f = forecast?.takeIf {
+        it.cone.isNotEmpty() && v.visible.isNotEmpty() && v.visible.last() == v.ts.lastIndex && v.trusted(v.visible.last())
+    } ?: return
     val lastT = v.ts[v.visible.last()]
     val lastV = v.vs[v.visible.last()]
     val cone = Path().apply {
@@ -155,6 +182,11 @@ internal fun DrawScope.drawMeterEstimate(s: ChartScale, c: DiaColors, m: MeterMo
     }
     var run = mutableListOf<Int>()
     v.visible.forEach { i ->
+        if (!v.trusted(i)) { // the sensor is not believed here: nothing to estimate from
+            drawRun(run)
+            run = mutableListOf()
+            return@forEach
+        }
         if (run.isNotEmpty() && v.ts[i] - v.ts[run.last()] > 12 * 60_000L) {
             drawRun(run)
             run = mutableListOf()
@@ -175,10 +207,22 @@ internal fun DrawScope.drawReadings(s: ChartScale, c: DiaColors) {
         else -> 1.4f
     }.dp.toPx()
     fun ink(i: Int) = colorFor(v.vs[i], v.thresholds, c.low, c.inRange, c.high)
-    v.visible.forEach { i -> drawCircle(ink(i), r, Offset(s.x(v.ts[i]), s.y(v.vs[i]))) }
+    v.visible.forEach { i ->
+        val at = Offset(s.x(v.ts[i]), s.y(v.vs[i]))
+        // not believed: a faint hollow dot, so no one reads it as the sugar
+        if (v.trusted(i)) drawCircle(ink(i), r, at) else drawCircle(ink(i).copy(alpha = 0.5f), r, at, style = Stroke(1.dp.toPx()))
+    }
     v.visible.lastOrNull()?.takeIf { it == v.ts.lastIndex }?.let { i ->
-        drawCircle(c.background, r + 4.dp.toPx(), Offset(s.x(v.ts[i]), s.y(v.vs[i])))
-        drawCircle(ink(i), r + 2.dp.toPx(), Offset(s.x(v.ts[i]), s.y(v.vs[i])))
+        val at = Offset(s.x(v.ts[i]), s.y(v.vs[i]))
+        drawCircle(c.background, r + 4.dp.toPx(), at)
+        if (v.trusted(
+                i
+            )
+        ) {
+            drawCircle(ink(i), r + 2.dp.toPx(), at)
+        } else {
+            drawCircle(ink(i), r + 2.dp.toPx(), at, style = Stroke(1.5.dp.toPx()))
+        }
     }
 }
 
@@ -235,15 +279,16 @@ internal fun DrawScope.drawActivities(s: ChartScale, c: DiaColors, measurer: Tex
     s.view.activities.forEach { a ->
         val x0 = s.x(a.t).coerceAtLeast(0f)
         val x1 = max(x0 + 6.dp.toPx(), s.x(a.t + (a.duration ?: 0) * 60_000L).coerceAtMost(s.plotW))
-        val alpha = when (a.intensity) {
-            "vigorous" -> 0.85f
-            "moderate" -> 0.55f
+        val alpha = when {
+            a.isShower -> 0.55f
+            a.intensity == "vigorous" -> 0.85f
+            a.intensity == "moderate" -> 0.55f
             else -> 0.3f
         }
         val top = ACT_TOP.toPx()
         val barSize = Size(x1 - x0, ACT_H.toPx())
         val corner = CornerRadius(ACT_H.toPx() / 2)
-        drawRoundRect(c.inRange.copy(alpha = alpha), Offset(x0, top), barSize, corner)
+        drawRoundRect((if (a.isShower) c.high else c.inRange).copy(alpha = alpha), Offset(x0, top), barSize, corner)
         if ((pick as? Pick.Event)?.treatment == a) {
             drawRoundRect(c.text, Offset(x0, top), barSize, corner, style = Stroke(1.5.dp.toPx()))
         }

@@ -799,4 +799,16 @@
     <string name="dose_wait_low">Comer ya por debajo de (ahora o en 15 min)</string>
     <string name="dose_wait_source">Revisiones: la rápida 15–20 min antes de comer da un pico menor después. Ningún estudio liga la espera al tamaño de la dosis o de la comida.</string>
     <string name="dose_err_wait">Cuándo comer: 0–45 min en rango, con glucosa alta no menos y hasta 60 min; comer ya por debajo de 60–120 mg/dL; alta por encima, hasta 300 mg/dL.</string>
+
+    <!-- a shower: the sensor is not believed during it and 30 min after -->
+    <string name="act_sport">Deporte</string>
+    <string name="tr_shower">Ducha</string>
+    <string name="shower_duration">Cuánto duró</string>
+    <string name="shower_note">Durante 30 min después de la ducha el sensor puede marcar valores más altos o más bajos. Confíe solo en el glucómetro.</string>
+    <string name="untrusted_title">⚠ Después de la ducha — hasta %1$s</string>
+    <string name="untrusted_text">El sensor puede marcar valores más altos o más bajos. Confíe solo en el glucómetro.</string>
+    <string name="untrusted_alarm">Después de la ducha: compruebe con el glucómetro</string>
+    <string name="untrusted_short">⚠ tras la ducha</string>
+    <string name="untrusted_chart">ducha</string>
+    <string name="shower_label">Ducha · %1$d min</string>
 </resources>

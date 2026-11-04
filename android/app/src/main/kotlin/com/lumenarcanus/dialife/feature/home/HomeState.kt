@@ -7,6 +7,8 @@ import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.unitsOf
 import com.lumenarcanus.dialife.data.ForecastQuality
 import com.lumenarcanus.dialife.data.Iob
+import com.lumenarcanus.dialife.data.Untrusted
+import com.lumenarcanus.dialife.data.untrustedAt
 
 /** Nightscout trend names, as the server sends them. */
 enum class Trend(val degrees: Float, val double: Boolean = false) {
@@ -38,7 +40,9 @@ data class HomeState(
     val uploaderName: String? = null, // the family's name for the xDrip+ phone, from the server
     val alarms: Int = 0,
     // percent over the last 24 h
-    val timeInRange: Int? = null
+    val timeInRange: Int? = null,
+    // the sensor is not believed now (a shower): the number is dimmed, only the glucometer counts
+    val untrusted: Untrusted? = null
 ) {
     val range: Range get() = when {
         sgv < low -> Range.Low
@@ -68,7 +72,8 @@ fun HomeUi.toHomeState(fallbackUnits: Units): HomeState? {
         phoneBattery = st.uploader?.battery,
         uploaderName = st.uploaderName,
         alarms = st.alarms.count { it.state != "cleared" },
-        timeInRange = inRange
+        timeInRange = inRange,
+        untrusted = st.untrustedAt(now)
     )
 }
 

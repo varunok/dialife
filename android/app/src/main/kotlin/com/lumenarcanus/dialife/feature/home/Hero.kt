@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.UntrustedCard
 import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatDelta
@@ -68,7 +69,9 @@ internal fun Hero(state: HomeState, locale: Locale) {
             TrendBadge(state.trend, stateColor)
         }
         ChangeAndAge(state, locale)
-        RangeAndForecast(state, stateColor, locale)
+        state.untrusted?.let { UntrustedCard(it) }
+        // in range and "in 30 min" are counted from the sensor: not while it is not believed
+        if (state.untrusted == null) RangeAndForecast(state, stateColor, locale)
         ForecastNotes(state, locale)
     }
 }
@@ -99,7 +102,8 @@ private fun BigValue(state: HomeState, units: String, locale: Locale, modifier: 
             BasicText(
                 formatGlucose(sgv, state.units, locale),
                 style = GlucoseHero.copy(
-                    color = if (state.ageMin >= STALE_MIN) c.textFaint else c.text,
+                    // not believed now (a shower): dimmed, so it is not read as the sugar
+                    color = if (state.ageMin >= STALE_MIN || state.untrusted != null) c.textFaint else c.text,
                     // an old number must not be read as the current one
                     textDecoration = if (state.ageMin >= STALE_MIN) {
                         TextDecoration.LineThrough
@@ -112,6 +116,9 @@ private fun BigValue(state: HomeState, units: String, locale: Locale, modifier: 
             )
         }
         Spacer(Modifier.size(8.dp))
+        if (state.untrusted != null) {
+            Text("⚠", color = c.high, fontSize = 28.sp, modifier = Modifier.padding(bottom = 12.dp, end = 6.dp))
+        }
         Text(
             units,
             color = c.textMuted,

@@ -811,4 +811,16 @@
     <string name="dose_wait_low">Їсти одразу нижче (зараз або за 15 хв)</string>
     <string name="dose_wait_source">Огляди: короткий за 15–20 хв до їжі дає менший пік після неї. Досліджень, де час залежить від розміру дози чи їжі, немає.</string>
     <string name="dose_err_wait">Коли їсти: 0–45 хв у нормі, при високому не менше й до 60 хв; їсти одразу нижче 60–120 mg/dL; високий — вище цього, до 300 mg/dL.</string>
+
+    <!-- a shower: the sensor is not believed during it and 30 min after -->
+    <string name="act_sport">Спорт</string>
+    <string name="tr_shower">Душ</string>
+    <string name="shower_duration">Скільки тривав</string>
+    <string name="shower_note">Ще 30 хв після душу сенсор може показувати завищені або занижені значення. Довіряйте лише глюкометру.</string>
+    <string name="untrusted_title">⚠ Після душу — до %1$s</string>
+    <string name="untrusted_text">Сенсор може показувати завищені або занижені значення. Довіряйте лише глюкометру.</string>
+    <string name="untrusted_alarm">Після душу — перевірте глюкометром</string>
+    <string name="untrusted_short">⚠ після душу</string>
+    <string name="untrusted_chart">душ</string>
+    <string name="shower_label">Душ · %1$d хв</string>
 </resources>

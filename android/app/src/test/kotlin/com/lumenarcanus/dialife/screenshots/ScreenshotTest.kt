@@ -25,6 +25,7 @@ import com.lumenarcanus.dialife.data.FoodItem
 import com.lumenarcanus.dialife.data.PlannedDose
 import com.lumenarcanus.dialife.data.Question
 import com.lumenarcanus.dialife.data.Treatment
+import com.lumenarcanus.dialife.data.Untrusted
 import com.lumenarcanus.dialife.data.Wait
 import com.lumenarcanus.dialife.data.WebLoginInfo
 import com.lumenarcanus.dialife.data.WebSession
@@ -90,6 +91,25 @@ class ScreenshotTest {
     @Test
     @Config(qualifiers = "+uk")
     fun homeDarkUk() = shot("home_dark_uk", dark = true) { SampleHome(sampleHomeUi(now), deviceName = "Тато") }
+
+    // after a shower: the number dimmed, the warning card, a hatched band on the chart
+    @Test
+    @Config(qualifiers = "uk-w412dp-h1700dp-xxhdpi")
+    fun homeAfterShowerUk() = shot("home_after_shower_dark_uk", dark = true) {
+        val ui = sampleHomeUi(now)
+        val w = Untrusted(from = now - 25 * 60_000L, until = now + 15 * 60_000L)
+        SampleHome(
+            ui.copy(
+                state = ui.state!!.copy(untrusted = w),
+                history = ui.history!!.copy(
+                    untrusted = listOf(w),
+                    treatments =
+                    ui.history!!.treatments + Treatment("sh", w.from, eventType = Treatment.SHOWER, duration = 10, enteredBy = "Мама")
+                )
+            ),
+            deviceName = "Тато"
+        )
+    }
 
     // tall enough to show the entry buttons under the chart
     @Test

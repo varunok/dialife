@@ -41,6 +41,8 @@ internal class ChartText(
     val suspectDouble: String,
     val suspectHint: String,
     val activityLabel: String,
+    val showerLabel: String, // "Shower · %d min"
+    val untrustedLabel: String, // over the band where the sensor is not believed
     private val intensities: Map<String, String>,
     private val typedBy: String,
     private val autoBy: String,
@@ -87,6 +89,8 @@ internal fun rememberChartText(units: Units): ChartText {
         suspectDouble = stringResource(R.string.suspect_double),
         suspectHint = stringResource(R.string.suspect_hint),
         activityLabel = stringResource(R.string.event_activity),
+        showerLabel = stringResource(R.string.shower_label),
+        untrustedLabel = stringResource(R.string.untrusted_chart),
         intensities = mapOf(
             "light" to stringResource(R.string.act_light),
             "moderate" to stringResource(R.string.act_moderate),

@@ -12,6 +12,7 @@ import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatDelta
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.core.ui.unitsOf
+import com.lumenarcanus.dialife.data.untrustedAt
 import com.lumenarcanus.dialife.feature.home.Trend
 
 object Notifications {
@@ -127,6 +128,8 @@ object Notifications {
         val unitLabel = context.getString(if (units == Units.MgDl) R.string.unit_mgdl else R.string.unit_mmol)
         val title = "${formatGlucose(bg.sgv, units, locale)} $unitLabel $arrow".trim()
         val parts = buildList {
+            // after a shower the number is not to be believed: said first
+            if (st.untrustedAt(System.currentTimeMillis()) != null) add(context.getString(R.string.untrusted_short))
             bg.delta?.let { add(context.getString(R.string.delta_per_5, formatDelta(it, units, locale))) }
             if (live.link == Link.Offline) add(context.getString(R.string.status_offline))
         }

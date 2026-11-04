@@ -103,7 +103,8 @@ private fun EntryTitle(tr: Treatment, units: Units) {
         }
         (tr.carbs ?: 0.0) > 0 -> stringResource(R.string.detail_food, (tr.carbs ?: 0.0).toInt()) to c.carbs
         tr.glucose != null -> stringResource(R.string.detail_meter, formatGlucose(tr.glucose, units, locale)) to c.inRange
-        tr.duration != null -> stringResource(R.string.tr_activity) + " · " + stringResource(R.string.data_step_min, tr.duration) to
+        tr.duration != null -> stringResource(if (tr.isShower) R.string.tr_shower else R.string.tr_activity) + " · " +
+            stringResource(R.string.data_step_min, tr.duration) to
             c.inRange
         else -> stringResource(R.string.tr_note) to c.text
     }

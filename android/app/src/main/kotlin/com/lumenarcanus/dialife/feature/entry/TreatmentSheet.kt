@@ -62,6 +62,7 @@ import com.lumenarcanus.dialife.core.data.FoodRepository
 import com.lumenarcanus.dialife.core.ui.Confirm
 import com.lumenarcanus.dialife.core.ui.LimitAlert
 import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.WarnCard
 import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
@@ -104,6 +105,7 @@ fun guessInsulinType(now: Long, recent: List<Treatment>, basalTimes: List<Int> =
     return if (near && !givenLately) InsulinType.Basal else InsulinType.Rapid
 }
 private val MinutesQuick = listOf(15.0, 30.0, 45.0, 60.0, 90.0, 120.0)
+private val ShowerQuick = listOf(5.0, 10.0, 15.0, 20.0, 30.0)
 private val Intensities = listOf("light" to R.string.act_light, "moderate" to R.string.act_moderate, "vigorous" to R.string.act_vigorous)
 private val TimeShifts = listOf(0, 15, 30, 60) // minutes ago
 
@@ -339,12 +341,31 @@ private fun InsulinRoleChoice(form: TreatmentFormState, recent: List<Treatment>,
     }
 }
 
-/** Activity: how hard, and how long. */
+/** Activity: sport (how hard, how long) or a shower (how long; the sensor is not believed after it). */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ActivityFields(form: TreatmentFormState) {
     val c = DiaTheme.colors
     val locale = LocalConfiguration.current.locales[0]
+    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+        listOf(false to R.string.act_sport, true to R.string.tr_shower).forEachIndexed { i, (shower, label) ->
+            SegmentedButton(
+                selected = form.shower == shower,
+                onClick = { form.shower = shower },
+                shape = SegmentedButtonDefaults.itemShape(i, 2)
+            ) { Text(stringResource(label), maxLines = 1, fontSize = 13.sp) }
+        }
+    }
+    if (form.shower) {
+        Text(stringResource(R.string.shower_duration), color = c.textMuted, fontSize = 13.sp)
+        Amount(
+            value = form.showerMinutes, step = 5.0, max = TreatmentFormState.SHOWER_MAX_MIN, unit = stringResource(R.string.unit_min),
+            quick = ShowerQuick, accent = c.inRange, container = c.inRangeContainer, locale = locale,
+            label = stringResource(R.string.shower_duration)
+        ) { form.showerMinutes = it }
+        WarnCard(null, stringResource(R.string.shower_note))
+        return
+    }
     Text(stringResource(R.string.act_intensity), color = c.textMuted, fontSize = 13.sp)
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Intensities.forEach { (key, label) ->

@@ -791,4 +791,16 @@
     <string name="dose_wait_low">Eat at once below (now or in 15 min)</string>
     <string name="dose_wait_source">Reviews: rapid insulin 15–20 min before a meal gives a lower peak after it. No study ties the wait to the size of the dose or of the meal.</string>
     <string name="dose_err_wait">When to eat: 0–45 min in range, the wait when high no shorter and at most 60 min; eat at once below 60–120 mg/dL; high above that, up to 300 mg/dL.</string>
+
+    <!-- a shower: the sensor is not believed during it and 30 min after -->
+    <string name="act_sport">Sport</string>
+    <string name="tr_shower">Shower</string>
+    <string name="shower_duration">How long it lasted</string>
+    <string name="shower_note">For 30 min after a shower the sensor may read too high or too low. Trust only the glucometer.</string>
+    <string name="untrusted_title">⚠ After a shower — until %1$s</string>
+    <string name="untrusted_text">The sensor may read too high or too low. Trust only the glucometer.</string>
+    <string name="untrusted_alarm">After a shower — check with the glucometer</string>
+    <string name="untrusted_short">⚠ after a shower</string>
+    <string name="untrusted_chart">shower</string>
+    <string name="shower_label">Shower · %1$d min</string>
 </resources>

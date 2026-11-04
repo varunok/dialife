@@ -8,6 +8,7 @@ import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.data.AlarmEvent
 import com.lumenarcanus.dialife.data.AlarmView
 import com.lumenarcanus.dialife.data.StateResponse
+import com.lumenarcanus.dialife.data.untrustedAt
 
 /** The words of an alarm, shared by notifications, the alarm screen and the home banner. */
 object AlarmText {
@@ -44,7 +45,14 @@ object AlarmText {
         st?.uploaderName?.takeIf { it.isNotBlank() }?.let { "«$it»" } ?: ctx.getString(R.string.uploader_in_sentence)
 
     /** Why it rings (again), as the server's reason says; [st] names the xDrip+ phone for a stale one. */
-    fun reason(ctx: Context, e: AlarmEvent?, a: AlarmView, st: StateResponse?, now: Long = System.currentTimeMillis()): String {
+    fun reason(ctx: Context, e: AlarmEvent?, a: AlarmView, st: StateResponse?, now: Long = System.currentTimeMillis()): String =
+        listOfNotNull(why(ctx, e, a, st, now), afterShower(ctx, a, st, now)).joinToString(" · ")
+
+    /** After a shower the sensor is not believed: the alarm still rings, and says to check with the glucometer. */
+    fun afterShower(ctx: Context, a: AlarmView, st: StateResponse?, now: Long = System.currentTimeMillis()): String? =
+        ctx.getString(R.string.untrusted_alarm).takeIf { a.kind != "stale" && st?.untrustedAt(now) != null }
+
+    private fun why(ctx: Context, e: AlarmEvent?, a: AlarmView, st: StateResponse?, now: Long): String {
         val was = e?.wasHandledBy?.takeIf { it.isNotBlank() } ?: ctx.getString(R.string.someone)
         val since = formatClock(ctx, a.startedAt)
         return when (e?.reason ?: a.reason) {

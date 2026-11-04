@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.UntrustedCard
 import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatDelta
 import com.lumenarcanus.dialife.core.ui.formatGlucose
@@ -55,6 +56,7 @@ import com.lumenarcanus.dialife.data.AlarmView
 import com.lumenarcanus.dialife.data.Bg
 import com.lumenarcanus.dialife.data.EpisodeRules
 import com.lumenarcanus.dialife.data.Treatment
+import com.lumenarcanus.dialife.data.untrustedAt
 import com.lumenarcanus.dialife.feature.alarms.ActionReceiver
 import com.lumenarcanus.dialife.feature.alarms.AlarmText
 import com.lumenarcanus.dialife.feature.home.ChartWindow
@@ -137,7 +139,10 @@ fun HandlingScreen(
             fontWeight = FontWeight.SemiBold
         )
 
-        HandlingReading(a, bg, units, ui.now)
+        val untrusted = ui.state.untrustedAt(ui.now)
+        HandlingReading(a, bg, units, ui.now, untrusted != null)
+        // after a shower the sensor is not believed: the glucometer decides
+        untrusted?.let { UntrustedCard(it) }
 
         // the question, when it is asked; otherwise when it will be
         CheckIn(a, rules, ui.now, onAct)
@@ -177,7 +182,7 @@ fun HandlingScreen(
 
 /** Now, the arrow, how far it moved since it was taken, when, and who is coming or asked for. */
 @Composable
-private fun HandlingReading(a: AlarmView, bg: Bg?, units: Units, nowMs: Long) {
+private fun HandlingReading(a: AlarmView, bg: Bg?, units: Units, nowMs: Long, untrusted: Boolean) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
     val locale = ctx.resources.configuration.locales[0]
@@ -187,9 +192,10 @@ private fun HandlingReading(a: AlarmView, bg: Bg?, units: Units, nowMs: Long) {
             now?.let {
                 formatGlucose(it, units, locale)
             } ?: "—",
-            style = GlucoseHero.copy(fontSize = 88.sp, lineHeight = 88.sp, color = c.text)
+            style = GlucoseHero.copy(fontSize = 88.sp, lineHeight = 88.sp, color = if (untrusted) c.textFaint else c.text)
         )
         Spacer(Modifier.width(10.dp))
+        if (untrusted) Text("⚠", color = c.high, fontSize = 32.sp, modifier = Modifier.padding(bottom = 14.dp, end = 6.dp))
         Text(Notifications.arrowOf(bg?.direction), color = c.textMuted, fontSize = 40.sp, modifier = Modifier.padding(bottom = 12.dp))
     }
     if (a.handledSgv != null && now != null) {

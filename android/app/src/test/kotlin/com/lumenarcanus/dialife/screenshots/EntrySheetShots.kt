@@ -52,6 +52,12 @@ class EntrySheetShots {
     @Test
     fun activity() = sheet("activity_dark_uk", TreatmentKind.Activity)
 
+    // the shower tab: its length and the warning that the sensor is not to be believed after it
+    @Test
+    fun shower() = sheet("shower_dark_uk", TreatmentKind.Activity) {
+        compose.onNodeWithText("Душ").performClick()
+    }
+
     @Test
     fun meterMmol() = sheet("meter_dark_uk", TreatmentKind.Meter, units = Units.Mmol)
 

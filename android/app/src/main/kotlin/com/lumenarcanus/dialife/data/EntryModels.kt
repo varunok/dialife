@@ -19,7 +19,7 @@ data class Treatment(
     @SerialName("insulin_type") val insulinType: String? = null, // "rapid" | "basal"; null: rapid (older entries)
     @SerialName("insulin_name") val insulinName: String? = null, // the brand, e.g. "Lantus"
     val glucose: Int? = null, // a glucometer reading ("BG Check"), mg/dL
-    val duration: Int? = null, // minutes of activity ("Exercise")
+    val duration: Int? = null, // minutes of activity ("Exercise") or of a shower ("Shower")
     val intensity: String? = null, // "light" | "moderate" | "vigorous"
     val pending: Boolean = false, // made on this phone, not on the server yet (never sent by the server)
     @SerialName("confirmed_new") val confirmedNew: String? = null, // saved after the warning about this other dose (sent as confirmedNew)
@@ -28,6 +28,9 @@ data class Treatment(
     // insulin: "meal" | "corr"
     @SerialName("insulin_role") val insulinRole: String? = null
 ) {
+    /** A shower: the sensor is not believed during it and for half an hour after. */
+    val isShower get() = eventType == SHOWER
+
     /** "борщ 18 ≈ · хліб 22": the meal's lines, "≈" on numbers taken from a suggestion. */
     fun foodText(): String? = foodItems?.takeIf { it.isNotEmpty() }?.joinToString(" · ") { f ->
         listOfNotNull(
@@ -36,6 +39,10 @@ data class Treatment(
             },
             f.carbs?.let { round(it).toInt().toString() + if (f.suggested) " ≈" else "" }
         ).joinToString(" ")
+    }
+
+    companion object {
+        const val SHOWER = "Shower" // the event type; the server knows it too
     }
 }
 

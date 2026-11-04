@@ -82,4 +82,35 @@ class TreatmentFormStateTest {
         assertTrue(f.amountOk(dose))
         assertEquals(140, f.build(null, MealRules()).glucose)
     }
+
+    @Test
+    fun aShowerIsItsOwnEntryWithItsLength() {
+        val f = form(kind = TreatmentKind.Activity)
+        assertFalse(f.shower) // sport first, as before
+        f.shower = true
+        assertEquals(10.0, f.showerMinutes, 0.0)
+        f.showerMinutes = 15.0
+        assertTrue(f.amountOk(dose))
+        val t = f.build(null, MealRules())
+        assertEquals(Treatment.SHOWER, t.eventType)
+        assertEquals(15, t.duration)
+        assertEquals(null, t.intensity)
+        assertTrue(t.isShower)
+        // sport again: an ordinary activity, its own minutes and intensity
+        f.shower = false
+        val sport = f.build(null, MealRules())
+        assertEquals(null, sport.eventType)
+        assertEquals(30, sport.duration)
+        assertEquals("moderate", sport.intensity)
+    }
+
+    @Test
+    fun anEditedShowerOpensOnItsTab() {
+        val shower = Treatment("s", now - 20 * min, eventType = Treatment.SHOWER, duration = 20)
+        val f = form(editing = shower)
+        assertEquals(TreatmentKind.Activity, f.kind)
+        assertTrue(f.shower)
+        assertEquals(20.0, f.showerMinutes, 0.0)
+        assertEquals("s", f.build(null, MealRules()).id)
+    }
 }

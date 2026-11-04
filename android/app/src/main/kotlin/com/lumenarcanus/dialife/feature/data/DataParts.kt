@@ -143,7 +143,8 @@ internal fun entryText(e: Entry, units: Units): String {
         EntryKind.Carbs -> formatAmount(tr?.carbs ?: 0.0, locale) + " " + stringResource(R.string.unit_carbs) +
             ((tr?.foodText() ?: tr?.notes?.takeIf { it.isNotBlank() })?.let { " · $it" } ?: "")
         EntryKind.Meter -> "◆ " + formatGlucose(e.meter ?: 0, units, locale)
-        EntryKind.Activity -> stringResource(R.string.tr_activity) + " " + stringResource(R.string.data_step_min, tr?.duration ?: 0)
+        EntryKind.Activity -> stringResource(if (tr?.isShower == true) R.string.tr_shower else R.string.tr_activity) + " " +
+            stringResource(R.string.data_step_min, tr?.duration ?: 0)
         EntryKind.Note -> tr?.notes.orEmpty()
         EntryKind.Suspect -> suspectText(e, units)
     }

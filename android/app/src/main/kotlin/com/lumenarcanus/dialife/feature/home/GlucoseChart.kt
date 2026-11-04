@@ -90,6 +90,7 @@ fun GlucoseChart(
     ) {
         val s = ChartScale(size.width, size.height, this, view)
         highlightFrom?.let { drawHighlight(s, c, it) }
+        drawUntrusted(s, c, measurer, text)
         drawThresholds(s, c, measurer, text)
         drawHourGrid(s, c, measurer, text)
         // everything time-based stays inside the plot when the window is pinched into the past

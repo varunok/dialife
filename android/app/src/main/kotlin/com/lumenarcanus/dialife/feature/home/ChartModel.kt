@@ -26,6 +26,7 @@ import com.lumenarcanus.dialife.data.Question
 import com.lumenarcanus.dialife.data.Series
 import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.data.Treatment
+import com.lumenarcanus.dialife.data.Untrusted
 import kotlin.math.max
 import kotlin.math.min
 
@@ -90,8 +91,12 @@ internal data class ChartView(
     val lo: Float,
     val hi: Float,
     val activities: List<Treatment>,
-    val suspects: List<Question>
-)
+    val suspects: List<Question>,
+    // when the sensor was not believed (a shower): a hatched band, its dots hollow
+    val untrusted: List<Untrusted> = emptyList()
+) {
+    fun trusted(i: Int) = untrusted.none { ts[i] in it }
+}
 
 internal fun chartView(history: History?, suspects: List<Question>, thresholds: Thresholds, start: Long, end: Long, now: Long): ChartView {
     val ts = history?.sgv?.t.orEmpty()
@@ -113,7 +118,8 @@ internal fun chartView(history: History?, suspects: List<Question>, thresholds: 
         mbg.t.indices.filter { mbg.t[it] in start..until }.map { MeterPoint(mbg.t[it], mbg.v[it], src = mbg.d.getOrNull(it)) }
     val maxV = max(visible.maxOfOrNull { vs[it] } ?: 0, meters.maxOfOrNull { it.v } ?: 0)
     val hi = max(300, min(400, maxV + 20)).toFloat()
-    return ChartView(start, end, now, ts, vs, visible, treatments, thresholds, meters, 40f, hi, activities, marks)
+    val untrusted = history?.untrusted.orEmpty().filter { it.from <= end && it.until >= start }
+    return ChartView(start, end, now, ts, vs, visible, treatments, thresholds, meters, 40f, hi, activities, marks, untrusted)
 }
 
 /** The small dot on a mark that came in from xDrip+ rather than typed in DiaLife. */
