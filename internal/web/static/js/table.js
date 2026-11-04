@@ -74,7 +74,7 @@ function row(r, step, th, intervals) {
     m('td.m.c-ins', cell(ins.map((tr) => amount(tr.insulin) + ' ' + (tr.insulin_name || '') + at(tr.t)))),
     m('td.m.c-bas', cell(bas.map((tr) => amount(tr.insulin) + ' ' + (tr.insulin_name || '') + at(tr.t)))),
     m('td.m.c-carb', cell(carbs.map((tr) => amount(tr.carbs) + ' ' + t('carbsG') + at(tr.t)))),
-    m('td.m.c-act', cell(act.map((tr) => tr.duration + ' ' + t('minutes') + at(tr.t)))),
+    m('td.m.c-act', cell(act.map((tr) => (isShower(tr) ? t('shower') + ' ' : '') + tr.duration + ' ' + t('minutes') + at(tr.t)))),
     m('td', notes.length ? notes.reduce((acc, n, i) => acc.concat(i ? [' · ', n] : [n]), []) : '')
   ]);
 }

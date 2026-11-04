@@ -3,7 +3,7 @@
 
 import { logout, session } from './api.js';
 import { MIN, clock, dayTime, g, signed, t, unit } from './format.js';
-import { alarmName } from './entries.js';
+import { alarmName, untrustedAt } from './entries.js';
 import { V } from './model.js';
 import { prefs, setPref } from './prefs.js';
 import { LangPicker, arrowIcon } from './widgets.js';
@@ -41,20 +41,24 @@ export const Now = {
       : ['in', t('inRange', g(th.bgTargetBottom) + '–' + g(th.bgTargetTop))];
     const f30 = st.ar2 && st.ar2.predicted && st.ar2.predicted[st.ar2.predicted.length - 1];
     const a = (st.alarms || []).find((x) => x.state !== 'cleared');
+    // after a shower the sensor is not believed: dimmed, a bright warning, nothing counted from it
+    const shower = untrustedAt(st, Date.now());
     return m('section.card.now', [
       m('.hero', [
-        m('div', [m('span.v' + (stale ? '.stale' : ''), g(bg.sgv)), m('span.u', unit())]),
+        m('div', [m('span.v' + (stale ? '.stale' : shower ? '.untrusted' : ''), g(bg.sgv)), shower && m('span.warn', '⚠'), m('span.u', unit())]),
         !stale && m('span.arrow', { 'aria-label': bg.direction || '' }, arrowIcon(bg.delta_exact != null ? bg.delta_exact : bg.delta))
       ]),
       m('.sub', [bg.delta != null && m('b', signed(bg.delta) + ' ' + t('in5')), m('span', ' · ' + (age < 1 ? t('justNow') : t('ago', age)))]),
-      !stale && forecast(st, range, f30),
+      shower && m('.untrusted-card', [m('b', t('untrustedTitle', clock(shower.until))), m('span', t('untrustedText'))]),
+      !stale && !shower && forecast(st, range, f30),
       m('.tiles', [
         m('.tile', [m('span.k', st.uploader_name || t('uploader')), m('span.n', st.uploader && st.uploader.battery != null ? st.uploader.battery + '%' : '—')]),
         m('.tile', [m('span.k', t('tir')), m('span.n', V.tir != null ? Math.round(V.tir) + '%' : '—')])
       ]),
       a && m('.alarm' + (a.level === 'urgent' ? '.urgent' : ''), [
         m('b', t('alarmSince', alarmName(a), clock(a.started_at))),
-        m('span', a.handled_by ? t('handledBy', a.handled_by) : t('nobodyYet'))
+        m('span', a.handled_by ? t('handledBy', a.handled_by) : t('nobodyYet')),
+        shower && a.kind !== 'stale' && m('span.check', t('untrustedAlarm'))
       ])
     ]);
   }

@@ -61,7 +61,20 @@ export function alarmLines(al) {
   return more ? [alarmText(al), more] : [alarmText(al)];
 }
 
+// a shower: the sensor is not believed during it and for half an hour after
+export const isShower = (tr) => tr.event_type === 'Shower';
+
+// the window the state says the sensor is not believed in, if now is in it
+export function untrustedAt(st, now) {
+  const w = st && st.untrusted;
+  return w && now >= w.from && now < w.until ? w : null;
+}
+
+// whether a reading at tt was taken while the sensor was not believed
+export function untrusted(windows, tt) { return (windows || []).some((w) => tt >= w.from && tt < w.until); }
+
 export function entryText(tr) {
+  if (isShower(tr)) return t('shower') + ' · ' + tr.duration + ' ' + t('minutes');
   if (tr.duration) return t('activity') + ' · ' + t('intensity_' + (tr.intensity || 'moderate')) + ' · ' + tr.duration + ' ' + t('minutes');
   const parts = [];
   if ((tr.insulin || 0) > 0) parts.push((tr.insulin_name || t(isBasal(tr) ? 'basal' : 'rapid')) + ' ' + amount(tr.insulin) + ' ' + t('insulinU'));

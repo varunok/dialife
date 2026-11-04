@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 
 import { prefs } from '../static/js/prefs.js';
 import { MIN, amount, g, signed, t, unit } from '../static/js/format.js';
-import { alarmLines, alarmName, entryText, foodText, isBasal, meterPoints, origin } from '../static/js/entries.js';
+import { alarmLines, alarmName, entryText, foodText, isBasal, isShower, meterPoints, origin, untrusted, untrustedAt } from '../static/js/entries.js';
 import { tableRows } from '../static/js/rows.js';
 import { parseEvent } from '../static/js/api.js';
 
@@ -177,4 +177,19 @@ test('every module loads and finds what it imports', async () => {
   for (const f of readdirSync(dir).filter((f) => f.endsWith('.js') && f !== 'main.js')) {
     await import(new URL(f, dir));
   }
+});
+
+test('a shower: its entry, and the window the sensor is not believed in', () => {
+  const tr = { id: 's', t: T0, event_type: 'Shower', duration: 15 };
+  assert.ok(isShower(tr));
+  assert.equal(entryText(tr), 'Shower · 15 min');
+  prefs.lang = 'uk';
+  assert.equal(entryText(tr), 'Душ · 15 хв');
+  const w = { from: T0, until: T0 + 45 * MIN, reason: 'shower' };
+  assert.equal(untrustedAt({ untrusted: w }, T0 + 10 * MIN), w);
+  assert.equal(untrustedAt({ untrusted: w }, T0 + 45 * MIN), null); // [from, until): over on this clock
+  assert.equal(untrustedAt({}, T0), null);
+  assert.ok(untrusted([w], T0 + 44 * MIN));
+  assert.ok(!untrusted([w], T0 - 1));
+  assert.ok(!untrusted(undefined, T0));
 });

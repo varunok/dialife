@@ -42,6 +42,11 @@ select.ghost { padding: 0 8px; }
 .hero .v { font-size: 88px; line-height: .9; font-weight: 300; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
 .hero .v.stale { text-decoration: line-through; text-decoration-thickness: 3px; color: var(--muted); }
 .hero .u { font-size: 17px; color: var(--muted); margin-left: 8px; }
+.hero .v.untrusted { color: var(--faint); }
+.hero .warn { font-size: 28px; color: var(--high); margin-left: 8px; }
+.untrusted-card { border-radius: 14px; padding: 12px 14px; display: grid; gap: 4px; background: var(--high-bg); border: 1.5px solid var(--high); }
+.untrusted-card b { font-weight: 600; } .untrusted-card span { font-size: 14px; }
+.alarm span.check { color: var(--high); font-weight: 600; }
 .arrow { width: 60px; height: 60px; border-radius: 50%; border: 1.5px solid #2B5E58; background: var(--in-bg); color: var(--in); display: grid; place-items: center; }
 .arrow svg { width: 28px; height: 28px; }
 .sub { font-size: 15px; } .sub b { font-weight: 600; } .sub span { color: var(--muted); }

@@ -4,7 +4,7 @@
 
 import { describeMark, tipPos } from './chart-tip.js';
 import { HOUR, MIN, DAY, clock, dayOnly, dayTime, g, signed, t, unit } from './format.js';
-import { alarmInk, isBasal, meterPoints } from './entries.js';
+import { alarmInk, isBasal, isShower, meterPoints, untrusted } from './entries.js';
 import { V, loadHistory, timeWindow } from './model.js';
 import { ChartHead } from './period.js';
 import { prefs } from './prefs.js';
@@ -36,7 +36,7 @@ const Chart = {
     const s = v.state, h = V.history;
     if (!h) return m('.chart', m('div.hint', t('loading')));
     const c = geometry(s.w || 900, h, V.state, timeWindow());
-    const out = [].concat(grid(c), activity(c), alarms(c), cone(c), meterBand(c), sensor(c), marks(c), diamonds(c));
+    const out = [].concat(shade(c), grid(c), activity(c), alarms(c), cone(c), meterBand(c), sensor(c), marks(c), diamonds(c));
     const tipBox = hover(s.tip, c, out);
     return m('.chart', {
       onmousemove: (e) => pointAt(s, e, c),
@@ -100,13 +100,29 @@ function grid(c) {
   return out;
 }
 
+// where the sensor is not believed (a shower and half an hour after): hatched, labelled at the top
+function shade(c) {
+  const { x, plotW, plotH } = c;
+  const out = [m('defs', m('pattern', { id: 'untrusted', width: 8, height: 8, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' },
+    m('line', { x1: 0, y1: 0, x2: 0, y2: 8, stroke: 'var(--high)', 'stroke-opacity': 0.25, 'stroke-width': 1.5 })))];
+  (c.h.untrusted || []).forEach((w) => {
+    const x0 = Math.max(0, x(w.from)), x1 = Math.min(plotW, x(w.until));
+    if (x1 <= x0) return;
+    out.push(m('rect', { x: x0, y: 0, width: x1 - x0, height: plotH, fill: 'var(--high)', 'fill-opacity': 0.08 }),
+      m('rect', { x: x0, y: 0, width: x1 - x0, height: plotH, fill: 'url(#untrusted)' }),
+      m('line', { x1: x0, x2: x0, y1: 0, y2: plotH, stroke: 'var(--high)', 'stroke-opacity': 0.6, 'stroke-dasharray': '3 3' }),
+      x1 - x0 > 50 && m('text', { x: x0 + 4, y: 32, fill: 'var(--high)', style: 'font-weight:600' }, '⚠ ' + t('untrustedChart')));
+  });
+  return out;
+}
+
 // activity bars along the top
 function activity(c) {
   const { x, plotW, win, from } = c;
   return (c.h.treatments || []).filter((tr) => tr.duration && tr.t <= win.to && tr.t + tr.duration * MIN >= from).map((tr) => {
     const x0 = Math.max(0, x(tr.t)), x1 = Math.max(x0 + 6, Math.min(plotW, x(tr.t + tr.duration * MIN)));
-    const a = { vigorous: 0.85, moderate: 0.55 }[tr.intensity] || 0.3;
-    return m('rect', { x: x0, y: 4, width: x1 - x0, height: 12, rx: 6, fill: 'var(--in)', 'fill-opacity': a, 'data-tip': 'act:' + tr.id });
+    const a = isShower(tr) ? 0.55 : { vigorous: 0.85, moderate: 0.55 }[tr.intensity] || 0.3;
+    return m('rect', { x: x0, y: 4, width: x1 - x0, height: 12, rx: 6, fill: isShower(tr) ? 'var(--high)' : 'var(--in)', 'fill-opacity': a, 'data-tip': 'act:' + tr.id });
   });
 }
 
@@ -128,6 +144,7 @@ function cone(c) {
   const { x, y, st, idx, ts, vs, plotW, hi, lo } = c;
   if (!(c.win.live && !c.agg && st && st.ar2 && st.ar2.cone && st.ar2.cone.length && idx.length)) return [];
   const li = idx[idx.length - 1];
+  if (untrusted(c.h.untrusted, ts[li])) return []; // from a reading not believed it would carry the error on
   const pts = [[x(ts[li]), y(vs[li])]].concat(st.ar2.cone.map((p) => [Math.min(plotW, x(p.t)), y(Math.min(hi, p.hi))]))
     .concat(st.ar2.cone.slice().reverse().map((p) => [Math.min(plotW, x(p.t)), y(Math.max(lo, p.lo))]));
   return [m('polygon', { points: points(pts), fill: 'var(--in)', 'fill-opacity': 0.12 })];
@@ -137,6 +154,18 @@ function cone(c) {
 function meterBand(c) {
   const { x, y, idx, ts, vs, hi, lo, est } = c;
   if (!(c.model && idx.length > 1)) return [];
+  // nothing to estimate from where the sensor is not believed: the line breaks there
+  const runs = [];
+  idx.forEach((i) => {
+    if (untrusted(c.h.untrusted, ts[i])) { runs.push([]); return; }
+    if (!runs.length) runs.push([]);
+    runs[runs.length - 1].push(i);
+  });
+  return runs.filter((r) => r.length > 1).flatMap((r) => meterRun(c, r));
+}
+
+function meterRun(c, idx) {
+  const { x, y, ts, vs, hi, lo, est } = c;
   const up = idx.map((i) => [x(ts[i]), y(Math.min(hi, est(vs[i])[0] + est(vs[i])[1]))]);
   const dn = idx.slice().reverse().map((i) => [x(ts[i]), y(Math.max(lo, est(vs[i])[0] - est(vs[i])[1]))]);
   return [
@@ -157,10 +186,14 @@ function sensor(c) {
     }
   } else {
     const r = spanH <= 4 ? 3.2 : spanH <= 8 ? 2.4 : spanH <= 14 ? 1.8 : 1.4;
-    idx.forEach((i) => out.push(m('circle', { cx: x(ts[i]), cy: y(vs[i]), r, fill: col(vs[i]) })));
+    // not believed (a shower): a faint hollow dot, so no one reads it as the sugar
+    const dot = (i, rr) => untrusted(h.untrusted, ts[i])
+      ? m('circle', { cx: x(ts[i]), cy: y(vs[i]), r: rr, fill: 'none', stroke: col(vs[i]), 'stroke-opacity': 0.6 })
+      : m('circle', { cx: x(ts[i]), cy: y(vs[i]), r: rr, fill: col(vs[i]) });
+    idx.forEach((i) => out.push(dot(i, r)));
     if (win.live && idx.length) {
       const li = idx[idx.length - 1];
-      out.push(m('circle', { cx: x(ts[li]), cy: y(vs[li]), r: r + 4, fill: 'var(--surface)' }), m('circle', { cx: x(ts[li]), cy: y(vs[li]), r: r + 2, fill: col(vs[li]) }));
+      out.push(m('circle', { cx: x(ts[li]), cy: y(vs[li]), r: r + 4, fill: 'var(--surface)' }), dot(li, r + 2));
     }
   }
   if (win.live) out.push(m('line', { x1: x(win.to), x2: x(win.to), y1: 0, y2: plotH, stroke: 'var(--faint)', 'stroke-dasharray': '2 3' }));
@@ -210,7 +243,8 @@ function hover(tip, c, out) {
     const lines = agg
       ? [g(vs[i]) + ' ' + unit(), g(h.sgv.lo[i]) + '–' + g(h.sgv.hi[i]) + ' · ' + clock(ts[i]) + '–' + clock(ts[i] + h.step * MIN)]
       : [g(vs[i]) + ' ' + unit(), (i > 0 && ts[i] - ts[i - 1] <= 10 * MIN ? signed(vs[i] - vs[i - 1]) + ' · ' : '') + dayTime(ts[i])];
-    const extra = model ? t('estimate', g(est(vs[i])[0]), g(est(vs[i])[1])) : null;
+    // not believed (a shower): said instead of an estimate made from it
+    const extra = untrusted(h.untrusted, ts[i]) ? '⚠ ' + t('untrustedText') : model ? t('estimate', g(est(vs[i])[0]), g(est(vs[i])[1])) : null;
     return { x: px, y: py, lines, extra };
   }
   if (tip && tip.kind === 'mark') return Object.assign({ x: tip.x, y: tip.y }, describeMark(tip.id, c));

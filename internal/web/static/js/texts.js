@@ -2,6 +2,8 @@
 export const TEXTS = {
   uk: {
     langName: 'Українська',
+    shower: 'Душ', untrustedTitle: '⚠ Після душу — до {0}', untrustedText: 'Сенсор може показувати завищені або занижені значення. Довіряйте лише глюкометру.',
+    untrustedAlarm: 'Після душу — перевірте глюкометром', untrustedChart: 'душ',
     loginTitle: 'Вхід через застосунок на телефоні',
     loginStep1: 'Відкрийте DiaLife на своєму телефоні.',
     loginStep2: 'Меню <b>⋮ → Вхід у веб</b>.',
@@ -50,6 +52,8 @@ export const TEXTS = {
   },
   en: {
     langName: 'English',
+    shower: 'Shower', untrustedTitle: '⚠ After a shower — until {0}', untrustedText: 'The sensor may read too high or too low. Trust only the glucometer.',
+    untrustedAlarm: 'After a shower — check with the glucometer', untrustedChart: 'shower',
     loginTitle: 'Log in with the app on your phone',
     loginStep1: 'Open DiaLife on your phone.',
     loginStep2: 'Menu <b>⋮ → Web login</b>.',
@@ -98,6 +102,8 @@ export const TEXTS = {
   },
   es: {
     langName: 'Español',
+    shower: 'Ducha', untrustedTitle: '⚠ Después de la ducha — hasta {0}', untrustedText: 'El sensor puede marcar valores más altos o más bajos. Confíe solo en el glucómetro.',
+    untrustedAlarm: 'Después de la ducha: compruebe con el glucómetro', untrustedChart: 'ducha',
     loginTitle: 'Entrar con la app del teléfono',
     loginStep1: 'Abre DiaLife en tu teléfono.',
     loginStep2: 'Menú <b>⋮ → Entrar en la web</b>.',
