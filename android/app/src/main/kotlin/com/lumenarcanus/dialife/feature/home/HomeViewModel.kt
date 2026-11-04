@@ -67,7 +67,7 @@ class HomeViewModel(private val repo: LiveSource, private val questions: Questio
     }.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5_000),
-        HomeUi(state = repo.live.value.state, history = repo.live.value.history)
+        HomeUi(state = repo.live.value.state, history = repo.live.value.history, myId = repo.myId)
     )
 
     fun setRange(hours: Int) {
