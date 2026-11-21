@@ -181,6 +181,8 @@ func serve(cfg config.Config) error {
 	go wired.Alarms.Run(ctx)
 	// questions time out and re-ask without new readings too
 	go wired.Questions.Run(ctx)
+	// the "no sensor" mode reminds to measure and notices a sensor sending again
+	go wired.Sensorless.Run(ctx)
 
 	if cfg.NtfyURL != "" {
 		n, err := newNtfy(ctx, cfg, s, events, links)

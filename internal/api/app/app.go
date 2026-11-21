@@ -29,6 +29,7 @@ import (
 	"dialife/internal/nstime"
 	"dialife/internal/planned"
 	"dialife/internal/questions"
+	"dialife/internal/sensorless"
 	"dialife/internal/store"
 	"dialife/internal/trust"
 	"dialife/internal/wait"
@@ -59,44 +60,47 @@ type Handlers struct {
 	Bus        *bus.Bus
 	PingEvery  time.Duration // SSE keep-alive; mobile NATs drop idle connections
 	Alarms     *alarms.Engine
-	Questions  *questions.Engine // "did you forget to log?"; nil: off
-	Links      *acklink.Signer   // nil: ack links disabled
-	Loc        *time.Location    // the family's time zone, for the AGP day; nil: UTC
-	Uploader   string            // what the family calls the xDrip+ phone; sent to the app as is
-	Carbs      *carbs.Service    // carb suggestions for the food form
-	Wait       *wait.Service     // when to eat after rapid insulin with food
-	Planned    *planned.Service  // doses worked out for a meal, not given yet
-	Forecast   *forecast.Service // the trend forecast for the chart, what is on board, how both did
-	Intents    *intent.Board     // who has the insulin form open
-	Dose       *dose.Service     // the family's dose calculation
-	Trust      *trust.Service    // when the sensor is not believed (after a shower); nil: always
+	Questions  *questions.Engine   // "did you forget to log?"; nil: off
+	Links      *acklink.Signer     // nil: ack links disabled
+	Loc        *time.Location      // the family's time zone, for the AGP day; nil: UTC
+	Uploader   string              // what the family calls the xDrip+ phone; sent to the app as is
+	Carbs      *carbs.Service      // carb suggestions for the food form
+	Wait       *wait.Service       // when to eat after rapid insulin with food
+	Planned    *planned.Service    // doses worked out for a meal, not given yet
+	Forecast   *forecast.Service   // the trend forecast for the chart, what is on board, how both did
+	Intents    *intent.Board       // who has the insulin form open
+	Dose       *dose.Service       // the family's dose calculation
+	Trust      *trust.Service      // when the sensor is not believed (after a shower); nil: always
+	Sensorless *sensorless.Service // the "no sensor" mode; nil: never on
 
 	mealGapQ mealGapCache // how far apart a meal's entries may be
 }
 
 type stateResponse struct {
-	Now          int64                  `json:"now"`
-	DisplayUnits string                 `json:"display_units,omitempty"` // absent in SSE bg events
-	Thresholds   config.Thresholds      `json:"thresholds"`
-	BG           *bgState               `json:"bg"`
-	AR2          *glucose.Forecast      `json:"ar2"`                        // the chart's forecast: a damped trend (the name is historic; alarms use AR2 itself)
-	ForecastInfo *forecast.Info         `json:"forecast_quality,omitempty"` // how often that forecast came true, and what it cannot see
-	Uploader     *uploaderState         `json:"uploader"`
-	Alarms       []alarms.View          `json:"alarms"`                  // live alarms, oldest first
-	Episode      *alarms.EpisodeView    `json:"episode,omitempty"`       // rules behind "we wake everyone if…"
-	Caregivers   []caregiver            `json:"caregivers"`              // who an alarm wakes, for "Notified: Dad, Mom"
-	Questions    []questions.View       `json:"questions,omitempty"`     // open ones and the last day's suspect marks; never to the web viewer
-	UploaderName string                 `json:"uploader_name,omitempty"` // what the family calls the xDrip+ phone
-	Intents      []intent.Intent        `json:"intents"`                 // parents with the insulin form open now
-	Dose         dose.Settings          `json:"dose"`                    // the family's dose calculation
-	Planned      []planned.Dose         `json:"planned"`                 // doses worked out for a meal, not given yet
-	IOB          *forecast.OnBoardState `json:"iob,omitempty"`           // what logged food and rapid insulin will still do; not for alarms
-	IOBQuality   *forecast.Quality      `json:"iob_quality,omitempty"`   // how often its "in 30 min" came true
-	Wait         *wait.State            `json:"wait,omitempty"`          // a rapid dose with food beside it: when to start eating, a suggestion
-	MealGapMin   int                    `json:"meal_gap_min"`            // food entries this close (minutes) are one meal
-	BolusBefore  int                    `json:"bolus_before_min"`        // rapid this long before a meal's first food is for it
-	BolusAfter   int                    `json:"bolus_after_min"`         // and this long after its last
-	Untrusted    *trust.Window          `json:"untrusted,omitempty"`     // the sensor is not believed now (a shower): trust only the glucometer
+	Now                int64                  `json:"now"`
+	DisplayUnits       string                 `json:"display_units,omitempty"` // absent in SSE bg events
+	Thresholds         config.Thresholds      `json:"thresholds"`
+	BG                 *bgState               `json:"bg"`
+	AR2                *glucose.Forecast      `json:"ar2"`                        // the chart's forecast: a damped trend (the name is historic; alarms use AR2 itself)
+	ForecastInfo       *forecast.Info         `json:"forecast_quality,omitempty"` // how often that forecast came true, and what it cannot see
+	Uploader           *uploaderState         `json:"uploader"`
+	Alarms             []alarms.View          `json:"alarms"`                  // live alarms, oldest first
+	Episode            *alarms.EpisodeView    `json:"episode,omitempty"`       // rules behind "we wake everyone if…"
+	Caregivers         []caregiver            `json:"caregivers"`              // who an alarm wakes, for "Notified: Dad, Mom"
+	Questions          []questions.View       `json:"questions,omitempty"`     // open ones and the last day's suspect marks; never to the web viewer
+	UploaderName       string                 `json:"uploader_name,omitempty"` // what the family calls the xDrip+ phone
+	Intents            []intent.Intent        `json:"intents"`                 // parents with the insulin form open now
+	Dose               dose.Settings          `json:"dose"`                    // the family's dose calculation
+	Planned            []planned.Dose         `json:"planned"`                 // doses worked out for a meal, not given yet
+	IOB                *forecast.OnBoardState `json:"iob,omitempty"`           // what logged food and rapid insulin will still do; not for alarms
+	IOBQuality         *forecast.Quality      `json:"iob_quality,omitempty"`   // how often its "in 30 min" came true
+	Wait               *wait.State            `json:"wait,omitempty"`          // a rapid dose with food beside it: when to start eating, a suggestion
+	MealGapMin         int                    `json:"meal_gap_min"`            // food entries this close (minutes) are one meal
+	BolusBefore        int                    `json:"bolus_before_min"`        // rapid this long before a meal's first food is for it
+	BolusAfter         int                    `json:"bolus_after_min"`         // and this long after its last
+	Untrusted          *trust.Window          `json:"untrusted,omitempty"`     // the sensor is not believed now (a shower): trust only the glucometer
+	Sensorless         *sensorless.State      `json:"sensorless,omitempty"`    // the "no sensor" mode is on: no alarms, the last glucometer check, the reminder
+	SensorlessSettings sensorless.Settings    `json:"sensorless_settings"`     // the reminder's interval, for the settings screen
 }
 
 type caregiver struct {
@@ -190,6 +194,10 @@ func (h *Handlers) snapshot(ctx context.Context, now time.Time) (stateResponse, 
 	if resp.Untrusted, err = h.Trust.Active(ctx, now); err != nil {
 		return resp, err
 	}
+	if resp.Sensorless, err = h.Sensorless.State(ctx); err != nil {
+		return resp, err
+	}
+	resp.SensorlessSettings = h.Sensorless.Settings(ctx)
 	resp.Dose = h.Dose.Get(ctx)
 	resp.MealGapMin = h.mealGap(ctx, now)
 	resp.BolusBefore, resp.BolusAfter = int(questions.BolusBefore.Minutes()), int(questions.BolusAfter.Minutes())
@@ -217,7 +225,7 @@ func (h *Handlers) snapshot(ctx context.Context, now time.Time) (stateResponse, 
 // AlarmInput feeds the alarm rules: the newest valid reading (error codes
 // skipped, so a failing sensor ages into "stale") and the AR2 forecast.
 func (h *Handlers) AlarmInput(ctx context.Context, now time.Time) (alarms.Input, error) {
-	in := alarms.Input{Now: now.UnixMilli()}
+	in := alarms.Input{Now: now.UnixMilli(), Off: h.Sensorless.On(ctx)}
 	last, err := h.Store.LatestValidSGV(ctx, glucose.MaxErrorCode)
 	if errors.Is(err, store.ErrNotFound) {
 		return in, nil
@@ -407,6 +415,8 @@ type historyResponse struct {
 	Alarms    []historyAlarm   `json:"alarms"`
 	Suspects  []historySuspect `json:"suspects"`
 	Untrusted []trust.Window   `json:"untrusted"` // when the sensor was not believed (showers), oldest first
+	// when the "no sensor" mode was on, oldest first; until absent: still on
+	Sensorless []sensorless.Period `json:"sensorless"`
 }
 
 // History serves GET /api/history?from=&to= (unix ms or ISO; default last 6 h),
@@ -455,6 +465,10 @@ func (h *Handlers) History(w http.ResponseWriter, r *http.Request) {
 	}
 	if resp.Untrusted == nil {
 		resp.Untrusted = []trust.Window{}
+	}
+	if resp.Sensorless, err = h.Sensorless.Between(ctx, from, to); err != nil {
+		fail(w, "history sensorless", err)
+		return
 	}
 	httpx.WriteJSON(w, http.StatusOK, resp)
 }

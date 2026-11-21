@@ -48,6 +48,8 @@ type Engine struct {
 	Uploader string
 	// called after planned doses expired, so the phones get a fresh state; nil: nothing
 	OnPlanned func()
+	// the "no sensor" mode is on: no rise or fall to ask about; nil: never
+	Sensorless func(context.Context) bool
 
 	mu sync.Mutex
 }
@@ -132,8 +134,10 @@ func (e *Engine) Evaluate(ctx context.Context) error {
 			return err
 		}
 	}
-	if err := e.detect(ctx, qs, logged, now); err != nil {
-		return err
+	if e.Sensorless == nil || !e.Sensorless(ctx) {
+		if err := e.detect(ctx, qs, logged, now); err != nil {
+			return err
+		}
 	}
 	if err := e.detectBolus(ctx, qs, logged, now); err != nil {
 		return err

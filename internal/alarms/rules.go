@@ -122,6 +122,7 @@ type Input struct {
 	SGV       int               // its value, mg/dL
 	Recent    []Reading         // valid readings covering at least HighFor before LastMills
 	Forecast  *glucose.Forecast // nil when there is no usable AR2
+	Off       bool              // "no sensor" mode: nothing alarms, live episodes end
 }
 
 type Condition struct {
@@ -134,7 +135,7 @@ type Condition struct {
 // persist while data is missing (an unknown value is not a recovery).
 func (r Rules) Conditions(in Input, active map[Kind]Level) map[Kind]Condition {
 	out := map[Kind]Condition{}
-	if !in.HasData {
+	if !in.HasData || in.Off {
 		return out
 	}
 	sgv := in.SGV

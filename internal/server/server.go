@@ -22,6 +22,7 @@ import (
 	"dialife/internal/meter"
 	"dialife/internal/planned"
 	"dialife/internal/questions"
+	"dialife/internal/sensorless"
 	"dialife/internal/stats"
 	"dialife/internal/store"
 	"dialife/internal/trust"
@@ -52,6 +53,8 @@ type App struct {
 	Handler   http.Handler
 	Alarms    *alarms.Engine
 	Questions *questions.Engine // its Run (timeouts, reminders) the caller starts too
+	// the "no sensor" mode: its Run (the reminder to measure) the caller starts too
+	Sensorless *sensorless.Service
 }
 
 func New(d Deps) *App {
@@ -74,6 +77,12 @@ func New(d Deps) *App {
 	api.Wait = &wait.Service{Store: d.Store, Now: d.Now, OnChange: api.PublishState}
 	api.Forecast = &forecast.Service{Store: d.Store}
 	api.Trust = &trust.Service{Store: d.Store}
+	api.Sensorless = &sensorless.Service{Store: d.Store, Bus: d.Bus, Now: d.Now, Thresholds: api.CurrentThresholds,
+		OnChange: func(ctx context.Context) {
+			api.EvaluateAlarms(ctx) // on: live episodes end at once; off: what is wrong rings at once
+			api.PublishState(ctx)
+		}}
+	api.Questions.Sensorless = api.Sensorless.On
 	api.Intents = &intent.Board{Bus: d.Bus, Now: d.Now}
 	api.Dose = &dosecalc.Service{Store: d.Store, Now: d.Now, OnChange: api.PublishState}
 	api.Planned = &planned.Service{Store: d.Store, Now: d.Now, OnChange: api.PublishState, Settle: api.Questions.SettlePlanned}
@@ -110,6 +119,7 @@ func New(d Deps) *App {
 	carbs.HTTP{Service: api.Carbs}.Routes(mux, caregiver)
 	intent.HTTP{Board: api.Intents}.Routes(mux, caregiver)
 	dosecalc.HTTP{Service: api.Dose}.Routes(mux, caregiver)
+	sensorless.HTTP{Service: api.Sensorless}.Routes(mux, caregiver)
 	webLogin := &weblogin.HTTP{Store: d.Store, Bus: d.Bus, Now: d.Now}
 	webLogin.Routes(mux, anyRole, caregiver)
 	stats.HTTP{Store: d.Store, Now: d.Now, Loc: d.Loc, Thresholds: api.CurrentThresholds}.Routes(mux, anyRole)
@@ -124,7 +134,7 @@ func New(d Deps) *App {
 		httpx.Error(w, http.StatusNotFound)
 	})
 
-	return &App{Handler: httpx.Recover(httpx.Log(httpx.Body(mux))), Alarms: api.Alarms, Questions: api.Questions, api: api, webLogin: webLogin}
+	return &App{Handler: httpx.Recover(httpx.Log(httpx.Body(mux))), Alarms: api.Alarms, Questions: api.Questions, Sensorless: api.Sensorless, api: api, webLogin: webLogin}
 }
 
 func healthz(s *store.Store) http.HandlerFunc {

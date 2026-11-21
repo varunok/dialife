@@ -51,6 +51,13 @@ func (h *Handlers) EntriesSaved(ctx context.Context, es []store.Entry) {
 	if newest == nil && !meters {
 		return
 	}
+	if h.Sensorless.On(ctx) {
+		// a sensor sending again ends the mode; a glucometer check moves the reminder or brings a card
+		h.Sensorless.Tick(ctx)
+		if newest == nil {
+			h.PublishState(ctx)
+		}
+	}
 
 	now := h.Now()
 	var snap stateResponse
@@ -80,7 +87,7 @@ func (h *Handlers) EntriesSaved(ctx context.Context, es []store.Entry) {
 	}
 	if isLatest {
 		h.Bus.Publish(EventBG, snap, now)
-		h.evaluateAlarms(ctx)
+		h.EvaluateAlarms(ctx)
 		h.evaluateQuestions(ctx)
 	}
 }
@@ -95,7 +102,8 @@ func (h *Handlers) evaluateQuestions(ctx context.Context) {
 	}
 }
 
-func (h *Handlers) evaluateAlarms(ctx context.Context) {
+// EvaluateAlarms looks at the alarms now, not with the next reading.
+func (h *Handlers) EvaluateAlarms(ctx context.Context) {
 	if h.Alarms == nil {
 		return
 	}
@@ -110,6 +118,7 @@ func (h *Handlers) TreatmentsChanged(ctx context.Context, op string, ids []strin
 	}
 	h.Bus.Publish(EventTreatment, treatmentEvent{Op: op, IDs: ids}, h.Now())
 	h.evaluateQuestions(ctx)
+	h.Sensorless.Tick(ctx) // a glucometer check ends the reminder to measure
 	// what the state counts from them (the wait for food) changes at once, not with the next reading
 	h.PublishState(ctx)
 }

@@ -83,6 +83,7 @@ type Summary struct {
 	HandledBy   string `json:"handled_by,omitempty"`
 	Manual      bool   `json:"manual,omitempty"`
 	ResolvedBy  string `json:"resolved_by,omitempty"`
+	Sensorless  bool   `json:"sensorless,omitempty"` // ended because the "no sensor" mode went on
 }
 
 type Event struct {
@@ -269,7 +270,7 @@ func (e *Engine) ring(ctx context.Context, a store.Alarm, reason string, now tim
 // clear ends an episode. by is set for a manual resolve.
 func (e *Engine) clear(ctx context.Context, a store.Alarm, in Input, now time.Time, by *store.Device) error {
 	ms := now.UnixMilli()
-	sum := &Summary{DurationMin: int(now.Sub(time.UnixMilli(a.StartedAt)).Minutes()), HandledBy: a.HandledByName}
+	sum := &Summary{DurationMin: int(now.Sub(time.UnixMilli(a.StartedAt)).Minutes()), HandledBy: a.HandledByName, Sensorless: in.Off && by == nil}
 	a.ClearedAt = &ms
 	if in.HasData {
 		sgv := in.SGV // the value that ended it, for "all clear" messages

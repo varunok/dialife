@@ -20,6 +20,7 @@ import (
 	"dialife/internal/alarms"
 	"dialife/internal/bus"
 	"dialife/internal/questions"
+	"dialife/internal/sensorless"
 )
 
 // Target is one caregiver's phone: their ntfy topic and their DiaLife device,
@@ -106,6 +107,10 @@ func (n *Ntfy) forward(ctx context.Context, events <-chan bus.Event) {
 				n.planned(ctx, ev.Data)
 				continue
 			}
+			if ev.Type == sensorless.EventType {
+				n.sensorless(ctx, ev.Data)
+				continue
+			}
 			switch ev.Type {
 			case alarms.EventAlarm, alarms.EventHandled, alarms.EventCheckin, alarms.EventHelp, alarms.EventComing,
 				alarms.EventCheckinOK, alarms.EventClear:
@@ -158,6 +163,51 @@ func PlannedMessage(q questions.View, t Target, at string) Message {
 	return Message{Topic: t.Topic, SequenceID: sidPlanned(q.ID), Title: "Кололи до їжі о " + at + "?",
 		Message:  "Очікувана доза " + strings.ReplaceAll(dose, ".", ",") + " од ще не підтверджена. У DiaLife: «Вкололи» або «Не кололи».",
 		Priority: prioNormal, Tags: []string{"syringe"}}
+}
+
+const (
+	sidRemind     = "sensorless-remind"
+	sidSensorBack = "sensorless-back"
+)
+
+// sensorless: in the "no sensor" mode, the reminder to measure (once, taken
+// off the phones by the next check or the mode's end), and the news that a
+// sensor sends again and the alarms are back.
+func (n *Ntfy) sensorless(ctx context.Context, data []byte) {
+	var e sensorless.Event
+	if err := json.Unmarshal(data, &e); err != nil {
+		slog.Error("ntfy decode", "err", err)
+		return
+	}
+	for _, t := range n.Targets {
+		switch e.Kind {
+		case "remind":
+			n.send(ctx, RemindMessage(e, t, n.clock))
+		case "remind_over":
+			n.clear(ctx, t.Topic, sidRemind)
+		case "off":
+			n.clear(ctx, t.Topic, sidRemind)
+			if e.Period.End == "sensor" {
+				n.send(ctx, SensorBackMessage(t))
+			}
+		}
+	}
+}
+
+// RemindMessage is «Час виміряти цукор з пальця» with the last check, if any.
+func RemindMessage(e sensorless.Event, t Target, clock func(int64) string) Message {
+	msg := "Режим без сенсора: з його початку замірів з пальця не було."
+	if c := e.LastCheck; c != nil && c.T >= e.Period.From {
+		msg = fmt.Sprintf("Режим без сенсора: останній замір %d mg/dL о %s.", c.MG, clock(c.T))
+	}
+	return Message{Topic: t.Topic, SequenceID: sidRemind, Title: "Час виміряти цукор з пальця",
+		Message: msg, Priority: prioNormal, Tags: []string{"drop_of_blood"}}
+}
+
+// SensorBackMessage says the mode ended by itself and the alarms work again.
+func SensorBackMessage(t Target) Message {
+	return Message{Topic: t.Topic, SequenceID: sidSensorBack, Title: "Сенсор знову надсилає дані",
+		Message: "Режим без сенсора вимкнено, тривоги знову працюють.", Priority: prioNormal, Tags: []string{"satellite"}}
 }
 
 func (n *Ntfy) send(ctx context.Context, m Message) {
@@ -377,8 +427,11 @@ func (n *Ntfy) clearNote(m Message, e alarms.Event, t Target, what string, isHan
 	if e.Summary != nil && e.Summary.Manual { // ended by hand: the sensor did not say it is over
 		m.Title = what + ": завершено вручну"
 	}
+	if e.Summary != nil && e.Summary.Sensorless { // nothing recovered: there is no sensor to alarm about
+		m.Title = what + ": знято, режим без сенсора"
+	}
 	var parts []string
-	if a.SGV != nil {
+	if a.SGV != nil && (e.Summary == nil || !e.Summary.Sensorless) { // no sensor: no "now"
 		parts = append(parts, fmt.Sprintf("Зараз %d mg/dL", *a.SGV))
 	}
 	if s := e.Summary; s != nil {
