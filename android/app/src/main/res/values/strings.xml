@@ -579,6 +579,9 @@
     <string name="meal_plan_failed">The food is not saved yet: the planned dose or the answer did not reach the server. Check the connection and try again.</string>
     <string name="meal_saving">Saving…</string>
     <string name="meal_swipe_remove">Remove</string>
+    <string name="meal_swipe_rename">Rename</string>
+    <string name="meal_rename_title">Dish name</string>
+    <string name="meal_rename_hint">A portion may follow: “rice 150 g”. You will pick the carbs again.</string>
     <string name="meal_no_portion">no portion</string>
     <string name="meal_from_hint">from a suggestion</string>
     <string name="meal_by_hand">typed</string>

@@ -29,8 +29,11 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -178,7 +181,13 @@ internal fun Dishes(form: MealFormState, repo: FoodRepository?, lang: String) {
                     row,
                     lang,
                     open = form.open == row.id,
-                    onToggle = { form.open = if (form.open == row.id) null else row.id },
+                    revealed = form.revealed == row.id,
+                    onToggle = {
+                        form.revealed = null
+                        form.open = if (form.open == row.id) null else row.id
+                    },
+                    // one dish at a time shows its actions
+                    onReveal = { show -> form.revealed = if (show) row.id else form.revealed.takeIf { it != row.id } },
                     onChange = { f -> form.update(row.id, f) },
                     onSplit = { parts ->
                         val i = form.rows.indexOfFirst { it.id == row.id }
@@ -187,12 +196,21 @@ internal fun Dishes(form: MealFormState, repo: FoodRepository?, lang: String) {
                         form.rows.addAll(i, made)
                         form.open = made.first().id
                     },
-                    onRemove = { form.remove(row.id) },
+                    onRename = { form.renaming = row.id },
+                    onRemove = {
+                        form.revealed = null
+                        form.remove(row.id)
+                    },
                     onDone = { form.open = null }
                 )
             }
         }
         AddDish(form)
+    }
+    form.renaming?.let { id ->
+        form.rows.firstOrNull { it.id == id }?.let { row ->
+            RenameDialog(row, onRename = { form.rename(id, it) }, onDismiss = { form.renaming = null })
+        }
     }
 }
 
@@ -378,4 +396,31 @@ internal fun MealDialogs(
             onBack = { form.asking = false }
         )
     }
+}
+
+/** A dish's new name; a portion may come with it. Its carbs go: they were for the old one. */
+@Composable
+private fun RenameDialog(row: FoodRow, onRename: (String) -> Unit, onDismiss: () -> Unit) {
+    val c = DiaTheme.colors
+    var text by remember { mutableStateOf(row.name + if (row.portion.isBlank()) "" else " " + row.portion) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.meal_rename_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it.replace('\n', ' ').take(80) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { if (text.isNotBlank()) onRename(text) })
+                )
+                Text(stringResource(R.string.meal_rename_hint), color = c.textMuted, fontSize = 13.sp)
+            }
+        },
+        confirmButton = {
+            TextButton(enabled = text.isNotBlank(), onClick = { onRename(text) }) { Text(stringResource(R.string.tr_save)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.tr_cancel)) } }
+    )
 }

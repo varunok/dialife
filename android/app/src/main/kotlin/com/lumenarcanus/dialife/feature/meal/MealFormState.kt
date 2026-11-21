@@ -54,6 +54,10 @@ class MealFormState(draft: MealDraft?, editing: Treatment?, initialTime: Long?, 
     // the dish opened for editing
     var open by mutableStateOf<Long?>(null)
 
+    // the dish swiped left, showing "rename" and "remove"; the one being renamed
+    var revealed by mutableStateOf<Long?>(null)
+    var renaming by mutableStateOf<Long?>(null)
+
     // the dish just taken away, for "undo": (where it was, what it was)
     var removed by mutableStateOf<Pair<Int, FoodRow>?>(null)
 
@@ -96,6 +100,34 @@ class MealFormState(draft: MealDraft?, editing: Treatment?, initialTime: Long?, 
     fun undoRemove(at: Int, row: FoodRow) {
         rows.add(at.coerceAtMost(rows.size), row)
         removed = null
+    }
+
+    /**
+     * A dish renamed ("гречка 150 г" may bring a portion too): its carbs were for
+     * the old one, so they go and the dish opens for the new suggestions to pick.
+     * The same name again changes nothing.
+     */
+    fun rename(id: Long, text: String) {
+        renaming = null
+        revealed = null
+        val (name, portion) = parseEntry(text.replace('\n', ' '))
+        if (name.isBlank()) return
+        val newName = name.trim().replaceFirstChar { it.uppercase() }
+        val row = rows.firstOrNull { it.id == id } ?: return
+        if (newName == row.name && (portion.isBlank() || portion == row.portion)) return
+        update(id) {
+            it.copy(
+                name = newName,
+                portion = portion.ifBlank { it.portion },
+                carbs = "",
+                source = null,
+                tableId = null,
+                suggestion = null,
+                asked = false,
+                loading = false
+            )
+        }
+        open = id
     }
 
     /** "гречка 150 г" typed in the field: a dish with its portion. */

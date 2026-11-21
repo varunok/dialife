@@ -44,6 +44,7 @@ import com.lumenarcanus.dialife.feature.home.BackgroundSetup
 import com.lumenarcanus.dialife.feature.home.ChartCard
 import com.lumenarcanus.dialife.feature.home.sampleHomeUi
 import com.lumenarcanus.dialife.feature.home.sampleMeter
+import com.lumenarcanus.dialife.feature.meal.DishRow
 import com.lumenarcanus.dialife.feature.meal.EntryDetail
 import com.lumenarcanus.dialife.feature.meal.MealInputs
 import com.lumenarcanus.dialife.feature.meal.MealScreen
@@ -437,6 +438,25 @@ class ScreenshotTest {
             onSave = {},
             onClose = {},
             clock = { now }
+        )
+    }
+
+    // a dish swiped left: "rename" and "remove" uncovered, nothing done until one is tapped
+    @Test
+    @Config(qualifiers = "uk-w412dp-h200dp-xxhdpi")
+    fun dishSwipedUk() = shot("meal_dish_swiped_dark_uk", dark = true) {
+        DishRow(
+            newFoodRow("Гречка", "22", "table", "100 г"),
+            "uk",
+            open = false,
+            revealed = true,
+            onToggle = {},
+            onReveal = {},
+            onChange = {},
+            onSplit = {},
+            onRename = {},
+            onRemove = {},
+            onDone = {}
         )
     }
 

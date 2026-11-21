@@ -1,39 +1,47 @@
 package com.lumenarcanus.dialife.feature.meal
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
@@ -43,47 +51,78 @@ import com.lumenarcanus.dialife.feature.entry.FoodRow
 import com.lumenarcanus.dialife.feature.entry.FoodSuggestions
 import com.lumenarcanus.dialife.feature.meal.MealDraft
 import com.lumenarcanus.dialife.feature.meal.MealDrafts
+import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 
-/** One dish: folded it reads like a receipt line; a tap opens portion, carbs and suggestions; a swipe left takes it away. */
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * One dish: folded it reads like a receipt line; a tap opens portion, carbs and
+ * suggestions; a swipe left uncovers "rename" and "remove", and nothing happens
+ * until one is tapped.
+ */
 @Composable
 internal fun DishRow(
     row: FoodRow,
     lang: String,
     open: Boolean,
+    revealed: Boolean,
     onToggle: () -> Unit,
+    onReveal: (Boolean) -> Unit,
     onChange: ((FoodRow) -> FoodRow) -> Unit,
     onSplit: (List<String>) -> Unit,
+    onRename: () -> Unit,
     onRemove: () -> Unit,
     onDone: () -> Unit
 ) {
     val c = DiaTheme.colors
-    val swipe = rememberSwipeToDismissBoxState(
-        confirmValueChange = {
-            if (it == SwipeToDismissBoxValue.EndToStart) {
-                onRemove()
-                true
-            } else {
-                false
-            }
-        },
-        positionalThreshold = { it * 0.35f }
-    )
     Column(Modifier.fillMaxWidth().background(if (open) c.surfaceRaised else Color.Transparent)) {
-        SwipeToDismissBox(
-            state = swipe,
-            enableDismissFromStartToEnd = false,
-            backgroundContent = {
-                Box(Modifier.fillMaxSize().background(c.lowContainer).padding(end = 18.dp), contentAlignment = Alignment.CenterEnd) {
-                    Text(stringResource(R.string.meal_swipe_remove), color = c.low, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                }
-            }
-        ) {
-            DishSummary(row, open, onToggle)
-        }
+        SwipeActions(revealed, onReveal, onRename, onRemove) { DishSummary(row, open, onToggle) }
         splitParts(row.name)?.let { parts -> SplitOffer(parts) { onSplit(parts) } }
         if (open) DishEditor(row, lang, onChange, onDone)
         Box(Modifier.fillMaxWidth().height(1.dp).background(c.line))
+    }
+}
+
+private val ActionWidth = 96.dp
+
+/** The line slides left over its two actions and stays there until slid back, tapped through, or another dish is touched. */
+@Composable
+private fun SwipeActions(
+    revealed: Boolean,
+    onReveal: (Boolean) -> Unit,
+    onRename: () -> Unit,
+    onRemove: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    val c = DiaTheme.colors
+    val scope = rememberCoroutineScope()
+    val width = with(LocalDensity.current) { (ActionWidth * 2).toPx() }
+    val offset = remember { Animatable(0f) }
+    LaunchedEffect(revealed) { offset.animateTo(if (revealed) -width else 0f) }
+    val drag = rememberDraggableState { d -> scope.launch { offset.snapTo((offset.value + d).coerceIn(-width, 0f)) } }
+    Box(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+        Row(Modifier.align(Alignment.CenterEnd).fillMaxHeight()) {
+            SwipeAction(stringResource(R.string.meal_swipe_rename), c.text, c.surfaceRaised, onRename)
+            SwipeAction(stringResource(R.string.meal_swipe_remove), c.low, c.lowContainer, onRemove)
+        }
+        Box(
+            Modifier
+                .offset { IntOffset(offset.value.roundToInt(), 0) }
+                .draggable(drag, Orientation.Horizontal, onDragStopped = { v ->
+                    val show = offset.value < -width / 2 || v < -1_500f
+                    offset.animateTo(if (show) -width else 0f)
+                    onReveal(show)
+                })
+        ) { content() }
+    }
+}
+
+@Composable
+private fun SwipeAction(label: String, ink: Color, fill: Color, onClick: () -> Unit) {
+    Box(
+        Modifier.width(ActionWidth).fillMaxHeight().background(fill).clickable(onClick = onClick).padding(horizontal = 6.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(label, color = ink, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, textAlign = TextAlign.Center)
     }
 }
 

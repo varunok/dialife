@@ -70,4 +70,45 @@ class MealFormStateTest {
         f.remove(f.rows[0].id)
         assertNull(f.open)
     }
+
+    @Test
+    fun aRenamedDishLosesItsCarbsAndOpens() {
+        val f = MealFormState(null, null, null, now)
+        f.rows.add(newFoodRow("Гречка", "22", "table", "100 г", tableId = "t1"))
+        val id = f.rows[0].id
+        f.revealed = id
+        f.renaming = id
+        f.rename(id, "рис 150 г")
+        val r = f.rows[0]
+        assertEquals("Рис", r.name)
+        assertEquals("150 г", r.portion)
+        assertEquals("", r.carbs)
+        assertNull(r.source)
+        assertNull(r.tableId)
+        assertEquals(id, f.open)
+        assertNull(f.revealed)
+        assertNull(f.renaming)
+    }
+
+    @Test
+    fun aRenameKeepsThePortionWhenNoneIsTyped() {
+        val f = MealFormState(null, null, null, now)
+        f.rows.add(newFoodRow("Гречка", "22", "manual", "100 г"))
+        f.rename(f.rows[0].id, "булгур")
+        assertEquals("Булгур", f.rows[0].name)
+        assertEquals("100 г", f.rows[0].portion)
+        assertEquals("", f.rows[0].carbs)
+    }
+
+    @Test
+    fun theSameNameOrABlankOneChangesNothing() {
+        val f = MealFormState(null, null, null, now)
+        f.rows.add(newFoodRow("Гречка", "22", "mine", "100 г"))
+        val id = f.rows[0].id
+        f.rename(id, "гречка")
+        f.rename(id, "   ")
+        assertEquals("22", f.rows[0].carbs)
+        assertEquals("mine", f.rows[0].source)
+        assertNull(f.open)
+    }
 }

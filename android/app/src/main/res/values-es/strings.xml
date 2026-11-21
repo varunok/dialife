@@ -587,6 +587,9 @@
     <string name="meal_plan_failed">La comida aún no se guardó: la dosis prevista o la respuesta no llegó al servidor. Revisad la conexión y probad de nuevo.</string>
     <string name="meal_saving">Guardando…</string>
     <string name="meal_swipe_remove">Quitar</string>
+    <string name="meal_swipe_rename">Renombrar</string>
+    <string name="meal_rename_title">Nombre del plato</string>
+    <string name="meal_rename_hint">Puede llevar la porción: «arroz 150 g». Tendrá que elegir los carbohidratos de nuevo.</string>
     <string name="meal_no_portion">sin ración</string>
     <string name="meal_from_hint">de una sugerencia</string>
     <string name="meal_by_hand">a mano</string>
