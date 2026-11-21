@@ -68,7 +68,9 @@ the app; a demo server with a generated day for the web).
   "mashed potatoes" finds the table's potato, "rye bread" the family's own
   "black bread". The foods logged most are quick buttons; the whole table is
   one tap further. A suggestion is only ever a tap away, never filled in by
-  itself. Without a model configured nothing about food leaves the server.
+  itself. A dish swiped left is removed, one swiped right is renamed (its
+  carbs then go and the new name's suggestions are offered). Without a model
+  configured nothing about food leaves the server.
 - **The rapid dose, worked out but never recorded by itself.** From the
   family's settings, shared by every phone: grams of carbs per unit, a
   correction table by glucometer, one of four clinic rounding rules (step 1 or
@@ -87,6 +89,21 @@ the app; a demo server with a generated day for the web).
 - **Sensor vs glucometer.** Pairs every glucometer check with the sensor at
   that moment and estimates, sensor by sensor, how far apart the two usually
   are. With enough checks an optional "≈ meter" line appears on the chart.
+- **After a shower.** A shower is logged with its length. For that long and
+  30 minutes after, the sensor is not trusted: the reading is dimmed with a
+  warning to trust only the glucometer, the chart hatches the window and draws
+  no forecast through it, and its readings and checks stay out of the
+  comparisons and of "did you forget to log?". Alarms ring as usual and add
+  "check with the glucometer".
+- **No-sensor mode**, for the days a family waits for new sensors. A parent
+  turns it on for every phone. There is nothing to alarm about, so no phone
+  alarms; insulin, food and glucometer checks are logged as always, and the
+  double-insulin guard still works. Home shows the last glucometer check
+  instead of "no data"; a check below the low or above the high threshold
+  brings a bright card on every phone; after a chosen time without a check
+  every phone is reminded to measure. The chart marks the time without a
+  sensor, with the checks as dots. Two readings from a new sensor end the
+  mode by themselves, and every phone is told the alarms are back.
 - **Statistics.** Time in range, mean, GMI, CV, the typical day (AGP), daily
   insulin and carbs, and an alarm log. The 30-minute forecast shows how often
   it came true on the child's own recent readings.
