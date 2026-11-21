@@ -181,13 +181,7 @@ internal fun Dishes(form: MealFormState, repo: FoodRepository?, lang: String) {
                     row,
                     lang,
                     open = form.open == row.id,
-                    revealed = form.revealed == row.id,
-                    onToggle = {
-                        form.revealed = null
-                        form.open = if (form.open == row.id) null else row.id
-                    },
-                    // one dish at a time shows its actions
-                    onReveal = { show -> form.revealed = if (show) row.id else form.revealed.takeIf { it != row.id } },
+                    onToggle = { form.open = if (form.open == row.id) null else row.id },
                     onChange = { f -> form.update(row.id, f) },
                     onSplit = { parts ->
                         val i = form.rows.indexOfFirst { it.id == row.id }
@@ -197,10 +191,7 @@ internal fun Dishes(form: MealFormState, repo: FoodRepository?, lang: String) {
                         form.open = made.first().id
                     },
                     onRename = { form.renaming = row.id },
-                    onRemove = {
-                        form.revealed = null
-                        form.remove(row.id)
-                    },
+                    onRemove = { form.remove(row.id) },
                     onDone = { form.open = null }
                 )
             }

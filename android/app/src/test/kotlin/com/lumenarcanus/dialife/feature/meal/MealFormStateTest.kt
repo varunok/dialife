@@ -76,7 +76,6 @@ class MealFormStateTest {
         val f = MealFormState(null, null, null, now)
         f.rows.add(newFoodRow("Гречка", "22", "table", "100 г", tableId = "t1"))
         val id = f.rows[0].id
-        f.revealed = id
         f.renaming = id
         f.rename(id, "рис 150 г")
         val r = f.rows[0]
@@ -86,7 +85,6 @@ class MealFormStateTest {
         assertNull(r.source)
         assertNull(r.tableId)
         assertEquals(id, f.open)
-        assertNull(f.revealed)
         assertNull(f.renaming)
     }
 

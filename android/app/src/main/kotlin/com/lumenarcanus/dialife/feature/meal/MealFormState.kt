@@ -54,8 +54,7 @@ class MealFormState(draft: MealDraft?, editing: Treatment?, initialTime: Long?, 
     // the dish opened for editing
     var open by mutableStateOf<Long?>(null)
 
-    // the dish swiped left, showing "rename" and "remove"; the one being renamed
-    var revealed by mutableStateOf<Long?>(null)
+    // the dish swiped right: its new name is being typed
     var renaming by mutableStateOf<Long?>(null)
 
     // the dish just taken away, for "undo": (where it was, what it was)
@@ -109,7 +108,6 @@ class MealFormState(draft: MealDraft?, editing: Treatment?, initialTime: Long?, 
      */
     fun rename(id: Long, text: String) {
         renaming = null
-        revealed = null
         val (name, portion) = parseEntry(text.replace('\n', ' '))
         if (name.isBlank()) return
         val newName = name.trim().replaceFirstChar { it.uppercase() }
