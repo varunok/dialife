@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 
 import { prefs } from '../static/js/prefs.js';
 import { MIN, amount, g, signed, t, unit } from '../static/js/format.js';
-import { alarmLines, alarmName, entryText, foodText, isBasal, isShower, meterPoints, origin, untrusted, untrustedAt } from '../static/js/entries.js';
+import { alarmLines, alarmName, duration, entryText, foodText, isBasal, isShower, meterPoints, origin, sensorlessIn, untrusted, untrustedAt } from '../static/js/entries.js';
 import { tableRows } from '../static/js/rows.js';
 import { parseEvent } from '../static/js/api.js';
 
@@ -192,4 +192,14 @@ test('a shower: its entry, and the window the sensor is not believed in', () => 
   assert.ok(untrusted([w], T0 + 44 * MIN));
   assert.ok(!untrusted([w], T0 - 1));
   assert.ok(!untrusted(undefined, T0));
+});
+
+test('the no-sensor mode: its periods in view, one still on ending now; how long ago', () => {
+  const now = T0, H = 60 * MIN;
+  const ps = [{ from: now - 30 * H, until: now - 20 * H }, { from: now - 2 * H }];
+  assert.deepEqual(sensorlessIn(ps, now - 6 * H, now, now), [{ from: now - 2 * H, until: now, open: true }]);
+  assert.equal(duration(50 * MIN), '50 min');
+  assert.equal(duration(3 * H), '3 h');
+  prefs.lang = 'uk';
+  assert.equal(duration(2 * H + 10 * MIN), '2 год 10 хв');
 });

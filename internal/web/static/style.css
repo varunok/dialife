@@ -5,6 +5,7 @@
   --in: #4FD1C5; --in-bg: #10302C; --high: #F5A524; --high-bg: #2A1E0A; --low: #FF5C7A; --low-bg: #2A0D17;
   --insulin: #C4B5FD; --insulin-bg: #2B2147; --basal: #7FB2FF; --basal-bg: #0E1C33; --carbs: #F5C46B; --carbs-bg: #3A2A12;
   --est: #E8D9FF;
+  --sensorless: #8FB0D9; --sensorless-bg: #132033;
   --ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   color-scheme: dark;
@@ -22,6 +23,7 @@ button { cursor: pointer; }
 .pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .live { background: var(--in-bg); color: var(--in); }
 .offline { background: var(--basal-bg); color: var(--basal); }
+.sensorless { background: var(--sensorless-bg); color: var(--sensorless); }
 .spacer { flex: 1; }
 .who { color: var(--muted); font-size: 13px; }
 .seg { display: inline-flex; gap: 4px; background: var(--surface); border-radius: 12px; padding: 3px; }
@@ -47,6 +49,13 @@ select.ghost { padding: 0 8px; }
 .untrusted-card { border-radius: 14px; padding: 12px 14px; display: grid; gap: 4px; background: var(--high-bg); border: 1.5px solid var(--high); }
 .untrusted-card b { font-weight: 600; } .untrusted-card span { font-size: 14px; }
 .alarm span.check { color: var(--high); font-weight: 600; }
+.sensorless-card { border-radius: 18px; padding: 14px 16px; display: grid; gap: 6px; background: var(--sensorless-bg); border: 1px solid var(--sensorless); }
+.sensorless-card b { color: var(--sensorless); font-size: 18px; font-weight: 600; } .sensorless-card span { color: var(--muted); font-size: 14px; }
+.sensorless-card span.last { color: var(--text); font-size: 16px; font-weight: 500; }
+.check-card { border-radius: 14px; padding: 12px 14px; display: grid; gap: 4px; border: 1.5px solid; }
+.check-card.lo { background: var(--low-bg); border-color: var(--low); } .check-card.lo b { color: var(--low); }
+.check-card.hi { background: var(--high-bg); border-color: var(--high); } .check-card.hi b { color: var(--high); }
+.check-card b { font-weight: 600; } .check-card span { font-size: 14px; }
 .arrow { width: 60px; height: 60px; border-radius: 50%; border: 1.5px solid #2B5E58; background: var(--in-bg); color: var(--in); display: grid; place-items: center; }
 .arrow svg { width: 28px; height: 28px; }
 .sub { font-size: 15px; } .sub b { font-weight: 600; } .sub span { color: var(--muted); }

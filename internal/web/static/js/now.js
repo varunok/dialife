@@ -3,7 +3,7 @@
 
 import { logout, session } from './api.js';
 import { MIN, clock, dayTime, g, signed, t, unit } from './format.js';
-import { alarmName, untrustedAt } from './entries.js';
+import { alarmName, duration, untrustedAt } from './entries.js';
 import { V } from './model.js';
 import { prefs, setPref } from './prefs.js';
 import { LangPicker, arrowIcon } from './widgets.js';
@@ -16,7 +16,9 @@ function ageMin(bg) { return Math.floor((Date.now() - bg.mills) / MIN); }
 export const Top = {
   view() {
     const st = V.state, stale = st && st.bg && ageMin(st.bg) >= STALE_MIN;
-    const status = V.link === 'offline' ? ['offline', t('offline')] : stale ? ['offline', t('stale')] : ['live', t('live')];
+    // the "no sensor" mode: no reading is expected, so none is missing
+    const status = V.link === 'offline' ? ['offline', t('offline')] : st && st.sensorless ? ['sensorless', t('noSensor')]
+      : stale ? ['offline', t('stale')] : ['live', t('live')];
     return m('header.top', [
       m('span.brand', 'DiaLife'),
       m('span.pill.' + status[0], [m('span.dot'), status[1]]),
@@ -33,6 +35,7 @@ export const Now = {
   view() {
     const st = V.state;
     if (!st) return m('section.card.now', t('loading'));
+    if (st.sensorless) return m('section.card.now', sensorless(st.sensorless, Date.now()));
     const bg = st.bg, th = st.thresholds || {};
     if (!bg) return m('section.card.now', t('noData'));
     const age = ageMin(bg), stale = age >= STALE_MIN;
@@ -74,5 +77,28 @@ function forecast(st, range, f30) {
     // apart for the quiet hours and after food: one number hides the second
     f30 && fq && (fq.quiet || fq.after_food) && m('.hint', t('forecastHits', hits(fq.quiet), hits(fq.after_food))),
     blind && m('.hint', t(blind.kind === 'food' ? 'blindFood' : 'blindInsulin', clock(blind.t)))
+  ];
+}
+
+// In place of the reading while the "no sensor" mode is on: calm, no number (an old
+// check is not the sugar now); a check out of range and the reminder stand out.
+// The viewer only shows them: closing a card and logging a check are the phones'.
+function sensorless(s, now) {
+  const last = s.last_check;
+  return [
+    m('.sensorless-card', [
+      m('b', t('sensorlessTitle')),
+      m('span.last', last ? t('sensorlessLast', g(last.mg), unit(), duration(now - last.t)) : t('sensorlessLastNone')),
+      m('span', t('sensorlessSince', clock(s.since), s.by || '—')),
+      s.remind_at > 0 && !s.remind_due && m('span', t('sensorlessNext', clock(s.remind_at)))
+    ]),
+    s.card && m('.check-card.' + (s.card.kind === 'low' ? 'lo' : 'hi'), [
+      m('b', t(s.card.kind === 'low' ? 'sensorlessCardLow' : 'sensorlessCardHigh', g(s.card.mg), unit())),
+      m('span', t('sensorlessCardText', clock(s.card.t)))
+    ]),
+    s.remind_due && m('.untrusted-card', [
+      m('b', t('sensorlessRemindTitle')),
+      m('span', last ? t('sensorlessRemindText', duration(now - last.t)) : t('sensorlessRemindNone'))
+    ])
   ];
 }

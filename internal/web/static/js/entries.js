@@ -1,7 +1,7 @@
 // How entries, glucometer checks, suspects and alarms read: shared by the
 // chart's tooltips and the table.
 
-import { amount, clock, g, hasText, t } from './format.js';
+import { MIN, amount, clock, g, hasText, t } from './format.js';
 
 export function isBasal(tr) {
   if (tr.insulin_type) return tr.insulin_type === 'basal';
@@ -68,6 +68,17 @@ export const isShower = (tr) => tr.event_type === 'Shower';
 export function untrustedAt(st, now) {
   const w = st && st.untrusted;
   return w && now >= w.from && now < w.until ? w : null;
+}
+
+// how long, as "2 h 10 min"
+export function duration(ms) {
+  const all = Math.max(0, Math.floor(ms / MIN)), h = Math.floor(all / 60), mm = all % 60;
+  return h === 0 ? t('gapMin', mm) : mm === 0 ? t('gapH', h) : t('gapHMin', h, mm);
+}
+
+// the "no sensor" mode's periods overlapping [from, to]; one still on ends at now
+export function sensorlessIn(periods, from, to, now) {
+  return (periods || []).map((p) => ({ from: p.from, until: p.until || now, open: !p.until })).filter((p) => p.from <= to && p.until >= from);
 }
 
 // whether a reading at tt was taken while the sensor was not believed

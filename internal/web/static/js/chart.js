@@ -4,7 +4,7 @@
 
 import { describeMark, tipPos } from './chart-tip.js';
 import { HOUR, MIN, DAY, clock, dayOnly, dayTime, g, signed, t, unit } from './format.js';
-import { alarmInk, isBasal, isShower, meterPoints, untrusted } from './entries.js';
+import { alarmInk, isBasal, isShower, meterPoints, sensorlessIn, untrusted } from './entries.js';
 import { V, loadHistory, timeWindow } from './model.js';
 import { ChartHead } from './period.js';
 import { prefs } from './prefs.js';
@@ -36,7 +36,7 @@ const Chart = {
     const s = v.state, h = V.history;
     if (!h) return m('.chart', m('div.hint', t('loading')));
     const c = geometry(s.w || 900, h, V.state, timeWindow());
-    const out = [].concat(shade(c), grid(c), activity(c), alarms(c), cone(c), meterBand(c), sensor(c), marks(c), diamonds(c));
+    const out = [].concat(noSensor(c), shade(c), grid(c), activity(c), alarms(c), cone(c), meterBand(c), sensor(c), marks(c), diamonds(c));
     const tipBox = hover(s.tip, c, out);
     return m('.chart', {
       onmousemove: (e) => pointAt(s, e, c),
@@ -98,6 +98,22 @@ function grid(c) {
     if (lx - lw / 2 > lastEnd + 6) { out.push(m('text', { x: lx, y: H - 6, 'text-anchor': 'middle', fill: 'var(--faint)' }, label)); lastEnd = lx + lw / 2; }
   }
   return out;
+}
+
+// when the "no sensor" mode was on: a calm band with its name, no hatching and no amber,
+// as nothing was wrong: there was simply no sensor; the glucometer checks sit on it as dots
+function noSensor(c) {
+  const { x, plotW, plotH, from, win } = c;
+  return sensorlessIn(c.h.sensorless, from, win.to, Date.now()).flatMap((p) => {
+    const x0 = Math.max(0, x(p.from)), x1 = Math.min(plotW, x(Math.min(p.until, Date.now())));
+    if (x1 <= x0) return [];
+    return [
+      m('rect', { x: x0, y: 0, width: x1 - x0, height: plotH, fill: 'var(--sensorless)', 'fill-opacity': 0.10 }),
+      m('line', { x1: x0, x2: x0, y1: 0, y2: plotH, stroke: 'var(--sensorless)', 'stroke-opacity': 0.55 }),
+      !p.open && m('line', { x1: x1, x2: x1, y1: 0, y2: plotH, stroke: 'var(--sensorless)', 'stroke-opacity': 0.55 }),
+      x1 - x0 > 70 && m('text', { x: x0 + 4, y: 32, fill: 'var(--sensorless)', style: 'font-weight:600' }, t('sensorlessChart'))
+    ];
+  });
 }
 
 // where the sensor is not believed (a shower and half an hour after): hatched, labelled at the top
