@@ -212,7 +212,8 @@ class LiveRepository(context: Context, private val api: DiaLifeApi = DiaLifeApi(
                     _alarms.tryEmit(AlarmSignal("snapshot", null))
                 }
             }
-            "history", "treatment" -> refreshHistory(c)
+            // the "no sensor" mode went on or off: the chart's band changes
+            "history", "treatment", "sensorless" -> refreshHistory(c)
             "alarm", "handled", "checkin", "checkin_ok", "help", "coming", "clear" -> {
                 val ev = DiaLifeApi.json.decodeFromString<AlarmEvent>(data)
                 _live.update { cur -> cur.copy(state = cur.state?.let { it.copy(alarms = it.alarms.upsert(ev.alarm)) }) }

@@ -823,4 +823,35 @@
     <string name="untrusted_short">⚠ після душу</string>
     <string name="untrusted_chart">душ</string>
     <string name="shower_label">Душ · %1$d хв</string>
+    <!-- the "no sensor" mode -->
+    <string name="sensorless_chart">без сенсора</string>
+    <string name="status_sensorless">Без сенсора</string>
+    <string name="sensorless_title">Режим без сенсора</string>
+    <string name="sensorless_since">Тривоги вимкнені на всіх телефонах · з %1$s, %2$s</string>
+    <string name="sensorless_last">Останній замір з пальця: %1$s %2$s, %3$s тому</string>
+    <string name="sensorless_last_none">За останній тиждень замірів з пальця немає</string>
+    <string name="sensorless_next">Нагадування виміряти о %1$s</string>
+    <string name="sensorless_remind_title">Час виміряти цукор з пальця</string>
+    <string name="sensorless_remind_text">Без сенсора цукор видно лише з глюкометра. Останній замір %1$s тому.</string>
+    <string name="sensorless_remind_none">Без сенсора цукор видно лише з глюкометра. З початку режиму замірів не було.</string>
+    <string name="sensorless_measure">Внести замір</string>
+    <string name="sensorless_card_low">Низький цукор з пальця: %1$s %2$s</string>
+    <string name="sensorless_card_high">Високий цукор з пальця: %1$s %2$s</string>
+    <string name="sensorless_card_text">Замір о %1$s. У режимі без сенсора тривог немає: стежте самі й виміряйте ще раз згодом.</string>
+    <string name="sensorless_card_close">Закрити для всіх</string>
+    <string name="set_sensorless_switch">Сенсора зараз немає</string>
+    <string name="set_sensorless_sub">Поки сенсора немає: тривог немає, усе інше працює як завжди. Режим вимкнеться сам, щойно сенсор надішле дані.</string>
+    <string name="set_sensorless_on_title">Увімкнути режим без сенсора?</string>
+    <string name="set_sensorless_on_body">Тривог не буде на жодному телефоні: ні про низький чи високий цукор, ні про відсутність даних. Інсулін, їжу й заміри з пальця вносьте як завжди. Режим вимкнеться сам, щойно новий сенсор надішле дані.</string>
+    <string name="set_sensorless_on_ok">Увімкнути</string>
+    <string name="set_sensorless_off_title">Вимкнути режим без сенсора?</string>
+    <string name="set_sensorless_off_body">Тривоги повернуться на всі телефони. Якщо сенсор ще не надсилає дані, одразу пролунає тривога «Немає даних від сенсора».</string>
+    <string name="set_sensorless_off_ok">Вимкнути</string>
+    <string name="set_sensorless_sending">Сенсор зараз надсилає дані: режим без сенсора не потрібен.</string>
+    <string name="set_sensorless_failed">Не вдалося. Перевірте з\'єднання і спробуйте ще раз.</string>
+    <string name="set_sensorless_remind">Нагадати виміряти з пальця</string>
+    <string name="set_sensorless_remind_sub">Через стільки часу без заміру всі телефони отримають нагадування</string>
+    <string name="set_sensorless_remind_off">Не нагадувати</string>
+    <string name="notif_sensorless">Без сенсора</string>
+    <string name="notif_sensorless_last">Останній замір з пальця %1$s о %2$s</string>
 </resources>

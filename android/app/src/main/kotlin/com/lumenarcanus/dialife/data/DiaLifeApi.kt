@@ -201,6 +201,9 @@ class DiaLifeApi(private val http: OkHttpClient = defaultClient) {
 
     suspend fun webRevoke(c: Credentials, id: Long): Result<Unit> = post(c, "/api/web/sessions/$id/revoke", "{}")
 
+    /** A PUT whose answer is only "done"; every status as it is (409 tells the caller something). */
+    suspend fun put(c: Credentials, path: String, body: String): Result<Unit> = sendFor<Unit?>(c, "PUT", path, body).map { }
+
     /** A POST whose answer matters, every status as it is (unlike the alarm actions). */
     private suspend inline fun <reified T> postFor(c: Credentials, path: String, body: String): Result<T> = sendFor(c, "POST", path, body)
 

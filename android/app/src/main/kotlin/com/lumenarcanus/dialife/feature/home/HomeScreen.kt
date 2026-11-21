@@ -54,6 +54,7 @@ import com.lumenarcanus.dialife.feature.entry.IntentWarning
 import com.lumenarcanus.dialife.feature.entry.TreatmentKind
 import com.lumenarcanus.dialife.feature.entry.TreatmentSheet
 import com.lumenarcanus.dialife.feature.entry.kindLook
+import com.lumenarcanus.dialife.feature.sensorless.SensorlessHero
 
 @Composable
 fun HomeScreen(
@@ -86,6 +87,8 @@ fun HomeScreen(
     watchSection: @Composable () -> Unit = {},
     // when to eat: a feature with its own state (feature/wait)
     waitSection: @Composable () -> Unit = {},
+    // the "no sensor" mode's cards: a feature with its own state (feature/sensorless); onMeasure opens the glucometer entry
+    sensorlessSection: @Composable (onMeasure: () -> Unit) -> Unit = {},
     // the entry sheet's: "… is giving insulin" on the other phones, food suggestions
     onAnnounceInsulin: (InsulinType?) -> Unit = {},
     foods: FoodRepository? = null,
@@ -143,22 +146,26 @@ fun HomeScreen(
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
+        // the "no sensor" mode: no reading is expected, so none is missing
+        val sensorless = ui.state?.sensorless
         val status = when {
             ui.offline -> R.string.status_offline
+            sensorless != null -> R.string.status_sensorless
             state == null || state.ageMin >= STALE_MIN -> R.string.status_stale
             else -> R.string.status_live
         }
         Header(deviceName, status, onOpenStats, onOpenLog, onOpenSettings, onOpenWebLogin)
-        if (state != null) {
-            Hero(state, locale)
-        } else {
-            Empty(loading = ui.state == null && !ui.offline)
+        when {
+            sensorless != null -> SensorlessHero(sensorless, state?.units ?: fallbackUnits, ui.now, ui.state.iob)
+            state != null -> Hero(state, locale)
+            else -> Empty(loading = ui.state == null && !ui.offline)
         }
         // banners come and go without making the page jump
         AnimatedVisibility(ui.offline) { OfflineBanner(ui, onRetry) }
-        AnimatedVisibility(!ui.offline && state != null && state.ageMin >= STALE_MIN) {
+        AnimatedVisibility(!ui.offline && sensorless == null && state != null && state.ageMin >= STALE_MIN) {
             state?.let { StaleBanner(ui, it) }
         }
+        sensorlessSection { sheet = SheetRequest(TreatmentKind.Meter) }
         Column(Modifier.animateContentSize(), verticalArrangement = Arrangement.spacedBy(18.dp)) {
             alarmsSection()
         }

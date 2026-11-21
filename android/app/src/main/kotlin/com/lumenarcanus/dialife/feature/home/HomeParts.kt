@@ -96,6 +96,7 @@ internal fun Header(
     val c = DiaTheme.colors
     val live = status == R.string.status_live
     val offline = status == R.string.status_offline
+    val sensorless = status == R.string.status_sensorless // calm: nothing is broken, there is no sensor
     val blue = if (c.isDark) Color(0xFF7FB2FF) else Color(0xFF1F5FCC)
     val blueBg = if (c.isDark) Color(0xFF0E1C33) else Color(0xFFE3EDFF)
     var menu by remember { mutableStateOf(false) }
@@ -109,6 +110,8 @@ internal fun Header(
                         c.inRangeContainer
                     } else if (offline) {
                         blueBg
+                    } else if (sensorless) {
+                        c.sensorlessContainer
                     } else {
                         c.highContainer
                     },
@@ -124,6 +127,8 @@ internal fun Header(
                         c.inRange
                     } else if (offline) {
                         blue
+                    } else if (sensorless) {
+                        c.sensorless
                     } else {
                         c.high
                     },
@@ -136,6 +141,8 @@ internal fun Header(
                     c.onInRangeContainer
                 } else if (offline) {
                     blue
+                } else if (sensorless) {
+                    c.sensorless
                 } else {
                     c.high
                 },

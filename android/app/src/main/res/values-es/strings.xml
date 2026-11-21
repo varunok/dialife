@@ -811,4 +811,35 @@
     <string name="untrusted_short">⚠ tras la ducha</string>
     <string name="untrusted_chart">ducha</string>
     <string name="shower_label">Ducha · %1$d min</string>
+    <!-- the "no sensor" mode -->
+    <string name="sensorless_chart">sin sensor</string>
+    <string name="status_sensorless">Sin sensor</string>
+    <string name="sensorless_title">Modo sin sensor</string>
+    <string name="sensorless_since">Las alarmas están apagadas en todos los teléfonos · desde %1$s, %2$s</string>
+    <string name="sensorless_last">Última medición con glucómetro: %1$s %2$s, hace %3$s</string>
+    <string name="sensorless_last_none">Ninguna medición con glucómetro en la última semana</string>
+    <string name="sensorless_next">Recordatorio para medir a las %1$s</string>
+    <string name="sensorless_remind_title">Hora de medir con el glucómetro</string>
+    <string name="sensorless_remind_text">Sin sensor solo el glucómetro muestra el azúcar. Última medición hace %1$s.</string>
+    <string name="sensorless_remind_none">Sin sensor solo el glucómetro muestra el azúcar. Ninguna medición desde que empezó el modo.</string>
+    <string name="sensorless_measure">Anotar medición</string>
+    <string name="sensorless_card_low">Azúcar baja en el glucómetro: %1$s %2$s</string>
+    <string name="sensorless_card_high">Azúcar alta en el glucómetro: %1$s %2$s</string>
+    <string name="sensorless_card_text">Medido a las %1$s. En el modo sin sensor no hay alarmas: esté atento y vuelva a medir más tarde.</string>
+    <string name="sensorless_card_close">Cerrar para todos</string>
+    <string name="set_sensorless_switch">Ahora no hay sensor</string>
+    <string name="set_sensorless_sub">Mientras no hay sensor: sin alarmas, todo lo demás funciona como siempre. Se apaga solo en cuanto un sensor envía datos.</string>
+    <string name="set_sensorless_on_title">¿Activar el modo sin sensor?</string>
+    <string name="set_sensorless_on_body">Ningún teléfono dará alarmas: ni por azúcar baja o alta, ni por falta de datos. Anote insulina, comida y mediciones con glucómetro como siempre. El modo se apaga solo en cuanto un sensor nuevo envía datos.</string>
+    <string name="set_sensorless_on_ok">Activar</string>
+    <string name="set_sensorless_off_title">¿Desactivar el modo sin sensor?</string>
+    <string name="set_sensorless_off_body">Las alarmas vuelven a todos los teléfonos. Si todavía ningún sensor envía datos, sonará enseguida la alarma «Sin datos del sensor».</string>
+    <string name="set_sensorless_off_ok">Desactivar</string>
+    <string name="set_sensorless_sending">Un sensor está enviando datos ahora: el modo sin sensor no hace falta.</string>
+    <string name="set_sensorless_failed">No se pudo. Revise la conexión e inténtelo de nuevo.</string>
+    <string name="set_sensorless_remind">Recordar medir con el glucómetro</string>
+    <string name="set_sensorless_remind_sub">Tras este tiempo sin medición todos los teléfonos reciben un recordatorio</string>
+    <string name="set_sensorless_remind_off">Sin recordatorio</string>
+    <string name="notif_sensorless">Sin sensor</string>
+    <string name="notif_sensorless_last">Última medición con glucómetro %1$s a las %2$s</string>
 </resources>

@@ -803,4 +803,35 @@
     <string name="untrusted_short">⚠ after a shower</string>
     <string name="untrusted_chart">shower</string>
     <string name="shower_label">Shower · %1$d min</string>
+    <!-- the "no sensor" mode -->
+    <string name="sensorless_chart">no sensor</string>
+    <string name="status_sensorless">No sensor</string>
+    <string name="sensorless_title">No-sensor mode</string>
+    <string name="sensorless_since">Alarms are off on every phone · since %1$s, %2$s</string>
+    <string name="sensorless_last">Last glucometer check: %1$s %2$s, %3$s ago</string>
+    <string name="sensorless_last_none">No glucometer check in the last week</string>
+    <string name="sensorless_next">Reminder to measure at %1$s</string>
+    <string name="sensorless_remind_title">Time to check with the glucometer</string>
+    <string name="sensorless_remind_text">Without a sensor only the glucometer shows the sugar. Last check %1$s ago.</string>
+    <string name="sensorless_remind_none">Without a sensor only the glucometer shows the sugar. No check since the mode began.</string>
+    <string name="sensorless_measure">Log a check</string>
+    <string name="sensorless_card_low">Low on the glucometer: %1$s %2$s</string>
+    <string name="sensorless_card_high">High on the glucometer: %1$s %2$s</string>
+    <string name="sensorless_card_text">Checked at %1$s. There are no alarms in no-sensor mode: keep watch and measure again later.</string>
+    <string name="sensorless_card_close">Close for everyone</string>
+    <string name="set_sensorless_switch">No sensor right now</string>
+    <string name="set_sensorless_sub">While there is no sensor: no alarms, everything else works as always. It turns itself off as soon as a sensor sends data.</string>
+    <string name="set_sensorless_on_title">Turn on no-sensor mode?</string>
+    <string name="set_sensorless_on_body">No phone will alarm: not for a low or high, not for missing data. Log insulin, food and glucometer checks as always. The mode turns itself off as soon as a new sensor sends data.</string>
+    <string name="set_sensorless_on_ok">Turn on</string>
+    <string name="set_sensorless_off_title">Turn off no-sensor mode?</string>
+    <string name="set_sensorless_off_body">Alarms come back on every phone. If no sensor is sending yet, the “No data from the sensor” alarm sounds at once.</string>
+    <string name="set_sensorless_off_ok">Turn off</string>
+    <string name="set_sensorless_sending">A sensor is sending data right now: no-sensor mode is not needed.</string>
+    <string name="set_sensorless_failed">It did not work. Check the connection and try again.</string>
+    <string name="set_sensorless_remind">Remind to measure with the glucometer</string>
+    <string name="set_sensorless_remind_sub">After this long without a check every phone gets a reminder</string>
+    <string name="set_sensorless_remind_off">No reminder</string>
+    <string name="notif_sensorless">No sensor</string>
+    <string name="notif_sensorless_last">Last glucometer check %1$s at %2$s</string>
 </resources>

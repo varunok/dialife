@@ -19,11 +19,17 @@ import com.lumenarcanus.dialife.data.CarbEstimate
 import com.lumenarcanus.dialife.data.CarbSuggestion
 import com.lumenarcanus.dialife.data.CarbTableHit
 import com.lumenarcanus.dialife.data.Caregiver
+import com.lumenarcanus.dialife.data.CheckCard
 import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.data.DoseSettings
 import com.lumenarcanus.dialife.data.FoodItem
+import com.lumenarcanus.dialife.data.MeterCheck
 import com.lumenarcanus.dialife.data.PlannedDose
 import com.lumenarcanus.dialife.data.Question
+import com.lumenarcanus.dialife.data.Sensorless
+import com.lumenarcanus.dialife.data.SensorlessPeriod
+import com.lumenarcanus.dialife.data.SensorlessSettings
+import com.lumenarcanus.dialife.data.Series
 import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.data.Untrusted
 import com.lumenarcanus.dialife.data.Wait
@@ -108,6 +114,65 @@ class ScreenshotTest {
                 )
             ),
             deviceName = "Тато"
+        )
+    }
+
+    // the "no sensor" mode: no number, the calm block in its place, a low check's card, the reminder,
+    // and on the chart a calm band from when it began with the checks as dots
+    @Test
+    @Config(qualifiers = "uk-w412dp-h1900dp-xxhdpi")
+    fun homeSensorlessUk() = shot("home_sensorless_dark_uk", dark = true) {
+        val ui = sampleHomeUi(now)
+        val since = now - 2 * 3_600_000L
+        val check = now - 50 * 60_000L
+        val h = ui.history!!
+        SampleHome(
+            ui.copy(
+                state = ui.state!!.copy(
+                    bg = ui.state.bg!!.copy(mills = since - 10 * 60_000L),
+                    ar2 = null,
+                    sensorless = Sensorless(
+                        since,
+                        "Мама",
+                        lastCheck = MeterCheck(check, 68),
+                        remindAt = check + 30 * 60_000L,
+                        remindDue = true,
+                        card = CheckCard(check, 68, "low")
+                    )
+                ),
+                history = h.copy(
+                    sgv = Series(
+                        h.sgv.t.filter { it < since - 10 * 60_000L },
+                        h.sgv.v.filterIndexed { i, _ ->
+                            h.sgv.t[i] <
+                                since - 10 * 60_000L
+                        }
+                    ),
+                    treatments = h.treatments.filter { it.glucose == null } + Treatment("g9", check, glucose = 68, enteredBy = "Мама"),
+                    sensorless = listOf(SensorlessPeriod(since, by = "Мама"))
+                )
+            ),
+            deviceName = "Тато"
+        )
+    }
+
+    @Test
+    @Config(qualifiers = "uk-w412dp-h2600dp-xxhdpi")
+    fun settingsSensorlessUk() = shot("settings_sensorless_uk", dark = true) {
+        val st = sampleHomeUi(now).state!!.copy(
+            sensorless = Sensorless(now - 2 * 3_600_000L, "Мама"),
+            sensorlessSettings = SensorlessSettings(remindMin = 150)
+        )
+        SettingsScreen(
+            SettingsUiState(creds, st),
+            setup = BackgroundSetup(),
+            onAction = {},
+            onFixNotifications = {},
+            onFixBattery = {},
+            onFixFullScreen = {},
+            onDisconnect = {},
+            onBack = {},
+            version = "0.0.0"
         )
     }
 

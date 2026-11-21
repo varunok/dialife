@@ -118,6 +118,21 @@ class GlucoseWidget : GlanceAppWidget() {
         val units = unitsOf(state?.displayUnits ?: creds?.displayUnits)
         val unit = context.getString(if (units == Units.MgDl) R.string.unit_mgdl else R.string.unit_mmol)
         val bg = state?.bg
+        // the "no sensor" mode: no number, which would only be an old one; the newest glucometer check instead
+        state?.sensorless?.takeIf { creds != null }?.let { s ->
+            val locale = context.resources.configuration.locales[0]
+            val msg = listOfNotNull(
+                context.getString(R.string.notif_sensorless),
+                s.lastCheck?.let {
+                    context.getString(
+                        R.string.notif_sensorless_last,
+                        formatGlucose(it.mg, units, locale) + " " + unit,
+                        formatClock(context, it.t)
+                    )
+                }
+            ).joinToString(" · ")
+            return WidgetData(null, unit, "", null, null, msg, 0, true, null, msg)
+        }
         if (creds == null || bg == null) {
             val msg = context.getString(if (creds == null) R.string.widget_not_connected else R.string.home_no_data)
             return WidgetData(null, unit, "", null, null, msg, 0, true, null, msg)

@@ -31,6 +31,9 @@ data class DiaColors(
     val insulinContainer: Color,
     val carbs: Color,
     val carbsContainer: Color,
+    // the "no sensor" mode: calm, neither the amber of missing data nor a warning
+    val sensorless: Color,
+    val sensorlessContainer: Color,
     val isDark: Boolean
 )
 
@@ -55,6 +58,8 @@ val DarkDiaColors = DiaColors(
     insulinContainer = Color(0xFF2B2147),
     carbs = Color(0xFFF5C46B),
     carbsContainer = Color(0xFF3A2A12),
+    sensorless = Color(0xFF8FB0D9),
+    sensorlessContainer = Color(0xFF132033),
     isDark = true
 )
 
@@ -79,6 +84,8 @@ val LightDiaColors = DiaColors(
     insulinContainer = Color(0xFFF1EDFF),
     carbs = Color(0xFF7A4800),
     carbsContainer = Color(0xFFFDF3E2),
+    sensorless = Color(0xFF34557F),
+    sensorlessContainer = Color(0xFFE5EDF7),
     isDark = false
 )
 

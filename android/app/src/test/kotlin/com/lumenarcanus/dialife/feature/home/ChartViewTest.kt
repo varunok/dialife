@@ -1,6 +1,7 @@
 package com.lumenarcanus.dialife.feature.home
 
 import com.lumenarcanus.dialife.data.History
+import com.lumenarcanus.dialife.data.SensorlessPeriod
 import com.lumenarcanus.dialife.data.Series
 import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.data.Treatment
@@ -62,5 +63,14 @@ class ChartViewTest {
         assertFalse(v.trusted(1))
         assertFalse(v.trusted(2))
         assertTrue(v.trusted(3)) // [from, until)
+    }
+
+    @Test
+    fun theNoSensorModeInViewWhileItLasts() {
+        val open = SensorlessPeriod(from = now - 2 * HOUR) // still on: until now
+        val old = SensorlessPeriod(from = now - 30 * HOUR, until = now - 5 * HOUR) // out of view
+        val v = view(History(0, now, sensorless = listOf(old, open)))
+        assertEquals(listOf(open), v.sensorless)
+        assertEquals(now, v.sensorless.single().end(now))
     }
 }

@@ -15,6 +15,7 @@ import com.lumenarcanus.dialife.feature.alarms.AlarmsSection
 import com.lumenarcanus.dialife.feature.planned.PlannedSection
 import com.lumenarcanus.dialife.feature.questions.QuestionsSection
 import com.lumenarcanus.dialife.feature.questions.WatchSection
+import com.lumenarcanus.dialife.feature.sensorless.SensorlessSection
 import com.lumenarcanus.dialife.feature.wait.WaitSection
 import com.lumenarcanus.dialife.foodRepository
 import com.lumenarcanus.dialife.insulinIntents
@@ -73,6 +74,7 @@ fun HomeRoute(
         questionsSection = { onLog -> QuestionsSection(onLog) },
         watchSection = { WatchSection() },
         waitSection = { WaitSection() },
+        sensorlessSection = { onMeasure -> SensorlessSection(onMeasure) },
         onOpenSettings = onOpenSettings,
         onRetry = vm::retry,
         onSaveTreatment = vm::save,

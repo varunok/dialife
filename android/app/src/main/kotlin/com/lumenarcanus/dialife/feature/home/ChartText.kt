@@ -43,6 +43,7 @@ internal class ChartText(
     val activityLabel: String,
     val showerLabel: String, // "Shower · %d min"
     val untrustedLabel: String, // over the band where the sensor is not believed
+    val sensorlessLabel: String, // over the band of the "no sensor" mode
     private val intensities: Map<String, String>,
     private val typedBy: String,
     private val autoBy: String,
@@ -91,6 +92,7 @@ internal fun rememberChartText(units: Units): ChartText {
         activityLabel = stringResource(R.string.event_activity),
         showerLabel = stringResource(R.string.shower_label),
         untrustedLabel = stringResource(R.string.untrusted_chart),
+        sensorlessLabel = stringResource(R.string.sensorless_chart),
         intensities = mapOf(
             "light" to stringResource(R.string.act_light),
             "moderate" to stringResource(R.string.act_moderate),

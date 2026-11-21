@@ -9,6 +9,8 @@ import com.lumenarcanus.dialife.feature.home.HomeUi
 import com.lumenarcanus.dialife.feature.questions.QuestionCards
 import com.lumenarcanus.dialife.feature.questions.WatchCards
 import com.lumenarcanus.dialife.feature.questions.questionsUiState
+import com.lumenarcanus.dialife.feature.sensorless.SensorlessCards
+import com.lumenarcanus.dialife.feature.sensorless.sensorlessUiState
 
 /** Home as the tests draw it: the feature sections filled from the sample, without their view models. */
 @Composable
@@ -20,6 +22,9 @@ fun SampleHome(ui: HomeUi, deviceName: String) {
         ui,
         deviceName = deviceName,
         questionsSection = { onLog -> QuestionCards(questions, onAction = {}, onLog = onLog) },
-        watchSection = { WatchCards(questions) }
+        watchSection = { WatchCards(questions) },
+        sensorlessSection = { onMeasure ->
+            SensorlessCards(sensorlessUiState(ui.state?.sensorless, units, ui.now), onClose = {}, onMeasure = onMeasure)
+        }
     )
 }

@@ -79,6 +79,25 @@ internal fun DrawScope.drawUntrusted(s: ChartScale, c: DiaColors, measurer: Text
     }
 }
 
+/**
+ * When the "no sensor" mode was on: a calm band with its name at the top, no
+ * hatching and no amber, as nothing is wrong: there was simply no sensor.
+ */
+internal fun DrawScope.drawSensorless(s: ChartScale, c: DiaColors, measurer: TextMeasurer, text: ChartText) {
+    s.view.sensorless.forEach { p ->
+        val x0 = s.x(p.from).coerceIn(0f, s.plotW)
+        val x1 = s.x(min(p.end(s.view.now), s.view.now)).coerceIn(0f, s.plotW)
+        if (x1 <= x0) return@forEach
+        drawRect(c.sensorless.copy(alpha = 0.10f), Offset(x0, 0f), Size(x1 - x0, s.plotH))
+        drawLine(c.sensorless.copy(alpha = 0.55f), Offset(x0, 0f), Offset(x0, s.plotH), 1.dp.toPx())
+        if (p.until > 0) drawLine(c.sensorless.copy(alpha = 0.55f), Offset(x1, 0f), Offset(x1, s.plotH), 1.dp.toPx())
+        val m = measurer.measure(text.sensorlessLabel, labelStyle(c).copy(color = c.sensorless, fontWeight = FontWeight.SemiBold))
+        if (x1 - x0 > m.size.width + 4.dp.toPx()) {
+            drawText(m, topLeft = Offset(x0 + 3.dp.toPx(), ACT_TOP.toPx() + ACT_H.toPx() + 3.dp.toPx()))
+        }
+    }
+}
+
 /** The target band up to now and the two threshold lines, labelled on the right. */
 internal fun DrawScope.drawThresholds(s: ChartScale, c: DiaColors, measurer: TextMeasurer, text: ChartText) {
     val th = s.view.thresholds

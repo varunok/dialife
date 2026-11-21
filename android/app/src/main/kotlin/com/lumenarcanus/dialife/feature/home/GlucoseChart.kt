@@ -90,6 +90,7 @@ fun GlucoseChart(
     ) {
         val s = ChartScale(size.width, size.height, this, view)
         highlightFrom?.let { drawHighlight(s, c, it) }
+        drawSensorless(s, c, measurer, text)
         drawUntrusted(s, c, measurer, text)
         drawThresholds(s, c, measurer, text)
         drawHourGrid(s, c, measurer, text)

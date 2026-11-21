@@ -9,9 +9,11 @@ import android.content.Intent
 import com.lumenarcanus.dialife.MainActivity
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.ui.Units
+import com.lumenarcanus.dialife.core.ui.formatClock
 import com.lumenarcanus.dialife.core.ui.formatDelta
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.core.ui.unitsOf
+import com.lumenarcanus.dialife.data.Sensorless
 import com.lumenarcanus.dialife.data.untrustedAt
 import com.lumenarcanus.dialife.feature.home.Trend
 
@@ -117,6 +119,7 @@ object Notifications {
             .setCategory(Notification.CATEGORY_STATUS)
             .setVisibility(Notification.VISIBILITY_PUBLIC) // the number is what we want to see on the lock screen
             .setContentIntent(openApp(context))
+        st?.sensorless?.let { s -> return sensorless(context, b, s, unitsOf(st.displayUnits ?: fallbackUnits)) }
         if (bg == null) {
             return b.setContentTitle(context.getString(R.string.app_name))
                 .setContentText(context.getString(if (live.link == Link.Offline) R.string.status_offline else R.string.home_loading))
@@ -143,6 +146,23 @@ object Notifications {
             .setWhen(bg.mills) // the shade shows "2 min" itself and keeps it current
             .setShowWhen(true)
             .setColor(color)
+            .build()
+    }
+
+    /** The "no sensor" mode: no number to show, only the newest glucometer check. */
+    private fun sensorless(context: Context, b: Notification.Builder, s: Sensorless, units: Units): Notification {
+        val locale = context.resources.configuration.locales[0]
+        val unitLabel = context.getString(if (units == Units.MgDl) R.string.unit_mgdl else R.string.unit_mmol)
+        val last = s.lastCheck?.let {
+            context.getString(
+                R.string.notif_sensorless_last,
+                formatGlucose(it.mg, units, locale) + " " + unitLabel,
+                formatClock(context, it.t)
+            )
+        }
+        return b.setContentTitle(context.getString(R.string.notif_sensorless))
+            .setContentText(last ?: context.getString(R.string.sensorless_last_none))
+            .setColor(0xFF8FB0D9.toInt())
             .build()
     }
 

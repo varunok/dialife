@@ -1,6 +1,8 @@
 package com.lumenarcanus.dialife.feature.settings
 
+import android.widget.Toast
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -8,6 +10,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lumenarcanus.dialife.alarmController
 import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.feature.home.BackgroundSetup
+import com.lumenarcanus.dialife.feature.sensorless.DefaultSensorlessRepository
 import com.lumenarcanus.dialife.liveRepository
 import com.lumenarcanus.dialife.preferencesRepository
 import com.lumenarcanus.dialife.sessionRepository
@@ -26,9 +29,22 @@ fun SettingsRoute(
 ) {
     val ctx = LocalContext.current
     val vm = viewModel {
-        SettingsViewModel(creds, ctx.liveRepository, ctx.preferencesRepository, ctx.sessionRepository, ctx.alarmController.ringer)
+        SettingsViewModel(
+            creds,
+            ctx.liveRepository,
+            ctx.preferencesRepository,
+            ctx.sessionRepository,
+            ctx.alarmController.ringer,
+            DefaultSensorlessRepository({ ctx.liveRepository.credentials })
+        )
     }
     val uiState by vm.uiState.collectAsStateWithLifecycle()
+    uiState.userMessage?.let { message ->
+        LaunchedEffect(message) {
+            Toast.makeText(ctx, message, Toast.LENGTH_LONG).show()
+            vm.userMessageShown()
+        }
+    }
     SettingsScreen(
         uiState,
         setup = setup,

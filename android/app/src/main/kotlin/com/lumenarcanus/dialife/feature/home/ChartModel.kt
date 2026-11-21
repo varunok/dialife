@@ -23,6 +23,7 @@ import com.lumenarcanus.dialife.core.ui.theme.Onest
 import com.lumenarcanus.dialife.core.ui.theme.PlexMono
 import com.lumenarcanus.dialife.data.History
 import com.lumenarcanus.dialife.data.Question
+import com.lumenarcanus.dialife.data.SensorlessPeriod
 import com.lumenarcanus.dialife.data.Series
 import com.lumenarcanus.dialife.data.Thresholds
 import com.lumenarcanus.dialife.data.Treatment
@@ -93,7 +94,9 @@ internal data class ChartView(
     val activities: List<Treatment>,
     val suspects: List<Question>,
     // when the sensor was not believed (a shower): a hatched band, its dots hollow
-    val untrusted: List<Untrusted> = emptyList()
+    val untrusted: List<Untrusted> = emptyList(),
+    // when the "no sensor" mode was on: a calm band, the glucometer checks on it as dots
+    val sensorless: List<SensorlessPeriod> = emptyList()
 ) {
     fun trusted(i: Int) = untrusted.none { ts[i] in it }
 }
@@ -119,7 +122,8 @@ internal fun chartView(history: History?, suspects: List<Question>, thresholds: 
     val maxV = max(visible.maxOfOrNull { vs[it] } ?: 0, meters.maxOfOrNull { it.v } ?: 0)
     val hi = max(300, min(400, maxV + 20)).toFloat()
     val untrusted = history?.untrusted.orEmpty().filter { it.from <= end && it.until >= start }
-    return ChartView(start, end, now, ts, vs, visible, treatments, thresholds, meters, 40f, hi, activities, marks, untrusted)
+    val sensorless = history?.sensorless.orEmpty().filter { it.from <= end && it.end(now) >= start }
+    return ChartView(start, end, now, ts, vs, visible, treatments, thresholds, meters, 40f, hi, activities, marks, untrusted, sensorless)
 }
 
 /** The small dot on a mark that came in from xDrip+ rather than typed in DiaLife. */

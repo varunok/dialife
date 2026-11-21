@@ -2,10 +2,13 @@ package com.lumenarcanus.dialife.feature.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.data.PreferencesRepository
 import com.lumenarcanus.dialife.core.data.SessionRepository
 import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.feature.alarms.AlarmSound
+import com.lumenarcanus.dialife.feature.sensorless.SensorSending
+import com.lumenarcanus.dialife.feature.sensorless.SensorlessRepository
 import com.lumenarcanus.dialife.live.LiveSource
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -21,7 +24,8 @@ class SettingsViewModel(
     live: LiveSource,
     private val prefs: PreferencesRepository,
     private val sessions: SessionRepository,
-    private val ringer: AlarmSound
+    private val ringer: AlarmSound,
+    private val sensorless: SensorlessRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SettingsUiState(creds, live.live.value.state, prefs.current()))
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
@@ -44,8 +48,25 @@ class SettingsViewModel(
             is SettingsAction.RemoveBasalTime -> prefs.chooseBasalTimes(p.basalTimes - action.minutes)
             is SettingsAction.ChooseBasalReminder -> prefs.chooseBasalReminder(action.on)
             SettingsAction.TestSound -> toggleTest()
+            is SettingsAction.SetSensorless -> sendSensorless { sensorless.setOn(action.on) }
+            is SettingsAction.ChooseSensorlessRemind -> sendSensorless { sensorless.setRemind(action.minutes) }
         }
     }
+
+    /** One change at a time; the new state comes back with the live stream, on every phone. */
+    private fun sendSensorless(send: suspend () -> Result<Unit>) {
+        if (_uiState.value.sensorlessBusy) return
+        _uiState.update { it.copy(sensorlessBusy = true) }
+        viewModelScope.launch {
+            send().onFailure { e ->
+                val message = if (e is SensorSending) R.string.set_sensorless_sending else R.string.set_sensorless_failed
+                _uiState.update { it.copy(userMessage = message) }
+            }
+            _uiState.update { it.copy(sensorlessBusy = false) }
+        }
+    }
+
+    fun userMessageShown() = _uiState.update { it.copy(userMessage = null) }
 
     /** The alarm sound for five seconds; tapped again, it stops. */
     private fun toggleTest() {

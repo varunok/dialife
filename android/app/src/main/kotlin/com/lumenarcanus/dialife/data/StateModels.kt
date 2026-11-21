@@ -68,7 +68,10 @@ data class StateResponse(
     // a rapid dose with food beside it: when to start eating, a suggestion only
     val wait: Wait? = null,
     // the sensor is not believed now (a shower): trust only the glucometer
-    val untrusted: Untrusted? = null
+    val untrusted: Untrusted? = null,
+    // the "no sensor" mode is on for the family: no alarms, the glucometer only
+    val sensorless: Sensorless? = null,
+    @SerialName("sensorless_settings") val sensorlessSettings: SensorlessSettings = SensorlessSettings()
 ) {
     val mealRules get() = MealRules(mealGapMin, bolusBeforeMin, bolusAfterMin)
 }
@@ -128,7 +131,9 @@ data class History(
     val mbg: Series = Series(),
     val treatments: List<Treatment> = emptyList(),
     // when the sensor was not believed (showers), oldest first
-    val untrusted: List<Untrusted> = emptyList()
+    val untrusted: List<Untrusted> = emptyList(),
+    // when the "no sensor" mode was on, oldest first
+    val sensorless: List<SensorlessPeriod> = emptyList()
 )
 
 /** A time the sensor is not to be believed, [from, until): a shower and half an hour after it. */
@@ -139,3 +144,42 @@ data class Untrusted(val from: Long, val until: Long, val reason: String = "show
 
 /** The window [now] falls in, if any; the state's own once it has passed is not one any more. */
 fun StateResponse.untrustedAt(now: Long): Untrusted? = untrusted?.takeIf { now in it }
+
+/** The "no sensor" mode while it is on: since when, the newest glucometer check, the reminder, a card. */
+@Serializable
+data class Sensorless(
+    val since: Long,
+    val by: String? = null,
+    // the newest check, also from before the mode
+    @SerialName("last_check") val lastCheck: MeterCheck? = null,
+    // when the reminder to measure is due; 0: off
+    @SerialName("remind_at") val remindAt: Long = 0,
+    @SerialName("remind_due") val remindDue: Boolean = false,
+    // the newest check is out of range and nobody closed it
+    val card: CheckCard? = null
+)
+
+@Serializable
+data class MeterCheck(val t: Long, val mg: Int)
+
+/** A check out of range in the mode: "low" or "high". */
+@Serializable
+data class CheckCard(val t: Long, val mg: Int, val kind: String)
+
+/** The family's: how long without a check before every phone is reminded; 0: never. */
+@Serializable
+data class SensorlessSettings(@SerialName("remind_min") val remindMin: Int = 180, @SerialName("updated_by") val updatedBy: String? = null)
+
+/** A time the mode was on, [from, until); until 0 while it lasts. */
+@Serializable
+data class SensorlessPeriod(
+    val from: Long,
+    val until: Long = 0,
+    val by: String? = null,
+    @SerialName("ended_by") val endedBy: String? = null,
+    // "manual" | "sensor"
+    val end: String? = null
+) {
+    /** Its end on a chart drawn at [now]. */
+    fun end(now: Long) = if (until > 0) until else now
+}

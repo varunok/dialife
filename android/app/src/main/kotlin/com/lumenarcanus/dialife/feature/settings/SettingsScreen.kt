@@ -68,6 +68,7 @@ import com.lumenarcanus.dialife.data.Insulins
 import com.lumenarcanus.dialife.data.StateResponse
 import com.lumenarcanus.dialife.data.ThemeChoice
 import com.lumenarcanus.dialife.feature.alarms.AlarmText
+import com.lumenarcanus.dialife.feature.entry.gapText
 import com.lumenarcanus.dialife.feature.home.BackgroundSetup
 import com.lumenarcanus.dialife.feature.meal.ruleName
 import java.util.Locale
@@ -125,6 +126,7 @@ fun SettingsScreen(
         Section(stringResource(R.string.set_insulins)) { InsulinsSection(uiState.prefs, onAction) }
         Section(stringResource(R.string.dose_title)) { DoseSection(state?.dose ?: DoseSettings(), locale, onOpenDose) }
         Section(stringResource(R.string.set_alarms)) { AlarmsSection(state, uiState.testing, locale, onAction) }
+        Section(stringResource(R.string.sensorless_title)) { SensorlessSettingsSection(uiState, onAction) }
         Section(stringResource(R.string.set_permissions)) {
             Permission(stringResource(R.string.set_perm_notifications), !setup.notifications, onFixNotifications)
             Permission(stringResource(R.string.set_perm_battery), !setup.battery, onFixBattery)
@@ -266,6 +268,80 @@ private fun AlarmsSection(state: StateResponse?, testing: Boolean, locale: Local
         Text(stringResource(if (testing) R.string.set_test_stop else R.string.set_test_sound), color = c.text)
     }
 }
+
+/**
+ * The "no sensor" mode, the family's: on or off for every phone (each with a
+ * confirmation saying what it does to the alarms), and the reminder to measure.
+ */
+@Composable
+private fun SensorlessSettingsSection(uiState: SettingsUiState, onAction: (SettingsAction) -> Unit) {
+    val c = DiaTheme.colors
+    val ctx = LocalContext.current
+    val state = uiState.state
+    val on = state?.sensorless != null
+    var confirm by remember { mutableStateOf<Boolean?>(null) } // the state asked for
+    confirm?.let { want ->
+        AlertDialog(
+            onDismissRequest = { confirm = null },
+            title = { Text(stringResource(if (want) R.string.set_sensorless_on_title else R.string.set_sensorless_off_title)) },
+            text = { Text(stringResource(if (want) R.string.set_sensorless_on_body else R.string.set_sensorless_off_body)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirm = null
+                    onAction(SettingsAction.SetSensorless(want))
+                }) {
+                    Text(
+                        stringResource(if (want) R.string.set_sensorless_on_ok else R.string.set_sensorless_off_ok),
+                        color = if (want) c.high else c.text
+                    )
+                }
+            },
+            dismissButton = { TextButton(onClick = { confirm = null }) { Text(stringResource(R.string.tr_cancel)) } }
+        )
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(R.string.set_sensorless_switch), color = c.text, fontSize = 14.sp)
+            Text(stringResource(R.string.set_sensorless_sub), color = c.textMuted, fontSize = 12.sp)
+        }
+        Switch(
+            checked = on,
+            enabled = state != null && !uiState.sensorlessBusy,
+            onCheckedChange = { confirm = it }
+        )
+    }
+    state?.sensorless?.let { s ->
+        Text(
+            stringResource(R.string.sensorless_since, formatClock(ctx, s.since), s.by.orEmpty().ifBlank { "—" }),
+            color = c.sensorless,
+            fontSize = 13.sp
+        )
+    }
+    val remind = state?.sensorlessSettings?.remindMin ?: 0
+    var open by remember { mutableStateOf(false) }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(R.string.set_sensorless_remind), color = c.text, fontSize = 14.sp)
+            Text(stringResource(R.string.set_sensorless_remind_sub), color = c.textMuted, fontSize = 12.sp)
+        }
+        Box {
+            TextButton(enabled = state != null && !uiState.sensorlessBusy, onClick = { open = true }) {
+                Text(remindText(ctx, remind) + "  ▾", color = c.text)
+            }
+            DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+                (listOf(0) + (60..480 step 30)).forEach { m ->
+                    DropdownMenuItem(text = { Text(remindText(ctx, m)) }, onClick = {
+                        open = false
+                        if (m != remind) onAction(SettingsAction.ChooseSensorlessRemind(m))
+                    })
+                }
+            }
+        }
+    }
+}
+
+private fun remindText(ctx: android.content.Context, minutes: Int): String =
+    if (minutes <= 0) ctx.getString(R.string.set_sensorless_remind_off) else gapText(ctx, minutes * 60_000L)
 
 /** Which server, this phone, the xDrip+ phone, the version, and disconnecting. */
 @Composable

@@ -1,5 +1,6 @@
 package com.lumenarcanus.dialife.feature.settings
 
+import androidx.annotation.StringRes
 import com.lumenarcanus.dialife.core.data.LocalPrefs
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.data.Credentials
@@ -13,7 +14,11 @@ data class SettingsUiState(
     val state: StateResponse? = null,
     val prefs: LocalPrefs = LocalPrefs(),
     // the test sound is playing
-    val testing: Boolean = false
+    val testing: Boolean = false,
+    // a change to the "no sensor" mode is on its way to the server
+    val sensorlessBusy: Boolean = false,
+    // shown once, then SettingsViewModel.userMessageShown()
+    @StringRes val userMessage: Int? = null
 ) {
     /** The units the server keeps for this phone. */
     val serverUnits: Units
@@ -34,4 +39,8 @@ sealed interface SettingsAction {
     data class RemoveBasalTime(val minutes: Int) : SettingsAction
     data class ChooseBasalReminder(val on: Boolean) : SettingsAction
     data object TestSound : SettingsAction
+
+    // the family's, on every phone (the server keeps them)
+    data class SetSensorless(val on: Boolean) : SettingsAction
+    data class ChooseSensorlessRemind(val minutes: Int) : SettingsAction
 }
