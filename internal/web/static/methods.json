@@ -187,7 +187,8 @@
     "title": "An alarm being handled",
     "short": "One parent takes the alarm; the others are woken only if it gets worse, nobody answers a check-in, or it lasts too long.",
     "based": [
-     "Nothing published: this is how the family shares the night."
+     "Sharing CGM data and its alarms with parents: ISPAD 2024 and NICE NG18 recommend it.",
+     "How an alarm passes between parents: no published recommendation covers this."
     ],
     "ours": [
      "Untaken alarms ring again: urgent every 5 minutes, warnings every 15.",
@@ -198,7 +199,8 @@
     "title": "Тривога, яку взяли",
     "short": "Один з батьків бере тривогу; інших будять, лише якщо стало гірше, ніхто не відповів на перевірку або тривога триває надто довго.",
     "based": [
-     "Нічого опублікованого: так сім'я ділить ніч."
+     "Спільний доступ батьків до даних і тривог CGM: рекомендують ISPAD 2024 і NICE NG18.",
+     "Як тривогу передають між батьками: опублікованих рекомендацій про це немає."
     ],
     "ours": [
      "Тривоги, яких ніхто не взяв, дзвонять знову: термінові щоп'ять хвилин, попередження щоп'ятнадцять.",
@@ -209,7 +211,8 @@
     "title": "Una alarma atendida",
     "short": "Uno de los padres toma la alarma; a los demás se les despierta solo si empeora, nadie responde a una comprobación o dura demasiado.",
     "based": [
-     "Nada publicado: así comparte la familia la noche."
+     "Compartir los datos y alarmas del CGM con los padres: lo recomiendan ISPAD 2024 y NICE NG18.",
+     "Cómo pasa una alarma entre los padres: ninguna recomendación publicada trata esto."
     ],
     "ours": [
      "Las alarmas sin atender vuelven a sonar: las urgentes cada 5 minutos, los avisos cada 15.",
@@ -310,7 +313,7 @@
     "title": "After a shower",
     "short": "During a shower and for 30 minutes after it the sensor is not believed: trust only the glucometer.",
     "based": [
-     "Nothing published that we found on how long warm water moves a CGM's numbers."
+     "No published study we found says how long warm water affects a CGM."
     ],
     "ours": [
      "The window: the shower's length (10 minutes if not given, at most 120) plus 30 minutes.",
@@ -321,7 +324,7 @@
     "title": "Після душу",
     "short": "Під час душу і 30 хвилин після нього сенсору не віримо: довіряйте лише глюкометру.",
     "based": [
-     "Не знайшли нічого опублікованого про те, як довго тепла вода зсуває показники CGM."
+     "Не знайшли досліджень про те, як довго тепла вода впливає на CGM."
     ],
     "ours": [
      "Вікно: тривалість душу (10 хвилин, якщо не вказано, щонайбільше 120) плюс 30 хвилин.",
@@ -332,7 +335,7 @@
     "title": "Después de la ducha",
     "short": "Durante la ducha y 30 minutos después no se cree al sensor: confíe solo en el glucómetro.",
     "based": [
-     "No encontramos nada publicado sobre cuánto tiempo el agua caliente altera los valores de un CGM."
+     "No encontramos estudios sobre cuánto tiempo el agua caliente afecta a un CGM."
     ],
     "ours": [
      "La ventana: la duración de la ducha (10 minutos si no se indica, como máximo 120) más 30 minutos.",
@@ -345,7 +348,7 @@
     "title": "No-sensor mode",
     "short": "While the family waits for sensors nothing alarms; a glucometer check out of range shows a card, and every phone is reminded to measure.",
     "based": [
-     "Nothing published: a workflow of the family's."
+     "No published recommendation covers this."
     ],
     "ours": [
      "A check below the low or above the high threshold shows a bright card on every phone until closed.",
@@ -358,7 +361,7 @@
     "title": "Режим «Без сенсора»",
     "short": "Поки сім'я чекає на сенсори, тривог немає; замір глюкометром поза межами показує картку, а всім телефонам нагадується виміряти.",
     "based": [
-     "Нічого опублікованого: так влаштовано в сім'ї."
+     "Опублікованих рекомендацій про це немає."
     ],
     "ours": [
      "Замір нижче низького або вище високого порогу показує яскраву картку на всіх телефонах, доки її не закриють.",
@@ -371,7 +374,7 @@
     "title": "Modo sin sensor",
     "short": "Mientras la familia espera sensores no suena ninguna alarma; una medición fuera de rango muestra una tarjeta y se recuerda medir en todos los teléfonos.",
     "based": [
-     "Nada publicado: una forma de trabajar de la familia."
+     "Ninguna recomendación publicada trata esto."
     ],
     "ours": [
      "Una medición por debajo del umbral bajo o por encima del alto muestra una tarjeta llamativa en todos los teléfonos hasta que se cierra.",
@@ -477,7 +480,7 @@
     "title": "Double insulin guard",
     "short": "Two doses of the same kind close together are most likely one injection logged twice, or two parents injecting at once.",
     "based": [
-     "Nothing published on these windows."
+     "No published recommendation covers this."
     ],
     "ours": [
      "Rapid: two doses less than 20 minutes apart; any rapid dose in the last 3 hours is noted before another.",
@@ -501,7 +504,7 @@
     "title": "Protección contra insulina doble",
     "short": "Dos dosis del mismo tipo muy seguidas son casi siempre una inyección registrada dos veces o dos padres inyectando a la vez.",
     "based": [
-     "Nada publicado sobre estas ventanas."
+     "Ninguna recomendación publicada trata esto."
     ],
     "ours": [
      "Rápida: dos dosis con menos de 20 minutos de diferencia; cualquier dosis rápida de las últimas 3 horas se señala antes de otra.",
@@ -562,7 +565,7 @@
     "title": "One meal, several entries",
     "short": "Food entries close together are one meal, and the rapid insulin near them counts for it.",
     "based": [
-     "Nothing published."
+     "No published recommendation covers this."
     ],
     "ours": [
      "Food entries at most 30 minutes apart are one meal; with enough history the window follows the family's own habit, between 15 and 30 minutes.",
@@ -573,7 +576,7 @@
     "title": "Один прийом їжі, кілька записів",
     "short": "Записи їжі близько один до одного — один прийом, і короткий інсулін поруч рахується на нього.",
     "based": [
-     "Нічого опублікованого."
+     "Опублікованих рекомендацій про це немає."
     ],
     "ours": [
      "Записи їжі з проміжком до 30 хвилин — один прийом; коли накопичиться історія, вікно підлаштовується під звичку сім'ї, від 15 до 30 хвилин.",
@@ -584,7 +587,7 @@
     "title": "Una comida, varios registros",
     "short": "Los registros de comida muy seguidos son una comida, y la insulina rápida cercana cuenta para ella.",
     "based": [
-     "Nada publicado."
+     "Ninguna recomendación publicada trata esto."
     ],
     "ours": [
      "Registros con hasta 30 minutos entre sí son una comida; con historial suficiente la ventana sigue el hábito de la familia, entre 15 y 30 minutos.",
@@ -673,7 +676,7 @@
     "title": "Did you forget to log?",
     "short": "A rise nobody logged food for, or a fall nobody logged insulin for, asks the parents.",
     "based": [
-     "Nothing published on these thresholds."
+     "No published recommendation covers this."
     ],
     "ours": [
      "A rise of 40 mg/dL or more at 1.5 mg/dL per minute over 20 minutes with no food in the 90 minutes before; a fall of 50 or more likewise with no rapid insulin in 4 hours and no exercise in 3.",
@@ -697,7 +700,7 @@
     "title": "¿Olvidó registrar?",
     "short": "Una subida sin comida registrada, o una bajada sin insulina registrada, pregunta a los padres.",
     "based": [
-     "Nada publicado sobre estos umbrales."
+     "Ninguna recomendación publicada trata esto."
     ],
     "ours": [
      "Una subida de 40 mg/dL o más a 1,5 mg/dL por minuto durante 20 minutos sin comida en los 90 minutos previos; una bajada de 50 o más igual, sin insulina rápida en 4 horas ni ejercicio en 3.",

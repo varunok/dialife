@@ -850,7 +850,7 @@
     <string name="notif_sensorless_last">Última medición con glucómetro %1$s a las %2$s</string>
     <string name="info_about">Cómo se calcula</string>
     <string name="info_based">En qué se basa</string>
-    <string name="info_ours">Nuestro: según nuestras observaciones</string>
+    <string name="info_ours">Regla propia de DiaLife, según nuestras observaciones</string>
     <string name="info_none">nada</string>
     <string name="info_more">Completo, con fuentes</string>
     <string name="info_close">Cerrar</string>

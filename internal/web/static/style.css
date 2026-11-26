@@ -130,7 +130,8 @@ button.info:hover, button.info:focus-visible { color: var(--text); }
 .info-dialog { width: min(560px, 100%); max-height: 85vh; overflow: auto; background: var(--surface); border: 1px solid var(--line2); border-radius: 20px; padding: 20px; display: grid; gap: 10px; }
 .info-dialog h2 { margin: 0; font-size: 18px; } .info-dialog h3 { margin: 6px 0 0; font-size: 13px; color: var(--muted); font-weight: 600; }
 .info-dialog .short { margin: 0; color: var(--soft); } .info-dialog ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; } .info-dialog .none { margin: 0; color: var(--faint); }
-.info-dialog a { color: var(--soft); } .info-dialog button.primary { justify-self: end; }
+.info-dialog a { display: block; text-align: center; padding: 10px 16px; border: 1px solid var(--line2); border-radius: 10px; color: var(--text); text-decoration: none; }
+.info-dialog a:hover { border-color: var(--muted); } .info-dialog button.primary { width: 100%; height: 40px; }
 
 /* "measure again" after carbs for a low: calm while waiting, amber when due, red while still low */
 .recheck-card { border-radius: 16px; padding: 12px 14px; display: grid; gap: 4px; border: 1px solid var(--line2); background: var(--sunken); }

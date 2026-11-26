@@ -842,7 +842,7 @@
     <string name="notif_sensorless_last">Last glucometer check %1$s at %2$s</string>
     <string name="info_about">How this is worked out</string>
     <string name="info_based">Based on</string>
-    <string name="info_ours">Our own: from our observations</string>
+    <string name="info_ours">DiaLife\'s own rule: from our observations</string>
     <string name="info_none">nothing</string>
     <string name="info_more">In full, with sources</string>
     <string name="info_close">Close</string>

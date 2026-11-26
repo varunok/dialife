@@ -41,7 +41,7 @@ export const InfoDialog = {
       m('p.short', s.short),
       m('h3', t('infoBased')), list(s.based),
       m('h3', t('infoOurs')), list(s.ours),
-      m('a', { href: methods.doc + '#' + open, target: '_blank', rel: 'noopener' }, t('infoMore')),
+      m('a', { href: methods.doc + '#' + open, target: '_blank', rel: 'noopener' }, t('infoMore') + '  ↗'),
       m('button.primary', { type: 'button', onclick: close }, t('infoClose'))
     ] : [m('p', loading ? t('loading') : t('infoUnavailable')), m('button.primary', { type: 'button', onclick: close }, t('infoClose'))]));
   }

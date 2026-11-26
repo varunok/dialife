@@ -5,14 +5,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.ui.BannerButton
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.data.MethodText
 import com.lumenarcanus.dialife.data.Methods
@@ -82,7 +83,7 @@ private fun InfoSheet(id: String, onClose: () -> Unit) {
                 section == null -> Text(stringResource(R.string.info_unavailable), color = c.textMuted, fontSize = 14.sp)
                 else -> InfoContent(section, methods.link(id))
             }
-            TextButton(onClick = onClose, modifier = Modifier.wrapContentSize()) { Text(stringResource(R.string.info_close)) }
+            BannerButton(stringResource(R.string.info_close), c.inRange, c.background, onClose)
         }
     }
 }
@@ -100,12 +101,9 @@ fun InfoContent(s: MethodText, link: String?) {
         Heading(stringResource(R.string.info_ours))
         Items(s.ours)
         link?.let {
-            Text(
-                stringResource(R.string.info_more),
-                color = c.inRange,
-                fontSize = 14.sp,
-                modifier = Modifier.clickable { uri.openUri(it) }.padding(vertical = 4.dp)
-            )
+            OutlinedButton(onClick = { uri.openUri(it) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(top = 4.dp)) {
+                Text(stringResource(R.string.info_more) + "  ↗", color = c.text, maxLines = 1)
+            }
         }
     }
 }

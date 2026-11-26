@@ -12,7 +12,7 @@ Every number, arrow, card and alarm DiaLife works out is described here, in thre
 - **Based on** — what comes from a published source: a guideline, a study, a clinical
   consensus, a manufacturer's documentation, or an open-source project's code. Each source is
   linked in [References](#references) or in [GUIDELINES.md](GUIDELINES.md).
-- **Our own: from our observations** — what no source covers, so we chose it from what we
+- **DiaLife's own rule: from our observations** — what no source covers, so we chose it from what we
   saw in real use: thresholds, windows, rules. Each says why. Not validated by any study;
   open to change.
 - **Limits** — what the feature does not see or cannot know.
@@ -56,7 +56,7 @@ Nightscout does it.
   the two newest bucket means; a gap longer than 9 minutes is scaled back to 5 minutes and
   marked as interpolated.
 
-**Our own: from our observations**
+**DiaLife's own rule: from our observations**
 - Nothing.
 
 **Limits**
@@ -75,7 +75,7 @@ arrows, computed by the server from the readings themselves.
   ⇈ ⇊ more than 3.
 - The 5-minute buckets of Nightscout's `bgnow` [1].
 
-**Our own: from our observations**
+**DiaLife's own rule: from our observations**
 - The rate is taken over up to 15 minutes: the newest bucket mean against the oldest of
   four, each placed at its readings' mean time. One stray reading moves it less than a
   5-minute change would.
@@ -99,7 +99,7 @@ the last half hour, slowing down, with how often such forecasts came true over t
 **Based on**
 - Least-squares slope (standard linear regression) over the last 30 minutes.
 
-**Our own: from our observations**
+**DiaLife's own rule: from our observations**
 - The trend is damped: value + slope × minutes × 0.4. Tried on real readings, the 30-minute
   error was 12.0 mg/dL on average, against 13.8 for Nightscout's AR2 and 12.8 for "no change".
 - Accuracy is measured once an hour over the last week: from every reading, what the forecast
@@ -129,7 +129,7 @@ a high must last a while first, a low never waits.
   ([GUIDELINES](GUIDELINES.md#sharing-glucose-with-caregivers)).
 - "No data" after 15 minutes (warning) and 30 minutes (urgent), as Nightscout's defaults [1].
 
-**Our own: from our observations**
+**DiaLife's own rule: from our observations**
 - Every threshold, and how long a high must last, is the family's setting.
 - An alarm ends only after two readings in a row are past the threshold by 5 mg/dL
   (hysteresis), so one lucky value does not call off an episode.
@@ -151,7 +151,7 @@ a high must last a while first, a low never waits.
   on log(glucose / 140), coefficients −0.723 and 1.716, six 5-minute steps; the warning and
   urgent levels from its average-loss score (0.05 / 0.10), the side from the value in 20 minutes.
 
-**Our own: from our observations**
+**DiaLife's own rule: from our observations**
 - A predicted alarm is not raised while the same side already alarms.
 
 **Limits**
@@ -166,9 +166,11 @@ a high must last a while first, a low never waits.
 nobody answers a check-in, or it lasts too long.
 
 **Based on**
-- Nothing published: this is how the family shares the night.
+- Sharing CGM data and its alarms with parents is recommended by ISPAD 2024 and NICE NG18
+  ([GUIDELINES](GUIDELINES.md#sharing-glucose-with-caregivers)); how an alarm passes between
+  parents is not covered by any published recommendation.
 
-**Our own: from our observations**
+**DiaLife's own rule: from our observations**
 - Untaken alarms ring again: urgent every 5 minutes, warnings every 15.
 - A taken alarm wakes everyone when the value moves 10 mg/dL past the value at take-over,
   when a check-in (first after 20 minutes for urgent, then every 15) is not answered in
@@ -192,7 +194,7 @@ measure again with the glucometer; a check still below 70 says so and asks to tr
   1.2.88 ([GUIDELINES](GUIDELINES.md#hypoglycaemia-levels-alarms-treatment)).
 - Below 70 mg/dL (3.9 mmol/L) is hypoglycaemia in all three.
 
-**Our own: from our observations**
+**DiaLife's own rule: from our observations**
 - "Low" when the carbs are logged: a live low alarm by the family's thresholds, or the newest
   sensor reading of the 10 minutes before, or glucometer check of the 15 minutes before,
   below 70. Carbs logged with a time more than 30 minutes back are not counted.
@@ -223,7 +225,7 @@ the family's glucometer checks on the current sensor since its start or its last
   [GUIDELINES](GUIDELINES.md#cgm-and-the-glucometer)): such checks are kept on the chart but
   left out of the model.
 
-**Our own: from our observations**
+**DiaLife's own rule: from our observations**
 - Sensors differ: on one family's data, four sensors in a row read from 21% above the
   glucometer to 27% below it. So only the current stretch counts: the current sensor since
   its start, or since its last calibration (a calibration changes how the sensor reads).
@@ -261,7 +263,7 @@ published 4 minutes are used.
 - How sure: a bootstrap percentile interval, the 2.5th and 97.5th percentiles of the
   shifts found on 1000 resamples of the checks [17].
 
-**Our own: from our observations**
+**DiaLife's own rule: from our observations**
 - Shifts of 0 to 20 minutes are tried, against glucometer checks.
 - Each sensor reads off by its own amount, and a calibration changes it, so before comparing,
   each stretch (a sensor, or a sensor since its last calibration) has its own mean difference
@@ -297,7 +299,7 @@ check just taken, never one worked out by DiaLife.
   [GUIDELINES](GUIDELINES.md#cgm-and-the-glucometer)).
 - A new sensor reads less consistently with the glucometer, aligning over its first 24 hours [18].
 
-**Our own: from our observations**
+**DiaLife's own rule: from our observations**
 - "Several hours" made countable: three checks in a row outside the rule, all on one side, on
   the current sensor since its start or its last calibration; checks within an hour of each
   other count as one. Each check is compared with the sensor [the delay](#sensor-delay) later;
@@ -328,9 +330,9 @@ check just taken, never one worked out by DiaLife.
 reading is dimmed and the apps say to trust only the glucometer.
 
 **Based on**
-- Nothing published that we found on how long warm water moves a CGM's numbers.
+- No published study we found says how long warm water affects a CGM.
 
-**Our own: from our observations**
+**DiaLife's own rule: from our observations**
 - The window: the shower's length (10 minutes if none was given, at most 120) plus 30 minutes.
 - In it: glucometer checks stay out of [≈ meter](#meter-estimate), the sensor's readings out
   of the forecasts' scores and of [Did you forget to log?](#questions). The alarms are untouched.
@@ -347,9 +349,9 @@ reading is dimmed and the apps say to trust only the glucometer.
 range show a card, and every phone is reminded to measure.
 
 **Based on**
-- Nothing published: a workflow of the family's.
+- No published recommendation covers this.
 
-**Our own: from our observations**
+**DiaLife's own rule: from our observations**
 - A check below the low or above the high threshold shows a bright card on every phone until
   someone closes it.
 - The reminder comes once after the family's interval without a check (180 minutes by default).
@@ -380,7 +382,7 @@ variability and the typical day.
 - A low counts as an event when it lasts at least 15 minutes: the 2017 consensus metric for
   episodes, as listed in [3], Table 1.
 
-**Our own: from our observations**
+**DiaLife's own rule: from our observations**
 - The five zones use the family's alarm thresholds; time in the standard 70–180 is shown
   as well, for the doctor.
 - A gap in the data ends a low event: what happened in between is unknown.
@@ -401,7 +403,7 @@ would take glucose from the current reading.
 - Insulin on board: the exponential activity curve of OpenAPS (oref0) [6] with its
   "rapid-acting" peak at 75 minutes.
 
-**Our own: from our observations**
+**DiaLife's own rule: from our observations**
 - The duration of insulin action is the family's setting (240 minutes by default). OpenAPS
   allows a custom duration for this curve only when it is greater than 300 minutes [6]; a
   shorter one makes insulin look used up sooner.
@@ -426,9 +428,9 @@ logged twice, or two parents injecting at once: the app asks before saving, and 
 with a dose from xDrip+ in it becomes a question.
 
 **Based on**
-- Nothing published on these windows.
+- No published recommendation covers this.
 
-**Our own: from our observations**
+**DiaLife's own rule: from our observations**
 - Rapid insulin: two doses less than 20 minutes apart (a correction comes later than that);
   any rapid dose within the last 3 hours is noted before another one.
 - Long-acting: two doses less than 16 hours apart (it is given once a day).
@@ -451,7 +453,7 @@ correction from the glucometer, rounded once to the pen's step.
 - Adding the meal and correction parts first and rounding the total once, as in a paediatric
   clinic's bolus worksheet [10].
 
-**Our own: from our observations**
+**DiaLife's own rule: from our observations**
 - The correction comes only from a glucometer check at most 15 minutes old (a family
   setting), never from the sensor.
 - Rounding rules to choose from: nearest, nearest with an exact half going down, always
@@ -474,9 +476,9 @@ correction from the glucometer, rounded once to the pen's step.
 counted for it.
 
 **Based on**
-- Nothing published.
+- No published recommendation covers this.
 
-**Our own: from our observations**
+**DiaLife's own rule: from our observations**
 - Two food entries belong to one meal when they are at most 30 minutes apart. Once the family
   has 10 shorter gaps in its history, the window becomes three in four of those gaps (over
   90 days) plus 10 minutes, between 15 and 30 minutes.
@@ -502,7 +504,7 @@ longer when glucose is high, at once when it is low or falling.
   start of the meal or 20 minutes into it, in adolescents and adults with type 1 diabetes [7];
   a review puts the best time at 15–20 minutes before food [8].
 
-**Our own: from our observations**
+**DiaLife's own rule: from our observations**
 - The minutes and bounds are the family's: 15 minutes by default, 20 above 180 mg/dL, eat at
   once below 80 now or by the trend in 15 minutes.
 - No study ties the wait to the size of the dose or the meal, so neither changes it.
@@ -521,7 +523,7 @@ before, a portion table, and optionally a language model. Nothing is filled in b
 **Based on**
 - Imported portion tables of 15 g carbohydrate servings (see the README for the tables).
 
-**Our own: from our observations**
+**DiaLife's own rule: from our observations**
 - The order: the family's own number first, then table portions, then the models' estimate
   when one is configured. A food the table knows is not sent to the models.
 - Only the food's name and portion leave the server, never glucose or names of people.
@@ -538,9 +540,9 @@ before, a portion table, and optionally a language model. Nothing is filled in b
 parents; an unanswered question becomes a mark on the chart after 12 hours.
 
 **Based on**
-- Nothing published on these thresholds.
+- No published recommendation covers this.
 
-**Our own: from our observations**
+**DiaLife's own rule: from our observations**
 - A rise: at least 40 mg/dL from the low point, at 1.5 mg/dL per minute or more over 20
   minutes, with no food in the 90 minutes before.
 - A fall: at least 50 mg/dL from the high point, likewise, with no rapid insulin in the

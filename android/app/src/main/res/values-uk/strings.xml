@@ -862,7 +862,7 @@
     <string name="notif_sensorless_last">Останній замір з пальця %1$s о %2$s</string>
     <string name="info_about">Як це рахується</string>
     <string name="info_based">На чому ґрунтується</string>
-    <string name="info_ours">Наше: на основі наших спостережень</string>
+    <string name="info_ours">Правило DiaLife, з наших спостережень</string>
     <string name="info_none">нічого</string>
     <string name="info_more">Повністю, з джерелами</string>
     <string name="info_close">Закрити</string>
