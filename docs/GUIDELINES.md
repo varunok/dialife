@@ -91,8 +91,11 @@ until the family changes them) and always the standard 70–180, over 1, 7, 14 o
 threshold of 54; both are the family's settings. Alarms ring at night on every parent's phone
 until one takes them; a taken alarm asks again after 20 minutes (urgent) and wakes everyone
 if it gets worse. Before a meal dose, glucose under 70 on the glucometer shows "raise it
-first". DiaLife does not suggest how much glucose to give. → [Alarms](METHODS.md#alarms),
-[An alarm being handled](METHODS.md#alarm-episodes), [Meal dose](METHODS.md#meal-dose)
+first". Carbs logged on a low bring a reminder on every phone to measure again in 15 minutes,
+and "still low" when that check is under 70. DiaLife does not suggest how much glucose to
+give. → [Alarms](METHODS.md#alarms),
+[An alarm being handled](METHODS.md#alarm-episodes), [Recheck after a low](METHODS.md#recheck),
+[Meal dose](METHODS.md#meal-dose)
 
 ## CGM and the glucometer
 
@@ -203,7 +206,3 @@ sensor through the night. → [Did you forget to log?](METHODS.md#questions)
 
 - **How much glucose to give for a low** (≈ 0.3 g/kg, [ISPAD-H22]): DiaLife does not ask for
   the child's weight and does not suggest an amount.
-- **A reminder to recheck 15 minutes after treating a low** ([ADA-6] 6.15, [ISPAD-H22],
-  [NICE] 1.2.88):
-  DiaLife's check-in on a taken alarm comes after 20 minutes for an urgent low and asks
-  whether things are under control, not for a glucometer check.

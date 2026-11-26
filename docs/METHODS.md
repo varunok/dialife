@@ -27,6 +27,7 @@ All values are in mg/dL; the apps convert for mmol/L.
 - [Low and high alarms](#alarms)
 - [Predicted low and high](#predicted-alarms)
 - [An alarm being handled](#alarm-episodes)
+- [Recheck after a low](#recheck)
 - [≈ meter](#meter-estimate)
 - [Sensor delay](#sensor-delay)
 - [After a shower](#shower)
@@ -175,6 +176,35 @@ nobody answers a check-in, or it lasts too long.
 
 **Limits**
 - It relies on the phones getting the push; see the setup notes in the README.
+
+---
+
+<a id="recheck"></a>
+## Recheck after a low
+
+**In short.** Carbs logged while glucose is low: 15 minutes later every phone is asked to
+measure again with the glucometer; a check still below 70 says so and asks to treat again.
+
+**Based on**
+- After treating a low, recheck glucose in 15 minutes and treat again if it is still low:
+  ADA Standards of Care 2026, 6.15 (grade B); ISPAD 2022, hypoglycaemia (grade E); NICE NG18,
+  1.2.88 ([GUIDELINES](GUIDELINES.md#hypoglycaemia-levels-alarms-treatment)).
+- Below 70 mg/dL (3.9 mmol/L) is hypoglycaemia in all three.
+
+**Our own: from our observations**
+- "Low" when the carbs are logged: a live low alarm by the family's thresholds, or the newest
+  sensor reading of the 10 minutes before, or glucometer check of the 15 minutes before,
+  below 70. Carbs logged with a time more than 30 minutes back are not counted.
+- A check counts as the recheck from 5 minutes after the carbs: an earlier one is the low
+  itself, entered late. 70 or above ends it for every phone; below 70 shows "still low".
+- New carbs replace it, counted from them. Closed by hand on any phone, closed for all; gone
+  by itself 2 hours after it was due.
+- A push to every phone when it is due and when the recheck is still low; no siren.
+
+**Limits**
+- DiaLife does not say how much to give: that needs the child's weight (ISPAD: about
+  0.3 g/kg) and the family's plan.
+- The alarms are untouched: it adds a reminder, it silences nothing.
 
 ---
 

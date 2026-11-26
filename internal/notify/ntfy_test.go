@@ -9,6 +9,7 @@ import (
 	"dialife/internal/acklink"
 	"dialife/internal/alarms"
 	"dialife/internal/questions"
+	"dialife/internal/recheck"
 )
 
 var (
@@ -154,5 +155,22 @@ func TestPlannedMessage(t *testing.T) {
 	m := PlannedMessage(questions.View{ID: 7, Kind: "planned", Dose: 2.5}, Target{Topic: "mom"}, "12:40")
 	if m.Topic != "mom" || m.SequenceID != "planned-7" || m.Title != "Кололи до їжі о 12:40?" || !strings.Contains(m.Message, "2,5 од") {
 		t.Fatalf("%+v", m)
+	}
+}
+
+func TestRecheckMessages(t *testing.T) {
+	tg := Target{Topic: "dad"}
+	clock := func(int64) string { return "22:30" }
+	m := RecheckDueMessage(recheck.Recheck{CarbsT: 1, Carbs: 15}, tg, clock)
+	if m.Topic != "dad" || m.SequenceID != sidRecheckDue || m.Priority != prioHigh ||
+		m.Message != "О 22:30 дали 15 г вуглеводів на низький цукор. Минуло 15 хв: виміряйте з пальця." {
+		t.Fatalf("%+v", m)
+	}
+	if m := RecheckDueMessage(recheck.Recheck{Carbs: 7.5}, tg, clock); !strings.Contains(m.Message, "7,5 г") {
+		t.Fatalf("half grams: %q", m.Message)
+	}
+	s := RecheckStillLowMessage(recheck.Recheck{CheckMG: 64}, tg)
+	if s.Title != "Досі низько: 64 mg/dL" || s.SequenceID != sidRecheckStill {
+		t.Fatalf("%+v", s)
 	}
 }

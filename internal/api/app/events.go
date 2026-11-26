@@ -51,6 +51,9 @@ func (h *Handlers) EntriesSaved(ctx context.Context, es []store.Entry) {
 	if newest == nil && !meters {
 		return
 	}
+	if meters {
+		h.Recheck.Tick(ctx) // a glucometer check settles "measure again"
+	}
 	if h.Sensorless.On(ctx) {
 		// a sensor sending again ends the mode; a glucometer check moves the reminder or brings a card
 		h.Sensorless.Tick(ctx)
@@ -119,6 +122,11 @@ func (h *Handlers) TreatmentsChanged(ctx context.Context, op string, ids []strin
 	h.Bus.Publish(EventTreatment, treatmentEvent{Op: op, IDs: ids}, h.Now())
 	h.evaluateQuestions(ctx)
 	h.Sensorless.Tick(ctx) // a glucometer check ends the reminder to measure
+	if op == "upsert" {
+		h.Recheck.TreatmentsSaved(ctx, ids) // carbs for a low: measure again in 15 minutes
+	} else {
+		h.Recheck.Tick(ctx) // the carbs may be gone
+	}
 	// what the state counts from them (the wait for food) changes at once, not with the next reading
 	h.PublishState(ctx)
 }

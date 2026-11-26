@@ -20,6 +20,7 @@ import (
 	"dialife/internal/alarms"
 	"dialife/internal/bus"
 	"dialife/internal/questions"
+	"dialife/internal/recheck"
 	"dialife/internal/sensorless"
 )
 
@@ -109,6 +110,10 @@ func (n *Ntfy) forward(ctx context.Context, events <-chan bus.Event) {
 			}
 			if ev.Type == sensorless.EventType {
 				n.sensorless(ctx, ev.Data)
+				continue
+			}
+			if ev.Type == recheck.EventType {
+				n.recheck(ctx, ev.Data)
 				continue
 			}
 			switch ev.Type {
@@ -202,6 +207,54 @@ func RemindMessage(e sensorless.Event, t Target, clock func(int64) string) Messa
 	}
 	return Message{Topic: t.Topic, SequenceID: sidRemind, Title: "Час виміряти цукор з пальця",
 		Message: msg, Priority: prioNormal, Tags: []string{"drop_of_blood"}}
+}
+
+const (
+	sidRecheckDue   = "recheck-due"
+	sidRecheckStill = "recheck-still"
+)
+
+// recheck: carbs were given for a low; 15 minutes on, every phone is asked to
+// measure again, and told when that check is still low. Over: both go away.
+func (n *Ntfy) recheck(ctx context.Context, data []byte) {
+	var e recheck.Event
+	if err := json.Unmarshal(data, &e); err != nil {
+		slog.Error("ntfy decode", "err", err)
+		return
+	}
+	for _, t := range n.Targets {
+		switch e.Kind {
+		case "due":
+			n.send(ctx, RecheckDueMessage(e.Recheck, t, n.clock))
+		case "still_low":
+			n.clear(ctx, t.Topic, sidRecheckDue)
+			n.send(ctx, RecheckStillLowMessage(e.Recheck, t))
+		case "over":
+			n.clear(ctx, t.Topic, sidRecheckDue)
+			n.clear(ctx, t.Topic, sidRecheckStill)
+		}
+	}
+}
+
+// RecheckDueMessage is «Перевірте цукор глюкометром» with the carbs given.
+func RecheckDueMessage(r recheck.Recheck, t Target, clock func(int64) string) Message {
+	return Message{Topic: t.Topic, SequenceID: sidRecheckDue, Title: "Перевірте цукор глюкометром",
+		Message:  fmt.Sprintf("О %s дали %s г вуглеводів на низький цукор. Минуло 15 хв: виміряйте з пальця.", clock(r.CarbsT), grams(r.Carbs)),
+		Priority: prioHigh, Tags: []string{"drop_of_blood"}}
+}
+
+// RecheckStillLowMessage says the recheck is still below 70.
+func RecheckStillLowMessage(r recheck.Recheck, t Target) Message {
+	return Message{Topic: t.Topic, SequenceID: sidRecheckStill, Title: fmt.Sprintf("Досі низько: %d mg/dL", r.CheckMG),
+		Message:  "Дайте ще швидких вуглеводів за вашим планом і виміряйте знову через 15 хв.",
+		Priority: prioHigh, Tags: []string{"warning"}}
+}
+
+func grams(g float64) string {
+	if g == float64(int(g)) {
+		return fmt.Sprintf("%d", int(g))
+	}
+	return strings.Replace(fmt.Sprintf("%.1f", g), ".", ",", 1)
 }
 
 // SensorBackMessage says the mode ended by itself and the alarms work again.

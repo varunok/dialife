@@ -705,6 +705,47 @@
      "Nada en las primeras 12 horas de un sensor. Sin respuesta en 12 horas pasa a ser una marca en el gráfico."
     ]
    }
+  },
+  "recheck": {
+   "en": {
+    "title": "Recheck after a low",
+    "short": "Carbs logged while glucose is low: 15 minutes later every phone is asked to measure again with the glucometer; a check still below 70 says so and asks to treat again.",
+    "based": [
+     "After treating a low, recheck in 15 minutes and treat again if still low: ADA Standards of Care 2026 (6.15), ISPAD 2022, NICE NG18 (1.2.88).",
+     "Below 70 mg/dL is hypoglycaemia in all three."
+    ],
+    "ours": [
+     "\"Low\" when the carbs are logged: a live low alarm by the family's thresholds, or the newest sensor reading (10 minutes) or glucometer check (15 minutes) below 70.",
+     "A check counts from 5 minutes after the carbs; 70 or above ends it for every phone. New carbs replace it; it goes by itself 2 hours after it was due.",
+     "It does not say how much to give: that needs the child's weight and the family's plan. The alarms are untouched."
+    ]
+   },
+   "uk": {
+    "title": "Повторний замір після низького",
+    "short": "Вуглеводи записали, коли цукор був низький: через 15 хвилин усім телефонам нагадується виміряти глюкометром ще раз; якщо досі нижче 70, про це сказано й нагадано дати ще.",
+    "based": [
+     "Після лікування низького — повторний замір через 15 хвилин і ще вуглеводи, якщо досі низько: ADA Standards of Care 2026 (6.15), ISPAD 2022, NICE NG18 (1.2.88).",
+     "Нижче 70 мг/дл — гіпоглікемія в усіх трьох."
+    ],
+    "ours": [
+     "«Низький» у момент запису вуглеводів: триває тривога «низький» за порогами сім'ї, або останній показник сенсора (10 хвилин) чи глюкометра (15 хвилин) нижче 70.",
+     "Замір рахується від 5 хвилин після вуглеводів; 70 і вище закриває нагадування на всіх телефонах. Нові вуглеводи замінюють його; само зникає через 2 години після терміну.",
+     "Не підказує, скільки давати: для цього потрібна вага дитини й план сім'ї. Тривоги не змінюються."
+    ]
+   },
+   "es": {
+    "title": "Nueva medición tras un bajo",
+    "short": "Carbohidratos registrados con la glucosa baja: 15 minutos después se pide en todos los teléfonos medir otra vez con el glucómetro; si sigue por debajo de 70, se indica y se pide tratar de nuevo.",
+    "based": [
+     "Tras tratar un bajo, volver a medir a los 15 minutos y tratar otra vez si sigue bajo: ADA Standards of Care 2026 (6.15), ISPAD 2022, NICE NG18 (1.2.88).",
+     "Por debajo de 70 mg/dL es hipoglucemia en los tres."
+    ],
+    "ours": [
+     "«Bajo» al registrar los carbohidratos: una alarma de bajo activa según los umbrales de la familia, o la última lectura del sensor (10 minutos) o del glucómetro (15 minutos) por debajo de 70.",
+     "Una medición cuenta desde 5 minutos después de los carbohidratos; 70 o más lo cierra en todos los teléfonos. Nuevos carbohidratos lo reemplazan; desaparece solo 2 horas después de su hora.",
+     "No dice cuánto dar: eso requiere el peso del niño y el plan de la familia. Las alarmas no cambian."
+    ]
+   }
   }
  },
  "guidelines": "https://github.com/varunok/dialife/blob/main/docs/GUIDELINES.md"

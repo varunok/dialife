@@ -29,6 +29,7 @@ import (
 	"dialife/internal/nstime"
 	"dialife/internal/planned"
 	"dialife/internal/questions"
+	"dialife/internal/recheck"
 	"dialife/internal/sensorless"
 	"dialife/internal/store"
 	"dialife/internal/trust"
@@ -72,6 +73,7 @@ type Handlers struct {
 	Dose       *dose.Service       // the family's dose calculation
 	Trust      *trust.Service      // when the sensor is not believed (after a shower); nil: always
 	Sensorless *sensorless.Service // the "no sensor" mode; nil: never on
+	Recheck    *recheck.Service    // "measure again in 15 minutes" after carbs for a low; nil: never
 
 	mealGapQ mealGapCache // how far apart a meal's entries may be
 }
@@ -101,6 +103,7 @@ type stateResponse struct {
 	Untrusted          *trust.Window          `json:"untrusted,omitempty"`     // the sensor is not believed now (a shower): trust only the glucometer
 	Sensorless         *sensorless.State      `json:"sensorless,omitempty"`    // the "no sensor" mode is on: no alarms, the last glucometer check, the reminder
 	SensorlessSettings sensorless.Settings    `json:"sensorless_settings"`     // the reminder's interval, for the settings screen
+	Recheck            *recheck.Recheck       `json:"recheck,omitempty"`       // carbs given for a low: measure again with the glucometer
 }
 
 type caregiver struct {
@@ -198,6 +201,9 @@ func (h *Handlers) snapshot(ctx context.Context, now time.Time) (stateResponse, 
 		return resp, err
 	}
 	resp.SensorlessSettings = h.Sensorless.Settings(ctx)
+	if resp.Recheck, err = h.Recheck.State(ctx); err != nil {
+		return resp, err
+	}
 	resp.Dose = h.Dose.Get(ctx)
 	resp.MealGapMin = h.mealGap(ctx, now)
 	resp.BolusBefore, resp.BolusAfter = int(questions.BolusBefore.Minutes()), int(questions.BolusAfter.Minutes())

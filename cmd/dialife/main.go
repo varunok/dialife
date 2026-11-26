@@ -183,6 +183,8 @@ func serve(cfg config.Config) error {
 	go wired.Questions.Run(ctx)
 	// the "no sensor" mode reminds to measure and notices a sensor sending again
 	go wired.Sensorless.Run(ctx)
+	// "measure again in 15 minutes" after carbs for a low comes without new data
+	go wired.Recheck.Run(ctx)
 
 	if cfg.NtfyURL != "" {
 		n, err := newNtfy(ctx, cfg, s, events, links)
