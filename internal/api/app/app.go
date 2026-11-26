@@ -15,9 +15,9 @@ import (
 
 	"dialife/internal/acklink"
 	"dialife/internal/alarms"
+	"dialife/internal/appupdate"
 	"dialife/internal/auth"
 	"dialife/internal/bus"
-	"dialife/internal/appupdate"
 	"dialife/internal/calib"
 	"dialife/internal/carbs"
 	"dialife/internal/config"
