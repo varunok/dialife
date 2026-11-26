@@ -12,7 +12,9 @@ fi
 # shellcheck source=/dev/null
 . "$CONF"
 HOST="$DIALIFE_HOST"
-VERSION="$(date -u +%Y%m%d-%H%M%S)"
+# the same version as the app: the newest tag vX.Y.Z, and how far past it (see android/app/build.gradle.kts)
+VERSION="$(cd "$ROOT" && git describe --tags --match 'v[0-9]*.[0-9]*.[0-9]*' --dirty 2>/dev/null | sed 's/^v//')"
+VERSION="${VERSION:-0.0.0-dev}"
 BIN="$ROOT/bin/dialife-linux-amd64"
 
 echo "==> test"

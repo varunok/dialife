@@ -8,6 +8,26 @@ plugins {
     alias(libs.plugins.ktlint) // Kotlin style: ./gradlew :app:ktlintCheck (rules in android/.editorconfig)
 }
 
+// The version comes from one place, the newest git tag vX.Y.Z: on the tag itself it is "X.Y.Z";
+// n commits after it "X.Y.Z-n-g<commit>", "-dirty" with uncommitted changes, so a phone always
+// shows which build it runs. The code grows with every build: (X·10000 + Y·100 + Z)·100 + n,
+// starting at 70000 for 0.7.0, above every hand-set code before it. Without git: "0.0.0-dev".
+data class AppVersion(val name: String, val code: Int)
+
+val appVersion: AppVersion = providers.exec {
+    commandLine("git", "describe", "--tags", "--match", "v[0-9]*.[0-9]*.[0-9]*", "--long", "--dirty")
+    isIgnoreExitValue = true
+}.standardOutput.asText.map { out ->
+    val m = Regex("""^v(\d+)\.(\d+)\.(\d+)-(\d+)-g([0-9a-f]+)(-dirty)?$""").find(out.trim())
+        ?: return@map AppVersion("0.0.0-dev", 1)
+    val (major, minor, patch, ahead, commit) = m.destructured
+    val dirty = m.groupValues[6].isNotEmpty()
+    val base = "$major.$minor.$patch"
+    val name = if (ahead == "0" && !dirty) base else "$base-$ahead-g$commit" + if (dirty) "-dirty" else ""
+    val code = (major.toInt() * 10000 + minor.toInt() * 100 + patch.toInt()) * 100 + ahead.toInt().coerceAtMost(99)
+    AppVersion(name, code)
+}.get()
+
 android {
     namespace = "com.lumenarcanus.dialife"
     compileSdk = 37
@@ -16,8 +36,8 @@ android {
         applicationId = "com.lumenarcanus.dialife"
         minSdk = 31
         targetSdk = 36
-        versionCode = 12
-        versionName = "0.7.0"
+        versionCode = appVersion.code
+        versionName = appVersion.name
     }
 
     // Two builds, never mixed: "release" for the family's own phones, signed with the
