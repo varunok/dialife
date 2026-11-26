@@ -119,8 +119,11 @@ the app; a demo server with a generated day for the web).
 - **Nightscout-compatible upload API**, so xDrip+ uploads to it as it would to
   Nightscout.
 
-How each number, arrow, card and alarm is worked out, what comes from a published
-source and what is our own choice, is in [docs/METHODS.md](docs/METHODS.md).
+One of DiaLife's main aims is that what it shows and how it alarms follow the
+recommendations of paediatric diabetes organisations (ISPAD, the ADA) and published
+research: they are gathered, quoted and linked in [docs/GUIDELINES.md](docs/GUIDELINES.md).
+How each number, arrow, card and alarm is worked out, what comes from a published source and
+what is our own, from our observations, is in [docs/METHODS.md](docs/METHODS.md).
 
 ## Repository
 
@@ -132,6 +135,7 @@ source and what is our own choice, is in [docs/METHODS.md](docs/METHODS.md).
 | `tools/dl` | the admin tool: runs every command on the server over SSH |
 | `testdata/` | sample xDrip+ uploads used by the tests |
 | `docs/METHODS.md` | how DiaLife computes what it shows, with sources |
+| `docs/GUIDELINES.md` | the paediatric guidelines DiaLife follows, quoted and linked |
 
 ## Requirements
 
