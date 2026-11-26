@@ -12,11 +12,25 @@ export const LangPicker = {
   }
 };
 
-/** The trend arrow, turned by the 5-minute change in mg/dL. */
-export function arrowIcon(d) {
-  const deg = d == null ? 0 : d >= 10 ? -90 : d >= 5 ? -45 : d <= -10 ? 90 : d <= -5 ? 45 : 0;
-  return m('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2.4, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', style: 'transform: rotate(' + deg + 'deg)' },
-    [m('path', { d: 'M5 12h14' }), m('path', { d: 'M13 6l6 6-6 6' })]);
+// the server's trend (Dexcom's rate bands, as the app shows them): the turn, and a double arrow when fast
+const TRENDS = {
+  DoubleUp: { deg: -90, double: true }, SingleUp: { deg: -90 }, FortyFiveUp: { deg: -45 },
+  Flat: { deg: 0 },
+  FortyFiveDown: { deg: 45 }, SingleDown: { deg: 90 }, DoubleDown: { deg: 90, double: true }
+};
+
+/** How the arrow for the server's direction is drawn; null: no arrow (unknown, an error code). */
+export function trendOf(direction) {
+  return TRENDS[direction] || null;
+}
+
+/** The trend arrow for the server's direction; an empty circle when it has none. */
+export function arrowIcon(direction) {
+  const tr = trendOf(direction);
+  if (!tr) return null;
+  const arrow = (dx) => [m('path', { d: 'M' + (5 + dx) + ' 12h14' }), m('path', { d: 'M' + (13 + dx) + ' 6l6 6-6 6' })];
+  return m('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2.4, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', style: 'transform: rotate(' + tr.deg + 'deg)' },
+    tr.double ? [...arrow(-2.5), ...arrow(2.5)] : arrow(0));
 }
 
 export function calIcon() {

@@ -49,7 +49,7 @@ export const Now = {
     return m('section.card.now', [
       m('.hero', [
         m('div', [m('span.v' + (stale ? '.stale' : shower ? '.untrusted' : ''), g(bg.sgv)), shower && m('span.warn', '⚠'), m('span.u', unit())]),
-        !stale && m('span.arrow', { 'aria-label': bg.direction || '' }, arrowIcon(bg.delta_exact != null ? bg.delta_exact : bg.delta))
+        !stale && m('span.arrow', { 'aria-label': bg.direction || '' }, arrowIcon(bg.direction))
       ]),
       m('.sub', [bg.delta != null && m('b', signed(bg.delta) + ' ' + t('in5')), m('span', ' · ' + (age < 1 ? t('justNow') : t('ago', age)))]),
       shower && m('.untrusted-card', [m('b', t('untrustedTitle', clock(shower.until))), m('span', t('untrustedText'))]),

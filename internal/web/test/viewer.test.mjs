@@ -8,6 +8,7 @@ import { MIN, amount, g, signed, t, unit } from '../static/js/format.js';
 import { alarmLines, alarmName, duration, entryText, foodText, isBasal, isShower, meterPoints, origin, sensorlessIn, untrusted, untrustedAt } from '../static/js/entries.js';
 import { tableRows } from '../static/js/rows.js';
 import { parseEvent } from '../static/js/api.js';
+import { trendOf } from '../static/js/widgets.js';
 
 process.env.TZ = 'UTC';
 const TH = { bgTargetBottom: 80, bgTargetTop: 250 };
@@ -31,6 +32,18 @@ test('a change carries its sign', () => {
   assert.equal(signed(0), '±0');
   prefs.units = 'mmol';
   assert.equal(signed(-18), '−1.0');
+});
+
+test('the arrow is the server\'s direction, as on the phones: fast ones doubled, none when unknown', () => {
+  assert.deepEqual(trendOf('DoubleUp'), { deg: -90, double: true });
+  assert.deepEqual(trendOf('SingleUp'), { deg: -90 });
+  assert.deepEqual(trendOf('FortyFiveUp'), { deg: -45 });
+  assert.deepEqual(trendOf('Flat'), { deg: 0 });
+  assert.deepEqual(trendOf('FortyFiveDown'), { deg: 45 });
+  assert.deepEqual(trendOf('SingleDown'), { deg: 90 });
+  assert.deepEqual(trendOf('DoubleDown'), { deg: 90, double: true });
+  assert.equal(trendOf('NOT COMPUTABLE'), null);
+  assert.equal(trendOf(undefined), null);
 });
 
 test('amounts are whole or one decimal', () => {
