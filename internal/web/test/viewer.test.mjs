@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 
 import { prefs } from '../static/js/prefs.js';
 import { MIN, amount, g, signed, t, unit } from '../static/js/format.js';
-import { alarmLines, alarmName, duration, entryText, foodText, isBasal, isShower, lagLines, meterPoints, origin, sensorlessIn, untrusted, untrustedAt } from '../static/js/entries.js';
+import { alarmLines, alarmName, duration, entryText, foodText, isBasal, isShower, lagLines, meterPoints, recheckCard, origin, sensorlessIn, untrusted, untrustedAt } from '../static/js/entries.js';
 import { tableRows } from '../static/js/rows.js';
 import { parseEvent } from '../static/js/api.js';
 import { trendOf } from '../static/js/widgets.js';
@@ -56,6 +56,17 @@ test('the sensor delay: the minutes used, and whether measured or Dexcom\'s figu
   prefs.lang = 'uk';
   assert.deepEqual(lagLines({ min: 6, lo: 5, hi: 8, n: 420, used: 6, source: 'measured' }),
     { value: '6 хв', sub: 'виміряно: 95% — 5–8 хв, вимірів 420' });
+});
+
+test('the recheck card: waiting, due on time without new data, still low', () => {
+  const r = { carbs_t: T0, carbs: 15, due_at: T0 + 15 * MIN, state: 'waiting' };
+  assert.equal(recheckCard(null, T0), null);
+  assert.deepEqual(recheckCard(r, T0 + MIN), { kind: 'wait', title: 'Measure again at 12:15',
+    text: 'At 12:00, 15 g of carbs were given for a low. 15 minutes on, measure again with the glucometer.' });
+  assert.equal(recheckCard(r, T0 + 15 * MIN).kind, 'due');
+  prefs.lang = 'uk';
+  assert.deepEqual(recheckCard({ ...r, state: 'still_low', check_mg: 64 }, T0 + 20 * MIN),
+    { kind: 'lo', title: 'Досі низько: 64 mg/dL', text: 'Дайте ще швидких вуглеводів за вашим планом, запишіть їх і виміряйте знову через 15 хвилин.' });
 });
 
 test('amounts are whole or one decimal', () => {

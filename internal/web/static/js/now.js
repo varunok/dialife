@@ -3,7 +3,7 @@
 
 import { logout, session } from './api.js';
 import { MIN, clock, dayTime, g, signed, t, unit } from './format.js';
-import { alarmName, duration, lagLines, untrustedAt } from './entries.js';
+import { alarmName, duration, lagLines, recheckCard, untrustedAt } from './entries.js';
 import { V } from './model.js';
 import { prefs, setPref } from './prefs.js';
 import { info } from './info.js';
@@ -54,6 +54,7 @@ export const Now = {
       ]),
       m('.sub', [bg.delta != null && m('b', signed(bg.delta) + ' ' + t('in5')), m('span', ' · ' + (age < 1 ? t('justNow') : t('ago', age))), info('trend-arrow')]),
       shower && m('.untrusted-card', [m('b', [t('untrustedTitle', clock(shower.until)), info('shower')]), m('span', t('untrustedText'))]),
+      recheck(st.recheck),
       !stale && !shower && forecast(st, range, f30),
       m('.tiles', [
         m('.tile', [m('span.k', st.uploader_name || t('uploader')), m('span.n', st.uploader && st.uploader.battery != null ? st.uploader.battery + '%' : '—')]),
@@ -103,6 +104,12 @@ function sensorless(s, now) {
       m('span', last ? t('sensorlessRemindText', duration(now - last.t)) : t('sensorlessRemindNone'))
     ])
   ];
+}
+
+// carbs given for a low: measure again; the phones log the check and close it
+function recheck(r) {
+  const c = recheckCard(r, Date.now());
+  return c && m('.recheck-card.' + c.kind, [m('b', [c.title, info('recheck')]), m('span', c.text)]);
 }
 
 // how far the sensor runs behind the glucometer, across the whole row

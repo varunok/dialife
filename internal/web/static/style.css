@@ -131,3 +131,8 @@ button.info:hover, button.info:focus-visible { color: var(--text); }
 .info-dialog h2 { margin: 0; font-size: 18px; } .info-dialog h3 { margin: 6px 0 0; font-size: 13px; color: var(--muted); font-weight: 600; }
 .info-dialog .short { margin: 0; color: var(--soft); } .info-dialog ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; } .info-dialog .none { margin: 0; color: var(--faint); }
 .info-dialog a { color: var(--soft); } .info-dialog button.primary { justify-self: end; }
+
+/* "measure again" after carbs for a low: calm while waiting, amber when due, red while still low */
+.recheck-card { border-radius: 16px; padding: 12px 14px; display: grid; gap: 4px; border: 1px solid var(--line2); background: var(--sunken); }
+.recheck-card.due { border: 1.5px solid var(--high); background: var(--high-bg); } .recheck-card.due b { color: var(--high); }
+.recheck-card.lo { border: 1.5px solid var(--low); background: var(--low-bg); } .recheck-card.lo b { color: var(--low); }

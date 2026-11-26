@@ -1,7 +1,7 @@
 // How entries, glucometer checks, suspects and alarms read: shared by the
 // chart's tooltips and the table.
 
-import { MIN, amount, clock, g, hasText, t } from './format.js';
+import { MIN, amount, clock, g, hasText, t, unit } from './format.js';
 
 export function isBasal(tr) {
   if (tr.insulin_type) return tr.insulin_type === 'basal';
@@ -82,6 +82,15 @@ export function sensorlessIn(periods, from, to, now) {
 }
 
 // whether a reading at tt was taken while the sensor was not believed
+/** The recheck card as the viewer shows it, as of now: its look, title and text; null when there is none. */
+export function recheckCard(r, now) {
+  if (!r) return null;
+  if (r.state === 'still_low') return { kind: 'lo', title: t('recheckStill', g(r.check_mg), unit()), text: t('recheckStillText') };
+  const grams = amount(r.carbs);
+  if (r.state === 'due' || now >= r.due_at) return { kind: 'due', title: t('recheckDue'), text: t('recheckDueText', clock(r.carbs_t), grams) };
+  return { kind: 'wait', title: t('recheckWaiting', clock(r.due_at)), text: t('recheckText', clock(r.carbs_t), grams) };
+}
+
 // the server measures nothing below this many checks (internal/meter)
 const MIN_LAG_CHECKS = 10;
 
