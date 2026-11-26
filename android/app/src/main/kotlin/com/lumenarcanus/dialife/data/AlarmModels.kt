@@ -29,6 +29,9 @@ data class AlarmView(
     @SerialName("coming_at") val comingAt: Long? = null
 ) {
     val urgentLow get() = kind == "low" && level == "urgent"
+
+    /** A forecast: a warning, never an episode. Amber, one "Close" for every phone, nobody takes it. */
+    val warning get() = kind == "predicted_low" || kind == "predicted_high"
 }
 
 @Serializable

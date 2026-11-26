@@ -62,9 +62,10 @@ export const Now = {
         m('.tile', [m('span.k', [t('tir'), info('stats')]), m('span.n', V.tir != null ? Math.round(V.tir) + '%' : '—')]),
         lagTile(V.meter && lagLines(V.meter.lag))
       ]),
+      // a forecast is a warning: nobody takes it, so no "nobody yet"
       a && m('.alarm' + (a.level === 'urgent' ? '.urgent' : ''), [
         m('b', [t('alarmSince', alarmName(a), clock(a.started_at)), info(a.kind === 'predicted_low' || a.kind === 'predicted_high' ? 'predicted-alarms' : 'alarms')]),
-        m('span', a.handled_by ? t('handledBy', a.handled_by) : t('nobodyYet')),
+        !a.kind.startsWith('predicted') && m('span', a.handled_by ? t('handledBy', a.handled_by) : t('nobodyYet')),
         shower && a.kind !== 'stale' && m('span.check', t('untrustedAlarm'))
       ])
     ]);

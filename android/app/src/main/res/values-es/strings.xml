@@ -894,4 +894,6 @@
     <string name="update_failed_network">No se pudo descargar: sin conexión con el servidor.</string>
     <string name="update_failed_checksum">El archivo llegó dañado y no se instaló. Reintente.</string>
     <string name="update_failed_installer">Android no lo instaló (cancelado o falta espacio).</string>
+    <string name="act_close_all">Cerrar para todos</string>
+    <string name="al_warned">Avisados: %1$s</string>
 </resources>

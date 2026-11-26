@@ -119,6 +119,9 @@ internal fun EpisodeBanner(a: AlarmView, ui: AlarmsUiState, onAction: (String, L
             Text(stringResource(R.string.wake_if_title) + " " + reasons.joinToString("; "), color = c.textMuted, fontSize = 13.sp)
         }
         when {
+            a.warning -> BannerButton(stringResource(R.string.act_close_all), c.high, c.background) {
+                onAction(ActionReceiver.RESOLVE, a.id)
+            }
             a.state == "firing" -> {
                 BannerButton(stringResource(R.string.act_handle), accent, c.background) { onAction(ActionReceiver.HANDLE, a.id) }
                 // "the receiver works": a stale or non-urgent alarm can be quieted for 2 h

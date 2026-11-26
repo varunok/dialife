@@ -158,8 +158,9 @@ internal fun AlarmScreen(
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
     var failed by remember { mutableStateOf(false) }
-    val accent = if (help) c.high else c.urgent
-    val background = if (help) Color(0xFF241605) else c.urgentBackground
+    // a forecast is a warning: amber like a help request, not the red of an alarm
+    val accent = if (help || alarm.warning) c.high else c.urgent
+    val background = if (help || alarm.warning) Color(0xFF241605) else c.urgentBackground
     val locale = ctx.resources.configuration.locales[0]
 
     val haptics = LocalHapticFeedback.current
@@ -224,7 +225,11 @@ internal fun AlarmScreen(
             if (!help) {
                 val names = state?.caregivers.orEmpty().map { it.name }
                 if (names.isNotEmpty()) {
-                    Text(stringResource(R.string.al_notified, names.joinToString(", ")), color = c.textMuted, fontSize = 15.sp)
+                    Text(
+                        stringResource(if (alarm.warning) R.string.al_warned else R.string.al_notified, names.joinToString(", ")),
+                        color = c.textMuted,
+                        fontSize = 15.sp
+                    )
                 }
             }
             if (help) HelpChart(alarm, state, units)
@@ -248,7 +253,7 @@ internal fun AlarmScreen(
             },
             modifier = Modifier.fillMaxWidth()
         ) { Text(stringResource(R.string.al_open_chart), color = c.textMuted, fontSize = 15.sp) }
-        AlarmButtons(help, alarm.urgentLow, accent, busy, ::act)
+        AlarmButtons(help, alarm.warning, alarm.urgentLow, accent, busy, ::act)
     }
 }
 
@@ -343,12 +348,14 @@ private fun HelpChart(alarm: AlarmView, state: StateResponse?, units: Units) {
     )
 }
 
-/** "I'm coming" for a help request; else "I'm on it" and, unless it is an urgent low, "quiet". */
+/** "I'm coming" for a help request; "Close for everyone" for a forecast; else "I'm on it" and, unless it is an urgent low, "quiet". */
 @Composable
-private fun AlarmButtons(help: Boolean, urgentLow: Boolean, accent: Color, busy: Boolean, act: (String) -> Unit) {
+private fun AlarmButtons(help: Boolean, warning: Boolean, urgentLow: Boolean, accent: Color, busy: Boolean, act: (String) -> Unit) {
     val c = DiaTheme.colors
     if (help) {
         BigButton(stringResource(R.string.act_coming), accent, c.background, busy) { act(ActionReceiver.COMING) }
+    } else if (warning) {
+        BigButton(stringResource(R.string.act_close_all), accent, c.background, busy) { act(ActionReceiver.RESOLVE) }
     } else {
         BigButton(stringResource(R.string.act_handle), accent, Color.White, busy) { act(ActionReceiver.HANDLE) }
         if (!urgentLow) {

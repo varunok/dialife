@@ -886,4 +886,6 @@
     <string name="update_failed_network">Could not download: no connection to the server.</string>
     <string name="update_failed_checksum">The file came damaged and was not installed. Try again.</string>
     <string name="update_failed_installer">Android did not install it (cancelled, or not enough space).</string>
+    <string name="act_close_all">Close for everyone</string>
+    <string name="al_warned">Warned: %1$s</string>
 </resources>

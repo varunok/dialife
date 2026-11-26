@@ -46,6 +46,13 @@ class AlarmScreenShots {
         compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
     }
 
+    // a forecast is a warning: amber, one "Close for everyone", nobody takes it
+    @Test
+    fun predictedLow() = shot(
+        "alarm_predicted_low_dark_uk",
+        AlarmView(id = 3, kind = "predicted_low", level = "warn", state = "firing", startedAt = now - 60_000L, sgv = 84)
+    )
+
     // an urgent low cannot be quieted: one button
     @Test
     fun urgentLow() = shot(

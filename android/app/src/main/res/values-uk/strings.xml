@@ -906,4 +906,6 @@
     <string name="update_failed_network">Не вдалося завантажити: немає зв\'язку із сервером.</string>
     <string name="update_failed_checksum">Файл прийшов пошкодженим і не встановлювався. Спробуйте ще раз.</string>
     <string name="update_failed_installer">Android не встановив оновлення (скасовано або бракує місця).</string>
+    <string name="act_close_all">Закрити для всіх</string>
+    <string name="al_warned">Попереджено: %1$s</string>
 </resources>

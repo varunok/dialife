@@ -34,13 +34,13 @@ class Ringer(context: Context) : AlarmSound {
     var ringingId: Long = 0
         private set
 
-    override fun start(alarmId: Long) {
+    override fun start(alarmId: Long, warning: Boolean) {
         main.post {
             stopNow()
             ringingId = alarmId
             wake = app.getSystemService(PowerManager::class.java)
                 .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "dialife:alarm")
-                .apply { acquire(MAX_RING_MS + 10_000) }
+                .apply { acquire((if (warning) WARN_RING_MS else MAX_RING_MS) + 10_000) }
             // never let a turned-down alarm volume sleep through a hypo
             val max = audio.getStreamMaxVolume(AudioManager.STREAM_ALARM)
             val cur = audio.getStreamVolume(AudioManager.STREAM_ALARM)
@@ -79,7 +79,7 @@ class Ringer(context: Context) : AlarmSound {
                     AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build()
                 )
             }
-            main.postDelayed(timeout, MAX_RING_MS)
+            main.postDelayed(timeout, if (warning) WARN_RING_MS else MAX_RING_MS)
         }
     }
 
@@ -104,5 +104,8 @@ class Ringer(context: Context) : AlarmSound {
 
     companion object {
         const val MAX_RING_MS = 3 * 60_000L
+
+        // a forecast's warning: heard, not an alarm clock
+        const val WARN_RING_MS = 10_000L
     }
 }

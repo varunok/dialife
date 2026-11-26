@@ -58,7 +58,7 @@ class SettingsViewModelTest {
     private class FakeSound : AlarmSound {
         val calls = mutableListOf<String>()
 
-        override fun start(alarmId: Long) {
+        override fun start(alarmId: Long, warning: Boolean) {
             calls += "start $alarmId"
         }
 

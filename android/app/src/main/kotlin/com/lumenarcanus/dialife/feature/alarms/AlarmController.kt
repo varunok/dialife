@@ -118,17 +118,19 @@ class AlarmController(context: Context, private val repo: LiveRepository, privat
             .setCategory(Notification.CATEGORY_ALARM)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setOngoing(true)
-            .setColor(if (help) 0xFFF5A524.toInt() else 0xFFFF3B5C.toInt())
+            .setColor(if (help || a.warning) 0xFFF5A524.toInt() else 0xFFFF3B5C.toInt())
             .setContentIntent(screen)
             .setFullScreenIntent(screen, true) // over the lock screen, like an incoming call
         if (help) {
             b.addAction(action(a.id, ActionReceiver.COMING, R.string.act_coming))
+        } else if (a.warning) {
+            b.addAction(action(a.id, ActionReceiver.RESOLVE, R.string.act_close_all))
         } else {
             b.addAction(action(a.id, ActionReceiver.HANDLE, R.string.act_handle))
             if (!a.urgentLow) b.addAction(action(a.id, ActionReceiver.QUIET, R.string.act_quiet))
         }
         nm.notify(TAG_ALARM, a.id.toInt(), b.build())
-        ringer.start(a.id)
+        ringer.start(a.id, warning = a.warning)
     }
 
     private fun checkin(a: AlarmView) {
