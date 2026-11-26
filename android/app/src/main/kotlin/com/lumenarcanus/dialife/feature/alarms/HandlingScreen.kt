@@ -45,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.info.InfoButton
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.UntrustedCard
 import com.lumenarcanus.dialife.core.ui.formatClock
@@ -132,12 +133,16 @@ fun HandlingScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         TextButton(onClick = onBack) { Text("‹ " + stringResource(R.string.nav_back), color = c.textMuted) }
-        Text(
-            stringResource(R.string.you_handle, AlarmText.kind(ctx, a)),
-            color = c.text,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.SemiBold
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.you_handle, AlarmText.kind(ctx, a)),
+                color = c.text,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f, fill = false)
+            )
+            InfoButton("alarm-episodes")
+        }
 
         val untrusted = ui.state.untrustedAt(ui.now)
         HandlingReading(a, bg, units, ui.now, untrusted != null)

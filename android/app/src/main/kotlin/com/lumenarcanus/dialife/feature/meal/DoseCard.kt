@@ -27,6 +27,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.info.InfoButton
 import com.lumenarcanus.dialife.core.ui.AlertCard
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatAmount
@@ -63,7 +64,10 @@ internal fun DoseCard(
         ).border(1.dp, c.insulinContainer, RoundedCornerShape(18.dp)).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        DoseWorkings(m, dose, units, locale, earlier, given)
+        Row(verticalAlignment = Alignment.Top) {
+            Column(Modifier.weight(1f)) { DoseWorkings(m, dose, units, locale, earlier, given) }
+            InfoButton("meal-dose")
+        }
         m.alerts.forEach { AlertCard(it, units, locale) }
         if (!m.fresh) FreshMeterField(typedMeter, units, onMeter)
         ToGive(m, given, locale)

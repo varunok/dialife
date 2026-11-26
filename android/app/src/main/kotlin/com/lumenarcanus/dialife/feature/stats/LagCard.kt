@@ -11,6 +11,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.info.InfoButton
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.data.MeterLag
 
@@ -22,7 +23,10 @@ private const val MIN_LAG_CHECKS = 10
 internal fun LagCard(lag: MeterLag) {
     val c = DiaTheme.colors
     Card {
-        Text(stringResource(R.string.lag_title), color = c.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.lag_title), color = c.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            InfoButton("sensor-delay")
+        }
         Text(stringResource(R.string.lag_about), color = c.textMuted, fontSize = 13.sp)
         val min = lag.min
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {

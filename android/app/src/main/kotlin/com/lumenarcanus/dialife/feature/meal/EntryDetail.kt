@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.info.InfoButton
 import com.lumenarcanus.dialife.core.ui.AlertCard
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatAmount
@@ -168,7 +169,15 @@ private fun MealDoseCheck(meal: Meal, treatments: List<Treatment>, dose: DoseSet
     val u = stringResource(R.string.unit_insulin)
     Box(Modifier.fillMaxWidth().height(1.dp).background(c.line))
     if (meal.foods.size > 1) {
-        Text(stringResource(R.string.detail_meal, meal.foods.size, meal.carbs), color = c.textMuted, fontSize = 13.sp)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.detail_meal, meal.foods.size, meal.carbs),
+                color = c.textMuted,
+                fontSize = 13.sp,
+                modifier = Modifier.weight(1f, fill = false)
+            )
+            InfoButton("meal-group")
+        }
     }
     val first = meal.foods.first().t
     val meter = Meters.latest(

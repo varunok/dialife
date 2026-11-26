@@ -43,6 +43,9 @@ class DiaLifeApi(private val http: OkHttpClient = defaultClient) {
 
     suspend fun meter(c: Credentials): Result<MeterReport> = get(c.server, c.token, "/api/meter")
 
+    /** How each feature is worked out, in short: the same file the web viewer shows. */
+    suspend fun methods(c: Credentials): Result<Methods> = get(c.server, c.token, "/web/methods.json")
+
     /** "I'm on it"; quietMin > 0 also keeps it quiet that long (refused for an urgent low). */
     suspend fun handle(c: Credentials, id: Long, quietMin: Int = 0): Result<Unit> =
         post(c, "/api/alarms/$id/handle", if (quietMin > 0) """{"quiet_min":$quietMin}""" else "{}")

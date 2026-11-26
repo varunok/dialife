@@ -15,6 +15,8 @@ import com.lumenarcanus.dialife.core.data.PlannedDoseRepository
 import com.lumenarcanus.dialife.core.data.PreferencesRepository
 import com.lumenarcanus.dialife.core.data.QuestionRepository
 import com.lumenarcanus.dialife.core.data.SessionRepository
+import com.lumenarcanus.dialife.core.info.DefaultMethodsRepository
+import com.lumenarcanus.dialife.core.info.MethodsRepository
 import com.lumenarcanus.dialife.data.Prefs
 import com.lumenarcanus.dialife.feature.alarms.AlarmController
 import com.lumenarcanus.dialife.feature.questions.QuestionNotifier
@@ -37,6 +39,7 @@ class DiaLifeApp : Application() {
     val foods: FoodRepository by lazy { DefaultFoodRepository({ live.credentials }) }
     val insulinIntents by lazy { InsulinIntentRepository({ live.credentials }, MainScope()) }
     val doseSettings: DoseSettingsRepository by lazy { DefaultDoseSettingsRepository({ live.credentials }) }
+    val methods: MethodsRepository by lazy { DefaultMethodsRepository({ live.credentials }) }
 
     override fun onCreate() {
         super.onCreate()
@@ -76,3 +79,6 @@ val Context.alarmController: AlarmController
 
 val Context.questionNotifier: QuestionNotifier
     get() = (applicationContext as DiaLifeApp).questions
+
+val Context.methodsRepository: MethodsRepository
+    get() = (applicationContext as DiaLifeApp).methods

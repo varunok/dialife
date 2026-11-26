@@ -45,6 +45,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.info.InfoButton
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatAmount
 import com.lumenarcanus.dialife.core.ui.formatGlucose
@@ -78,7 +79,10 @@ private fun TimeInRange(s: Stats, units: Units) {
     fun g(v: Int) = formatGlucose(v, units, locale)
     fun pct(v: Double) = String.format(locale, "%.0f%%", v)
     Card {
-        Text(stringResource(R.string.tile_time_in_range), color = c.textMuted, fontSize = 13.sp)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.tile_time_in_range), color = c.textMuted, fontSize = 13.sp)
+            InfoButton("stats")
+        }
         Text(pct(s.zones.inRange), color = c.inRange, fontSize = 48.sp, fontWeight = FontWeight.Medium)
         Text(stringResource(R.string.stats_range_bounds, g(th.low), g(th.high)), color = c.textMuted, fontSize = 13.sp)
         val zones = listOf(

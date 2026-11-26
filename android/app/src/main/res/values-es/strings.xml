@@ -852,4 +852,12 @@
     <string name="set_sensorless_remind_off">Sin recordatorio</string>
     <string name="notif_sensorless">Sin sensor</string>
     <string name="notif_sensorless_last">Última medición con glucómetro %1$s a las %2$s</string>
+    <string name="info_about">Cómo se calcula</string>
+    <string name="info_based">En qué se basa</string>
+    <string name="info_ours">Nuestro: según nuestras observaciones</string>
+    <string name="info_none">nada</string>
+    <string name="info_more">Completo, con fuentes</string>
+    <string name="info_close">Cerrar</string>
+    <string name="info_loading">Cargando…</string>
+    <string name="info_unavailable">La descripción no está disponible ahora: no hay conexión con el servidor.</string>
 </resources>

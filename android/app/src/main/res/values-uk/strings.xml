@@ -864,4 +864,12 @@
     <string name="set_sensorless_remind_off">Не нагадувати</string>
     <string name="notif_sensorless">Без сенсора</string>
     <string name="notif_sensorless_last">Останній замір з пальця %1$s о %2$s</string>
+    <string name="info_about">Як це рахується</string>
+    <string name="info_based">На чому ґрунтується</string>
+    <string name="info_ours">Наше: на основі наших спостережень</string>
+    <string name="info_none">нічого</string>
+    <string name="info_more">Повністю, з джерелами</string>
+    <string name="info_close">Закрити</string>
+    <string name="info_loading">Завантаження…</string>
+    <string name="info_unavailable">Опис зараз недоступний: немає зв\'язку із сервером.</string>
 </resources>

@@ -1,5 +1,6 @@
 package com.lumenarcanus.dialife.screenshots
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,8 +13,10 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
+import com.lumenarcanus.dialife.core.info.InfoContent
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.theme.DiaLifeTheme
+import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.data.AlarmView
 import com.lumenarcanus.dialife.data.CarbEstimate
 import com.lumenarcanus.dialife.data.CarbSuggestion
@@ -21,10 +24,13 @@ import com.lumenarcanus.dialife.data.CarbTableHit
 import com.lumenarcanus.dialife.data.Caregiver
 import com.lumenarcanus.dialife.data.CheckCard
 import com.lumenarcanus.dialife.data.Credentials
+import com.lumenarcanus.dialife.data.DiaLifeApi
 import com.lumenarcanus.dialife.data.DoseSettings
 import com.lumenarcanus.dialife.data.FoodItem
 import com.lumenarcanus.dialife.data.MeterCheck
 import com.lumenarcanus.dialife.data.MeterLag
+import com.lumenarcanus.dialife.data.Methods
+import com.lumenarcanus.dialife.data.MethodsTest
 import com.lumenarcanus.dialife.data.PlannedDose
 import com.lumenarcanus.dialife.data.Question
 import com.lumenarcanus.dialife.data.Sensorless
@@ -283,6 +289,17 @@ class ScreenshotTest {
     fun meterCardUk() = shot("meter_card_dark_uk", dark = true) {
         Box(Modifier.padding(16.dp)) {
             MeterCard(sampleMeter(now), Units.MgDl)
+        }
+    }
+
+    /** What an ⓘ opens: the sensor delay, from the server's own file. */
+    @Test
+    @Config(qualifiers = "uk-w412dp-h1600dp-xxhdpi")
+    fun infoUk() = shot("info_sensor_delay_dark_uk", dark = true) {
+        val methods: Methods = DiaLifeApi.json.decodeFromString(MethodsTest.serverFile().readText())
+        Box(Modifier.background(DiaTheme.colors.surface).padding(16.dp)) {
+            // the sheet's own surface
+            InfoContent(methods.section("sensor-delay", "uk")!!, methods.link("sensor-delay"))
         }
     }
 

@@ -33,6 +33,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.info.InfoButton
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatGlucose
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
@@ -49,7 +50,10 @@ import kotlin.math.round
 internal fun MeterCard(m: MeterReport, units: Units) {
     val c = DiaTheme.colors
     Card {
-        Text(stringResource(R.string.meter_title), color = c.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.meter_title), color = c.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            InfoButton("meter-estimate")
+        }
         if (m.used == 0) {
             Text(stringResource(R.string.meter_empty), color = c.textMuted, fontSize = 14.sp)
             return@Card

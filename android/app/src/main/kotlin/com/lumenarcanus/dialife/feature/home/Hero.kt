@@ -42,6 +42,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
+import com.lumenarcanus.dialife.core.info.InfoButton
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.UntrustedCard
 import com.lumenarcanus.dialife.core.ui.formatAmount
@@ -152,6 +153,7 @@ private fun ChangeAndAge(state: HomeState, locale: Locale) {
             fontSize = 15.sp,
             fontWeight = if (stale) FontWeight.SemiBold else FontWeight.Normal
         )
+        InfoButton("trend-arrow")
     }
 }
 
@@ -196,6 +198,13 @@ private fun RangeAndForecast(state: HomeState, stateColor: Color, locale: Locale
                 stringResource(R.string.forecast_30, formatGlucose(it, state.units, locale))
             }
             Chip(text, background = c.surface, color = c.textMuted)
+            // the ⓘ goes with the record of how it did when there is one, next to the chip otherwise
+            val record = state.forecastQuality
+            if (record == null ||
+                (record.quiet == null && record.afterFood == null)
+            ) {
+                InfoButton("forecast-30", Modifier.align(Alignment.CenterVertically))
+            }
         }
     }
 }
@@ -212,7 +221,15 @@ private fun ForecastNotes(state: HomeState, locale: Locale) {
     state.forecastQuality?.takeIf { state.forecast30 != null && (it.quiet != null || it.afterFood != null) }?.let { q ->
         val few = stringResource(R.string.forecast_few)
         val pct = { f: ForecastQuality? -> f?.takeIf { it.n >= 50 }?.let { "${it.hitPct}%" } ?: few }
-        Text(stringResource(R.string.forecast_hits, pct(q.quiet), pct(q.afterFood)), color = c.textFaint, fontSize = 12.5.sp)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.forecast_hits, pct(q.quiet), pct(q.afterFood)),
+                color = c.textFaint,
+                fontSize = 12.5.sp,
+                modifier = Modifier.weight(1f, fill = false)
+            )
+            InfoButton("forecast-30")
+        }
     }
     // insulin and carbs still acting, from what was logged
     state.iob?.let { iob ->
@@ -226,15 +243,18 @@ private fun ForecastNotes(state: HomeState, locale: Locale) {
         )
         // its forecast is not shown until, tuned to this child, it beats the trend after food
         if (parts.isNotEmpty()) {
-            Text(
-                parts.joinToString(" · "),
-                color = c.insulin,
-                fontSize = 13.sp,
-                modifier = Modifier.background(
-                    c.insulinContainer.copy(alpha = 0.5f),
-                    RoundedCornerShape(10.dp)
-                ).padding(horizontal = 10.dp, vertical = 6.dp)
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    parts.joinToString(" · "),
+                    color = c.insulin,
+                    fontSize = 13.sp,
+                    modifier = Modifier.weight(1f, fill = false).background(
+                        c.insulinContainer.copy(alpha = 0.5f),
+                        RoundedCornerShape(10.dp)
+                    ).padding(horizontal = 10.dp, vertical = 6.dp)
+                )
+                InfoButton("on-board")
+            }
         }
     }
     // what the trend cannot see: food or rapid insulin in the last two hours

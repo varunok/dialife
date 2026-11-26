@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.data.FoodRepository
+import com.lumenarcanus.dialife.core.info.InfoButton
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.core.ui.theme.GlucoseHero
 import com.lumenarcanus.dialife.data.CarbSuggestion
@@ -192,7 +193,14 @@ fun FoodList(rows: SnapshotStateList<FoodRow>, repo: FoodRepository?) {
     Row(
         Modifier.fillMaxWidth().background(c.highContainer, RoundedCornerShape(14.dp)).padding(horizontal = 12.dp, vertical = 10.dp)
     ) {
-        Text(stringResource(R.string.food_disclaimer), color = c.text, fontSize = 12.5.sp, lineHeight = 17.sp)
+        Text(
+            stringResource(R.string.food_disclaimer),
+            color = c.text,
+            fontSize = 12.5.sp,
+            lineHeight = 17.sp,
+            modifier = Modifier.weight(1f)
+        )
+        InfoButton("carb-suggestions")
     }
     rows.forEach { row ->
         key(row.id) {
