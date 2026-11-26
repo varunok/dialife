@@ -223,6 +223,13 @@
     <string name="meter_legend_before">до першого старту</string>
     <string name="meter_legend">сенсор %1$d (%2$s)</string>
     <string name="meter_legend_current">поточний (%1$s)</string>
+    <string name="lag_title">Затримка сенсора</string>
+    <string name="lag_about">На скільки хвилин сенсор відстає від глюкометра: він міряє рідину під шкірою, а вона йде слідом за кров\'ю.</string>
+    <string name="lag_value">%1$d хв</string>
+    <string name="lag_range">95%%: %1$d–%2$d хв · вимірів: %3$d</string>
+    <string name="lag_none">Ще не виміряно: %1$d з %2$d вимірів</string>
+    <string name="lag_published">Даних замало. Для порівняння з глюкометром береться %1$d хв за даними Dexcom.</string>
+    <string name="lag_measured">Для порівняння з глюкометром береться виміряна затримка.</string>
     <string name="set_meter_line">Лінія «≈ глюкометр»</string>
     <string name="set_meter_line_sub">Те саме, що перемикач на графіку</string>
     <string name="origin_typed">%1$s · вручну</string>

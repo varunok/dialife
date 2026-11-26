@@ -217,6 +217,13 @@
     <string name="meter_legend_before">before the first start</string>
     <string name="meter_legend">sensor %1$d (%2$s)</string>
     <string name="meter_legend_current">current (%1$s)</string>
+    <string name="lag_title">Sensor delay</string>
+    <string name="lag_about">How many minutes the sensor runs behind the glucometer: it reads the fluid under the skin, which follows the blood.</string>
+    <string name="lag_value">%1$d min</string>
+    <string name="lag_range">95%%: %1$d–%2$d min · checks: %3$d</string>
+    <string name="lag_none">Not measured yet: %1$d of %2$d checks</string>
+    <string name="lag_published">Too little data. Comparisons with the glucometer use %1$d min, Dexcom\'s published figure.</string>
+    <string name="lag_measured">Comparisons with the glucometer use the measured delay.</string>
     <string name="set_meter_line">The "≈ meter" line</string>
     <string name="set_meter_line_sub">Same as the switch on the chart</string>
     <string name="origin_typed">%1$s · typed</string>

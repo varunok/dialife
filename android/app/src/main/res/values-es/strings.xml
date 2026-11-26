@@ -218,6 +218,13 @@
     <string name="meter_legend_before">antes del primer inicio</string>
     <string name="meter_legend">sensor %1$d (%2$s)</string>
     <string name="meter_legend_current">actual (%1$s)</string>
+    <string name="lag_title">Retraso del sensor</string>
+    <string name="lag_about">Cuántos minutos va el sensor por detrás del glucómetro: mide el líquido bajo la piel, que sigue a la sangre.</string>
+    <string name="lag_value">%1$d min</string>
+    <string name="lag_range">95 %%: %1$d–%2$d min · mediciones: %3$d</string>
+    <string name="lag_none">Aún sin medir: %1$d de %2$d mediciones</string>
+    <string name="lag_published">Pocos datos. Las comparaciones con el glucómetro usan %1$d min, la cifra publicada por Dexcom.</string>
+    <string name="lag_measured">Las comparaciones con el glucómetro usan el retraso medido.</string>
     <string name="set_meter_line">La línea «≈ glucómetro»</string>
     <string name="set_meter_line_sub">Igual que el interruptor del gráfico</string>
     <string name="origin_typed">%1$s · a mano</string>

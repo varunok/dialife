@@ -24,6 +24,7 @@ import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.data.DoseSettings
 import com.lumenarcanus.dialife.data.FoodItem
 import com.lumenarcanus.dialife.data.MeterCheck
+import com.lumenarcanus.dialife.data.MeterLag
 import com.lumenarcanus.dialife.data.PlannedDose
 import com.lumenarcanus.dialife.data.Question
 import com.lumenarcanus.dialife.data.Sensorless
@@ -54,6 +55,7 @@ import com.lumenarcanus.dialife.feature.settings.DoseSettingsUiState
 import com.lumenarcanus.dialife.feature.settings.SettingsScreen
 import com.lumenarcanus.dialife.feature.settings.SettingsUiState
 import com.lumenarcanus.dialife.feature.settings.doseSettingsForm
+import com.lumenarcanus.dialife.feature.stats.LagCard
 import com.lumenarcanus.dialife.feature.stats.MeterCard
 import com.lumenarcanus.dialife.feature.wait.CountdownCard
 import com.lumenarcanus.dialife.feature.wait.CountdownUiState
@@ -281,6 +283,17 @@ class ScreenshotTest {
     fun meterCardUk() = shot("meter_card_dark_uk", dark = true) {
         Box(Modifier.padding(16.dp)) {
             MeterCard(sampleMeter(now), Units.MgDl)
+        }
+    }
+
+    /** The sensor delay: measured too loosely to be used, then measured and used. */
+    @Test
+    @Config(qualifiers = "+uk")
+    fun lagCardUk() = shot("lag_card_dark_uk", dark = true) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            LagCard(MeterLag(min = 9, lo = 1, hi = 16, n = 66, used = 4, source = "published"))
+            LagCard(MeterLag(min = 6, lo = 5, hi = 8, n = 420, used = 6, source = "measured"))
+            LagCard(MeterLag(n = 4))
         }
     }
 

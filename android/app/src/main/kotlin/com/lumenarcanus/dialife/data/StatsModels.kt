@@ -58,7 +58,19 @@ data class MeterReport(
     val bands: List<MeterBand> = emptyList(),
     val model: MeterModel? = null,
     val pairs: List<MeterPair> = emptyList(),
-    val starts: List<Long> = emptyList()
+    val starts: List<Long> = emptyList(),
+    val lag: MeterLag = MeterLag()
+)
+
+/** How far the sensor runs behind the glucometer, minutes: the measured delay with its 95% interval, and the one used. */
+@Serializable
+data class MeterLag(
+    val min: Int? = null,
+    val lo: Int? = null,
+    val hi: Int? = null,
+    val n: Int = 0,
+    val used: Int = 4,
+    val source: String = "published"
 )
 
 @Serializable

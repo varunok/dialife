@@ -66,7 +66,10 @@ fun StatsScreen(uiState: StatsUiState, onPick: (Int) -> Unit, onRetry: () -> Uni
                 StatsContent(l.stats, units)
             }
         }
-        uiState.meter?.let { MeterCard(it, units) }
+        uiState.meter?.let {
+            MeterCard(it, units)
+            LagCard(it.lag)
+        }
     }
 }
 
