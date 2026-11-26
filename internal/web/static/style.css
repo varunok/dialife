@@ -122,3 +122,12 @@ tfoot td { font-weight: 600; border-top: 1px solid var(--line); border-bottom: 0
 .qrbox { display: grid; justify-items: center; gap: 12px; }
 .qrbox span { font-family: var(--mono); font-size: 13px; color: var(--muted); }
 .lang { position: fixed; top: 16px; right: 16px; }
+
+/* the ⓘ next to a feature, and what it opens */
+button.info { background: none; border: 0; color: var(--muted); font: inherit; font-size: 15px; line-height: 1; padding: 2px 4px; margin-left: 4px; cursor: pointer; vertical-align: baseline; }
+button.info:hover, button.info:focus-visible { color: var(--text); }
+.info-back { position: fixed; inset: 0; z-index: 20; background: rgba(0,0,0,.55); display: grid; place-items: center; padding: 16px; }
+.info-dialog { width: min(560px, 100%); max-height: 85vh; overflow: auto; background: var(--surface); border: 1px solid var(--line2); border-radius: 20px; padding: 20px; display: grid; gap: 10px; }
+.info-dialog h2 { margin: 0; font-size: 18px; } .info-dialog h3 { margin: 6px 0 0; font-size: 13px; color: var(--muted); font-weight: 600; }
+.info-dialog .short { margin: 0; color: var(--soft); } .info-dialog ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; } .info-dialog .none { margin: 0; color: var(--faint); }
+.info-dialog a { color: var(--soft); } .info-dialog button.primary { justify-self: end; }

@@ -4,6 +4,7 @@
 import { DAY, HOUR, span, t } from './format.js';
 import { V, setPeriod, timeWindow } from './model.js';
 import { prefs, setPref } from './prefs.js';
+import { info } from './info.js';
 import { calIcon } from './widgets.js';
 
 export const ChartHead = {
@@ -20,6 +21,7 @@ export const ChartHead = {
         disabled: !ready, style: ready ? '' : 'opacity:.55;cursor:default',
         onclick: () => setPref('meterLine', !prefs.meterLine)
       }, t('meter')),
+      info('meter-estimate'),
       m('.seg.sunk', [3, 6, 12, 24].map((h) => m('button', { class: V.period.last === h * HOUR ? 'on' : '', onclick: () => setPeriod({ last: h * HOUR }) }, t('h', h)))
         .concat([m('button', { class: V.period.last === 7 * DAY ? 'on' : '', onclick: () => setPeriod({ last: 7 * DAY }) }, t('d7'))]))
     ]);

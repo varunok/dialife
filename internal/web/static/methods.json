@@ -1,0 +1,711 @@
+{
+ "doc": "https://github.com/varunok/dialife/blob/main/docs/METHODS.md",
+ "sections": {
+  "change-5min": {
+   "en": {
+    "title": "Change in 5 min",
+    "short": "How much the sensor value changed over the last 5 minutes.",
+    "based": [
+     "Nightscout (bgnow): 5-minute groups of readings, the two newest compared; a longer gap is scaled back to 5 minutes."
+    ],
+    "ours": []
+   },
+   "uk": {
+    "title": "Зміна за 5 хв",
+    "short": "Наскільки змінився показник сенсора за останні 5 хвилин.",
+    "based": [
+     "Nightscout (bgnow): показники групуються по 5 хвилин, порівнюються дві найновіші групи; довший проміжок перераховується на 5 хвилин."
+    ],
+    "ours": []
+   },
+   "es": {
+    "title": "Cambio en 5 min",
+    "short": "Cuánto cambió el valor del sensor en los últimos 5 minutos.",
+    "based": [
+     "Nightscout (bgnow): lecturas agrupadas cada 5 minutos, se comparan los dos grupos más recientes; un hueco mayor se escala a 5 minutos."
+    ],
+    "ours": []
+   }
+  },
+  "trend-arrow": {
+   "en": {
+    "title": "Trend arrow",
+    "short": "Which way and how fast glucose is moving, with Dexcom's arrow bands, worked out by the server.",
+    "based": [
+     "Dexcom G6 guide: → up to 1 mg/dL each minute; ↗↘ 1–2; ↑↓ 2–3; ⇈⇊ more than 3.",
+     "Nightscout's 5-minute groups of readings."
+    ],
+    "ours": [
+     "The speed is taken over up to 15 minutes, so one stray reading moves it less.",
+     "Computed by the server instead of taken from xDrip+, which sends \"flat\" for every reading in Dexcom native mode; every screen shows this one arrow."
+    ]
+   },
+   "uk": {
+    "title": "Стрілка тренду",
+    "short": "Куди і як швидко рухається цукор, за смугами стрілок Dexcom; рахує сервер.",
+    "based": [
+     "Посібник Dexcom G6: → до 1 мг/дл за хвилину; ↗↘ 1–2; ↑↓ 2–3; ⇈⇊ понад 3.",
+     "Групи показників по 5 хвилин, як у Nightscout."
+    ],
+    "ours": [
+     "Швидкість береться за 15 хвилин, тож один випадковий показник зсуває її менше.",
+     "Рахує сервер, а не xDrip+, який у режимі Dexcom надсилає «рівно» на кожен показник; усі екрани показують одну й ту саму стрілку."
+    ]
+   },
+   "es": {
+    "title": "Flecha de tendencia",
+    "short": "Hacia dónde y qué tan rápido se mueve la glucosa, con las bandas de flechas de Dexcom; la calcula el servidor.",
+    "based": [
+     "Guía de Dexcom G6: → hasta 1 mg/dL por minuto; ↗↘ 1–2; ↑↓ 2–3; ⇈⇊ más de 3.",
+     "Grupos de lecturas de 5 minutos, como en Nightscout."
+    ],
+    "ours": [
+     "La velocidad se toma sobre hasta 15 minutos, así una lectura suelta la mueve menos.",
+     "La calcula el servidor en vez de xDrip+, que envía «estable» en cada lectura en modo nativo de Dexcom; todas las pantallas muestran esta misma flecha."
+    ]
+   }
+  },
+  "forecast-30": {
+   "en": {
+    "title": "In 30 min",
+    "short": "Where the sensor value is likely to be in 30 minutes if it keeps moving as in the last half hour, slowing down.",
+    "based": [
+     "A straight-line fit (least squares) over the last 30 minutes."
+    ],
+    "ours": [
+     "The trend is damped to 0.4 of its speed: on real readings this missed less than Nightscout's AR2 and than \"no change\".",
+     "How often it came true is measured over the last week: within 15 mg/dL or 15%. The band is the error 80% of forecasts stayed within.",
+     "It does not see food or insulin; within 2 hours of either it says so. The alarms do not use it."
+    ]
+   },
+   "uk": {
+    "title": "За 30 хв",
+    "short": "Де, ймовірно, буде показник через 30 хвилин, якщо цукор і далі рухатиметься як за останні пів години, сповільнюючись.",
+    "based": [
+     "Пряма за методом найменших квадратів за останні 30 хвилин."
+    ],
+    "ours": [
+     "Тренд послаблено до 0,4 швидкості: на справжніх даних так помилок менше, ніж в AR2 з Nightscout і ніж у «без змін».",
+     "Як часто прогноз збувався, міряється за останній тиждень: у межах 15 мг/дл або 15%. Смуга — похибка, у яку вклалися 80% прогнозів.",
+     "Не бачить їжі й інсуліну; протягом 2 годин після них про це сказано. Тривоги його не використовують."
+    ]
+   },
+   "es": {
+    "title": "En 30 min",
+    "short": "Dónde estará probablemente el valor en 30 minutos si la glucosa sigue moviéndose como en la última media hora, frenando.",
+    "based": [
+     "Una recta por mínimos cuadrados sobre los últimos 30 minutos."
+    ],
+    "ours": [
+     "La tendencia se amortigua a 0,4 de su velocidad: con lecturas reales falló menos que el AR2 de Nightscout y que «sin cambio».",
+     "Cuántas veces acertó se mide en la última semana: dentro de 15 mg/dL o 15 %. La banda es el error dentro del que quedó el 80 % de los pronósticos.",
+     "No ve comida ni insulina; en las 2 horas siguientes lo indica. Las alarmas no lo usan."
+    ]
+   }
+  },
+  "alarms": {
+   "en": {
+    "title": "Low and high alarms",
+    "short": "An alarm when the sensor value is below the low or above the high threshold; a high must last a while first, a low never waits.",
+    "based": [
+     "70 / 180 / 250 mg/dL: ISPAD's targets for children and the time-in-range consensus; 70 is ISPAD's \"alert value\" and the ADA's level-1 low; the default urgent low 55 sits next to level 2 (below 54).",
+     "Glucose watched overnight and shared with caregivers, as ISPAD recommends.",
+     "\"No data\" after 15 and 30 minutes: Nightscout's defaults."
+    ],
+    "ours": [
+     "Every threshold, and how long a high must last, is the family's setting.",
+     "An alarm ends only after two readings in a row are 5 mg/dL past the threshold.",
+     "Alarms follow the sensor, not the blood."
+    ]
+   },
+   "uk": {
+    "title": "Тривоги низький і високий",
+    "short": "Тривога, коли показник сенсора нижче низького або вище високого порогу; високий має протриматися певний час, низький не чекає.",
+    "based": [
+     "70 / 180 / 250 мг/дл — цільові діапазони ISPAD для дітей і консенсус щодо часу в діапазоні; 70 — «значення тривоги» за ISPAD і низький 1 рівня за ADA; дуже низький 55 — поруч із 2 рівнем (нижче 54).",
+     "Нагляд уночі й спільний доступ для батьків — як рекомендує ISPAD.",
+     "«Немає даних» після 15 і 30 хвилин — як у Nightscout за замовчуванням."
+    ],
+    "ours": [
+     "Кожен поріг і те, скільки має протриматися високий, — налаштування сім'ї.",
+     "Тривога закінчується, лише коли два показники поспіль вийшли за поріг на 5 мг/дл.",
+     "Тривоги стежать за сенсором, а не за кров'ю."
+    ]
+   },
+   "es": {
+    "title": "Alarmas de bajo y alto",
+    "short": "Una alarma cuando el valor del sensor está por debajo del umbral bajo o por encima del alto; el alto debe durar un tiempo, el bajo nunca espera.",
+    "based": [
+     "70 / 180 / 250 mg/dL: los objetivos de ISPAD para niños y el consenso sobre tiempo en rango; 70 es el «valor de alerta» de ISPAD y el bajo de nivel 1 de la ADA; el bajo urgente 55 está junto al nivel 2 (menos de 54).",
+     "Vigilancia nocturna y datos compartidos con los cuidadores, como recomienda ISPAD.",
+     "«Sin datos» tras 15 y 30 minutos: los valores por defecto de Nightscout."
+    ],
+    "ours": [
+     "Cada umbral, y cuánto debe durar un alto, es ajuste de la familia.",
+     "Una alarma termina solo cuando dos lecturas seguidas pasan el umbral por 5 mg/dL.",
+     "Las alarmas siguen al sensor, no a la sangre."
+    ]
+   }
+  },
+  "predicted-alarms": {
+   "en": {
+    "title": "Predicted low and high",
+    "short": "An early alarm when Nightscout's AR2 forecast says glucose is heading out of range.",
+    "based": [
+     "Nightscout's AR2, ported with its constants: the warning and urgent levels from its score, the side from the value in 20 minutes."
+    ],
+    "ours": [
+     "Not raised while the same side already alarms.",
+     "AR2 sees only the last readings, not food or insulin."
+    ]
+   },
+   "uk": {
+    "title": "Прогноз низького і високого",
+    "short": "Рання тривога, коли прогноз AR2 з Nightscout каже, що цукор виходить за межі.",
+    "based": [
+     "AR2 з Nightscout, перенесений з його сталими: рівні попередження й термінової тривоги — з його оцінки, бік — за значенням через 20 хвилин."
+    ],
+    "ours": [
+     "Не з'являється, поки вже звучить тривога в той самий бік.",
+     "AR2 бачить лише останні показники, а не їжу чи інсулін."
+    ]
+   },
+   "es": {
+    "title": "Bajo y alto previstos",
+    "short": "Una alarma anticipada cuando el pronóstico AR2 de Nightscout dice que la glucosa sale del rango.",
+    "based": [
+     "El AR2 de Nightscout, portado con sus constantes: niveles de aviso y urgente según su puntuación, el lado según el valor a 20 minutos."
+    ],
+    "ours": [
+     "No se activa mientras ya suena una alarma del mismo lado.",
+     "El AR2 solo ve las últimas lecturas, no la comida ni la insulina."
+    ]
+   }
+  },
+  "alarm-episodes": {
+   "en": {
+    "title": "An alarm being handled",
+    "short": "One parent takes the alarm; the others are woken only if it gets worse, nobody answers a check-in, or it lasts too long.",
+    "based": [
+     "Nothing published: this is how the family shares the night."
+    ],
+    "ours": [
+     "Untaken alarms ring again: urgent every 5 minutes, warnings every 15.",
+     "A taken alarm wakes everyone when the value is 10 mg/dL worse than at take-over, when a check-in goes unanswered for 5 minutes, or when an urgent one is still open after 45 minutes. All are family settings."
+    ]
+   },
+   "uk": {
+    "title": "Тривога, яку взяли",
+    "short": "Один з батьків бере тривогу; інших будять, лише якщо стало гірше, ніхто не відповів на перевірку або тривога триває надто довго.",
+    "based": [
+     "Нічого опублікованого: так сім'я ділить ніч."
+    ],
+    "ours": [
+     "Тривоги, яких ніхто не взяв, дзвонять знову: термінові щоп'ять хвилин, попередження щоп'ятнадцять.",
+     "Взята тривога будить усіх, коли показник на 10 мг/дл гірший, ніж у момент, коли її взяли, коли на перевірку немає відповіді 5 хвилин або термінова триває 45 хвилин. Усе це — налаштування сім'ї."
+    ]
+   },
+   "es": {
+    "title": "Una alarma atendida",
+    "short": "Uno de los padres toma la alarma; a los demás se les despierta solo si empeora, nadie responde a una comprobación o dura demasiado.",
+    "based": [
+     "Nada publicado: así comparte la familia la noche."
+    ],
+    "ours": [
+     "Las alarmas sin atender vuelven a sonar: las urgentes cada 5 minutos, los avisos cada 15.",
+     "Una alarma atendida despierta a todos cuando el valor empeora 10 mg/dL respecto al momento de tomarla, cuando nadie responde a una comprobación en 5 minutos o cuando una urgente sigue abierta tras 45 minutos. Todo es ajuste de la familia."
+    ]
+   }
+  },
+  "meter-estimate": {
+   "en": {
+    "title": "≈ meter",
+    "short": "What the glucometer would most likely show for a sensor value, learned from the family's own glucometer checks.",
+    "based": [
+     "The sensor reads the fluid under the skin, which follows the blood; rapid changes show in it late (Schmelzeisen-Redeker 2015).",
+     "Above 2 mg/dL per minute the sensor and the blood can disagree for that reason alone (ADA Standards of Care 2026): such checks stay out of the model."
+    ],
+    "ours": [
+     "Each check is paired with the sensor value the sensor delay later.",
+     "The model: meter ≈ sensor × (1 + b) + a, plus a shift of each sensor's own; older checks weigh less. Shown after 8 checks.",
+     "It never changes a reading and never feeds the alarms."
+    ]
+   },
+   "uk": {
+    "title": "≈ глюкометр",
+    "short": "Що найімовірніше показав би глюкометр для цього показника сенсора; модель вчиться на замірах глюкометром самої сім'ї.",
+    "based": [
+     "Сенсор міряє рідину під шкірою, яка йде слідом за кров'ю; швидкі зміни видно в ній пізніше (Schmelzeisen-Redeker 2015).",
+     "Коли цукор змінюється швидше за 2 мг/дл за хвилину, сенсор і кров можуть розходитися вже через це (ADA, Standards of Care 2026): такі заміри в модель не йдуть."
+    ],
+    "ours": [
+     "Кожен замір порівнюється з показником сенсора через час затримки.",
+     "Модель: глюкометр ≈ сенсор × (1 + b) + a плюс власний зсув кожного сенсора; старші заміри важать менше. З'являється після 8 замірів.",
+     "Ніколи не змінює показник і не впливає на тривоги."
+    ]
+   },
+   "es": {
+    "title": "≈ glucómetro",
+    "short": "Lo que probablemente mostraría el glucómetro para un valor del sensor, aprendido de las mediciones de la propia familia.",
+    "based": [
+     "El sensor mide el líquido bajo la piel, que sigue a la sangre; los cambios rápidos le llegan tarde (Schmelzeisen-Redeker 2015).",
+     "Por encima de 2 mg/dL por minuto el sensor y la sangre pueden diferir solo por eso (ADA, Standards of Care 2026): esas mediciones quedan fuera del modelo."
+    ],
+    "ours": [
+     "Cada medición se compara con el sensor un retraso después.",
+     "El modelo: glucómetro ≈ sensor × (1 + b) + a, más un desplazamiento propio de cada sensor; las mediciones antiguas pesan menos. Aparece tras 8 mediciones.",
+     "Nunca cambia una lectura ni alimenta las alarmas."
+    ]
+   }
+  },
+  "sensor-delay": {
+   "en": {
+    "title": "Sensor delay",
+    "short": "How many minutes the sensor runs behind the glucometer, measured on the family's own checks, with how sure that is. Until sure enough, Dexcom's published 4 minutes are used.",
+    "based": [
+     "The delay from blood to the fluid under the skin: 5–6 minutes in healthy adults (Basu 2013), a median of 6.8 in type 1 diabetes (Basu 2015).",
+     "Dexcom gives about 4 minutes for its CGM.",
+     "The method from CGM studies: shift the sensor one minute at a time and keep the shift with the lowest mean absolute difference.",
+     "How sure: a bootstrap 95% interval."
+    ],
+    "ours": [
+     "Each sensor, and each calibration, is compared with its own average offset first, so sensors reading off by different amounts do not hide the delay.",
+     "Shifts of 0–20 minutes; nothing measured below 10 checks.",
+     "The measured delay is used only once its 95% interval is no wider than 4 minutes. Only checks taken while glucose moves tell anything, so it takes hundreds of everyday checks."
+    ]
+   },
+   "uk": {
+    "title": "Затримка сенсора",
+    "short": "На скільки хвилин сенсор відстає від глюкометра: виміряно на замірах самої сім'ї, разом з тим, наскільки це певно. Поки неточно — береться опубліковане значення Dexcom, 4 хвилини.",
+    "based": [
+     "Затримка з крові в рідину під шкірою: 5–6 хвилин у здорових дорослих (Basu 2013), медіана 6,8 при діабеті 1 типу (Basu 2015).",
+     "Dexcom називає близько 4 хвилин для свого сенсора.",
+     "Метод з досліджень CGM: зсувати сенсор по хвилині й брати зсув з найменшою середньою абсолютною різницею.",
+     "Наскільки певно: 95% інтервал бутстрепу."
+    ],
+    "ours": [
+     "Кожен сенсор і кожне калібрування спершу порівнюються зі своїм середнім зсувом, щоб сенсори з різним відхиленням не ховали затримку.",
+     "Зсуви 0–20 хвилин; менше ніж на 10 замірах нічого не міряється.",
+     "Виміряна затримка береться, лише коли її 95% інтервал не ширший за 4 хвилини. Про затримку кажуть лише заміри, коли цукор рухається, тож потрібні сотні звичайних замірів."
+    ]
+   },
+   "es": {
+    "title": "Retraso del sensor",
+    "short": "Cuántos minutos va el sensor por detrás del glucómetro, medido con las mediciones de la familia, con su grado de certeza. Mientras no es preciso se usan los 4 minutos publicados por Dexcom.",
+    "based": [
+     "El retraso de la sangre al líquido bajo la piel: 5–6 minutos en adultos sanos (Basu 2013), una mediana de 6,8 en diabetes tipo 1 (Basu 2015).",
+     "Dexcom da unos 4 minutos para su sensor.",
+     "El método de los estudios de CGM: desplazar el sensor minuto a minuto y quedarse con el desplazamiento de menor diferencia absoluta media.",
+     "Certeza: un intervalo bootstrap del 95 %."
+    ],
+    "ours": [
+     "Cada sensor, y cada calibración, se compara primero con su propio desplazamiento medio, para que sensores con desvíos distintos no oculten el retraso.",
+     "Desplazamientos de 0–20 minutos; nada se mide con menos de 10 mediciones.",
+     "El retraso medido se usa solo cuando su intervalo del 95 % no supera 4 minutos. Solo cuentan las mediciones con la glucosa en movimiento, así que hacen falta cientos de mediciones habituales."
+    ]
+   }
+  },
+  "shower": {
+   "en": {
+    "title": "After a shower",
+    "short": "During a shower and for 30 minutes after it the sensor is not believed: trust only the glucometer.",
+    "based": [
+     "Nothing published that we found on how long warm water moves a CGM's numbers."
+    ],
+    "ours": [
+     "The window: the shower's length (10 minutes if not given, at most 120) plus 30 minutes.",
+     "In it, checks stay out of ≈ meter and readings out of the forecasts' scores and of \"did you forget to log?\". Alarms are untouched."
+    ]
+   },
+   "uk": {
+    "title": "Після душу",
+    "short": "Під час душу і 30 хвилин після нього сенсору не віримо: довіряйте лише глюкометру.",
+    "based": [
+     "Не знайшли нічого опублікованого про те, як довго тепла вода зсуває показники CGM."
+    ],
+    "ours": [
+     "Вікно: тривалість душу (10 хвилин, якщо не вказано, щонайбільше 120) плюс 30 хвилин.",
+     "У ньому заміри не йдуть у «≈ глюкометр», а показники — в оцінку прогнозів і в «забули записати?». Тривоги працюють як завжди."
+    ]
+   },
+   "es": {
+    "title": "Después de la ducha",
+    "short": "Durante la ducha y 30 minutos después no se cree al sensor: confíe solo en el glucómetro.",
+    "based": [
+     "No encontramos nada publicado sobre cuánto tiempo el agua caliente altera los valores de un CGM."
+    ],
+    "ours": [
+     "La ventana: la duración de la ducha (10 minutos si no se indica, como máximo 120) más 30 minutos.",
+     "En ella las mediciones quedan fuera de «≈ glucómetro» y las lecturas fuera de la puntuación de los pronósticos y de «¿olvidó registrar?». Las alarmas no cambian."
+    ]
+   }
+  },
+  "no-sensor": {
+   "en": {
+    "title": "No-sensor mode",
+    "short": "While the family waits for sensors nothing alarms; a glucometer check out of range shows a card, and every phone is reminded to measure.",
+    "based": [
+     "Nothing published: a workflow of the family's."
+    ],
+    "ours": [
+     "A check below the low or above the high threshold shows a bright card on every phone until closed.",
+     "A reminder after the family's interval without a check (180 minutes by default).",
+     "Two sensor readings within 15 minutes end the mode by themselves.",
+     "No forecast line: a backtest found it reassuring exactly when glucose falls."
+    ]
+   },
+   "uk": {
+    "title": "Режим «Без сенсора»",
+    "short": "Поки сім'я чекає на сенсори, тривог немає; замір глюкометром поза межами показує картку, а всім телефонам нагадується виміряти.",
+    "based": [
+     "Нічого опублікованого: так влаштовано в сім'ї."
+    ],
+    "ours": [
+     "Замір нижче низького або вище високого порогу показує яскраву картку на всіх телефонах, доки її не закриють.",
+     "Нагадування після інтервалу без замірів, заданого сім'єю (180 хвилин за замовчуванням).",
+     "Два показники сенсора за 15 хвилин вимикають режим самі.",
+     "Лінії прогнозу немає: перевірка на даних показала, що вона заспокоює саме тоді, коли цукор падає."
+    ]
+   },
+   "es": {
+    "title": "Modo sin sensor",
+    "short": "Mientras la familia espera sensores no suena ninguna alarma; una medición fuera de rango muestra una tarjeta y se recuerda medir en todos los teléfonos.",
+    "based": [
+     "Nada publicado: una forma de trabajar de la familia."
+    ],
+    "ours": [
+     "Una medición por debajo del umbral bajo o por encima del alto muestra una tarjeta llamativa en todos los teléfonos hasta que se cierra.",
+     "Un recordatorio tras el intervalo sin medir que fija la familia (180 minutos por defecto).",
+     "Dos lecturas del sensor en 15 minutos terminan el modo solas.",
+     "Sin línea de pronóstico: una prueba con datos reales la mostró tranquilizadora justo cuando la glucosa baja."
+    ]
+   }
+  },
+  "stats": {
+   "en": {
+    "title": "Statistics",
+    "short": "The numbers diabetes clinics read from a CGM: time in ranges, mean, GMI, variability and the typical day.",
+    "based": [
+     "ISPAD's targets for children (2024): more than 70% in 70–180, under 4% below 70, under 1% below 54.",
+     "International consensus on time in range (Battelino 2019): the zones, the coefficient of variation with 36% or less read as stable.",
+     "GMI = 3.31 + 0.02392 × mean glucose in mg/dL (Bergenstal 2018).",
+     "The typical day (AGP): the median, the 25th–75th and 5th–95th percentile bands.",
+     "A low counts as an event when it lasts at least 15 minutes (consensus metric)."
+    ],
+    "ours": [
+     "The zones use the family's alarm thresholds; time in the standard 70–180 is shown too, for the doctor.",
+     "A gap in the data ends a low event.",
+     "Only the sensor's readings count."
+    ]
+   },
+   "uk": {
+    "title": "Статистика",
+    "short": "Те, що клініки читають з CGM: час у діапазонах, середнє, GMI, мінливість і типовий день.",
+    "based": [
+     "Цілі ISPAD для дітей (2024): понад 70% у 70–180, менше 4% нижче 70, менше 1% нижче 54.",
+     "Міжнародний консенсус щодо часу в діапазоні (Battelino 2019): зони, коефіцієнт варіації — 36% і нижче вважається стабільним.",
+     "GMI = 3,31 + 0,02392 × середня глюкоза в мг/дл (Bergenstal 2018).",
+     "Типовий день (AGP): медіана, смуги 25–75 і 5–95 перцентилів.",
+     "Низький рахується епізодом, якщо триває щонайменше 15 хвилин (показник консенсусу)."
+    ],
+    "ours": [
+     "Зони рахуються за порогами тривог сім'ї; час у стандартних 70–180 теж показано, для лікаря.",
+     "Пропуск у даних завершує епізод низького.",
+     "Рахуються лише показники сенсора."
+    ]
+   },
+   "es": {
+    "title": "Estadísticas",
+    "short": "Lo que las clínicas leen de un CGM: tiempo en rangos, media, GMI, variabilidad y el día típico.",
+    "based": [
+     "Objetivos de ISPAD para niños (2024): más del 70 % en 70–180, menos del 4 % por debajo de 70, menos del 1 % por debajo de 54.",
+     "Consenso internacional sobre tiempo en rango (Battelino 2019): las zonas, el coeficiente de variación con 36 % o menos como estable.",
+     "GMI = 3,31 + 0,02392 × glucosa media en mg/dL (Bergenstal 2018).",
+     "El día típico (AGP): la mediana y las bandas de percentiles 25–75 y 5–95.",
+     "Un bajo cuenta como episodio si dura al menos 15 minutos (métrica del consenso)."
+    ],
+    "ours": [
+     "Las zonas usan los umbrales de alarma de la familia; también se muestra el tiempo en el estándar 70–180, para el médico.",
+     "Un hueco en los datos termina un episodio bajo.",
+     "Solo cuentan las lecturas del sensor."
+    ]
+   }
+  },
+  "on-board": {
+   "en": {
+    "title": "Insulin and carbs on board",
+    "short": "How much of the logged rapid insulin and food is still to act, and where that would take glucose from the current reading.",
+    "based": [
+     "Insulin on board: the exponential curve of OpenAPS (oref0), peak at 75 minutes."
+    ],
+    "ours": [
+     "Insulin action time is the family's setting (240 minutes by default); OpenAPS allows custom times for this curve only above 300 minutes.",
+     "Carbs: nothing for 15 minutes, then absorbed evenly over the family's absorption time.",
+     "Sensitivity is the family's setting or read from the correction table.",
+     "Only as good as the entries; it never feeds the alarms."
+    ]
+   },
+   "uk": {
+    "title": "Інсулін і вуглеводи в дії",
+    "short": "Скільки записаного короткого інсуліну та їжі ще діє, і куди це поведе цукор від поточного показника.",
+    "based": [
+     "Інсулін у дії: експоненційна крива OpenAPS (oref0), пік через 75 хвилин."
+    ],
+    "ours": [
+     "Час дії інсуліну — налаштування сім'ї (240 хвилин за замовчуванням); OpenAPS дозволяє свій час для цієї кривої лише понад 300 хвилин.",
+     "Вуглеводи: перші 15 хвилин нічого, далі засвоюються рівномірно за час засвоєння, заданий сім'єю.",
+     "Чутливість — налаштування сім'ї або береться з таблиці корекції.",
+     "Точний настільки, наскільки повні записи; на тривоги не впливає."
+    ]
+   },
+   "es": {
+    "title": "Insulina y carbohidratos activos",
+    "short": "Cuánto de la insulina rápida y la comida registradas sigue por actuar, y adónde llevaría la glucosa desde la lectura actual.",
+    "based": [
+     "Insulina activa: la curva exponencial de OpenAPS (oref0), pico a los 75 minutos."
+    ],
+    "ours": [
+     "La duración de la insulina es ajuste de la familia (240 minutos por defecto); OpenAPS permite duraciones propias para esta curva solo por encima de 300 minutos.",
+     "Carbohidratos: nada los primeros 15 minutos, luego se absorben de forma pareja en el tiempo que fija la familia.",
+     "La sensibilidad es ajuste de la familia o sale de la tabla de corrección.",
+     "Tan bueno como los registros; nunca alimenta las alarmas."
+    ]
+   }
+  },
+  "double-insulin": {
+   "en": {
+    "title": "Double insulin guard",
+    "short": "Two doses of the same kind close together are most likely one injection logged twice, or two parents injecting at once.",
+    "based": [
+     "Nothing published on these windows."
+    ],
+    "ours": [
+     "Rapid: two doses less than 20 minutes apart; any rapid dose in the last 3 hours is noted before another.",
+     "Long-acting: two doses less than 16 hours apart.",
+     "The app asks before saving; a pair with a dose from xDrip+ becomes a question."
+    ]
+   },
+   "uk": {
+    "title": "Захист від подвійного інсуліну",
+    "short": "Дві дози одного типу близько одна до одної — найімовірніше один укол, записаний двічі, або двоє батьків вкололи одночасно.",
+    "based": [
+     "Про ці вікна нічого опублікованого."
+    ],
+    "ours": [
+     "Короткий: дві дози з різницею менше 20 хвилин; про будь-яку дозу короткого за останні 3 години нагадується перед новою.",
+     "Довгий: дві дози з різницею менше 16 годин.",
+     "Застосунок питає перед збереженням; пара з дозою з xDrip+ стає питанням."
+    ]
+   },
+   "es": {
+    "title": "Protección contra insulina doble",
+    "short": "Dos dosis del mismo tipo muy seguidas son casi siempre una inyección registrada dos veces o dos padres inyectando a la vez.",
+    "based": [
+     "Nada publicado sobre estas ventanas."
+    ],
+    "ours": [
+     "Rápida: dos dosis con menos de 20 minutos de diferencia; cualquier dosis rápida de las últimas 3 horas se señala antes de otra.",
+     "Lenta: dos dosis con menos de 16 horas de diferencia.",
+     "La app pregunta antes de guardar; un par con una dosis de xDrip+ se vuelve una pregunta."
+    ]
+   }
+  },
+  "meal-dose": {
+   "en": {
+    "title": "Meal dose",
+    "short": "The dose for a meal from the family's own numbers: carbs ÷ ratio plus the correction from the glucometer, rounded once.",
+    "based": [
+     "Individual carbohydrate ratios for intensive insulin therapy, as ISPAD recommends; the ratio and correction table are the family's, set with their doctor.",
+     "A 0.5-unit pen step, which ISPAD notes is useful for young children.",
+     "Add the meal and correction parts, then round the total once: as in a paediatric clinic's bolus worksheet (Nationwide Children's)."
+    ],
+    "ours": [
+     "The correction only from a glucometer check at most 15 minutes old, never from the sensor.",
+     "Rounding: nearest, nearest with an exact half going down, always down or always up; step 1 or 0.5 unit.",
+     "Over the limit needs a separate confirmation; below 70 on the glucometer a bright \"raise it first\".",
+     "A worked-out dose counts for nothing until a parent confirms it was given."
+    ]
+   },
+   "uk": {
+    "title": "Доза на їжу",
+    "short": "Доза на їжу за числами самої сім'ї: вуглеводи ÷ коефіцієнт плюс корекція за глюкометром, округлено один раз.",
+    "based": [
+     "Індивідуальний вуглеводний коефіцієнт при інтенсивній інсулінотерапії, як рекомендує ISPAD; коефіцієнт і таблиця корекції — сім'ї, узгоджені з лікарем.",
+     "Крок ручки 0,5 од — ISPAD зазначає, що він зручний для малих дітей.",
+     "Спершу скласти дозу на їжу й корекцію, потім один раз округлити суму — як у бланку розрахунку дитячої клініки (Nationwide Children's)."
+    ],
+    "ours": [
+     "Корекція — лише за заміром глюкометром не старшим за 15 хвилин, ніколи за сенсором.",
+     "Округлення: до найближчого, до найближчого з рівно половиною вниз, завжди вниз або завжди вгору; крок 1 або 0,5 од.",
+     "Доза понад ліміт потребує окремого підтвердження; нижче 70 на глюкометрі — яскраве «спершу підніміть цукор».",
+     "Розрахована доза нічого не важить, доки хтось із батьків не підтвердить, що вкололи."
+    ]
+   },
+   "es": {
+    "title": "Dosis para la comida",
+    "short": "La dosis para una comida con los números de la familia: carbohidratos ÷ ratio más la corrección por glucómetro, redondeada una vez.",
+    "based": [
+     "Ratios individuales de carbohidratos en terapia intensiva, como recomienda ISPAD; el ratio y la tabla de corrección son de la familia, fijados con su médico.",
+     "Paso de pluma de 0,5 u, que ISPAD señala útil en niños pequeños.",
+     "Sumar la parte de la comida y la corrección y redondear el total una vez: como en la hoja de cálculo de bolo de una clínica pediátrica (Nationwide Children's)."
+    ],
+    "ours": [
+     "La corrección solo con una medición de glucómetro de hasta 15 minutos, nunca con el sensor.",
+     "Redondeo: al más cercano, al más cercano con la mitad exacta hacia abajo, siempre abajo o siempre arriba; paso de 1 o 0,5 u.",
+     "Por encima del límite pide una confirmación aparte; por debajo de 70 en el glucómetro, un aviso llamativo de «súbala primero».",
+     "Una dosis calculada no cuenta hasta que uno de los padres confirma que se inyectó."
+    ]
+   }
+  },
+  "meal-group": {
+   "en": {
+    "title": "One meal, several entries",
+    "short": "Food entries close together are one meal, and the rapid insulin near them counts for it.",
+    "based": [
+     "Nothing published."
+    ],
+    "ours": [
+     "Food entries at most 30 minutes apart are one meal; with enough history the window follows the family's own habit, between 15 and 30 minutes.",
+     "Rapid insulin from 30 minutes before the first food to 60 minutes after the last belongs to the meal, unless marked as a correction."
+    ]
+   },
+   "uk": {
+    "title": "Один прийом їжі, кілька записів",
+    "short": "Записи їжі близько один до одного — один прийом, і короткий інсулін поруч рахується на нього.",
+    "based": [
+     "Нічого опублікованого."
+    ],
+    "ours": [
+     "Записи їжі з проміжком до 30 хвилин — один прийом; коли накопичиться історія, вікно підлаштовується під звичку сім'ї, від 15 до 30 хвилин.",
+     "Короткий інсулін від 30 хвилин до першої їжі до 60 хвилин після останньої належить прийому, якщо не позначений як корекція."
+    ]
+   },
+   "es": {
+    "title": "Una comida, varios registros",
+    "short": "Los registros de comida muy seguidos son una comida, y la insulina rápida cercana cuenta para ella.",
+    "based": [
+     "Nada publicado."
+    ],
+    "ours": [
+     "Registros con hasta 30 minutos entre sí son una comida; con historial suficiente la ventana sigue el hábito de la familia, entre 15 y 30 minutos.",
+     "La insulina rápida desde 30 minutos antes de la primera comida hasta 60 después de la última pertenece a la comida, salvo que se marque como corrección."
+    ]
+   }
+  },
+  "wait": {
+   "en": {
+    "title": "When to eat",
+    "short": "After rapid insulin for a meal, how long to wait before eating: longer when glucose is high, at once when it is low or falling.",
+    "based": [
+     "ISPAD: insulin before meals from diabetes onset at all ages (grade A); a bolus 15–20 minutes before eating lowers the rise after it.",
+     "Rapid insulin 20 minutes before a meal gave a lower rise after it (Cobry 2010); a review puts the best time at 15–20 minutes (Slattery 2018)."
+    ],
+    "ours": [
+     "The minutes and bounds are the family's: 15 minutes by default, 20 above 180, eat at once below 80 now or by the trend in 15 minutes.",
+     "No study ties the wait to the size of the dose or the meal, so neither changes it.",
+     "A suggestion only."
+    ]
+   },
+   "uk": {
+    "title": "Коли їсти",
+    "short": "Після короткого інсуліну на їжу — скільки чекати перед їжею: довше, коли цукор високий, одразу, коли низький або падає.",
+    "based": [
+     "ISPAD: інсулін перед їжею з початку діабету в будь-якому віці (клас A); болюс за 15–20 хвилин до їжі зменшує підйом після неї.",
+     "Короткий інсулін за 20 хвилин до їжі дав менший підйом після неї (Cobry 2010); огляд називає найкращим 15–20 хвилин (Slattery 2018)."
+    ],
+    "ours": [
+     "Хвилини й межі — сім'ї: 15 хвилин за замовчуванням, 20 вище 180, їсти одразу нижче 80 зараз або за трендом через 15 хвилин.",
+     "Жодне дослідження не пов'язує очікування з розміром дози чи їжі, тож вони його не змінюють.",
+     "Лише порада."
+    ]
+   },
+   "es": {
+    "title": "Cuándo comer",
+    "short": "Tras la insulina rápida de una comida, cuánto esperar antes de comer: más con la glucosa alta, enseguida si está baja o bajando.",
+    "based": [
+     "ISPAD: insulina antes de comer desde el inicio de la diabetes a cualquier edad (grado A); un bolo 15–20 minutos antes de comer reduce la subida posterior.",
+     "La insulina rápida 20 minutos antes de comer dio una subida menor después (Cobry 2010); una revisión sitúa el mejor momento en 15–20 minutos (Slattery 2018)."
+    ],
+    "ours": [
+     "Los minutos y límites son de la familia: 15 minutos por defecto, 20 por encima de 180, comer enseguida por debajo de 80 ahora o según la tendencia en 15 minutos.",
+     "Ningún estudio relaciona la espera con el tamaño de la dosis o la comida, así que no la cambian.",
+     "Solo una sugerencia."
+    ]
+   }
+  },
+  "carb-suggestions": {
+   "en": {
+    "title": "Carb suggestions",
+    "short": "Grams offered for a food: what the family logged for it before, a portion table, and optionally a language model. Nothing is filled in by itself.",
+    "based": [
+     "Portion tables the family imports."
+    ],
+    "ours": [
+     "The family's own number first, then table portions, then the model's estimate when one is configured.",
+     "Only the food's name and portion leave the server."
+    ]
+   },
+   "uk": {
+    "title": "Підказки вуглеводів",
+    "short": "Скільки грамів запропонувати для страви: що сім'я записувала раніше, таблиця порцій і, за бажанням, мовна модель. Нічого не підставляється само.",
+    "based": [
+     "Таблиці порцій, які імпортує сім'я."
+    ],
+    "ours": [
+     "Спершу власне число сім'ї, потім порції з таблиці, потім оцінка моделі, якщо її налаштовано.",
+     "З сервера йдуть лише назва страви й порція."
+    ]
+   },
+   "es": {
+    "title": "Sugerencias de carbohidratos",
+    "short": "Gramos sugeridos para un alimento: lo que la familia registró antes, una tabla de porciones y, si se configura, un modelo de lenguaje. Nada se rellena solo.",
+    "based": [
+     "Tablas de porciones que importa la familia."
+    ],
+    "ours": [
+     "Primero el número de la propia familia, luego las porciones de la tabla, luego la estimación del modelo si hay uno.",
+     "Del servidor solo salen el nombre y la porción del alimento."
+    ]
+   }
+  },
+  "questions": {
+   "en": {
+    "title": "Did you forget to log?",
+    "short": "A rise nobody logged food for, or a fall nobody logged insulin for, asks the parents.",
+    "based": [
+     "Nothing published on these thresholds."
+    ],
+    "ours": [
+     "A rise of 40 mg/dL or more at 1.5 mg/dL per minute over 20 minutes with no food in the 90 minutes before; a fall of 50 or more likewise with no rapid insulin in 4 hours and no exercise in 3.",
+     "A fall faster than 4 mg/dL per minute is read as the sensor pressed, not insulin.",
+     "Nothing in a sensor's first 12 hours. Unanswered for 12 hours it becomes a mark on the chart."
+    ]
+   },
+   "uk": {
+    "title": "Забули записати?",
+    "short": "Підйом, для якого ніхто не записав їжу, або падіння, для якого ніхто не записав інсулін, — питання батькам.",
+    "based": [
+     "Про ці пороги нічого опублікованого."
+    ],
+    "ours": [
+     "Підйом на 40 мг/дл і більше зі швидкістю від 1,5 мг/дл за хвилину протягом 20 хвилин без їжі за 90 хвилин до того; падіння на 50 і більше так само без короткого інсуліну за 4 години й без руху за 3.",
+     "Падіння швидше за 4 мг/дл за хвилину вважається притиснутим сенсором, а не інсуліном.",
+     "Нічого в перші 12 годин сенсора. Без відповіді 12 годин — стає позначкою на графіку."
+    ]
+   },
+   "es": {
+    "title": "¿Olvidó registrar?",
+    "short": "Una subida sin comida registrada, o una bajada sin insulina registrada, pregunta a los padres.",
+    "based": [
+     "Nada publicado sobre estos umbrales."
+    ],
+    "ours": [
+     "Una subida de 40 mg/dL o más a 1,5 mg/dL por minuto durante 20 minutos sin comida en los 90 minutos previos; una bajada de 50 o más igual, sin insulina rápida en 4 horas ni ejercicio en 3.",
+     "Una bajada de más de 4 mg/dL por minuto se toma como sensor presionado, no insulina.",
+     "Nada en las primeras 12 horas de un sensor. Sin respuesta en 12 horas pasa a ser una marca en el gráfico."
+    ]
+   }
+  }
+ },
+ "guidelines": "https://github.com/varunok/dialife/blob/main/docs/GUIDELINES.md"
+}

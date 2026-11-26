@@ -9,6 +9,7 @@ import { alarmLines, alarmName, duration, entryText, foodText, isBasal, isShower
 import { tableRows } from '../static/js/rows.js';
 import { parseEvent } from '../static/js/api.js';
 import { trendOf } from '../static/js/widgets.js';
+import { infoSection } from '../static/js/info.js';
 
 process.env.TZ = 'UTC';
 const TH = { bgTargetBottom: 80, bgTargetTop: 250 };
@@ -226,4 +227,27 @@ test('the no-sensor mode: its periods in view, one still on ending now; how long
   assert.equal(duration(3 * H), '3 h');
   prefs.lang = 'uk';
   assert.equal(duration(2 * H + 10 * MIN), '2 год 10 хв');
+});
+
+test('every ⓘ has its text in three languages, and a section of docs/METHODS.md to link to', async () => {
+  const { readFileSync, readdirSync } = await import('node:fs');
+  const d = JSON.parse(readFileSync(new URL('../static/methods.json', import.meta.url)));
+  const doc = readFileSync(new URL('../../../docs/METHODS.md', import.meta.url), 'utf8');
+  for (const [id, s] of Object.entries(d.sections)) {
+    assert.ok(doc.includes('<a id="' + id + '"></a>'), id + ' has no section in METHODS.md');
+    for (const lg of ['en', 'uk', 'es']) {
+      const x = s[lg];
+      assert.ok(x && x.title && x.short && Array.isArray(x.based) && Array.isArray(x.ours), id + ' ' + lg);
+    }
+  }
+  // every ⓘ the viewer shows points at a section that exists
+  const dir = new URL('../static/js/', import.meta.url);
+  for (const f of readdirSync(dir)) {
+    for (const [, id] of readFileSync(new URL(f, dir), 'utf8').matchAll(/info\('([a-z0-9-]+)'\)/g)) {
+      assert.ok(d.sections[id], f + ': ' + id);
+    }
+  }
+  assert.equal(infoSection(d, 'stats', 'uk').title, 'Статистика');
+  assert.equal(infoSection(d, 'stats', 'xx').title, 'Statistics');
+  assert.equal(infoSection(d, 'nope', 'en'), null);
 });

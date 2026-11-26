@@ -4,6 +4,7 @@
 import { session, whenSignedOut } from './api.js';
 import { ChartCard } from './chart.js';
 import { lang } from './format.js';
+import { InfoDialog } from './info.js';
 import { Login } from './login.js';
 import { startViewer } from './model.js';
 import { Now, Top } from './now.js';
@@ -11,7 +12,7 @@ import { TableCard } from './table.js';
 
 const Viewer = {
   view() {
-    return m('.page', [m(Top), m('.grid', [m(Now), m(ChartCard)]), m(TableCard)]);
+    return m('.page', [m(Top), m('.grid', [m(Now), m(ChartCard)]), m(TableCard), m(InfoDialog)]);
   }
 };
 
