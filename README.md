@@ -120,7 +120,7 @@ the app; a demo server with a generated day for the web).
   Nightscout.
 
 One of DiaLife's main aims is that what it shows and how it alarms follow the
-recommendations of paediatric diabetes organisations (ISPAD, the ADA) and published
+recommendations of paediatric diabetes organisations (ISPAD, the ADA, NICE) and published
 research: they are gathered, quoted and linked in [docs/GUIDELINES.md](docs/GUIDELINES.md).
 How each number, arrow, card and alarm is worked out, what comes from a published source and
 what is our own, from our observations, is in [docs/METHODS.md](docs/METHODS.md).

@@ -32,10 +32,12 @@ flaw); **C** — supportive evidence from poorly controlled or uncontrolled stud
 | [ADA-6] | American Diabetes Association. 6. Glycemic Goals, Hypoglycemia, and Hyperglycemic Crises: Standards of Care in Diabetes—2026. *Diabetes Care* 2026;49(Suppl 1). [PMC12690178](https://pmc.ncbi.nlm.nih.gov/articles/PMC12690178/) | © ADA |
 | [ADA-7] | American Diabetes Association. 7. Diabetes Technology: Standards of Care in Diabetes—2026. *Diabetes Care* 2026;49(Suppl 1). [PMC12690173](https://pmc.ncbi.nlm.nih.gov/articles/PMC12690173/) | © ADA |
 | [ADA-14] | American Diabetes Association. 14. Children and Adolescents: Standards of Care in Diabetes—2026. *Diabetes Care* 2026;49(Suppl 1). [PMC12690182](https://pmc.ncbi.nlm.nih.gov/articles/PMC12690182/) | © ADA |
+| [NICE] | NICE guideline NG18: Diabetes (type 1 and type 2) in children and young people: diagnosis and management. Published 2015, last updated 11 May 2023. [nice.org.uk/guidance/ng18](https://www.nice.org.uk/guidance/ng18) | © NICE |
 | [TIR19] | Battelino T, et al. Clinical Targets for CGM Data Interpretation: Recommendations From the International Consensus on Time in Range. *Diabetes Care* 2019;42(8):1593–1603. [PMC6973648](https://pmc.ncbi.nlm.nih.gov/articles/PMC6973648/) | © ADA |
 
 The texts are not copied into this repository: follow the links. The ISPAD chapters may be
-shared for non-commercial use with credit; the ADA's are its own.
+shared for non-commercial use with credit; the ADA's and NICE's are their own. NICE's site
+refuses some networks; its guideline is the PDF under "Download guidance" on the page above.
 
 ## Glucose targets and ranges
 
@@ -47,6 +49,11 @@ shared for non-commercial use with credit; the ADA's are its own.
 > "For children and adolescents with diabetes, CGM metrics derived from CGM use over the most
 > recent 14 days (or longer) are recommended to be used in conjunction with or without A1C
 > whenever possible." **B** — [ADA-14] 14.24
+
+> "… the optimal target ranges for short‑term plasma glucose management are: fasting plasma
+> glucose level of 4 mmol/litre to 7 mmol/litre on waking; a plasma glucose level of
+> 4 mmol/litre to 7 mmol/litre before meals at other times of the day; a plasma glucose level
+> of 5 mmol/litre to 9 mmol/litre after meals …" — [NICE] 1.2.54
 
 **In DiaLife.** Statistics show time in five zones by the family's alarm thresholds (70 / 180 / 250
 until the family changes them) and always the standard 70–180, over 1, 7, 14 or 30 days. → [Statistics](METHODS.md#stats)
@@ -71,6 +78,12 @@ until the family changes them) and always the standard 70–180, over 1, 7, 14 o
 > there is no response or an inadequate response, repeat hypoglycemia treatment. Retest glucose
 > in another 15 min to confirm that target glucose has been reached." **E** — [ISPAD-H22]
 
+> "Immediately treat mild-to-moderate hypoglycaemia in children and young people with type 1
+> diabetes as follows: Give oral fast‑acting glucose (for example, 10 g to 20 g …) … Recheck
+> blood glucose levels within 15 minutes (fast‑acting glucose should raise blood glucose levels
+> within 5 to 15 minutes), and give more fast‑acting glucose if they still have hypoglycaemia."
+> — [NICE] 1.2.88
+
 > "Glucose levels are recommended to be monitored overnight particularly if there is an
 > additional risk factor that may predispose to nocturnal hypoglycemia." **E** — [ISPAD-H22]
 
@@ -90,7 +103,18 @@ first". DiaLife does not suggest how much glucose to give. → [Alarms](METHODS.
 > or as soon as possible in children and adolescents with diabetes who are capable of using the
 > device safely (either by themselves or with caregivers)." **A** — [ADA-14] 14.16
 
+> "Offer real-time continuous glucose monitoring (rtCGM) to all children and young people with
+> type 1 diabetes, alongside education to support children and young people, and their families
+> and carers, to use it …" — [NICE] 1.2.59
+
 > "Those using CGM devices also require access to BGM devices [A]." — [ISPAD-M24]
+
+> "Advise children and young people with type 1 diabetes who are using CGM (and their families
+> or carers) that they will still need to take capillary blood glucose measurements … because:
+> they will need to use capillary blood glucose measurements to check the accuracy of their CGM
+> device; they will need capillary blood glucose monitoring as a back-up (for example, when
+> their blood glucose levels are changing quickly or if the device stops working)."
+> — [NICE] 1.2.64
 
 > "… people with diabetes using CGM must also have access to BGM for multiple reasons,
 > including whenever there is suspicion that the CGM is inaccurate, while waiting for the CGM
@@ -127,6 +151,10 @@ ever worked out from a glucometer check, never from the sensor.
 > successful implementation of remote monitoring of CGM data in the home and school settings
 > [E]." — [ISPAD-M24]
 
+Among the factors to weigh when choosing a CGM device, NICE lists "whether the device provides
+predictive alerts or alarms and if these need to be shared with anyone else, for example a
+parent or carer" ([NICE], Box 1).
+
 **In DiaLife.** This is what DiaLife is for: every parent's phone sees the same reading,
 alarm and entry, and who is handling an alarm. → [An alarm being handled](METHODS.md#alarm-episodes)
 
@@ -159,6 +187,11 @@ default (20 when high, at once when low or falling). → [Meal dose](METHODS.md#
 > strategies to prevent hypoglycemia during, after, and overnight following physical activity
 > or exercise." **C** — [ADA-14] 14.8
 
+> "Encourage children and young people with type 1 diabetes and their families or carers to
+> monitor blood glucose levels before and after exercise so that they can: … watch out for
+> exercise‑induced hypoglycaemia; see how hypoglycaemia can occur several hours after prolonged
+> exercise." — [NICE] 1.2.50
+
 > "The glucose rate of change and trend arrows can be helpful in predicting hypoglycemia before,
 > during, and after activity [E]." — [ISPAD-M24]
 
@@ -170,8 +203,7 @@ sensor through the night. → [Did you forget to log?](METHODS.md#questions)
 
 - **How much glucose to give for a low** (≈ 0.3 g/kg, [ISPAD-H22]): DiaLife does not ask for
   the child's weight and does not suggest an amount.
-- **A reminder to recheck 15 minutes after treating a low** ([ADA-6] 6.15, [ISPAD-H22]):
+- **A reminder to recheck 15 minutes after treating a low** ([ADA-6] 6.15, [ISPAD-H22],
+  [NICE] 1.2.88):
   DiaLife's check-in on a taken alarm comes after 20 minutes for an urgent low and asks
   whether things are under control, not for a glucometer check.
-- **NICE NG18** (UK, children and young people): its pages refused automated download, so it
-  is not quoted here yet.
