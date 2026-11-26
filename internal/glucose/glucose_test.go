@@ -186,3 +186,90 @@ func TestDirectionIgnoresUploaderFlat(t *testing.T) {
 		t.Fatalf("fallback %q", st.Direction)
 	}
 }
+
+// line is 30 minutes of readings every step ending at T, 150 mg/dL at T,
+// changing by rate mg/dL per minute; shift moves reading i in time (ms),
+// keep drops it.
+func line(rate float64, step int64, shift func(i int) int64, keep func(i int) bool) []Reading {
+	var rs []Reading
+	n := int(30 * minuteMs / step)
+	for i := 0; i <= n; i++ {
+		if keep != nil && !keep(i) {
+			continue
+		}
+		at := T - int64(n-i)*step
+		if shift != nil {
+			at += shift(i)
+		}
+		v := 150 + rate*float64(at-T)/float64(minuteMs)
+		rs = append(rs, Reading{Date: at, SGV: int(math.Round(v)), Direction: "Flat"})
+	}
+	return rs
+}
+
+// The arrow for a steady change lands in Dexcom's band (written out here,
+// not taken from DirectionFromRate) on both sides of every edge, for
+// readings every 5 minutes, with jittered times, with a gap, and every minute.
+func TestDirectionBandsOnSteadyLines(t *testing.T) {
+	want := func(r float64) string {
+		switch {
+		case r > 3:
+			return "DoubleUp"
+		case r > 2:
+			return "SingleUp"
+		case r > 1:
+			return "FortyFiveUp"
+		case r >= -1:
+			return "Flat"
+		case r >= -2:
+			return "FortyFiveDown"
+		case r >= -3:
+			return "SingleDown"
+		}
+		return "DoubleDown"
+	}
+	feeds := map[string]func(r float64) []Reading{
+		"every 5 min": func(r float64) []Reading { return line(r, min5(1), nil, nil) },
+		"every 5 min, times off by up to 20 s": func(r float64) []Reading {
+			return line(r, min5(1), func(i int) int64 { return []int64{0, 17, -12, 20, -20, 8}[i%6] * 1000 }, nil)
+		},
+		"every 5 min, one missing": func(r float64) []Reading { return line(r, min5(1), nil, func(i int) bool { return i != 5 }) },
+		"every minute":             func(r float64) []Reading { return line(r, minuteMs, nil, nil) },
+	}
+	rates := []float64{-4, -3.1, -2.9, -2.5, -2.1, -1.9, -1.5, -1.1, -0.9, -0.5, 0, 0.5, 0.9, 1.1, 1.5, 1.9, 2.1, 2.5, 2.9, 3.1, 4}
+	for name, feed := range feeds {
+		for _, r := range rates {
+			st, ok := Compute(feed(r), T)
+			if !ok || st.Direction != want(r) {
+				t.Errorf("%s, %+.1f mg/dL/min: %q, want %q", name, r, st.Direction, want(r))
+			}
+		}
+	}
+}
+
+// The rate itself matches the line's slope, with readings every 5 minutes and every minute.
+func TestTrendRateMatchesSlope(t *testing.T) {
+	for _, step := range []int64{min5(1), minuteMs} {
+		for _, r := range []float64{-3, -2, -1, 1, 2, 3} {
+			st, _ := Compute(line(r, step, nil, nil), T)
+			got, ok := trendRate(st.Buckets)
+			if !ok || math.Abs(got-r) > 0.02 {
+				t.Errorf("step %d min, slope %+.0f: rate %.3f", step/minuteMs, r, got)
+			}
+		}
+	}
+}
+
+// One reading off by up to 15 mg/dL on a flat line leaves the arrow flat,
+// wherever it falls among the last four.
+func TestDirectionIgnoresOneSpike(t *testing.T) {
+	for _, spike := range []int{-15, -8, 8, 15} {
+		for back := 0; back < 4; back++ {
+			rs := line(0, min5(1), nil, nil)
+			rs[len(rs)-1-back].SGV += spike
+			if st, _ := Compute(rs, T); st.Direction != "Flat" {
+				t.Errorf("spike %+d, %d readings back: %q", spike, back, st.Direction)
+			}
+		}
+	}
+}

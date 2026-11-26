@@ -35,6 +35,7 @@ type Bucket struct {
 	Mean     float64 // mean of valid readings
 	Last     int     // newest valid reading
 	Mills    int64   // time of newest valid reading
+	At       int64   // mean time of the valid readings: where Mean belongs on the time axis
 	Valid    int     // number of valid readings
 	Errors   int     // number of error codes
 }
@@ -126,6 +127,7 @@ func fillBuckets(readings []Reading, lastMills, now int64) []Bucket {
 		bs[i].To = bs[i].From + bucketMs
 	}
 	sums := make([]float64, bucketCount)
+	times := make([]float64, bucketCount)
 	for _, r := range readings {
 		if r.Date > now {
 			continue
@@ -140,6 +142,7 @@ func fillBuckets(readings []Reading, lastMills, now int64) []Bucket {
 			} else {
 				b.Valid++
 				sums[i] += float64(r.SGV)
+				times[i] += float64(r.Date)
 				if r.Date > b.Mills {
 					b.Mills, b.Last = r.Date, r.SGV
 				}
@@ -150,6 +153,7 @@ func fillBuckets(readings []Reading, lastMills, now int64) []Bucket {
 	for i := range bs {
 		if bs[i].Valid > 0 {
 			bs[i].Mean = sums[i] / float64(bs[i].Valid)
+			bs[i].At = int64(math.Round(times[i] / float64(bs[i].Valid)))
 		}
 	}
 	return bs
@@ -203,6 +207,9 @@ func Arrow(dir string) string { return arrows[dir] }
 
 // trendRate is mg/dL per minute over the longest span the buckets cover
 // (up to ~15 minutes), smoothing single-reading noise like Dexcom's arrows.
+// Each bucket's mean is placed at its readings' mean time: with one reading
+// per bucket that is the reading itself, with a reading every minute it is
+// mid-bucket, and the newest reading's time would make the span too short.
 func trendRate(bs []Bucket) (float64, bool) {
 	newest, oldest := -1, -1
 	for i, b := range bs {
@@ -217,7 +224,7 @@ func trendRate(bs []Bucket) (float64, bool) {
 	if newest < 0 || oldest == newest {
 		return 0, false
 	}
-	mins := float64(bs[newest].Mills-bs[oldest].Mills) / float64(minuteMs)
+	mins := float64(bs[newest].At-bs[oldest].At) / float64(minuteMs)
 	if mins < 4 {
 		return 0, false
 	}
