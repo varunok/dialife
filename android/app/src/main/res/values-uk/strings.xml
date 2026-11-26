@@ -872,4 +872,13 @@
     <string name="info_close">Закрити</string>
     <string name="info_loading">Завантаження…</string>
     <string name="info_unavailable">Опис зараз недоступний: немає зв\'язку із сервером.</string>
+    <string name="recheck_waiting">Повторний замір о %1$s</string>
+    <string name="recheck_due">Перевірте цукор глюкометром</string>
+    <string name="recheck_text">О %1$s дали %2$s г вуглеводів на низький цукор. Через 15 хвилин виміряйте глюкометром ще раз.</string>
+    <string name="recheck_still_low">Досі низько: %1$s %2$s</string>
+    <string name="recheck_still_low_text">Дайте ще швидких вуглеводів за вашим планом, запишіть їх і виміряйте знову через 15 хвилин.</string>
+    <string name="recheck_measure">Внести замір глюкометром</string>
+    <string name="recheck_close">Закрити для всіх</string>
+    <string name="recheck_close_failed">Не вдалося закрити: немає зв\'язку із сервером.</string>
+    <string name="recheck_due_text">О %1$s дали %2$s г вуглеводів на низький цукор. Минуло 15 хвилин: виміряйте глюкометром.</string>
 </resources>

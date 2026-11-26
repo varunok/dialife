@@ -860,4 +860,13 @@
     <string name="info_close">Cerrar</string>
     <string name="info_loading">Cargando…</string>
     <string name="info_unavailable">La descripción no está disponible ahora: no hay conexión con el servidor.</string>
+    <string name="recheck_waiting">Medir otra vez a las %1$s</string>
+    <string name="recheck_due">Mida con el glucómetro</string>
+    <string name="recheck_text">A las %1$s se dieron %2$s g de carbohidratos por un bajo. A los 15 minutos, mida otra vez con el glucómetro.</string>
+    <string name="recheck_still_low">Sigue bajo: %1$s %2$s</string>
+    <string name="recheck_still_low_text">Dé más carbohidratos rápidos según su plan, regístrelos y mida otra vez en 15 minutos.</string>
+    <string name="recheck_measure">Registrar medición de glucómetro</string>
+    <string name="recheck_close">Cerrar para todos</string>
+    <string name="recheck_close_failed">No se pudo cerrar: sin conexión con el servidor.</string>
+    <string name="recheck_due_text">A las %1$s se dieron %2$s g de carbohidratos por un bajo. Pasaron 15 minutos: mida con el glucómetro.</string>
 </resources>

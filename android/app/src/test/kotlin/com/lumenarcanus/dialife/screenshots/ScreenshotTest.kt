@@ -33,6 +33,7 @@ import com.lumenarcanus.dialife.data.Methods
 import com.lumenarcanus.dialife.data.MethodsTest
 import com.lumenarcanus.dialife.data.PlannedDose
 import com.lumenarcanus.dialife.data.Question
+import com.lumenarcanus.dialife.data.Recheck
 import com.lumenarcanus.dialife.data.Sensorless
 import com.lumenarcanus.dialife.data.SensorlessPeriod
 import com.lumenarcanus.dialife.data.SensorlessSettings
@@ -56,6 +57,7 @@ import com.lumenarcanus.dialife.feature.meal.MealInputs
 import com.lumenarcanus.dialife.feature.meal.MealScreen
 import com.lumenarcanus.dialife.feature.planned.PlannedCard
 import com.lumenarcanus.dialife.feature.planned.PlannedCardUiState
+import com.lumenarcanus.dialife.feature.recheck.RecheckCard
 import com.lumenarcanus.dialife.feature.settings.DoseSettingsScreen
 import com.lumenarcanus.dialife.feature.settings.DoseSettingsUiState
 import com.lumenarcanus.dialife.feature.settings.SettingsScreen
@@ -289,6 +291,20 @@ class ScreenshotTest {
     fun meterCardUk() = shot("meter_card_dark_uk", dark = true) {
         Box(Modifier.padding(16.dp)) {
             MeterCard(sampleMeter(now), Units.MgDl)
+        }
+    }
+
+    /** "Measure again" after carbs for a low: waiting, due, still low. */
+    @Test
+    @Config(qualifiers = "uk-w412dp-h1400dp-xxhdpi")
+    fun recheckUk() = shot("recheck_cards_dark_uk", dark = true) {
+        val t = now - 16 * 60_000L
+        val r = Recheck(id = 1, carbsT = t, carbs = 15.0, dueAt = t + 15 * 60_000L, state = "waiting")
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            RecheckCard(r, due = false, units = Units.MgDl, onMeasure = {}, onClose = {})
+            RecheckCard(r.copy(state = "due"), due = true, units = Units.MgDl, onMeasure = {}, onClose = {})
+            RecheckCard(r.copy(state = "still_low", checkT = now, checkMg = 64), due = false, units = Units.MgDl, onMeasure = {
+            }, onClose = {})
         }
     }
 

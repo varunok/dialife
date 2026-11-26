@@ -71,10 +71,24 @@ data class StateResponse(
     val untrusted: Untrusted? = null,
     // the "no sensor" mode is on for the family: no alarms, the glucometer only
     val sensorless: Sensorless? = null,
-    @SerialName("sensorless_settings") val sensorlessSettings: SensorlessSettings = SensorlessSettings()
+    @SerialName("sensorless_settings") val sensorlessSettings: SensorlessSettings = SensorlessSettings(),
+    // carbs were given for a low: measure again with the glucometer 15 minutes on
+    val recheck: Recheck? = null
 ) {
     val mealRules get() = MealRules(mealGapMin, bolusBeforeMin, bolusAfterMin)
 }
+
+/** Carbs logged on a low: "waiting" for 15 minutes, then "due"; "still_low" once a check after them is under 70. */
+@Serializable
+data class Recheck(
+    val id: Long,
+    @SerialName("carbs_t") val carbsT: Long,
+    val carbs: Double,
+    @SerialName("due_at") val dueAt: Long,
+    val state: String,
+    @SerialName("check_t") val checkT: Long = 0,
+    @SerialName("check_mg") val checkMg: Int = 0
+)
 
 /** Rapid insulin still working, carbs still coming in, and what they make of the next hour. Alarms never use it. */
 @Serializable

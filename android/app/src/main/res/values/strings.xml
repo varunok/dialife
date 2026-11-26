@@ -852,4 +852,13 @@
     <string name="info_close">Close</string>
     <string name="info_loading">Loading…</string>
     <string name="info_unavailable">The description is not available now: no connection to the server.</string>
+    <string name="recheck_waiting">Measure again at %1$s</string>
+    <string name="recheck_due">Check with the glucometer</string>
+    <string name="recheck_text">At %1$s, %2$s g of carbs were given for a low. 15 minutes on, measure again with the glucometer.</string>
+    <string name="recheck_still_low">Still low: %1$s %2$s</string>
+    <string name="recheck_still_low_text">Give more fast carbs by your plan, log them and measure again in 15 minutes.</string>
+    <string name="recheck_measure">Log a glucometer check</string>
+    <string name="recheck_close">Close for everyone</string>
+    <string name="recheck_close_failed">Could not close: no connection to the server.</string>
+    <string name="recheck_due_text">At %1$s, %2$s g of carbs were given for a low. 15 minutes have passed: measure with the glucometer.</string>
 </resources>

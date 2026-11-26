@@ -89,6 +89,8 @@ fun HomeScreen(
     waitSection: @Composable () -> Unit = {},
     // the "no sensor" mode's cards: a feature with its own state (feature/sensorless); onMeasure opens the glucometer entry
     sensorlessSection: @Composable (onMeasure: () -> Unit) -> Unit = {},
+    // "measure again" after carbs for a low (feature/recheck); onMeasure opens the glucometer entry
+    recheckSection: @Composable (onMeasure: () -> Unit) -> Unit = {},
     // the entry sheet's: "… is giving insulin" on the other phones, food suggestions
     onAnnounceInsulin: (InsulinType?) -> Unit = {},
     foods: FoodRepository? = null,
@@ -166,6 +168,7 @@ fun HomeScreen(
             state?.let { StaleBanner(ui, it) }
         }
         sensorlessSection { sheet = SheetRequest(TreatmentKind.Meter) }
+        recheckSection { sheet = SheetRequest(TreatmentKind.Meter) }
         Column(Modifier.animateContentSize(), verticalArrangement = Arrangement.spacedBy(18.dp)) {
             alarmsSection()
         }
