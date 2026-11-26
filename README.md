@@ -86,9 +86,19 @@ the app; a demo server with a generated day for the web).
 - **"Did you forget to log?"** A rise with no food or a fall with no insulin
   asks every parent what happened, and asks again until their answers agree.
   Unanswered questions become marks on the chart.
-- **Sensor vs glucometer.** Pairs every glucometer check with the sensor at
-  that moment and estimates, sensor by sensor, how far apart the two usually
-  are. With enough checks an optional "≈ meter" line appears on the chart.
+- **Sensor vs glucometer.** Pairs every glucometer check with the sensor the
+  sensor's delay later (measured on the family's own checks, Dexcom's published
+  4 minutes until that is precise enough) and shows how far apart the two are on
+  the current sensor, since its start or its last calibration. From two such
+  checks an optional "≈ meter" line appears on the chart.
+- **Calibration advice.** When three glucometer checks in a row fall outside
+  Dexcom's 20/20 agreement, all on one side, every phone says so; "calibrate now
+  with N" appears only for a check just taken (at most 5 minutes old, 90–150,
+  glucose steady, no food or rapid insulin within the absorption time). DiaLife
+  never works out a calibration number itself.
+- **Recheck after a low.** Carbs logged while glucose is low bring "measure again
+  with the glucometer" to every phone 15 minutes later, as the ADA, ISPAD and
+  NICE recommend, and "still low" if that check is under 70.
 - **After a shower.** A shower is logged with its length. For that long and
   30 minutes after, the sensor is not trusted: the reading is dimmed with a
   warning to trust only the glucometer, the chart hatches the window and draws
