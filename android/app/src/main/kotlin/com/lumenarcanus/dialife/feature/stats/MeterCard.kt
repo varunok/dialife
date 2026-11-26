@@ -36,11 +36,11 @@ import com.lumenarcanus.dialife.R
 import com.lumenarcanus.dialife.core.info.InfoButton
 import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.formatGlucose
+import com.lumenarcanus.dialife.core.ui.theme.DiaColors
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.core.ui.theme.Onest
 import com.lumenarcanus.dialife.core.ui.theme.PlexMono
 import com.lumenarcanus.dialife.data.MeterReport
-import com.lumenarcanus.dialife.feature.entry.basalColor
 import com.lumenarcanus.dialife.feature.home.meterInk
 import java.util.Locale
 import kotlin.math.abs
@@ -87,7 +87,7 @@ private fun Bias(m: MeterReport) {
                 color = c.textMuted,
                 fontSize = 13.sp
             )
-            Text(stringResource(R.string.meter_counts, m.used, m.sensors), color = c.textFaint, fontSize = 12.sp)
+            Text(stringResource(R.string.meter_n, m.used), color = c.textFaint, fontSize = 12.sp)
         }
     }
 }
@@ -147,42 +147,38 @@ private fun Line(label: String, sub: String?, value: String, valueSub: String?) 
     }
 }
 
-/** Which colour is which sensor. */
+/** This sensor's checks: since its start, or before and since its last calibration. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SensorLegend(m: MeterReport) {
     val c = DiaTheme.colors
     val ctx = LocalContext.current
-    val inks = sensorInks()
-    val current = m.starts.size
+    val cal = m.calibrations.lastOrNull()
+    val entries = buildList {
+        if (cal != null && m.pairs.any { it.beforeCal }) add(true to stringResource(R.string.meter_legend_before_cal, shortDate(ctx, cal)))
+        add(
+            false to
+                (
+                    cal?.let { stringResource(R.string.meter_legend_since_cal, shortDate(ctx, it)) }
+                        ?: stringResource(R.string.meter_legend_sensor, shortDate(ctx, m.current?.since ?: 0))
+                    )
+        )
+    }
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        m.pairs.map { it.sensorNo }.distinct().sorted().forEach { k ->
+        entries.forEach { (before, label) ->
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Canvas(Modifier.size(8.dp)) {
-                    drawPath(
-                        diamondPath(center, size.width / 2),
-                        inks[
-                            k %
-                                inks.size
-                        ]
-                    )
-                }
-                Text(
-                    when {
-                        k == 0 -> stringResource(R.string.meter_legend_before)
-                        k == current -> stringResource(R.string.meter_legend_current, shortDate(ctx, m.starts[k - 1]))
-                        else -> stringResource(R.string.meter_legend, k, shortDate(ctx, m.starts[k - 1]))
-                    },
-                    color = c.textMuted,
-                    fontSize = 12.sp
-                )
+                Canvas(Modifier.size(8.dp)) { drawPath(diamondPath(center, size.width / 2), checkInk(before, c)) }
+                Text(label, color = c.textMuted, fontSize = 12.sp)
             }
         }
     }
 }
+
+/** Checks since the last calibration (or the start) in the meter's colour; older ones faint, out of the estimate. */
+private fun checkInk(beforeCal: Boolean, c: DiaColors): Color = if (beforeCal) c.textMuted.copy(alpha = 0.6f) else c.inRange
 
 /** "+6%", "−3 mg/dL": with its sign, no decimals. */
 private fun signed(v: Double, unit: String, locale: Locale) = (
@@ -202,12 +198,6 @@ private fun shortDate(ctx: Context, t: Long) = DateUtils.formatDateTime(
         DateUtils.FORMAT_ABBREV_MONTH
 )
 
-@Composable
-internal fun sensorInks(): List<Color> {
-    val c = DiaTheme.colors
-    return listOf(c.textMuted, basalColor(c.isDark), c.carbs, c.inRange, c.insulin, c.high)
-}
-
 internal fun diamondPath(at: Offset, half: Float) = Path().apply {
     moveTo(at.x, at.y - half)
     lineTo(at.x + half, at.y)
@@ -222,11 +212,9 @@ internal fun MeterScatter(m: MeterReport, units: Units, modifier: Modifier) {
     val c = DiaTheme.colors
     val locale = LocalConfiguration.current.locales[0]
     val measurer = rememberTextMeasurer()
-    val inks = sensorInks()
     val est = meterInk(c.isDark)
     val axisSensor = stringResource(R.string.meter_axis_sensor)
     val axisMeter = stringResource(R.string.meter_axis_meter)
-    val current = m.starts.size
     Canvas(modifier) {
         val label = TextStyle(
             fontFamily = PlexMono,
@@ -284,7 +272,7 @@ internal fun MeterScatter(m: MeterReport, units: Units, modifier: Modifier) {
             m.model?.let { f ->
                 val a = 60.0
                 val b = hi - 20
-                fun fit(s: Double) = s * (1 + f.b) + f.a
+                fun fit(s: Double) = s * (1 + f.b) + f.a + f.offset * maxOf(s, 100.0) // the same as "≈ meter"
                 drawLine(
                     est,
                     Offset(sx(a), sy(fit(a).coerceIn(lo, hi))),
@@ -294,7 +282,7 @@ internal fun MeterScatter(m: MeterReport, units: Units, modifier: Modifier) {
             }
             m.pairs.forEach { p ->
                 val at = Offset(sx(p.sensor), sy(p.meter.toDouble()))
-                val ink = inks[p.sensorNo % inks.size].copy(alpha = if (p.sensorNo == current) 1f else 0.7f)
+                val ink = checkInk(p.beforeCal, c)
                 if (p.used) {
                     drawPath(diamondPath(at, 5.dp.toPx()), ink)
                 } else {

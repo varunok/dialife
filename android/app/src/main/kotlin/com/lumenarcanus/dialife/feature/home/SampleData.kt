@@ -14,6 +14,7 @@ import com.lumenarcanus.dialife.data.Iob
 import com.lumenarcanus.dialife.data.IobPoint
 import com.lumenarcanus.dialife.data.MeterBand
 import com.lumenarcanus.dialife.data.MeterCurrent
+import com.lumenarcanus.dialife.data.MeterLag
 import com.lumenarcanus.dialife.data.MeterModel
 import com.lumenarcanus.dialife.data.MeterPair
 import com.lumenarcanus.dialife.data.MeterReport
@@ -93,33 +94,30 @@ fun sampleHomeUi(now: Long = 1_761_400_000_000L, dad: String = "Тато", mom: 
     )
 }
 
-/** A sensor that reads ~7% low, with enough checks for the "≈ meter" line, for previews. */
+/** The current sensor, calibrated two days ago: it reads ~7% low since, with the "≈ meter" line, for previews. */
 fun sampleMeter(now: Long = 1_761_400_000_000L): MeterReport {
     val day = 86_400_000L
-    val starts = listOf(now - 25 * day, now - 15 * day, now - 5 * day)
+    val start = now - 5 * day
+    val cal = now - 2 * day
     val pairs = listOf(
-        88 to 96, 142 to 150, 205 to 228, 176 to 185, 260 to 291, 120 to 131, 98 to 104, 232 to 255,
-        70 to 72, 155 to 170, 199 to 214, 240 to 268, 130 to 136, 110 to 121, 285 to 316,
-        96 to 101, 168 to 172, 212 to 222, 144 to 150
-    ).mapIndexed { i, (s, m) ->
-        val k = if (i < 8) {
-            1
-        } else if (i < 15) {
-            2
-        } else {
-            3
-        }
-        MeterPair(now - (24 - i) * day, m, s.toDouble(), k, used = i != 4)
+        // before the calibration: ~25% low
+        (4.5 to (88 to 117)), (3.8 to (142 to 190)), (3.1 to (120 to 158)), (2.4 to (176 to 230)),
+        // since: ~7% low
+        (1.8 to (98 to 104)), (1.3 to (205 to 222)), (0.9 to (155 to 168)), (0.6 to (232 to 255)), (0.2 to (130 to 138))
+    ).map { (d, sm) ->
+        val t = now - (d * day).toLong()
+        MeterPair(t, sm.second, sm.first.toDouble(), 1, used = true, beforeCal = t < cal)
     }
     return MeterReport(
-        ready = true, used = 18, total = 19, sensors = 3, biasPct = -7.0, mard = 9.4,
-        current = MeterCurrent(starts[2], 5, 4, -3.0),
+        ready = true, used = 5, total = 5, sensors = 1, biasPct = -7.0, mard = 7.4,
+        current = MeterCurrent(start, 6, 5, -7.0, calibratedAt = cal),
         bands = listOf(
-            MeterBand(0, 100, "mgdl", -4.0, 5),
-            MeterBand(100, 200, "pct", -6.0, 8),
-            MeterBand(200, 0, "pct", -11.0, 5)
+            MeterBand(0, 100, "mgdl", -6.0, 1),
+            MeterBand(100, 200, "pct", -6.5, 2),
+            MeterBand(200, 0, "pct", -8.5, 2)
         ),
-        model = MeterModel(a = 2.0, b = 0.07, offset = -0.02, sd = 0.09),
-        pairs = pairs, starts = starts
+        model = MeterModel(a = 0.0, b = 0.0, offset = 0.075, sd = 0.07, since = cal),
+        pairs = pairs, starts = listOf(now - 15 * day, start), calibrations = listOf(cal),
+        lag = MeterLag(min = 9, lo = 1, hi = 16, n = 66, used = 4, source = "published")
     )
 }

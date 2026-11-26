@@ -197,10 +197,9 @@
     <string name="meter_toggle">≈ Meter</string>
     <string name="meter_not_ready">Too few checks to estimate: %1$d of %2$d. %3$d more glucometer checks and the line appears.</string>
     <string name="meter_estimate">≈ meter %1$s (±%2$s)</string>
-    <string name="meter_title">Sensor vs meter · all checks</string>
+    <string name="meter_title">Sensor vs meter · this sensor</string>
     <string name="meter_lower">the sensor reads lower than the meter on average</string>
     <string name="meter_higher">the sensor reads higher than the meter on average</string>
-    <string name="meter_counts">checks: %1$d · sensors: %2$d</string>
     <string name="meter_current">Current sensor</string>
     <string name="meter_current_sub">since %1$s · day %2$d</string>
     <string name="meter_n">checks: %1$d</string>
@@ -214,9 +213,6 @@
     <string name="meter_empty">No glucometer checks next to sensor readings yet.</string>
     <string name="meter_fast">Left out: %1$d (glucose was changing fast)</string>
     <string name="meter_wait">The chart estimate appears after %1$d checks (now %2$d).</string>
-    <string name="meter_legend_before">before the first start</string>
-    <string name="meter_legend">sensor %1$d (%2$s)</string>
-    <string name="meter_legend_current">current (%1$s)</string>
     <string name="lag_title">Sensor delay</string>
     <string name="lag_about">How many minutes the sensor runs behind the glucometer: it reads the fluid under the skin, which follows the blood.</string>
     <string name="lag_value">%1$d min</string>
@@ -861,4 +857,24 @@
     <string name="recheck_close">Close for everyone</string>
     <string name="recheck_close_failed">Could not close: no connection to the server.</string>
     <string name="recheck_due_text">At %1$s, %2$s g of carbs were given for a low. 15 minutes have passed: measure with the glucometer.</string>
+    <string name="meter_legend_before_cal">before the calibration of %1$s</string>
+    <string name="meter_legend_since_cal">since the calibration of %1$s</string>
+    <string name="meter_legend_sensor">this sensor, since %1$s</string>
+    <string name="calib_reads_low">The sensor reads low: by %1$s %2$s (%3$s)</string>
+    <string name="calib_reads_high">The sensor reads high: by %1$s %2$s (%3$s)</string>
+    <string name="calib_low_read">The sensor says LOW, the glucometer %1$s %2$s</string>
+    <string name="calib_text">Three glucometer checks in a row disagree with the sensor beyond Dexcom\'s 20/20, all the same way. A calibration may help.</string>
+    <string name="calib_low_read_text">LOW while the glucometer shows a normal value: the sensor is off. A calibration may help.</string>
+    <string name="calib_now">Calibrate now with %1$s %2$s</string>
+    <string name="calib_now_how">In xDrip+: Calibration, enter %1$s. Before %2$s, while the check is fresh.</string>
+    <string name="calib_next">Calibrate with a glucometer check when:</string>
+    <string name="calib_need_fresh">it was taken in the last 5 minutes</string>
+    <string name="calib_need_range">it is between %1$s</string>
+    <string name="calib_need_steady">glucose is steady: the arrow flat for 15 minutes</string>
+    <string name="calib_need_numbers">the sensor shows numbers again (not LOW), to see glucose is steady</string>
+    <string name="calib_need_food">%1$s h have passed since food and rapid insulin</string>
+    <string name="calib_need_shower">30 minutes have passed since the shower</string>
+    <string name="calib_measure">Log a glucometer check</string>
+    <string name="calib_close">Close for everyone</string>
+    <string name="calib_close_failed">Could not close: no connection to the server.</string>
 </resources>

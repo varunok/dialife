@@ -61,7 +61,7 @@ private fun readingLines(view: ChartView, i: Int, estimate: MeterModel?, text: C
     val at = text.clock(view.ts[i])
     return listOfNotNull(
         formatGlucose(v, text.units, locale) + " " + (if (text.units == Units.MgDl) "mg/dL" else ""),
-        estimate?.estimate(v)?.let { (e, sd) ->
+        estimate?.takeIf { view.ts[i] >= it.since }?.estimate(v)?.let { (e, sd) ->
             text.meterEstimate.format(locale, formatGlucose(e, text.units, locale), formatGlucose(sd, text.units, locale))
         },
         delta?.let { "$it · $at" } ?: at

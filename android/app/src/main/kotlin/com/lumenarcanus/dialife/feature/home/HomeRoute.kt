@@ -12,6 +12,7 @@ import com.lumenarcanus.dialife.data.Credentials
 import com.lumenarcanus.dialife.data.Question
 import com.lumenarcanus.dialife.data.Treatment
 import com.lumenarcanus.dialife.feature.alarms.AlarmsSection
+import com.lumenarcanus.dialife.feature.calibration.CalibrationSection
 import com.lumenarcanus.dialife.feature.planned.PlannedSection
 import com.lumenarcanus.dialife.feature.questions.QuestionsSection
 import com.lumenarcanus.dialife.feature.questions.WatchSection
@@ -77,6 +78,7 @@ fun HomeRoute(
         waitSection = { WaitSection() },
         sensorlessSection = { onMeasure -> SensorlessSection(onMeasure) },
         recheckSection = { onMeasure -> RecheckSection(onMeasure) },
+        calibrationSection = { onMeasure -> CalibrationSection(onMeasure) },
         onOpenSettings = onOpenSettings,
         onRetry = vm::retry,
         onSaveTreatment = vm::save,

@@ -3,6 +3,7 @@ package com.lumenarcanus.dialife.data
 import kotlin.math.round
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 // Shapes of the server API (.local/notes/api-app.md); glucose is always mg/dL, time unix ms.
 // Statistics, and sensor vs glucometer.
@@ -59,6 +60,7 @@ data class MeterReport(
     val model: MeterModel? = null,
     val pairs: List<MeterPair> = emptyList(),
     val starts: List<Long> = emptyList(),
+    val calibrations: List<Long> = emptyList(), // the current sensor's, oldest first
     val lag: MeterLag = MeterLag()
 )
 
@@ -74,7 +76,13 @@ data class MeterLag(
 )
 
 @Serializable
-data class MeterCurrent(val since: Long, val day: Int, val n: Int = 0, @SerialName("bias_pct") val biasPct: Double = 0.0)
+data class MeterCurrent(
+    val since: Long,
+    val day: Int,
+    val n: Int = 0,
+    @SerialName("bias_pct") val biasPct: Double = 0.0,
+    @SerialName("calibrated_at") val calibratedAt: Long = 0
+)
 
 @Serializable
 data class MeterBand(val from: Int, val to: Int = 0, val unit: String, val bias: Double, val n: Int)
@@ -85,11 +93,27 @@ data class MeterPair(
     val meter: Int,
     val sensor: Double,
     @SerialName("sensor_no") val sensorNo: Int = 0,
-    val used: Boolean = true
+    val used: Boolean = true,
+    // before the current sensor's last calibration: not in the estimate
+    @SerialName("before_cal") val beforeCal: Boolean = false
 )
 
+/**
+ * meter ≈ sensor + offset·max(sensor, 100), learned on the current sensor since [since] (its start
+ * or its last calibration). [lagMin]: the sensor's delay, so a reading's estimate belongs that much earlier.
+ */
 @Serializable
-data class MeterModel(val a: Double, val b: Double, val offset: Double = 0.0, val sd: Double) {
+data class MeterModel(
+    val a: Double,
+    val b: Double,
+    val offset: Double = 0.0,
+    val sd: Double,
+    val since: Long = 0,
+    @Transient val lagMin: Int = 0
+) {
+    /** When the blood the reading at [t] shows was there: [lagMin] earlier. */
+    fun bloodTime(t: Long): Long = t - lagMin * 60_000L
+
     /** What the glucometer would most likely show for a sensor value, and the typical spread. */
     fun estimate(sensor: Int): Pair<Int, Int> {
         val sc = maxOf(sensor.toDouble(), 100.0)

@@ -18,6 +18,9 @@ import com.lumenarcanus.dialife.core.ui.Units
 import com.lumenarcanus.dialife.core.ui.theme.DiaLifeTheme
 import com.lumenarcanus.dialife.core.ui.theme.DiaTheme
 import com.lumenarcanus.dialife.data.AlarmView
+import com.lumenarcanus.dialife.data.CalibrateNow
+import com.lumenarcanus.dialife.data.CalibrationAdvice
+import com.lumenarcanus.dialife.data.CalibrationCheck
 import com.lumenarcanus.dialife.data.CarbEstimate
 import com.lumenarcanus.dialife.data.CarbSuggestion
 import com.lumenarcanus.dialife.data.CarbTableHit
@@ -44,6 +47,7 @@ import com.lumenarcanus.dialife.data.Wait
 import com.lumenarcanus.dialife.data.WebLoginInfo
 import com.lumenarcanus.dialife.data.WebSession
 import com.lumenarcanus.dialife.feature.alarms.HandlingScreen
+import com.lumenarcanus.dialife.feature.calibration.CalibrationCard
 import com.lumenarcanus.dialife.feature.data.DataScreen
 import com.lumenarcanus.dialife.feature.data.dataUiState
 import com.lumenarcanus.dialife.feature.entry.FoodSuggestions
@@ -291,6 +295,30 @@ class ScreenshotTest {
     fun meterCardUk() = shot("meter_card_dark_uk", dark = true) {
         Box(Modifier.padding(16.dp)) {
             MeterCard(sampleMeter(now), Units.MgDl)
+        }
+    }
+
+    /** Calibration advice: calibrate now; wait for a check that fits; the sensor says LOW. */
+    @Test
+    @Config(qualifiers = "uk-w412dp-h2400dp-xxhdpi")
+    fun calibrationUk() = shot("calibration_cards_dark_uk", dark = true) {
+        val a = CalibrationAdvice(side = "low", since = 1, diffMg = -31.0, diffPct = -28.0)
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            CalibrationCard(a.copy(now = CalibrateNow(108, now, now + 5 * 60_000L)), Units.MgDl, 180, onMeasure = {}, onClose = {})
+            CalibrationCard(a.copy(wait = listOf("moving", "food"), check = CalibrationCheck(now, 132)), Units.MgDl, 180, onMeasure = {
+            }, onClose = {})
+            CalibrationCard(
+                a.copy(
+                    lowRead = true,
+                    wait = listOf("no_trend", "food", "insulin"),
+                    check = CalibrationCheck(now, 90)
+                ),
+                Units.MgDl,
+                180,
+                onMeasure = {
+                },
+                onClose = {}
+            )
         }
     }
 

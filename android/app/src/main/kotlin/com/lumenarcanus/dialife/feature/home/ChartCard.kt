@@ -90,7 +90,7 @@ fun ChartCard(
     var selected by remember { mutableStateOf<Treatment?>(null) }
     var suspect by remember { mutableStateOf<Question?>(null) }
     var whyNot by remember { mutableStateOf(false) } // the switch tapped before there is enough data
-    val estimate = meter?.model?.takeIf { meter.ready && meterLine }
+    val estimate = meter?.model?.takeIf { meter.ready && meterLine }?.copy(lagMin = meter.lag.used)
     Column(
         modifier
             .background(c.surface, RoundedCornerShape(22.dp))

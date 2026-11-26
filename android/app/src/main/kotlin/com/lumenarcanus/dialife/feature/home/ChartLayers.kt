@@ -171,7 +171,10 @@ internal fun DrawScope.drawNowLine(s: ChartScale, c: DiaColors) {
     drawLine(c.textFaint, Offset(nowX, 0f), Offset(nowX, s.plotH), 1.dp.toPx(), pathEffect = dashed(2f, 3f))
 }
 
-/** "≈ meter": a faint band and a dashed line under the sensor dots, broken where the sensor is. */
+/**
+ * "≈ meter": a faint band and a dashed line under the sensor dots, broken where the sensor is
+ * not believed; only since the stretch it was learned on, each point the sensor's delay earlier.
+ */
 internal fun DrawScope.drawMeterEstimate(s: ChartScale, c: DiaColors, m: MeterModel) {
     val v = s.view
     val ink = meterInk(c.isDark)
@@ -180,13 +183,13 @@ internal fun DrawScope.drawMeterEstimate(s: ChartScale, c: DiaColors, m: MeterMo
         val band = Path().apply {
             run.forEachIndexed { k, i ->
                 val (e, sd) = m.estimate(v.vs[i])
-                val px = s.x(v.ts[i])
+                val px = s.x(m.bloodTime(v.ts[i]))
                 val py = s.y((e + sd).coerceAtMost(v.hi.toInt()))
                 if (k == 0) moveTo(px, py) else lineTo(px, py)
             }
             run.asReversed().forEach { i ->
                 val (e, sd) = m.estimate(v.vs[i])
-                lineTo(s.x(v.ts[i]), s.y((e - sd).coerceAtLeast(v.lo.toInt())))
+                lineTo(s.x(m.bloodTime(v.ts[i])), s.y((e - sd).coerceAtLeast(v.lo.toInt())))
             }
             close()
         }
@@ -194,14 +197,15 @@ internal fun DrawScope.drawMeterEstimate(s: ChartScale, c: DiaColors, m: MeterMo
         val line = Path().apply {
             run.forEachIndexed { k, i ->
                 val e = m.estimate(v.vs[i]).first.coerceIn(v.lo.toInt(), v.hi.toInt())
-                if (k == 0) moveTo(s.x(v.ts[i]), s.y(e)) else lineTo(s.x(v.ts[i]), s.y(e))
+                val px = s.x(m.bloodTime(v.ts[i]))
+                if (k == 0) moveTo(px, s.y(e)) else lineTo(px, s.y(e))
             }
         }
         drawPath(line, ink.copy(alpha = 0.75f), style = Stroke(1.4.dp.toPx(), pathEffect = dashed(5f, 4f)))
     }
     var run = mutableListOf<Int>()
     v.visible.forEach { i ->
-        if (!v.trusted(i)) { // the sensor is not believed here: nothing to estimate from
+        if (!v.trusted(i) || v.ts[i] < m.since) { // not believed here, or before the stretch: nothing to estimate from
             drawRun(run)
             run = mutableListOf()
             return@forEach

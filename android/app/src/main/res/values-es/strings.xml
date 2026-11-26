@@ -198,10 +198,9 @@
     <string name="meter_toggle">≈ Glucómetro</string>
     <string name="meter_not_ready">Muy pocas mediciones para estimar: %1$d de %2$d. Con %3$d mediciones más con glucómetro aparecerá la línea.</string>
     <string name="meter_estimate">≈ glucómetro %1$s (±%2$s)</string>
-    <string name="meter_title">Sensor y glucómetro · todas las mediciones</string>
+    <string name="meter_title">Sensor y glucómetro · este sensor</string>
     <string name="meter_lower">de media, el sensor marca menos que el glucómetro</string>
     <string name="meter_higher">de media, el sensor marca más que el glucómetro</string>
-    <string name="meter_counts">mediciones: %1$d · sensores: %2$d</string>
     <string name="meter_current">Sensor actual</string>
     <string name="meter_current_sub">desde %1$s · día %2$d</string>
     <string name="meter_n">mediciones: %1$d</string>
@@ -215,9 +214,6 @@
     <string name="meter_empty">Aún no hay mediciones con glucómetro junto a lecturas del sensor.</string>
     <string name="meter_fast">Excluidas: %1$d (la glucosa cambiaba rápido)</string>
     <string name="meter_wait">La estimación en el gráfico aparece tras %1$d mediciones (ahora %2$d).</string>
-    <string name="meter_legend_before">antes del primer inicio</string>
-    <string name="meter_legend">sensor %1$d (%2$s)</string>
-    <string name="meter_legend_current">actual (%1$s)</string>
     <string name="lag_title">Retraso del sensor</string>
     <string name="lag_about">Cuántos minutos va el sensor por detrás del glucómetro: mide el líquido bajo la piel, que sigue a la sangre.</string>
     <string name="lag_value">%1$d min</string>
@@ -869,4 +865,24 @@
     <string name="recheck_close">Cerrar para todos</string>
     <string name="recheck_close_failed">No se pudo cerrar: sin conexión con el servidor.</string>
     <string name="recheck_due_text">A las %1$s se dieron %2$s g de carbohidratos por un bajo. Pasaron 15 minutos: mida con el glucómetro.</string>
+    <string name="meter_legend_before_cal">antes de la calibración del %1$s</string>
+    <string name="meter_legend_since_cal">desde la calibración del %1$s</string>
+    <string name="meter_legend_sensor">este sensor, desde el %1$s</string>
+    <string name="calib_reads_low">El sensor marca bajo: %1$s %2$s menos (%3$s)</string>
+    <string name="calib_reads_high">El sensor marca alto: %1$s %2$s más (%3$s)</string>
+    <string name="calib_low_read">El sensor marca LOW, el glucómetro %1$s %2$s</string>
+    <string name="calib_text">Tres mediciones seguidas del glucómetro se apartan del sensor más de lo que permite la regla 20/20 de Dexcom, todas del mismo lado. Una calibración puede ayudar.</string>
+    <string name="calib_low_read_text">LOW con el glucómetro en un valor normal: el sensor se equivoca. Una calibración puede ayudar.</string>
+    <string name="calib_now">Calibre ahora con %1$s %2$s</string>
+    <string name="calib_now_how">En xDrip+: Calibración, introduzca %1$s. Antes de las %2$s, mientras la medición es reciente.</string>
+    <string name="calib_next">Calibre con una medición de glucómetro cuando:</string>
+    <string name="calib_need_fresh">se haya tomado en los últimos 5 minutos</string>
+    <string name="calib_need_range">esté entre %1$s</string>
+    <string name="calib_need_steady">la glucosa esté estable: la flecha horizontal 15 minutos</string>
+    <string name="calib_need_numbers">el sensor vuelva a mostrar números (no LOW), para ver que la glucosa está estable</string>
+    <string name="calib_need_food">hayan pasado %1$s h desde la comida y la insulina rápida</string>
+    <string name="calib_need_shower">hayan pasado 30 minutos desde la ducha</string>
+    <string name="calib_measure">Registrar medición de glucómetro</string>
+    <string name="calib_close">Cerrar para todos</string>
+    <string name="calib_close_failed">No se pudo cerrar: sin conexión con el servidor.</string>
 </resources>

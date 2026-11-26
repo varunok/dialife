@@ -203,10 +203,9 @@
     <string name="meter_toggle">≈ Глюкометр</string>
     <string name="meter_not_ready">Замало вимірів для оцінки: %1$d з %2$d. Ще %3$d виміри глюкометром — і лінія з\'явиться.</string>
     <string name="meter_estimate">≈ глюкометр %1$s (±%2$s)</string>
-    <string name="meter_title">Сенсор і глюкометр · усі виміри</string>
+    <string name="meter_title">Сенсор і глюкометр · цей сенсор</string>
     <string name="meter_lower">сенсор у середньому нижче глюкометра</string>
     <string name="meter_higher">сенсор у середньому вище глюкометра</string>
-    <string name="meter_counts">вимірів: %1$d · сенсорів: %2$d</string>
     <string name="meter_current">Поточний сенсор</string>
     <string name="meter_current_sub">з %1$s · день %2$d</string>
     <string name="meter_n">вимірів: %1$d</string>
@@ -220,9 +219,6 @@
     <string name="meter_empty">Ще немає вимірів глюкометром поруч зі значеннями сенсора.</string>
     <string name="meter_fast">Не враховано: %1$d (цукор швидко змінювався)</string>
     <string name="meter_wait">Оцінка на графіку з\'явиться після %1$d вимірів (зараз %2$d).</string>
-    <string name="meter_legend_before">до першого старту</string>
-    <string name="meter_legend">сенсор %1$d (%2$s)</string>
-    <string name="meter_legend_current">поточний (%1$s)</string>
     <string name="lag_title">Затримка сенсора</string>
     <string name="lag_about">На скільки хвилин сенсор відстає від глюкометра: він міряє рідину під шкірою, а вона йде слідом за кров\'ю.</string>
     <string name="lag_value">%1$d хв</string>
@@ -881,4 +877,24 @@
     <string name="recheck_close">Закрити для всіх</string>
     <string name="recheck_close_failed">Не вдалося закрити: немає зв\'язку із сервером.</string>
     <string name="recheck_due_text">О %1$s дали %2$s г вуглеводів на низький цукор. Минуло 15 хвилин: виміряйте глюкометром.</string>
+    <string name="meter_legend_before_cal">до калібрування %1$s</string>
+    <string name="meter_legend_since_cal">після калібрування %1$s</string>
+    <string name="meter_legend_sensor">цей сенсор, з %1$s</string>
+    <string name="calib_reads_low">Сенсор занижує: на %1$s %2$s (%3$s)</string>
+    <string name="calib_reads_high">Сенсор завищує: на %1$s %2$s (%3$s)</string>
+    <string name="calib_low_read">Сенсор показує LOW, а глюкометр %1$s %2$s</string>
+    <string name="calib_text">Три заміри глюкометром поспіль розходяться із сенсором більше, ніж допускає правило 20/20 від Dexcom, і всі в один бік. Калібрування може допомогти.</string>
+    <string name="calib_low_read_text">LOW, коли глюкометр показує нормальне значення: сенсор помиляється. Калібрування може допомогти.</string>
+    <string name="calib_now">Відкалібруйте зараз на %1$s %2$s</string>
+    <string name="calib_now_how">У xDrip+: Калібрування, введіть %1$s. До %2$s, поки замір свіжий.</string>
+    <string name="calib_next">Калібруйте за заміром глюкометром, коли:</string>
+    <string name="calib_need_fresh">замір зроблено не більш як 5 хвилин тому</string>
+    <string name="calib_need_range">він між %1$s</string>
+    <string name="calib_need_steady">цукор рівний: стрілка горизонтальна 15 хвилин</string>
+    <string name="calib_need_numbers">сенсор знову показує числа (не LOW), щоб було видно, що цукор рівний</string>
+    <string name="calib_need_food">після їжі й короткого інсуліну минуло %1$s год</string>
+    <string name="calib_need_shower">після душу минуло 30 хвилин</string>
+    <string name="calib_measure">Внести замір глюкометром</string>
+    <string name="calib_close">Закрити для всіх</string>
+    <string name="calib_close_failed">Не вдалося закрити: немає зв\'язку із сервером.</string>
 </resources>

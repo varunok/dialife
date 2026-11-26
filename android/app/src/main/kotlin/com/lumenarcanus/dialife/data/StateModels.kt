@@ -73,7 +73,9 @@ data class StateResponse(
     val sensorless: Sensorless? = null,
     @SerialName("sensorless_settings") val sensorlessSettings: SensorlessSettings = SensorlessSettings(),
     // carbs were given for a low: measure again with the glucometer 15 minutes on
-    val recheck: Recheck? = null
+    val recheck: Recheck? = null,
+    // the sensor keeps reading off from the glucometer: calibrate, with a fresh check only
+    val calibration: CalibrationAdvice? = null
 ) {
     val mealRules get() = MealRules(mealGapMin, bolusBeforeMin, bolusAfterMin)
 }
@@ -197,3 +199,23 @@ data class SensorlessPeriod(
     /** Its end on a chart drawn at [now]. */
     fun end(now: Long) = if (until > 0) until else now
 }
+
+/** The server's calibration advice: which way the sensor is off, by how much, and whether the newest check may be entered now. */
+@Serializable
+data class CalibrationAdvice(
+    val side: String, // "low": the sensor reads lower than the glucometer; "high"
+    val since: Long,
+    @SerialName("diff_mg") val diffMg: Double = 0.0,
+    @SerialName("diff_pct") val diffPct: Double = 0.0,
+    @SerialName("low_read") val lowRead: Boolean = false,
+    val now: CalibrateNow? = null,
+    val wait: List<String> = emptyList(), // "no_check" | "old" | "range" | "moving" | "no_trend" | "food" | "insulin" | "shower"
+    val check: CalibrationCheck? = null
+)
+
+/** Enter [mg] in xDrip+ as a calibration before [until]. */
+@Serializable
+data class CalibrateNow(val mg: Int, val t: Long, val until: Long)
+
+@Serializable
+data class CalibrationCheck(val t: Long, val mg: Int)
