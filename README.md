@@ -119,6 +119,9 @@ the app; a demo server with a generated day for the web).
 - **Nightscout-compatible upload API**, so xDrip+ uploads to it as it would to
   Nightscout.
 
+How each number, arrow, card and alarm is worked out, what comes from a published
+source and what is our own choice, is in [docs/METHODS.md](docs/METHODS.md).
+
 ## Repository
 
 | Path | What |
@@ -128,6 +131,7 @@ the app; a demo server with a generated day for the web).
 | `deploy/` | systemd units, Caddy snippets, deploy and backup scripts |
 | `tools/dl` | the admin tool: runs every command on the server over SSH |
 | `testdata/` | sample xDrip+ uploads used by the tests |
+| `docs/METHODS.md` | how DiaLife computes what it shows, with sources |
 
 ## Requirements
 
