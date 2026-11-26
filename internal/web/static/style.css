@@ -65,6 +65,7 @@ select.ghost { padding: 0 8px; }
 .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .tile { background: var(--sunken); border-radius: 16px; padding: 12px; display: grid; gap: 4px; }
 .tile .k { font-size: 12px; color: var(--muted); } .tile .n { font-size: 20px; font-weight: 600; }
+.tile.wide { grid-column: 1 / -1; } .tile .s { font-size: 12px; color: var(--muted); }
 .alarm { border-radius: 16px; padding: 12px 14px; display: grid; gap: 3px; background: var(--high-bg); }
 .alarm b { color: var(--high); font-weight: 600; } .alarm span { color: #C9B48A; font-size: 13px; }
 .alarm.urgent { background: var(--low-bg); } .alarm.urgent b { color: var(--low); } .alarm.urgent span { color: #C9A3AE; }

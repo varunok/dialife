@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 
 import { prefs } from '../static/js/prefs.js';
 import { MIN, amount, g, signed, t, unit } from '../static/js/format.js';
-import { alarmLines, alarmName, duration, entryText, foodText, isBasal, isShower, meterPoints, origin, sensorlessIn, untrusted, untrustedAt } from '../static/js/entries.js';
+import { alarmLines, alarmName, duration, entryText, foodText, isBasal, isShower, lagLines, meterPoints, origin, sensorlessIn, untrusted, untrustedAt } from '../static/js/entries.js';
 import { tableRows } from '../static/js/rows.js';
 import { parseEvent } from '../static/js/api.js';
 import { trendOf } from '../static/js/widgets.js';
@@ -44,6 +44,17 @@ test('the arrow is the server\'s direction, as on the phones: fast ones doubled,
   assert.deepEqual(trendOf('DoubleDown'), { deg: 90, double: true });
   assert.equal(trendOf('NOT COMPUTABLE'), null);
   assert.equal(trendOf(undefined), null);
+});
+
+test('the sensor delay: the minutes used, and whether measured or Dexcom\'s figure', () => {
+  assert.equal(lagLines(null), null);
+  assert.deepEqual(lagLines({ min: 9, lo: 1, hi: 16, n: 66, used: 4, source: 'published' }),
+    { value: '4 min', sub: 'Dexcom\'s figure: too little data · our estimate 9 min (95%: 1–16 min, checks 66)' });
+  assert.deepEqual(lagLines({ n: 4, used: 4, source: 'published' }),
+    { value: '4 min', sub: 'Dexcom\'s figure: too little data · not measured yet: 4 of 10 checks' });
+  prefs.lang = 'uk';
+  assert.deepEqual(lagLines({ min: 6, lo: 5, hi: 8, n: 420, used: 6, source: 'measured' }),
+    { value: '6 хв', sub: 'виміряно: 95% — 5–8 хв, вимірів 420' });
 });
 
 test('amounts are whole or one decimal', () => {

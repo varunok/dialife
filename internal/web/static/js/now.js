@@ -3,7 +3,7 @@
 
 import { logout, session } from './api.js';
 import { MIN, clock, dayTime, g, signed, t, unit } from './format.js';
-import { alarmName, duration, untrustedAt } from './entries.js';
+import { alarmName, duration, lagLines, untrustedAt } from './entries.js';
 import { V } from './model.js';
 import { prefs, setPref } from './prefs.js';
 import { LangPicker, arrowIcon } from './widgets.js';
@@ -56,7 +56,8 @@ export const Now = {
       !stale && !shower && forecast(st, range, f30),
       m('.tiles', [
         m('.tile', [m('span.k', st.uploader_name || t('uploader')), m('span.n', st.uploader && st.uploader.battery != null ? st.uploader.battery + '%' : '—')]),
-        m('.tile', [m('span.k', t('tir')), m('span.n', V.tir != null ? Math.round(V.tir) + '%' : '—')])
+        m('.tile', [m('span.k', t('tir')), m('span.n', V.tir != null ? Math.round(V.tir) + '%' : '—')]),
+        lagTile(V.meter && lagLines(V.meter.lag))
       ]),
       a && m('.alarm' + (a.level === 'urgent' ? '.urgent' : ''), [
         m('b', t('alarmSince', alarmName(a), clock(a.started_at))),
@@ -101,4 +102,9 @@ function sensorless(s, now) {
       m('span', last ? t('sensorlessRemindText', duration(now - last.t)) : t('sensorlessRemindNone'))
     ])
   ];
+}
+
+// how far the sensor runs behind the glucometer, across the whole row
+function lagTile(l) {
+  return l && m('.tile.wide', [m('span.k', t('lag')), m('span.n', l.value), m('span.s', l.sub)]);
 }

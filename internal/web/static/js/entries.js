@@ -82,6 +82,18 @@ export function sensorlessIn(periods, from, to, now) {
 }
 
 // whether a reading at tt was taken while the sensor was not believed
+// the server measures nothing below this many checks (internal/meter)
+const MIN_LAG_CHECKS = 10;
+
+/** The sensor delay as the viewer shows it: the minutes the comparisons use, and where they come from. */
+export function lagLines(lag) {
+  if (!lag) return null;
+  const value = t('lagMin', lag.used);
+  if (lag.source === 'measured') return { value, sub: t('lagMeasured', lag.lo, lag.hi, lag.n) };
+  const ours = lag.min != null ? t('lagOurs', lag.min, lag.lo, lag.hi, lag.n) : t('lagNone', lag.n, MIN_LAG_CHECKS);
+  return { value, sub: t('lagPublished') + ' · ' + ours };
+}
+
 export function untrusted(windows, tt) { return (windows || []).some((w) => tt >= w.from && tt < w.until); }
 
 export function entryText(tr) {
