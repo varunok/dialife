@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 
 import { prefs } from '../static/js/prefs.js';
 import { MIN, amount, g, signed, t, unit } from '../static/js/format.js';
-import { alarmLines, alarmName, duration, entryText, foodText, isBasal, isShower, lagLines, meterPoints, recheckCard, origin, sensorlessIn, untrusted, untrustedAt } from '../static/js/entries.js';
+import { alarmLines, alarmName, duration, entryText, foodText, isBasal, isShower, lagLines, meterPoints, recheckCard, calibCard, origin, sensorlessIn, untrusted, untrustedAt } from '../static/js/entries.js';
 import { tableRows } from '../static/js/rows.js';
 import { parseEvent } from '../static/js/api.js';
 import { trendOf } from '../static/js/widgets.js';
@@ -67,6 +67,23 @@ test('the recheck card: waiting, due on time without new data, still low', () =>
   prefs.lang = 'uk';
   assert.deepEqual(recheckCard({ ...r, state: 'still_low', check_mg: 64 }, T0 + 20 * MIN),
     { kind: 'lo', title: 'Досі низько: 64 mg/dL', text: 'Дайте ще швидких вуглеводів за вашим планом, запишіть їх і виміряйте знову через 15 хвилин.' });
+});
+
+test('the calibration card: calibrate now while the check is fresh, then what the next check needs', () => {
+  const a = { side: 'low', since: 1, diff_mg: -31, diff_pct: -28, now: { mg: 108, t: T0, until: T0 + 5 * MIN } };
+  assert.equal(calibCard(null, T0), null);
+  const c = calibCard(a, T0 + MIN, 180);
+  assert.equal(c.title, 'The sensor reads low: by 31 mg/dL (−28%)');
+  assert.deepEqual(c.now, { title: 'Calibrate now with 108 mg/dL', how: 'In xDrip+: Calibration, enter 108. Before 12:05, while the check is fresh.' });
+  const later = calibCard(a, T0 + 5 * MIN, 180);
+  assert.equal(later.now, undefined);
+  assert.deepEqual(later.needs.map((n) => n.met), [false, true, true, true]);
+  prefs.lang = 'uk';
+  const low = calibCard({ side: 'low', since: 1, low_read: true, wait: ['no_trend', 'food'], check: { t: T0, mg: 90 } }, T0, 180);
+  assert.equal(low.title, 'Сенсор показує LOW, а глюкометр 90 mg/dL');
+  assert.deepEqual(low.needs.map((n) => [n.text, n.met]), [
+    ['замір зроблено не більш як 5 хвилин тому', true], ['він між 90–150', true],
+    ['сенсор знову показує числа (не LOW), щоб було видно, що цукор рівний', false], ['після їжі й короткого інсуліну минуло 3 год', false]]);
 });
 
 test('amounts are whole or one decimal', () => {

@@ -3,7 +3,7 @@
 
 import { logout, session } from './api.js';
 import { MIN, clock, dayTime, g, signed, t, unit } from './format.js';
-import { alarmName, duration, lagLines, recheckCard, untrustedAt } from './entries.js';
+import { alarmName, calibCard, duration, lagLines, recheckCard, untrustedAt } from './entries.js';
 import { V } from './model.js';
 import { prefs, setPref } from './prefs.js';
 import { info } from './info.js';
@@ -55,6 +55,7 @@ export const Now = {
       m('.sub', [bg.delta != null && m('b', signed(bg.delta) + ' ' + t('in5')), m('span', ' · ' + (age < 1 ? t('justNow') : t('ago', age))), info('trend-arrow')]),
       shower && m('.untrusted-card', [m('b', [t('untrustedTitle', clock(shower.until)), info('shower')]), m('span', t('untrustedText'))]),
       recheck(st.recheck),
+      calibration(st.calibration, st.dose && st.dose.carb_min),
       !stale && !shower && forecast(st, range, f30),
       m('.tiles', [
         m('.tile', [m('span.k', st.uploader_name || t('uploader')), m('span.n', st.uploader && st.uploader.battery != null ? st.uploader.battery + '%' : '—')]),
@@ -110,6 +111,17 @@ function sensorless(s, now) {
 function recheck(r) {
   const c = recheckCard(r, Date.now());
   return c && m('.recheck-card.' + c.kind, [m('b', [c.title, info('recheck')]), m('span', c.text)]);
+}
+
+// the sensor keeps reading off: calibrate, with a fresh check only; the phones log it
+function calibration(a, absorbMin) {
+  const c = calibCard(a, Date.now(), absorbMin || 180);
+  return c && m('.calib-card', [
+    m('b', [c.title, info('calibration')]),
+    m('span', c.text),
+    c.now ? m('.calib-now', [m('b', c.now.title), m('span', c.now.how)])
+      : [m('span.next', t('calibNext')), m('ul', c.needs.map((n) => m('li' + (n.met ? '.met' : ''), n.text)))]
+  ]);
 }
 
 // how far the sensor runs behind the glucometer, across the whole row

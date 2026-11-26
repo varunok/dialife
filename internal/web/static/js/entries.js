@@ -82,6 +82,30 @@ export function sensorlessIn(periods, from, to, now) {
 }
 
 // whether a reading at tt was taken while the sensor was not believed
+/**
+ * The calibration advice as the viewer shows it, as of now: the title and text, "calibrate now"
+ * until the check is 5 minutes old, otherwise what the next check needs (met or not).
+ */
+export function calibCard(a, now, absorbMin) {
+  if (!a) return null;
+  const pct = (v) => (v < 0 ? '−' : '+') + Math.abs(Math.round(v)) + '%';
+  const title = a.low_read ? t('calibLowRead', a.check ? g(a.check.mg) : '—', unit())
+    : t(a.side === 'low' ? 'calibLow' : 'calibHigh', g(Math.abs(a.diff_mg)), unit(), pct(a.diff_pct));
+  const text = t(a.low_read ? 'calibLowReadText' : 'calibText');
+  if (a.now && now < a.now.until) return { title, text, now: { title: t('calibNow', g(a.now.mg), unit()), how: t('calibNowHow', g(a.now.mg), clock(a.now.until)) } };
+  const wait = a.now ? ['old'] : (a.wait || []);
+  const none = wait.includes('no_check');
+  const h = absorbMin % 60 === 0 ? String(absorbMin / 60) : amount(absorbMin / 60);
+  const needs = [
+    { text: t('calibFresh'), met: !none && !wait.includes('old') },
+    { text: t('calibRange', g(90) + '–' + g(150)), met: !none && !wait.includes('range') },
+    wait.includes('no_trend') ? { text: t('calibNumbers'), met: false } : { text: t('calibSteady'), met: !none && !wait.includes('moving') },
+    { text: t('calibFood', h), met: !none && !wait.includes('food') && !wait.includes('insulin') }
+  ];
+  if (wait.includes('shower')) needs.push({ text: t('calibShower'), met: false });
+  return { title, text, needs };
+}
+
 /** The recheck card as the viewer shows it, as of now: its look, title and text; null when there is none. */
 export function recheckCard(r, now) {
   if (!r) return null;

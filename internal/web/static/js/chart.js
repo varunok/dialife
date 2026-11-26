@@ -71,7 +71,9 @@ function geometry(W, h, st, win) {
     y: (val) => plotH - (val - lo) / (hi - lo) * plotH,
     col: (val) => val < th.bgTargetBottom ? 'var(--low)' : val > th.bgTargetTop ? 'var(--high)' : 'var(--in)',
     // "≈ meter" from the sensor value: the estimate and its spread
-    est: (val) => { const sc = Math.max(val, 100); return [val * (1 + model.b) + model.a + model.offset * sc, model.sd * sc]; }
+    est: (val) => { const sc = Math.max(val, 100); return [val * (1 + model.b) + model.a + model.offset * sc, model.sd * sc]; },
+    // the blood a reading shows was there the sensor's delay earlier
+    lagMs: ((V.meter && V.meter.lag && V.meter.lag.used) || 0) * MIN
   };
 }
 
@@ -166,14 +168,15 @@ function cone(c) {
   return [m('polygon', { points: points(pts), fill: 'var(--in)', 'fill-opacity': 0.12 })];
 }
 
-// "≈ meter": a faint band and dashed line, from the model
+// "≈ meter": a faint band and dashed line, from the model; only since the stretch it was
+// learned on (the sensor's start or its last calibration), each point the delay earlier
 function meterBand(c) {
   const { x, y, idx, ts, vs, hi, lo, est } = c;
   if (!(c.model && idx.length > 1)) return [];
   // nothing to estimate from where the sensor is not believed: the line breaks there
   const runs = [];
   idx.forEach((i) => {
-    if (untrusted(c.h.untrusted, ts[i])) { runs.push([]); return; }
+    if (untrusted(c.h.untrusted, ts[i]) || ts[i] < (c.model.since || 0)) { runs.push([]); return; }
     if (!runs.length) runs.push([]);
     runs[runs.length - 1].push(i);
   });
@@ -181,7 +184,8 @@ function meterBand(c) {
 }
 
 function meterRun(c, idx) {
-  const { x, y, ts, vs, hi, lo, est } = c;
+  const { y, ts, vs, hi, lo, est, lagMs } = c;
+  const x = (t) => c.x(t - lagMs);
   const up = idx.map((i) => [x(ts[i]), y(Math.min(hi, est(vs[i])[0] + est(vs[i])[1]))]);
   const dn = idx.slice().reverse().map((i) => [x(ts[i]), y(Math.max(lo, est(vs[i])[0] - est(vs[i])[1]))]);
   return [
@@ -260,7 +264,7 @@ function hover(tip, c, out) {
       ? [g(vs[i]) + ' ' + unit(), g(h.sgv.lo[i]) + '–' + g(h.sgv.hi[i]) + ' · ' + clock(ts[i]) + '–' + clock(ts[i] + h.step * MIN)]
       : [g(vs[i]) + ' ' + unit(), (i > 0 && ts[i] - ts[i - 1] <= 10 * MIN ? signed(vs[i] - vs[i - 1]) + ' · ' : '') + dayTime(ts[i])];
     // not believed (a shower): said instead of an estimate made from it
-    const extra = untrusted(h.untrusted, ts[i]) ? '⚠ ' + t('untrustedText') : model ? t('estimate', g(est(vs[i])[0]), g(est(vs[i])[1])) : null;
+    const extra = untrusted(h.untrusted, ts[i]) ? '⚠ ' + t('untrustedText') : model && ts[i] >= (model.since || 0) ? t('estimate', g(est(vs[i])[0]), g(est(vs[i])[1])) : null;
     return { x: px, y: py, lines, extra };
   }
   if (tip && tip.kind === 'mark') return Object.assign({ x: tip.x, y: tip.y }, describeMark(tip.id, c));

@@ -136,3 +136,10 @@ button.info:hover, button.info:focus-visible { color: var(--text); }
 .recheck-card { border-radius: 16px; padding: 12px 14px; display: grid; gap: 4px; border: 1px solid var(--line2); background: var(--sunken); }
 .recheck-card.due { border: 1.5px solid var(--high); background: var(--high-bg); } .recheck-card.due b { color: var(--high); }
 .recheck-card.lo { border: 1.5px solid var(--low); background: var(--low-bg); } .recheck-card.lo b { color: var(--low); }
+
+/* the calibration advice: amber; "calibrate now" bright; what the next check needs, met ones ticked */
+.calib-card { border-radius: 16px; padding: 12px 14px; display: grid; gap: 6px; background: var(--high-bg); border: 1.5px solid var(--high); }
+.calib-card > b { color: var(--high); } .calib-card .next { font-weight: 600; }
+.calib-card ul { margin: 0; padding-left: 4px; list-style: none; display: grid; gap: 4px; }
+.calib-card li::before { content: '• '; color: var(--high); } .calib-card li.met { color: var(--muted); } .calib-card li.met::before { content: '✓ '; color: var(--in); }
+.calib-now { border-radius: 12px; padding: 10px 12px; display: grid; gap: 4px; background: var(--in-bg); border: 1.5px solid var(--in); } .calib-now b { color: var(--in); font-size: 18px; }
