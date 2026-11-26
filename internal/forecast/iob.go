@@ -7,7 +7,7 @@ import (
 )
 
 // What the logged food and rapid insulin will still do: insulin on board
-// with the exponential activity curve of oref0 and Loop, carbs on board
+// with the exponential activity curve of oref0 (OpenAPS), carbs on board
 // absorbed evenly, and the sugar they move from the current reading. Unlike
 // the trend it sees a dose given or a meal eaten; it is only as good as the
 // entries. Nothing here feeds the alarms.

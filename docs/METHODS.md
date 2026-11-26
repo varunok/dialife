@@ -63,7 +63,8 @@ Nightscout does it.
 arrows, computed by the server from the readings themselves.
 
 **Based on**
-- Dexcom's arrow bands [2]: → less than 1 mg/dL per minute; ↗ ↘ 1–2; ↑ ↓ 2–3; ⇈ ⇊ more than 3.
+- Dexcom's arrow bands [2]: → steady, up to 1 mg/dL each minute; ↗ ↘ 1–2; ↑ ↓ 2–3;
+  ⇈ ⇊ more than 3.
 - The 5-minute buckets of Nightscout's `bgnow` [1].
 
 **Our own**
@@ -174,11 +175,14 @@ nobody answers a check-in, or it lasts too long.
 the family's own glucometer checks next to sensor readings.
 
 **Based on**
-- Glucometer checks paired with the sensor value at that moment (interpolated between the
-  readings around it); checks taken while glucose moved faster than 2 mg/dL per minute are
-  left out, because the sensor's delay dominates then [4].
+- The sensor reads the fluid under the skin, which follows the blood with some delay;
+  rapid changes show in it late [4]. So a check taken while glucose moves fast says little
+  about how far off the sensor is.
 
 **Our own**
+- Checks are paired with the sensor value at the same moment (interpolated between the
+  readings around it); a check taken while glucose moved faster than 2 mg/dL per minute
+  is kept on the chart but left out of the model.
 - The model: meter ≈ sensor × (1 + b) + a, plus a shift of its own for each sensor.
   Errors count in percent above 100 mg/dL and in mg/dL below. Older pairs weigh less (half
   after 90 days). Each sensor's own shift is pulled towards the common model until it has
@@ -243,9 +247,12 @@ variability and the typical day.
 **Based on**
 - The international consensus on time in range [3]: time in five zones (its own are < 54,
   54–69, 70–180, 181–250, > 250), the coefficient of variation with ≤ 36% read as stable,
-  and the AGP "typical day" with its 5th, 25th, 50th, 75th and 95th percentiles.
+  and the AGP "typical day".
 - GMI = 3.31 + 0.02392 × mean glucose (mg/dL) [5].
-- A low counts as an event when it lasts at least 15 minutes [3].
+- AGP percentile bands as read in clinic: the median, the 25th–75th band (half of all
+  readings) and the 5th–95th band (nine in ten) [9].
+- A low counts as an event when it lasts at least 15 minutes: the 2017 consensus metric for
+  episodes, as listed in [3], Table 1.
 
 **Our own**
 - The five zones use the family's alarm thresholds; time in the standard 70–180 is shown
@@ -265,13 +272,13 @@ variability and the typical day.
 would take glucose from the current reading.
 
 **Based on**
-- Insulin on board: the exponential activity curve of oref0 and Loop [6] with its
+- Insulin on board: the exponential activity curve of OpenAPS (oref0) [6] with its
   "rapid-acting" peak at 75 minutes.
 
 **Our own**
-- The duration of insulin action is the family's setting (240 minutes by default). oref0
-  itself requires at least 300 minutes for this curve [6]; a shorter one makes insulin
-  look used up sooner.
+- The duration of insulin action is the family's setting (240 minutes by default). OpenAPS
+  allows a custom duration for this curve only when it is greater than 300 minutes [6]; a
+  shorter one makes insulin look used up sooner.
 - Carbs on board: nothing for the first 15 minutes, then absorbed evenly over the family's
   absorption time (180 minutes by default).
 - The forecast from them: the current reading, plus the carbs absorbed by then ÷ ratio ×
@@ -313,14 +320,15 @@ correction from the glucometer, rounded once to the pen's step.
 
 **Based on**
 - The family's ratio and correction table, set with their doctor. DiaLife does not suggest them.
-- Adding the meal and correction parts first and rounding the sum once, as paediatric clinic
-  handouts describe.
+- Adding the meal and correction parts first and rounding the total once, as in a paediatric
+  clinic's bolus worksheet [10].
 
 **Our own**
 - The correction comes only from a glucometer check at most 15 minutes old (a family
   setting), never from the sensor.
 - Rounding rules to choose from: nearest, nearest with an exact half going down, always
-  down, always up; step 1 or 0.5 unit.
+  down, always up; step 1 or 0.5 unit. "Nearest" is plain arithmetic: with a 0.5 step,
+  x.3 goes up to x.5, where the worksheet [10] rounds x.1–x.3 down to the whole unit.
 - A dose over the family's limit needs a separate confirmation; over twice the limit it is
   treated as a mistake; over 1.5 times the usual dose it gets a note.
 - Glucose below 70 on the glucometer: a bright "raise it first" warning; nothing is subtracted.
@@ -359,8 +367,9 @@ counted for it.
 longer when glucose is high, at once when it is low or falling.
 
 **Based on**
-- Rapid insulin given 15–20 minutes before a meal gives a lower rise after it than at the
-  meal [7][8].
+- Rapid insulin given 20 minutes before a meal gave a lower rise after it than given at the
+  start of the meal or 20 minutes into it, in adolescents and adults with type 1 diabetes [7];
+  a review puts the best time at 15–20 minutes before food [8].
 
 **Our own**
 - The minutes and bounds are the family's: 15 minutes by default, 20 above 180 mg/dL, eat at
@@ -417,22 +426,37 @@ parents; an unanswered question becomes a mark on the chart after 12 hours.
 
 ## References
 
-1. Nightscout, cgm-remote-monitor: `lib/plugins/bgnow.js`, `lib/plugins/ar2.js`, and the
-   `timeago` alarm defaults. <https://github.com/nightscout/cgm-remote-monitor>
-2. Dexcom G6 user guide, trend arrows (the same bands in the Dexcom ONE guide).
-   <https://www.manualslib.com/manual/1431459/Dexcom-G6.html?page=121>
+Every source below was opened and the statement it backs was found in it.
+
+1. Nightscout, cgm-remote-monitor (master): the buckets and the 5-minute change in
+   [`lib/plugins/bgnow.js`](https://github.com/nightscout/cgm-remote-monitor/blob/master/lib/plugins/bgnow.js);
+   the AR2 constants, loss thresholds and the 20-minute side in
+   [`lib/plugins/ar2.js`](https://github.com/nightscout/cgm-remote-monitor/blob/master/lib/plugins/ar2.js);
+   "no data" after 15 and 30 minutes in
+   [`lib/plugins/timeago.js`](https://github.com/nightscout/cgm-remote-monitor/blob/master/lib/plugins/timeago.js).
+2. Dexcom. Using Your G6, the trend arrows table.
+   <https://s3-us-west-2.amazonaws.com/dexcompdf/Using-Your-G6.pdf>
 3. Battelino T, Danne T, Bergenstal RM, et al. Clinical Targets for Continuous Glucose
    Monitoring Data Interpretation: Recommendations From the International Consensus on Time
-   in Range. *Diabetes Care* 2019;42(8):1593–1603. <https://pmc.ncbi.nlm.nih.gov/articles/PMC6973648>
-4. Schmelzeisen-Redeker G, et al. Time Delay of CGM Sensors: Relevance, Causes, and
-   Countermeasures. *J Diabetes Sci Technol* 2015. <https://pubmed.ncbi.nlm.nih.gov/26243773/>
+   in Range. *Diabetes Care* 2019;42(8):1593–1603. <https://pmc.ncbi.nlm.nih.gov/articles/PMC6973648/>
+4. Schmelzeisen-Redeker G, Schoemaker M, Kirchsteiger H, et al. Time Delay of CGM Sensors:
+   Relevance, Causes, and Countermeasures. *J Diabetes Sci Technol* 2015;9(5):1006–1015.
+   <https://pmc.ncbi.nlm.nih.gov/articles/PMC4667340/>
 5. Bergenstal RM, et al. Glucose Management Indicator (GMI): A New Term for Estimating A1C
    From Continuous Glucose Monitoring. *Diabetes Care* 2018;41(11):2275–2280.
    <https://pmc.ncbi.nlm.nih.gov/articles/PMC6196826/>
-6. OpenAPS documentation: Understanding Insulin on Board calculations; preferences (the
-   exponential curves). <https://openaps.readthedocs.io/en/latest/docs/While%20You%20Wait%20For%20Gear/understanding-insulin-on-board-calculations.html>
-7. Cobry E, et al. Timing of meal insulin boluses to achieve optimal postprandial glycemic
-   control in patients with type 1 diabetes. *Diabetes Technol Ther* 2010;12(3):173–177.
-   <https://pubmed.ncbi.nlm.nih.gov/20151766/>
-8. Slattery D, et al. Optimal prandial timing of bolus insulin in diabetes management: a
-   review. *Diabet Med* 2018. <https://pubmed.ncbi.nlm.nih.gov/29044708/>
+6. OpenAPS documentation. Understanding Insulin on Board (IOB) Calculations: the exponential
+   curves ("rapid-acting": peak at 75 minutes; a custom duration must be greater than 300 minutes).
+   <https://openaps.readthedocs.io/en/latest/docs/While%20You%20Wait%20For%20Gear/understanding-insulin-on-board-calculations.html>
+   The formula itself, as ported: oref0
+   [`lib/iob/calculate.js`](https://github.com/openaps/oref0/blob/master/lib/iob/calculate.js).
+7. Cobry E, McFann K, Messer L, et al. Timing of meal insulin boluses to achieve optimal
+   postprandial glycemic control in patients with type 1 diabetes. *Diabetes Technol Ther*
+   2010;12(3):173–177. <https://pubmed.ncbi.nlm.nih.gov/20151766/>
+8. Slattery D, Amiel SA, Choudhary P. Optimal prandial timing of bolus insulin in diabetes
+   management: a review. *Diabet Med* 2018;35(3):306–316. <https://pubmed.ncbi.nlm.nih.gov/29044708/>
+9. Czupryniak L, et al. Ambulatory Glucose Profile (AGP) Report in Daily Care of Patients with
+   Diabetes: Practical Tips and Recommendations. *Diabetes Ther* 2022. <https://pmc.ncbi.nlm.nih.gov/articles/PMC8991298/>
+10. Nationwide Children's Hospital. Insulin Bolus Calculator (worksheet: carbohydrate bolus,
+    correction bolus, total, rounded dose; rounding rules for ½ and whole units).
+    <https://www.nationwidechildrens.org/-/media/nch/specialties/diabetes-clinic/insulin-bolus-calculator.pdf>
