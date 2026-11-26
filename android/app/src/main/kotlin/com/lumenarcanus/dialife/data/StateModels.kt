@@ -75,7 +75,9 @@ data class StateResponse(
     // carbs were given for a low: measure again with the glucometer 15 minutes on
     val recheck: Recheck? = null,
     // the sensor keeps reading off from the glucometer: calibrate, with a fresh check only
-    val calibration: CalibrationAdvice? = null
+    val calibration: CalibrationAdvice? = null,
+    // the app's newest version on the family's server: offered when this one's code is lower
+    val app: AppRelease? = null
 ) {
     val mealRules get() = MealRules(mealGapMin, bolusBeforeMin, bolusAfterMin)
 }
@@ -219,3 +221,7 @@ data class CalibrateNow(val mg: Int, val t: Long, val until: Long)
 
 @Serializable
 data class CalibrationCheck(val t: Long, val mg: Int)
+
+/** An APK `dl app-push` put on the server: fetched from /api/app/apk, checked against [sha256]. */
+@Serializable
+data class AppRelease(val name: String, val code: Int, val sha256: String, val size: Long, val notes: String = "")

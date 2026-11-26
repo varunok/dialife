@@ -56,6 +56,7 @@ import com.lumenarcanus.dialife.feature.home.BackgroundSetup
 import com.lumenarcanus.dialife.feature.home.ChartCard
 import com.lumenarcanus.dialife.feature.home.sampleHomeUi
 import com.lumenarcanus.dialife.feature.home.sampleMeter
+import com.lumenarcanus.dialife.feature.home.sampleRelease
 import com.lumenarcanus.dialife.feature.meal.EntryDetail
 import com.lumenarcanus.dialife.feature.meal.MealInputs
 import com.lumenarcanus.dialife.feature.meal.MealScreen
@@ -69,6 +70,8 @@ import com.lumenarcanus.dialife.feature.settings.SettingsUiState
 import com.lumenarcanus.dialife.feature.settings.doseSettingsForm
 import com.lumenarcanus.dialife.feature.stats.LagCard
 import com.lumenarcanus.dialife.feature.stats.MeterCard
+import com.lumenarcanus.dialife.feature.update.UpdateCard
+import com.lumenarcanus.dialife.feature.update.UpdateStep
 import com.lumenarcanus.dialife.feature.wait.CountdownCard
 import com.lumenarcanus.dialife.feature.wait.CountdownUiState
 import com.lumenarcanus.dialife.feature.wait.WarningCard
@@ -295,6 +298,18 @@ class ScreenshotTest {
     fun meterCardUk() = shot("meter_card_dark_uk", dark = true) {
         Box(Modifier.padding(16.dp)) {
             MeterCard(sampleMeter(now), Units.MgDl)
+        }
+    }
+
+    /** A newer DiaLife on the server: ready, downloading, failed. */
+    @Test
+    @Config(qualifiers = "uk-w412dp-h1200dp-xxhdpi")
+    fun updateUk() = shot("update_cards_dark_uk", dark = true) {
+        val r = sampleRelease()
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            UpdateCard(r, "0.7.0", UpdateStep.Idle) {}
+            UpdateCard(r, "0.7.0", UpdateStep.Downloading(0.45f)) {}
+            UpdateCard(r, "0.7.0", UpdateStep.Failed(UpdateStep.Reason.Network)) {}
         }
     }
 

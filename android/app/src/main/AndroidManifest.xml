@@ -12,6 +12,8 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- sideloaded family app: asking to be left out of battery optimisation is the point -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- updates come from the family's own server (dl app-push), not a store -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
         android:name=".DiaLifeApp"
@@ -58,6 +60,8 @@
         <!-- the class names notifications and timers from before 2026-11 point at -->
         <receiver android:name=".live.ActionReceiver" android:exported="false" />
         <receiver android:name=".live.EatReminderReceiver" android:exported="false" />
+        <!-- what Android's installer says about an update the app handed it -->
+        <receiver android:name=".feature.update.InstallReceiver" android:exported="false" />
 
         <receiver
             android:name=".widget.GlucoseWidgetReceiver"

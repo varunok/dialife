@@ -3,6 +3,7 @@ package com.lumenarcanus.dialife.feature.home
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import com.lumenarcanus.dialife.data.AppRelease
 import com.lumenarcanus.dialife.data.Bg
 import com.lumenarcanus.dialife.data.ConePoint
 import com.lumenarcanus.dialife.data.Forecast
@@ -121,3 +122,12 @@ fun sampleMeter(now: Long = 1_761_400_000_000L): MeterReport {
         lag = MeterLag(min = 9, lo = 1, hi = 16, n = 66, used = 4, source = "published")
     )
 }
+
+/** A newer version on the server, for previews of the update card. */
+fun sampleRelease() = AppRelease(
+    name = "0.7.1",
+    code = 70100,
+    sha256 = "0".repeat(64),
+    size = 1,
+    notes = "Порада калібрувати й повторний замір після низького."
+)

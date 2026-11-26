@@ -93,6 +93,8 @@ fun HomeScreen(
     recheckSection: @Composable (onMeasure: () -> Unit) -> Unit = {},
     // calibrate the sensor, with a fresh check only (feature/calibration); onMeasure opens the glucometer entry
     calibrationSection: @Composable (onMeasure: () -> Unit) -> Unit = {},
+    // a newer DiaLife on the family's server (feature/update)
+    updateSection: @Composable () -> Unit = {},
     // the entry sheet's: "… is giving insulin" on the other phones, food suggestions
     onAnnounceInsulin: (InsulinType?) -> Unit = {},
     foods: FoodRepository? = null,
@@ -172,6 +174,7 @@ fun HomeScreen(
         sensorlessSection { sheet = SheetRequest(TreatmentKind.Meter) }
         recheckSection { sheet = SheetRequest(TreatmentKind.Meter) }
         calibrationSection { sheet = SheetRequest(TreatmentKind.Meter) }
+        updateSection()
         Column(Modifier.animateContentSize(), verticalArrangement = Arrangement.spacedBy(18.dp)) {
             alarmsSection()
         }

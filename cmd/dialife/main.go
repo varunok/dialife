@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"syscall"
 	"text/tabwriter"
@@ -161,6 +162,7 @@ func serve(cfg config.Config) error {
 		PingEvery: 25 * time.Second,
 		Loc:       loc(cfg),
 		Uploader:  cfg.UploaderLabel,
+		AppDir:    filepath.Join(filepath.Dir(cfg.DBPath), "app"), // dl app-push puts updates here
 	})
 	srv := &http.Server{
 		Addr:              cfg.Addr,

@@ -18,6 +18,7 @@ import com.lumenarcanus.dialife.feature.questions.QuestionsSection
 import com.lumenarcanus.dialife.feature.questions.WatchSection
 import com.lumenarcanus.dialife.feature.recheck.RecheckSection
 import com.lumenarcanus.dialife.feature.sensorless.SensorlessSection
+import com.lumenarcanus.dialife.feature.update.UpdateSection
 import com.lumenarcanus.dialife.feature.wait.WaitSection
 import com.lumenarcanus.dialife.foodRepository
 import com.lumenarcanus.dialife.insulinIntents
@@ -79,6 +80,7 @@ fun HomeRoute(
         sensorlessSection = { onMeasure -> SensorlessSection(onMeasure) },
         recheckSection = { onMeasure -> RecheckSection(onMeasure) },
         calibrationSection = { onMeasure -> CalibrationSection(onMeasure) },
+        updateSection = { UpdateSection() },
         onOpenSettings = onOpenSettings,
         onRetry = vm::retry,
         onSaveTreatment = vm::save,

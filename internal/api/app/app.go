@@ -17,6 +17,7 @@ import (
 	"dialife/internal/alarms"
 	"dialife/internal/auth"
 	"dialife/internal/bus"
+	"dialife/internal/appupdate"
 	"dialife/internal/calib"
 	"dialife/internal/carbs"
 	"dialife/internal/config"
@@ -76,6 +77,7 @@ type Handlers struct {
 	Sensorless *sensorless.Service // the "no sensor" mode; nil: never on
 	Recheck    *recheck.Service    // "measure again in 15 minutes" after carbs for a low; nil: never
 	Calib      *calib.Service      // when to calibrate the sensor, and with which check; nil: never
+	AppUpdate  *appupdate.Service  // the app's newest APK on this server; nil: none
 
 	mealGapQ mealGapCache // how far apart a meal's entries may be
 }
@@ -107,6 +109,7 @@ type stateResponse struct {
 	SensorlessSettings sensorless.Settings    `json:"sensorless_settings"`     // the reminder's interval, for the settings screen
 	Recheck            *recheck.Recheck       `json:"recheck,omitempty"`       // carbs given for a low: measure again with the glucometer
 	Calibration        *calib.Advice          `json:"calibration,omitempty"`   // the sensor is off: calibrate, with a fresh check only
+	App                *appupdate.Release     `json:"app,omitempty"`           // the app's newest version on this server: a phone with a lower code updates
 }
 
 type caregiver struct {
@@ -210,6 +213,7 @@ func (h *Handlers) snapshot(ctx context.Context, now time.Time) (stateResponse, 
 	if resp.Calibration, err = h.Calib.State(ctx); err != nil {
 		return resp, err
 	}
+	resp.App = h.AppUpdate.Latest()
 	resp.Dose = h.Dose.Get(ctx)
 	resp.MealGapMin = h.mealGap(ctx, now)
 	resp.BolusBefore, resp.BolusAfter = int(questions.BolusBefore.Minutes()), int(questions.BolusAfter.Minutes())

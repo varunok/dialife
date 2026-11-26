@@ -885,4 +885,13 @@
     <string name="calib_measure">Registrar medición de glucómetro</string>
     <string name="calib_close">Cerrar para todos</string>
     <string name="calib_close_failed">No se pudo cerrar: sin conexión con el servidor.</string>
+    <string name="update_title">DiaLife %1$s está lista</string>
+    <string name="update_current">Este teléfono tiene %1$s</string>
+    <string name="update_install">Instalar</string>
+    <string name="update_retry">Reintentar</string>
+    <string name="update_downloading">Descargando… %1$d%%</string>
+    <string name="update_installing">Instalando: confirme si Android lo pide. La app se reinicia.</string>
+    <string name="update_failed_network">No se pudo descargar: sin conexión con el servidor.</string>
+    <string name="update_failed_checksum">El archivo llegó dañado y no se instaló. Reintente.</string>
+    <string name="update_failed_installer">Android no lo instaló (cancelado o falta espacio).</string>
 </resources>

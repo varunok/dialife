@@ -877,4 +877,13 @@
     <string name="calib_measure">Log a glucometer check</string>
     <string name="calib_close">Close for everyone</string>
     <string name="calib_close_failed">Could not close: no connection to the server.</string>
+    <string name="update_title">DiaLife %1$s is ready</string>
+    <string name="update_current">This phone has %1$s</string>
+    <string name="update_install">Install</string>
+    <string name="update_retry">Try again</string>
+    <string name="update_downloading">Downloading… %1$d%%</string>
+    <string name="update_installing">Installing: confirm if Android asks. The app restarts.</string>
+    <string name="update_failed_network">Could not download: no connection to the server.</string>
+    <string name="update_failed_checksum">The file came damaged and was not installed. Try again.</string>
+    <string name="update_failed_installer">Android did not install it (cancelled, or not enough space).</string>
 </resources>

@@ -102,6 +102,7 @@ Backups & deploy
   dl app [debug]             build the Android app (release; debug = with the adb test hooks)
                              and install it on every phone connected by USB
   dl app-publish             build the APK for GitHub, signed with the project's key
+  dl app-push ["what is new"]   the family build to the server: every phone offers the update
                              (.local/keys), into .local/dist/dialife-VERSION.apk; installs nothing
   dl ssh                     interactive shell on the server
 EOF
@@ -244,6 +245,49 @@ app)
 		echo "==> $s ($(adb -s "$s" shell getprop ro.product.model | tr -d '\r'))"
 		adb -s "$s" install -r "$apk" 2>&1 | tail -1
 	done
+	;;
+app-push)
+	# the family's build, from the server to every phone (the app offers it and installs it):
+	# a committed build only, newer than what is there, signed with the same key as before
+	notes="${1:-}"
+	[ -z "$(cd "$ROOT" && git status --porcelain --untracked-files=no)" ] || { echo "uncommitted changes: commit them first" >&2; exit 1; }
+	(cd "$ROOT/android" && ./gradlew -q ":app:ktlintCheck" ":app:testDebugUnitTest" ":app:verifyRoborazziDebug" ":app:assembleRelease") || exit 1
+	dir="$ROOT/android/app/build/outputs/apk/release"
+	apk="$dir/app-release.apk"
+	meta="$dir/output-metadata.json"
+	[ -f "$apk" ] && [ -f "$meta" ] || { echo "no release APK in $dir" >&2; exit 1; }
+	read -r name code < <(python3 -I -c 'import json,sys; e=json.load(open(sys.argv[1]))["elements"][0]; print(e["versionName"], e["versionCode"])' "$meta")
+	signer=$(ls -d "${ANDROID_HOME:-$HOME/Android/Sdk}"/build-tools/*/ 2>/dev/null | sort -V | tail -1)apksigner
+	[ -x "$signer" ] || { echo "apksigner not found (Android SDK build-tools)" >&2; exit 1; }
+	cert=$("$signer" verify --print-certs "$apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+	[ -n "$cert" ] || { echo "could not read the APK's signing certificate" >&2; exit 1; }
+	sum=$(sha256sum "$apk" | cut -d' ' -f1)
+	size=$(stat -c %s "$apk")
+	# what the server has now: refuse an older version or another key (Android would not install it over)
+	prev=$(remote 'cat /opt/dialife/data/app/latest.json 2>/dev/null' || true)
+	if [ -n "$prev" ]; then
+		read -r pcode pcert < <(printf '%s' "$prev" | python3 -I -c 'import json,sys; d=json.load(sys.stdin); print(d.get("code",0), d.get("cert",""))')
+		[ "$code" -gt "$pcode" ] || { echo "version $name ($code) is not newer than the server's ($pcode): commit or tag first" >&2; exit 1; }
+		[ -z "$pcert" ] || [ "$pcert" = "$cert" ] || { echo "signed with another key than the phones' app ($cert, not $pcert): build it on the machine that built it before" >&2; exit 1; }
+	fi
+	file="dialife-$name.apk"
+	tmp=$(mktemp -d)
+	trap 'rm -rf "$tmp"' EXIT
+	NAME="$name" CODE="$code" SUM="$sum" SIZE="$size" NOTES="$notes" CERT="$cert" FILE="$file" python3 -I -c '
+import json, os, time
+e = os.environ
+print(json.dumps({"name": e["NAME"], "code": int(e["CODE"]), "sha256": e["SUM"], "size": int(e["SIZE"]),
+    "notes": e["NOTES"], "cert": e["CERT"], "at": int(time.time() * 1000), "file": e["FILE"]}, ensure_ascii=False))' > "$tmp/latest.json"
+	/usr/bin/scp -q "$apk" "$HOST:/tmp/$file"
+	/usr/bin/scp -q "$tmp/latest.json" "$HOST:/tmp/dialife-latest.json"
+	remote "set -e
+		install -d -o dialife -g dialife -m 750 /opt/dialife/data/app
+		install -o dialife -g dialife -m 640 /tmp/$file /opt/dialife/data/app/$file
+		install -o dialife -g dialife -m 640 /tmp/dialife-latest.json /opt/dialife/data/app/latest.json.new
+		mv -f /opt/dialife/data/app/latest.json.new /opt/dialife/data/app/latest.json
+		rm -f /tmp/$file /tmp/dialife-latest.json
+		cd /opt/dialife/data/app && ls -1t dialife-*.apk | tail -n +3 | xargs -r rm -f"
+	echo "pushed $name ($code), $size bytes: every phone offers it with its next update of the state"
 	;;
 app-publish)
 	# the GitHub APK: its own build type and folder, never the family's build

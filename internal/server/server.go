@@ -13,6 +13,7 @@ import (
 	"dialife/internal/api/nsv1"
 	"dialife/internal/auth"
 	"dialife/internal/bus"
+	"dialife/internal/appupdate"
 	"dialife/internal/calib"
 	"dialife/internal/carbs"
 	"dialife/internal/config"
@@ -45,6 +46,7 @@ type Deps struct {
 	Loc       *time.Location  // the family's time zone (stats day); nil: UTC
 	Uploader  string          // what the family calls the xDrip+ phone (DIALIFE_UPLOADER_LABEL)
 	Carbs     *carbs.Service  // nil: the family's own numbers only, no models
+	AppDir    string          // where `dl app-push` puts the app's update (app/ by the database); empty: none
 }
 
 // App is the wired server: the HTTP handler plus the alarm engine, whose
@@ -87,6 +89,7 @@ func New(d Deps) *App {
 			api.PublishState(ctx)
 		}}
 	api.Questions.Sensorless = api.Sensorless.On
+	api.AppUpdate = &appupdate.Service{Dir: d.AppDir}
 	api.Recheck = &recheck.Service{Store: d.Store, Bus: d.Bus, Now: d.Now, OnChange: api.PublishState}
 	api.Calib = &calib.Service{Store: d.Store, Now: d.Now, Trust: api.Trust, Sensorless: api.Sensorless.On, OnChange: api.PublishState,
 		AbsorbFor: func(ctx context.Context) time.Duration { return time.Duration(api.Dose.Get(ctx).CarbMin) * time.Minute }}
@@ -129,6 +132,7 @@ func New(d Deps) *App {
 	sensorless.HTTP{Service: api.Sensorless}.Routes(mux, caregiver)
 	recheck.HTTP{Service: api.Recheck}.Routes(mux, caregiver)
 	calib.HTTP{Service: api.Calib}.Routes(mux, caregiver)
+	appupdate.HTTP{Service: api.AppUpdate}.Routes(mux, anyRole)
 	webLogin := &weblogin.HTTP{Store: d.Store, Bus: d.Bus, Now: d.Now}
 	webLogin.Routes(mux, anyRole, caregiver)
 	stats.HTTP{Store: d.Store, Now: d.Now, Loc: d.Loc, Thresholds: api.CurrentThresholds}.Routes(mux, anyRole)

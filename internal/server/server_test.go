@@ -32,6 +32,8 @@ type fixture struct {
 	clock time.Time
 	mu    sync.Mutex
 	app   *App
+	// where dl app-push would put the app update
+	appDir string
 }
 
 // now is the server's clock; tests move it with advance.
@@ -60,8 +62,9 @@ func newFixture(t *testing.T) *fixture {
 	b := bus.New(4)
 	links, _ := acklink.NewSigner(testSecret)
 	f := &fixture{store: s, bus: b, links: links, clock: testNow}
+	f.appDir = t.TempDir()
 	f.app = New(Deps{Store: s, Auth: auth.NewAuthenticator(s, f.now), Bus: b, Version: "test", Now: f.now,
-		PingEvery: 50 * time.Millisecond, Links: links})
+		PingEvery: 50 * time.Millisecond, Links: links, AppDir: f.appDir})
 	f.srv = httptest.NewServer(f.app.Handler)
 	t.Cleanup(f.srv.Close)
 	return f
