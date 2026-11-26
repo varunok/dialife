@@ -301,5 +301,6 @@ func TestStreamMeterCheckIsHistoryEvent(t *testing.T) {
 	if h.From != at || h.To != at {
 		t.Fatalf("history range %d..%d, want the check at %d", h.From, h.To, at)
 	}
+	c.next(t, "bg") // the state again: a check may bring or settle the calibration advice
 	c.expectQuiet(t)
 }

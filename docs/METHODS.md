@@ -30,6 +30,7 @@ All values are in mg/dL; the apps convert for mmol/L.
 - [Recheck after a low](#recheck)
 - [≈ meter](#meter-estimate)
 - [Sensor delay](#sensor-delay)
+- [Calibration advice](#calibration)
 - [After a shower](#shower)
 - [No-sensor mode](#no-sensor)
 - [Statistics](#stats)
@@ -274,6 +275,49 @@ published 4 minutes are used.
 - Only checks taken while glucose moves tell anything about the delay; on a steady level any
   shift fits. So it takes hundreds of everyday checks for the interval to narrow.
 - The delay may differ between people [4] and between sensors; one number is kept for all.
+
+---
+
+<a id="calibration"></a>
+## Calibration advice
+
+**In short.** When the sensor keeps reading off from the glucometer, the apps say so, and when a
+fresh glucometer check can be entered in xDrip+ as a calibration. The number is only ever a
+check just taken, never one worked out by DiaLife.
+
+**Based on**
+- Dexcom's agreement rule for its CGM: within 20% of the glucometer at 70 mg/dL or more, within
+  20 mg/dL below; consider calibrating when, watched over several hours, the sensor is always
+  higher (or always lower) than the meter and always outside it [18][19].
+- Dexcom: enter a calibration within 5 minutes of the fingerstick; do not calibrate while
+  glucose changes rapidly (after meals or exercise), with pressure on the sensor, on a sensor
+  error, or on up or down trend arrows [19].
+- CGM users need a glucometer for calibration where needed and when the sensor seems
+  inaccurate (ISPAD 2024, ADA Standards of Care 2026, NICE NG18;
+  [GUIDELINES](GUIDELINES.md#cgm-and-the-glucometer)).
+- A new sensor reads less consistently with the glucometer, aligning over its first 24 hours [18].
+
+**Our own: from our observations**
+- "Several hours" made countable: three checks in a row outside the rule, all on one side, on
+  the current sensor since its start or its last calibration; checks within an hour of each
+  other count as one. Each check is compared with the sensor [the delay](#sensor-delay) later;
+  one taken while glucose moved faster than 2 mg/dL per minute is left out.
+- In a sensor's first 12 hours only when it is far off: on average 40% (from 70 mg/dL) or
+  40 mg/dL (below), or it reads LOW while the glucometer shows 70 or more, which counts at once.
+  Dexcom speaks of 24 hours; 12 is the family's choice.
+- "Calibrate now with N": the newest check, at most 5 minutes old, 90–150 mg/dL (the xDrip+
+  docs advise a first point in the lower normal range), the sensor within 10 mg/dL over the
+  15 minutes before it, and the family's absorption time since food and rapid insulin; not
+  after a shower. Otherwise the apps say which of these is missing.
+- Until the sensor's reading the delay later has come, the newest reading stands in for a check
+  just taken, so it can still be entered in time.
+- A calibration (xDrip+'s "Add Calibration") starts a new stretch and ends the advice. Closed by
+  hand, it is closed for every phone until a newer check is off again. Nothing in the no-sensor
+  mode.
+
+**Limits**
+- What a calibration does inside the sensor is Dexcom's; DiaLife cannot tell how much it helps.
+- Dexcom notes that calibrating brings the sensor closer to the meter, not necessarily to the lab.
 
 ---
 
@@ -566,3 +610,6 @@ Every source below was opened and the statement it backs was found in it.
 17. Hesterberg TC. What Teachers Should Know about the Bootstrap: Resampling in the
     Undergraduate Statistics Curriculum. 2014 (the percentile interval, after Efron and
     Tibshirani, An Introduction to the Bootstrap, 1993). <https://arxiv.org/abs/1411.5279>
+18. Dexcom. What do I do if my blood glucose meter is not within the accuracy (20/20) range of my
+    Dexcom G6? <https://www.dexcom.com/en-us/faqs/blood-glucose-meter-is-not-within-accuracy-range>
+19. Dexcom. Calibration Guidance for Dexcom CGM Systems. <https://www.dexcom.com/en-gb/faqs/calibration>

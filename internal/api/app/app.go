@@ -17,6 +17,7 @@ import (
 	"dialife/internal/alarms"
 	"dialife/internal/auth"
 	"dialife/internal/bus"
+	"dialife/internal/calib"
 	"dialife/internal/carbs"
 	"dialife/internal/config"
 	"dialife/internal/dose"
@@ -74,6 +75,7 @@ type Handlers struct {
 	Trust      *trust.Service      // when the sensor is not believed (after a shower); nil: always
 	Sensorless *sensorless.Service // the "no sensor" mode; nil: never on
 	Recheck    *recheck.Service    // "measure again in 15 minutes" after carbs for a low; nil: never
+	Calib      *calib.Service      // when to calibrate the sensor, and with which check; nil: never
 
 	mealGapQ mealGapCache // how far apart a meal's entries may be
 }
@@ -104,6 +106,7 @@ type stateResponse struct {
 	Sensorless         *sensorless.State      `json:"sensorless,omitempty"`    // the "no sensor" mode is on: no alarms, the last glucometer check, the reminder
 	SensorlessSettings sensorless.Settings    `json:"sensorless_settings"`     // the reminder's interval, for the settings screen
 	Recheck            *recheck.Recheck       `json:"recheck,omitempty"`       // carbs given for a low: measure again with the glucometer
+	Calibration        *calib.Advice          `json:"calibration,omitempty"`   // the sensor is off: calibrate, with a fresh check only
 }
 
 type caregiver struct {
@@ -202,6 +205,9 @@ func (h *Handlers) snapshot(ctx context.Context, now time.Time) (stateResponse, 
 	}
 	resp.SensorlessSettings = h.Sensorless.Settings(ctx)
 	if resp.Recheck, err = h.Recheck.State(ctx); err != nil {
+		return resp, err
+	}
+	if resp.Calibration, err = h.Calib.State(ctx); err != nil {
 		return resp, err
 	}
 	resp.Dose = h.Dose.Get(ctx)

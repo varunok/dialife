@@ -13,6 +13,7 @@ import (
 	"dialife/internal/api/nsv1"
 	"dialife/internal/auth"
 	"dialife/internal/bus"
+	"dialife/internal/calib"
 	"dialife/internal/carbs"
 	"dialife/internal/config"
 	dosecalc "dialife/internal/dose" // "dose" is a test helper here
@@ -87,6 +88,8 @@ func New(d Deps) *App {
 		}}
 	api.Questions.Sensorless = api.Sensorless.On
 	api.Recheck = &recheck.Service{Store: d.Store, Bus: d.Bus, Now: d.Now, OnChange: api.PublishState}
+	api.Calib = &calib.Service{Store: d.Store, Now: d.Now, Trust: api.Trust, Sensorless: api.Sensorless.On, OnChange: api.PublishState,
+		AbsorbFor: func(ctx context.Context) time.Duration { return time.Duration(api.Dose.Get(ctx).CarbMin) * time.Minute }}
 	api.Intents = &intent.Board{Bus: d.Bus, Now: d.Now}
 	api.Dose = &dosecalc.Service{Store: d.Store, Now: d.Now, OnChange: api.PublishState}
 	api.Planned = &planned.Service{Store: d.Store, Now: d.Now, OnChange: api.PublishState, Settle: api.Questions.SettlePlanned}
@@ -125,6 +128,7 @@ func New(d Deps) *App {
 	dosecalc.HTTP{Service: api.Dose}.Routes(mux, caregiver)
 	sensorless.HTTP{Service: api.Sensorless}.Routes(mux, caregiver)
 	recheck.HTTP{Service: api.Recheck}.Routes(mux, caregiver)
+	calib.HTTP{Service: api.Calib}.Routes(mux, caregiver)
 	webLogin := &weblogin.HTTP{Store: d.Store, Bus: d.Bus, Now: d.Now}
 	webLogin.Routes(mux, anyRole, caregiver)
 	stats.HTTP{Store: d.Store, Now: d.Now, Loc: d.Loc, Thresholds: api.CurrentThresholds}.Routes(mux, anyRole)

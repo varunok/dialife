@@ -746,6 +746,50 @@
      "No dice cuánto dar: eso requiere el peso del niño y el plan de la familia. Las alarmas no cambian."
     ]
    }
+  },
+  "calibration": {
+   "en": {
+    "title": "Calibration advice",
+    "short": "When the sensor keeps reading off from the glucometer, and when a fresh glucometer check can be entered in xDrip+ as a calibration. Only ever a check just taken.",
+    "based": [
+     "Dexcom: within 20% of the glucometer from 70 mg/dL, 20 mg/dL below; consider calibrating when over several hours the sensor is always higher or always lower and always outside that.",
+     "Dexcom: enter it within 5 minutes of the fingerstick; not while glucose changes fast (after meals or exercise), with pressure on the sensor, or on up or down arrows.",
+     "A new sensor aligns with the glucometer over its first 24 hours (Dexcom)."
+    ],
+    "ours": [
+     "Three checks in a row outside the rule, on one side, since the sensor's start or its last calibration; checks within an hour count as one.",
+     "In the first 12 hours only when far off (40% or 40 mg/dL on average) or LOW at a check of 70 or more.",
+     "Calibrate now: a check at most 5 minutes old, 90–150, the sensor within 10 mg/dL over 15 minutes, and no food or rapid insulin within the absorption time."
+    ]
+   },
+   "uk": {
+    "title": "Порада калібрувати",
+    "short": "Коли сенсор стабільно розходиться з глюкометром, і коли свіжий замір можна ввести в xDrip+ як калібрування. Лише щойно виміряне число.",
+    "based": [
+     "Dexcom: у межах 20% від глюкометра від 70 мг/дл, 20 мг/дл нижче; калібрувати варто, коли кілька годин сенсор завжди вище або завжди нижче і завжди поза цими межами.",
+     "Dexcom: вводити протягом 5 хвилин після заміру з пальця; не коли цукор швидко змінюється (після їжі чи руху), не коли сенсор притиснутий, не на стрілках вгору чи вниз.",
+     "Новий сенсор вирівнюється з глюкометром протягом перших 24 годин (Dexcom)."
+    ],
+    "ours": [
+     "Три заміри поспіль поза межами, в один бік, від старту сенсора або від останнього калібрування; заміри в межах години — один.",
+     "У перші 12 годин — лише коли дуже далеко (у середньому 40% або 40 мг/дл) або LOW при глюкометрі 70 і вище.",
+     "Калібруйте зараз: замір не старший за 5 хвилин, 90–150, сенсор за 15 хвилин змінився не більше ніж на 10 мг/дл, без їжі й короткого інсуліну за час засвоєння."
+    ]
+   },
+   "es": {
+    "title": "Consejo de calibración",
+    "short": "Cuándo el sensor se aparta del glucómetro de forma constante, y cuándo una medición reciente puede introducirse en xDrip+ como calibración. Siempre una medición recién tomada.",
+    "based": [
+     "Dexcom: dentro del 20 % del glucómetro desde 70 mg/dL, 20 mg/dL por debajo; considere calibrar si durante varias horas el sensor está siempre más alto o siempre más bajo y siempre fuera de eso.",
+     "Dexcom: introducirla en los 5 minutos tras la punción; no con la glucosa cambiando rápido (tras comer o hacer ejercicio), con presión sobre el sensor ni con flechas hacia arriba o abajo.",
+     "Un sensor nuevo se alinea con el glucómetro durante sus primeras 24 horas (Dexcom)."
+    ],
+    "ours": [
+     "Tres mediciones seguidas fuera de la regla, del mismo lado, desde el inicio del sensor o su última calibración; las de una misma hora cuentan como una.",
+     "En las primeras 12 horas solo si está muy lejos (40 % o 40 mg/dL de media) o marca LOW con 70 o más en el glucómetro.",
+     "Calibre ahora: una medición de hasta 5 minutos, 90–150, el sensor dentro de 10 mg/dL en 15 minutos y sin comida ni insulina rápida en el tiempo de absorción."
+    ]
+   }
   }
  },
  "guidelines": "https://github.com/varunok/dialife/blob/main/docs/GUIDELINES.md"

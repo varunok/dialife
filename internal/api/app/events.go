@@ -88,6 +88,9 @@ func (h *Handlers) EntriesSaved(ctx context.Context, es []store.Entry) {
 	if older > 0 {
 		h.Bus.Publish(EventHistory, historyEvent{From: backFrom, To: backTo}, now)
 	}
+	if meters && newest == nil {
+		h.PublishState(ctx) // a glucometer check may bring or settle the calibration advice
+	}
 	if isLatest {
 		h.Bus.Publish(EventBG, snap, now)
 		h.EvaluateAlarms(ctx)
