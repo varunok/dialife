@@ -220,41 +220,41 @@
   "meter-estimate": {
    "en": {
     "title": "≈ meter",
-    "short": "What the glucometer would most likely show for a sensor value, learned from the family's own glucometer checks.",
+    "short": "What the glucometer would most likely show for a sensor value, learned only from the glucometer checks on the current sensor since its start or its last calibration.",
     "based": [
      "The sensor reads the fluid under the skin, which follows the blood; rapid changes show in it late (Schmelzeisen-Redeker 2015).",
      "Above 2 mg/dL per minute the sensor and the blood can disagree for that reason alone (ADA Standards of Care 2026): such checks stay out of the model."
     ],
     "ours": [
-     "Each check is paired with the sensor value the sensor delay later.",
-     "The model: meter ≈ sensor × (1 + b) + a, plus a shift of each sensor's own; older checks weigh less. Shown after 8 checks.",
-     "It never changes a reading and never feeds the alarms."
+     "Sensors differ (on one family's data from 21% above the glucometer to 27% below), so only the current stretch counts: the sensor since its start or its last calibration.",
+     "Each check is paired with the sensor the sensor delay later; newer checks weigh more (a day older, half). Shown from 2 checks, drawn from the stretch's start.",
+     "Older sensors only set the band around it. It never changes a reading and never feeds the alarms."
     ]
    },
    "uk": {
     "title": "≈ глюкометр",
-    "short": "Що найімовірніше показав би глюкометр для цього показника сенсора; модель вчиться на замірах глюкометром самої сім'ї.",
+    "short": "Що найімовірніше показав би глюкометр для цього показника сенсора: вчиться лише на замірах глюкометром поточного сенсора від його старту або від останнього калібрування.",
     "based": [
      "Сенсор міряє рідину під шкірою, яка йде слідом за кров'ю; швидкі зміни видно в ній пізніше (Schmelzeisen-Redeker 2015).",
      "Коли цукор змінюється швидше за 2 мг/дл за хвилину, сенсор і кров можуть розходитися вже через це (ADA, Standards of Care 2026): такі заміри в модель не йдуть."
     ],
     "ours": [
-     "Кожен замір порівнюється з показником сенсора через час затримки.",
-     "Модель: глюкометр ≈ сенсор × (1 + b) + a плюс власний зсув кожного сенсора; старші заміри важать менше. З'являється після 8 замірів.",
-     "Ніколи не змінює показник і не впливає на тривоги."
+     "Сенсори різні (на даних однієї сім'ї — від +21% до −27% від глюкометра), тож рахується лише поточний відрізок: сенсор від старту або від останнього калібрування.",
+     "Кожен замір порівнюється з сенсором через час затримки; свіжіші заміри важать більше (на добу старший — удвічі менше). З'являється від 2 замірів, лінія — від початку відрізка.",
+     "Старі сенсори задають лише ширину смуги. Ніколи не змінює показник і не впливає на тривоги."
     ]
    },
    "es": {
     "title": "≈ glucómetro",
-    "short": "Lo que probablemente mostraría el glucómetro para un valor del sensor, aprendido de las mediciones de la propia familia.",
+    "short": "Lo que probablemente mostraría el glucómetro para un valor del sensor, aprendido solo de las mediciones del sensor actual desde su inicio o su última calibración.",
     "based": [
      "El sensor mide el líquido bajo la piel, que sigue a la sangre; los cambios rápidos le llegan tarde (Schmelzeisen-Redeker 2015).",
      "Por encima de 2 mg/dL por minuto el sensor y la sangre pueden diferir solo por eso (ADA, Standards of Care 2026): esas mediciones quedan fuera del modelo."
     ],
     "ours": [
-     "Cada medición se compara con el sensor un retraso después.",
-     "El modelo: glucómetro ≈ sensor × (1 + b) + a, más un desplazamiento propio de cada sensor; las mediciones antiguas pesan menos. Aparece tras 8 mediciones.",
-     "Nunca cambia una lectura ni alimenta las alarmas."
+     "Los sensores difieren (en datos de una familia, del 21 % por encima del glucómetro al 27 % por debajo), así que solo cuenta el tramo actual: el sensor desde su inicio o su última calibración.",
+     "Cada medición se compara con el sensor un retraso después; las más recientes pesan más (un día más antigua, la mitad). Aparece con 2 mediciones; la línea, desde el inicio del tramo.",
+     "Los sensores anteriores solo fijan el ancho de la banda. Nunca cambia una lectura ni alimenta las alarmas."
     ]
    }
   },

@@ -36,10 +36,10 @@ func (h HTTP) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var checks []Point
-	var bounds []int64 // where a stretch of one sensor's behaviour begins: starts and calibrations
+	var cals []int64 // calibrations, oldest first
 	for _, e := range es {
 		if IsCalibration(e.Device) {
-			bounds = append(bounds, e.Date)
+			cals = append(cals, e.Date)
 			continue
 		}
 		if e.MBG != nil && *e.MBG > 0 {
@@ -65,7 +65,7 @@ func (h HTTP) get(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	slices.Sort(starts)
-	bounds = append(bounds, starts...)
+	bounds := append(slices.Clone(starts), cals...) // where a stretch of one sensor's behaviour begins
 	checks = trust.Drop(Dedup(checks), func(p Point) int64 { return p.T }, untrusted)
 
 	// the sensor around each check only, not years of readings: up to the
@@ -89,7 +89,7 @@ func (h HTTP) get(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	lag := MeasureLag(checks, sgv, bounds)
-	res := Fit(Pairs(checks, sgv, starts, lag.Duration()), starts, h.Now())
+	res := Fit(Pairs(checks, sgv, starts, lag.Duration()), starts, cals, h.Now())
 	res.Lag = lag
 	httpx.WriteJSON(w, http.StatusOK, res)
 }

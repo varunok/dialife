@@ -2,6 +2,7 @@ package meter
 
 import (
 	"math"
+	"slices"
 	"testing"
 	"time"
 )
@@ -36,65 +37,78 @@ func TestPairsInterpolateAndSkipFastChanges(t *testing.T) {
 	}
 }
 
-func TestFitFindsGrowingGap(t *testing.T) {
-	// the meter reads 10% above the sensor, a new sensor (no pairs yet) in place
-	starts := []int64{ms(25 * 24 * time.Hour), ms(15 * 24 * time.Hour), ms(2 * time.Hour)}
+// pairs at the given days ago (sensor, meter), flat around each check
+func pairsAt(starts []int64, at ...[3]int) []Pair {
 	var meters, sgv []Point
-	levels := []int{80, 120, 150, 180, 220, 260, 300, 100, 140, 200, 240, 170}
-	for i, v := range levels {
-		at := ms(time.Duration(20-i) * 24 * time.Hour)
-		sgv = append(sgv, flatAround(at, v)...)
-		meters = append(meters, Point{T: at, V: int(math.Round(float64(v) * 1.1))})
+	for _, a := range at {
+		t := ms(time.Duration(a[0]) * time.Hour)
+		sgv = append(sgv, flatAround(t, a[1])...)
+		meters = append(meters, Point{T: t, V: a[2]})
 	}
-	ps := Pairs(meters, sgv, starts, 0)
-	r := Fit(ps, starts, now)
-	if !r.Ready || r.Used != 12 || r.Sensors != 2 || r.Current == nil || r.Current.N != 0 || r.Current.Day != 1 {
+	slices.SortFunc(sgv, func(a, b Point) int { return cmp64(a.T, b.T) })
+	slices.SortFunc(meters, func(a, b Point) int { return cmp64(a.T, b.T) })
+	return Pairs(meters, sgv, starts, 0)
+}
+
+func TestFitIsTheCurrentSensorOnly(t *testing.T) {
+	// two old sensors read 20% high; the current one reads low: meter 137 at sensor 100
+	starts := []int64{ms(30 * 24 * time.Hour), ms(20 * 24 * time.Hour), ms(5 * 24 * time.Hour)}
+	var at [][3]int
+	for i := 0; i < 10; i++ {
+		at = append(at, [3]int{(28 - i*2) * 24, 120, 100})
+	}
+	at = append(at, [3]int{72, 100, 137}, [3]int{48, 150, 205}, [3]int{24, 80, 117})
+	r := Fit(pairsAt(starts, at...), starts, nil, now)
+	if !r.Ready || r.Used != 3 || len(r.Pairs) != 3 || r.Current == nil || r.Current.N != 3 || r.Sensors != 1 {
 		t.Fatalf("summary %+v", r)
 	}
-	if r.BiasPct > -8 || r.BiasPct < -10 { // sensor 1/1.1 of the meter: −9.1%
-		t.Fatalf("bias %v", r.BiasPct)
+	if r.BiasPct > -25 || r.BiasPct < -32 {
+		t.Fatalf("bias of this sensor only: %v", r.BiasPct)
 	}
-	v, spread := r.Model.Estimate(250)
-	if math.Abs(v-275) > 6 || spread <= 0 || spread > 15 {
-		t.Fatalf("estimate at 250: %v ±%v (model %+v)", v, spread, r.Model)
+	// the old sensors do not pull it: the meter is ~37% above the sensor here
+	if v, _ := r.Model.Estimate(100); math.Abs(v-137) > 3 {
+		t.Fatalf("estimate at 100: %v (model %+v)", v, r.Model)
 	}
-	hi := r.Bands[len(r.Bands)-1]
-	if hi.From != 200 || hi.Unit != "pct" || hi.N != 5 {
-		t.Fatalf("bands %+v", r.Bands)
+	if r.Model.A != 0 || r.Model.B != 0 || r.Model.Since != starts[2] {
+		t.Fatalf("model %+v", r.Model)
+	}
+	// the band comes from how much checks wander within a sensor, the old ones included
+	if r.Model.SD < minSpread || r.Model.SD > 0.1 {
+		t.Fatalf("spread %v", r.Model.SD)
 	}
 }
 
-func TestFitNotReadyWithFewPairs(t *testing.T) {
-	var meters, sgv []Point
-	for i := 0; i < 5; i++ {
-		at := ms(time.Duration(5-i) * time.Hour) // oldest first, as the store returns them
-		sgv = append(sgv, flatAround(at, 150)...)
-		meters = append(meters, Point{T: at, V: 160})
+func TestFitStartsAgainAtACalibration(t *testing.T) {
+	starts := []int64{ms(5 * 24 * time.Hour)}
+	cal := ms(30 * time.Hour)
+	ps := pairsAt(starts, [3]int{60, 60, 100}, [3]int{40, 70, 110}, [3]int{20, 110, 115}, [3]int{10, 100, 106})
+	r := Fit(ps, starts, []int64{cal}, now)
+	if len(r.Pairs) != 4 || !r.Pairs[0].BeforeCal || !r.Pairs[1].BeforeCal || r.Pairs[2].BeforeCal {
+		t.Fatalf("pairs %+v", r.Pairs)
 	}
-	r := Fit(Pairs(meters, sgv, nil, 0), nil, now)
-	if r.Ready || r.Model != nil || r.Used != 5 || r.Need != 8 || r.Current != nil {
+	if r.Used != 2 || r.Current.CalibratedAt != cal || len(r.Calibrations) != 1 || r.Model.Since != cal {
+		t.Fatalf("summary %+v model %+v", r, r.Model)
+	}
+	// only after the calibration: the meter ~5% above, not the 50% of before
+	if v, _ := r.Model.Estimate(100); v < 103 || v > 108 {
+		t.Fatalf("estimate %v", v)
+	}
+}
+
+func TestFitNeedsTwoPairsOfThisStretch(t *testing.T) {
+	starts := []int64{ms(5 * 24 * time.Hour)}
+	r := Fit(pairsAt(starts, [3]int{10, 100, 120}), starts, nil, now)
+	if r.Ready || r.Model != nil || r.Used != 1 || r.Need != 2 {
 		t.Fatalf("%+v", r)
 	}
 }
 
-func TestSensorOffsetPulledTowardsCommon(t *testing.T) {
-	// two old sensors agree with the meter; the current one reads 20% low, with two pairs only
-	starts := []int64{ms(30 * 24 * time.Hour), ms(20 * 24 * time.Hour), ms(5 * 24 * time.Hour)}
-	var meters, sgv []Point
-	add := func(d time.Duration, s, m int) {
-		at := ms(d)
-		sgv = append(sgv, flatAround(at, s)...)
-		meters = append(meters, Point{T: at, V: m})
-	}
-	for i := 0; i < 8; i++ {
-		add(time.Duration(28-i*2)*24*time.Hour, 120+i*15, 120+i*15)
-	}
-	add(4*24*time.Hour, 150, 188)
-	add(3*24*time.Hour, 200, 250)
-	r := Fit(Pairs(meters, sgv, starts, 0), starts, now)
-	off := r.Model.Offset
-	if off <= 0.03 || off >= 0.2 { // towards +25%, but not all the way with two pairs
-		t.Fatalf("offset %v", off)
+func TestNewerChecksWeighMore(t *testing.T) {
+	// the offset drifts: 2 days ago the meter read 10% above, today 40%
+	starts := []int64{ms(5 * 24 * time.Hour)}
+	r := Fit(pairsAt(starts, [3]int{48, 100, 110}, [3]int{1, 100, 140}), starts, nil, now)
+	if v, _ := r.Model.Estimate(100); v < 132 {
+		t.Fatalf("the newer check should count far more: %v", v)
 	}
 }
 

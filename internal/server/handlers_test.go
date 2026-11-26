@@ -83,7 +83,8 @@ func TestMeterReport(t *testing.T) {
 		Total int  `json:"total"`
 	}
 	json.NewDecoder(resp.Body).Decode(&r)
-	if resp.StatusCode != 200 || r.Total != 2 || r.Ready || r.Need == 0 {
+	// two checks of the current stretch (the repeat counted once) are enough for the estimate
+	if resp.StatusCode != 200 || r.Total != 2 || !r.Ready || r.Need != 2 {
 		t.Fatalf("meter %d %+v", resp.StatusCode, r)
 	}
 	if st := f.get(t, "/api/meter", nil).StatusCode; st != 401 {

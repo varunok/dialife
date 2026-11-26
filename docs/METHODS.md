@@ -211,8 +211,8 @@ measure again with the glucometer; a check still below 70 says so and asks to tr
 <a id="meter-estimate"></a>
 ## ≈ meter
 
-**In short.** What the glucometer would most likely show for a sensor value, learned from
-the family's own glucometer checks next to sensor readings.
+**In short.** What the glucometer would most likely show for a sensor value, learned only from
+the family's glucometer checks on the current sensor since its start or its last calibration.
 
 **Based on**
 - The sensor reads the fluid under the skin, which follows the blood with some delay;
@@ -223,18 +223,21 @@ the family's own glucometer checks next to sensor readings.
   left out of the model.
 
 **Our own: from our observations**
+- Sensors differ: on one family's data, four sensors in a row read from 21% above the
+  glucometer to 27% below it. So only the current stretch counts: the current sensor since
+  its start, or since its last calibration (a calibration changes how the sensor reads).
 - Each check is paired with the sensor value [the delay](#sensor-delay) later, when the
   sensor shows the blood the check measured (interpolated between the readings around it).
-- The model: meter ≈ sensor × (1 + b) + a, plus a shift of its own for each sensor.
-  Errors count in percent above 100 mg/dL and in mg/dL below. Older pairs weigh less (half
-  after 90 days). Each sensor's own shift is pulled towards the common model until it has
-  about three pairs of its own. Shown after 8 pairs.
+- The estimate: sensor + offset × max(sensor, 100), the offset being the stretch's weighted
+  mean of (meter − sensor) / max(sensor, 100); a check a day older weighs half, as the offset
+  drifts within a sensor. Shown from 2 checks in the stretch, and drawn from its start only.
+- Older sensors only set the band around it: how far checks fall from their own sensor's mean.
 - The same check arriving twice (the same value within 15 minutes) counts once; checks
-  after a shower are left out.
+  after a shower are left out; a calibration sent to the sensor is not a check.
 
 **Limits**
 - It never changes a reading and never feeds the alarms.
-- Sensors differ from each other; a new sensor starts from the common model.
+- With 2–3 checks on a new sensor the offset is rough; the band says so.
 
 ---
 
