@@ -35,6 +35,7 @@ const (
 	ActOK     = "ok"     // check-in answer: all under control
 	ActHelp   = "help"   // check-in answer: need help
 	ActComing = "coming" // answer to a help request: on my way
+	ActClose  = "close"  // a warning (a forecast): closed for every phone
 )
 
 // mac covers action and minutes, so a "quiet 2 h" button cannot be edited
@@ -86,7 +87,7 @@ func (s *Signer) Verify(alarmID int64, q url.Values, now time.Time) (deviceID in
 	}
 	action = q.Get("a")
 	switch action {
-	case "", ActHandle, ActOK, ActHelp, ActComing:
+	case "", ActHandle, ActOK, ActHelp, ActComing, ActClose:
 	default:
 		return 0, "", 0, ErrInvalid
 	}

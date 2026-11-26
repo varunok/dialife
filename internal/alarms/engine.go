@@ -182,7 +182,8 @@ func (e *Engine) maybeFire(ctx context.Context, k Kind, c Condition, r Rules, no
 	prev, err := e.Store.LastManualResolve(ctx, string(k), now.UnixMilli())
 	switch {
 	case err == nil:
-		worse := c.Level.rank() > Level(prev.Level).rank() || worseBy(k, c.SGV, prev.LastSGV, r.Episode.WorseBy)
+		// a closed warning stays closed: the real low or high alarms by itself
+		worse := !Predicted(k) && (c.Level.rank() > Level(prev.Level).rank() || worseBy(k, c.SGV, prev.LastSGV, r.Episode.WorseBy))
 		if !worse {
 			return nil
 		}
@@ -209,6 +210,9 @@ func (e *Engine) step(ctx context.Context, a store.Alarm, c Condition, r Rules, 
 	k := Kind(a.Kind)
 	escalated := c.Level.rank() > Level(a.Level).rank()
 	a.Level, a.LastSGV = string(c.Level), c.SGV
+	if Predicted(k) { // a warning: told once, nothing repeats, checks in or wakes anyone
+		return e.Store.UpdateAlarm(ctx, a)
+	}
 
 	if a.HandledBy == nil { // firing: nobody has it
 		switch {
@@ -297,6 +301,18 @@ func (e *Engine) Handle(ctx context.Context, id int64, by store.Device, quiet ti
 	a, err := e.liveAlarm(ctx, id)
 	if err != nil {
 		return View{}, err
+	}
+	if Predicted(Kind(a.Kind)) { // nobody takes a warning: "I'm on it" from an older phone closes it for all
+		now := e.Now()
+		in, err := e.Input(ctx, now)
+		if err != nil {
+			return View{}, err
+		}
+		if err := e.clear(ctx, a, in, now, &by); err != nil {
+			return View{}, err
+		}
+		a, err = e.Store.AlarmByID(ctx, id)
+		return ToView(a), err
 	}
 	if quiet > 0 && Kind(a.Kind) == KindLow && Level(a.Level) == Urgent {
 		return View{}, ErrQuietRefused

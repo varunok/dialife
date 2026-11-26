@@ -404,6 +404,11 @@ func (n *Ntfy) alarmNote(m Message, e alarms.Event, t Target, what string, isHan
 	if a.Level == alarms.Urgent {
 		m.Priority, m.Tags = prioMax, []string{"rotating_light"}
 	}
+	if alarms.Predicted(a.Kind) { // a warning: nobody takes it, anyone closes it for all
+		m.Priority, m.Tags = prioHigh, []string{"warning"}
+		m.Actions = []Action{n.button("Закрити", a.ID, t, acklink.ActClose, 0)}
+		return m, true
+	}
 	m.Actions = []Action{n.button("Я займаюсь", a.ID, t, acklink.ActHandle, 0)}
 	if !(a.Kind == alarms.KindLow && a.Level == alarms.Urgent) {
 		m.Actions = append(m.Actions, n.button("Тиша 2 год", a.ID, t, acklink.ActHandle, quietMin))

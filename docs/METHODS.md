@@ -144,7 +144,8 @@ a high must last a while first, a low never waits.
 <a id="predicted-alarms"></a>
 ## Predicted low and high
 
-**In short.** An early alarm when Nightscout's AR2 forecast says glucose is heading out of range.
+**In short.** An early warning, not an alarm, when Nightscout's AR2 forecast says glucose is
+heading out of range.
 
 **Based on**
 - Nightscout's AR2 plugin [1], ported with its constants: a second-order autoregressive model
@@ -152,7 +153,11 @@ a high must last a while first, a low never waits.
   urgent levels from its average-loss score (0.05 / 0.10), the side from the value in 20 minutes.
 
 **DiaLife's own rule: from our observations**
-- A predicted alarm is not raised while the same side already alarms.
+- A forecast is a warning, never an alarm episode: in use it was often wrong (on one screen
+  "a low in ~20 min" beside "in 30 min ≈ 93"). Every phone is told once, in amber; nobody
+  takes it, it never repeats, checks in or wakes everyone, and "Close" closes it for every
+  phone; closed, it does not come back for 30 minutes. A real low or high alarms by itself.
+- Not raised while the same side already alarms.
 
 **Limits**
 - AR2 sees only the last two buckets; food and insulin are invisible to it.

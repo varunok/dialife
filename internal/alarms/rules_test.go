@@ -53,7 +53,7 @@ func TestConditions(t *testing.T) {
 		{"high fell past hysteresis clears", fresh(175), map[Kind]Level{KindHigh: Warn}, map[Kind]Level{}},
 		{"74 without an active low is fine", fresh(74), nil, map[Kind]Level{}},
 
-		{"predicted low", withForecast(fresh(80), low), nil, map[Kind]Level{KindPredictedLow: Urgent}},
+		{"predicted low is a warning however sure AR2 is", withForecast(fresh(80), low), nil, map[Kind]Level{KindPredictedLow: Warn}},
 		{"predicted high", withForecast(fresh(170), highWarn), nil, map[Kind]Level{KindPredictedHigh: Warn}},
 		{"forecast low muted while already low", withForecast(fresh(65), low), nil, map[Kind]Level{KindLow: Warn}},
 

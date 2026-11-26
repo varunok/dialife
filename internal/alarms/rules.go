@@ -94,6 +94,12 @@ var DefaultRules = Rules{
 	Episode:       DefaultEpisode,
 }
 
+// Predicted kinds are warnings, never episodes: a forecast is often wrong, so
+// it tells every phone once, in amber, and anyone closes it for all; nobody
+// takes it, nothing repeats, checks in or wakes everyone. A real low or high
+// alarms on its own.
+func Predicted(k Kind) bool { return k == KindPredictedLow || k == KindPredictedHigh }
+
 // side tells which way is worse for a kind: -1 lower, +1 higher, 0 no value.
 func side(k Kind) int {
 	switch k {
@@ -168,10 +174,7 @@ func (r Rules) Conditions(in Input, active map[Kind]Level) map[Kind]Condition {
 	}
 
 	if f := in.Forecast; f != nil && f.Level != glucose.LevelNone {
-		lvl := Warn
-		if f.Level == glucose.LevelUrgent {
-			lvl = Urgent
-		}
+		lvl := Warn // a forecast is a warning, however sure AR2 is
 		// a forecast adds nothing while the same side is already alarming
 		if _, low := out[KindLow]; r.PredictedLow && f.Event == "low" && !low {
 			out[KindPredictedLow] = Condition{Level: lvl, SGV: &sgv}

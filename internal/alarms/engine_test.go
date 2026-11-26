@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"dialife/internal/bus"
+	"dialife/internal/glucose"
 	"dialife/internal/store"
 )
 
@@ -19,6 +20,7 @@ type rig struct {
 	events   <-chan bus.Event
 	clock    time.Time
 	readings []Reading
+	forecast *glucose.Forecast // what AR2 says now; nil: nothing
 	dad, mom store.Device
 }
 
@@ -51,7 +53,7 @@ func (r *rig) newEngine(b *bus.Bus) *Engine {
 				return Input{Now: now.UnixMilli()}, nil
 			}
 			last := r.readings[len(r.readings)-1]
-			return Input{Now: now.UnixMilli(), HasData: true, LastMills: last.Date, SGV: last.SGV, Recent: r.readings}, nil
+			return Input{Now: now.UnixMilli(), HasData: true, LastMills: last.Date, SGV: last.SGV, Recent: r.readings, Forecast: r.forecast}, nil
 		},
 	}
 }
@@ -116,6 +118,30 @@ func (r *rig) handle(id int64, by store.Device) View {
 		r.t.Fatalf("handled by %q", ev.By)
 	}
 	return v
+}
+
+// A forecast is a warning: told once in amber, it never repeats or checks in,
+// and anyone closes it for all; an older phone's "I'm on it" closes it too.
+func TestPredictedIsAWarning(t *testing.T) {
+	r := newRig(t)
+	r.forecast = &glucose.Forecast{Level: glucose.LevelUrgent, Event: "low"}
+	r.reading(95)
+	ev := r.expect(EventAlarm)
+	if ev.Alarm.Kind != KindPredictedLow || ev.Alarm.Level != Warn {
+		t.Fatalf("fire %+v", ev.Alarm)
+	}
+	for range 6 { // half an hour: no repeat, no check-in
+		r.every5(92)
+	}
+	r.expectNone()
+	v, err := r.eng.Handle(context.Background(), ev.Alarm.ID, r.dad, 0)
+	if err != nil || v.State != "cleared" {
+		t.Fatalf("handle closes it: %+v %v", v, err)
+	}
+	r.expect(EventClear)
+	// still forecast, and lower: closed stays closed (a real low alarms by itself)
+	r.every5(85)
+	r.expectNone()
 }
 
 func TestUnhandledRepeats(t *testing.T) {

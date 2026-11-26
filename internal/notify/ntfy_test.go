@@ -80,6 +80,19 @@ func TestAlarmMessages(t *testing.T) {
 	}
 }
 
+// A forecast is a warning: high, not max, and the one button closes it for all.
+func TestPredictedIsAWarning(t *testing.T) {
+	n := testNtfy(t)
+	a := alarms.View{ID: 13, Kind: alarms.KindPredictedLow, Level: alarms.Warn, StartedAt: start.UnixMilli(), SGV: ptr(84)}
+	m, ok := n.Build(alarms.EventAlarm, alarms.Event{Alarm: a, Reason: alarms.ReasonNew}, tato)
+	if !ok || m.Priority != 4 || !strings.HasPrefix(m.Title, "Прогноз: гіпо") || len(m.Actions) != 1 || m.Actions[0].Label != "Закрити" {
+		t.Fatalf("forecast %+v", m)
+	}
+	if dev, act, _ := verify(t, n, m.Actions[0], 13); dev != 8 || act != acklink.ActClose {
+		t.Fatalf("close link %d %s", dev, act)
+	}
+}
+
 func TestStaleMessage(t *testing.T) {
 	n := testNtfy(t)
 	a := alarms.View{ID: 3, Kind: alarms.KindStale, Level: alarms.Urgent, StartedAt: start.UnixMilli(), SGV: ptr(140)}

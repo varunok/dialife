@@ -168,6 +168,8 @@ func (h HTTP) ackLink(w http.ResponseWriter, r *http.Request) {
 		v, err = h.Engine.Help(r.Context(), id, dev)
 	case acklink.ActComing:
 		v, err = h.Engine.Coming(r.Context(), id, dev)
+	case acklink.ActClose:
+		v, _, err = h.Engine.Resolve(r.Context(), id, dev)
 	default:
 		v, err = h.Engine.Handle(r.Context(), id, dev, time.Duration(minutes)*time.Minute)
 		if errors.Is(err, ErrQuietRefused) {

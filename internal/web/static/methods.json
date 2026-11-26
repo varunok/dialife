@@ -150,35 +150,35 @@
   "predicted-alarms": {
    "en": {
     "title": "Predicted low and high",
-    "short": "An early alarm when Nightscout's AR2 forecast says glucose is heading out of range.",
+    "short": "An early warning, not an alarm, when Nightscout's AR2 forecast says glucose is heading out of range.",
     "based": [
      "Nightscout's AR2, ported with its constants: the warning and urgent levels from its score, the side from the value in 20 minutes."
     ],
     "ours": [
-     "Not raised while the same side already alarms.",
-     "AR2 sees only the last readings, not food or insulin."
+     "A warning, never an alarm episode: forecasts are often wrong. Every phone is told once, in amber; nobody takes it, nothing repeats or wakes everyone, and \"Close\" closes it for all; closed, it stays away for 30 minutes.",
+     "A real low or high alarms by itself. Not raised while the same side already alarms."
     ]
    },
    "uk": {
     "title": "Прогноз низького і високого",
-    "short": "Рання тривога, коли прогноз AR2 з Nightscout каже, що цукор виходить за межі.",
+    "short": "Раннє попередження, а не тривога, коли прогноз AR2 з Nightscout каже, що цукор виходить за межі.",
     "based": [
      "AR2 з Nightscout, перенесений з його сталими: рівні попередження й термінової тривоги — з його оцінки, бік — за значенням через 20 хвилин."
     ],
     "ours": [
-     "Не з'являється, поки вже звучить тривога в той самий бік.",
-     "AR2 бачить лише останні показники, а не їжу чи інсулін."
+     "Попередження, а не тривога: прогнози часто помиляються. Усім телефонам — один раз, жовтим; ніхто його не бере, нічого не повторюється й нікого не будить, «Закрити» закриває для всіх; закрите не повертається 30 хвилин.",
+     "Справжній низький чи високий подає тривогу сам. Не з'являється, поки вже звучить тривога в той самий бік."
     ]
    },
    "es": {
     "title": "Bajo y alto previstos",
-    "short": "Una alarma anticipada cuando el pronóstico AR2 de Nightscout dice que la glucosa sale del rango.",
+    "short": "Un aviso anticipado, no una alarma, cuando el pronóstico AR2 de Nightscout dice que la glucosa sale del rango.",
     "based": [
      "El AR2 de Nightscout, portado con sus constantes: niveles de aviso y urgente según su puntuación, el lado según el valor a 20 minutos."
     ],
     "ours": [
-     "No se activa mientras ya suena una alarma del mismo lado.",
-     "El AR2 solo ve las últimas lecturas, no la comida ni la insulina."
+     "Un aviso, nunca un episodio de alarma: los pronósticos fallan a menudo. Se avisa una vez a todos los teléfonos, en ámbar; nadie lo toma, nada se repite ni despierta a nadie, y «Cerrar» lo cierra para todos; cerrado, no vuelve en 30 minutos.",
+     "Un bajo o alto real alarma por sí mismo. No aparece si ya suena una alarma del mismo lado."
     ]
    }
   },
