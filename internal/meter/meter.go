@@ -33,6 +33,12 @@ const (
 	sameReading = 15 * time.Minute
 )
 
+// IsCalibration reports an xDrip+ meter entry that is a calibration sent to the
+// sensor, not a check of its own (the check it repeats arrives apart).
+func IsCalibration(device string) bool {
+	return strings.EqualFold(strings.TrimSpace(device), "Add Calibration")
+}
+
 type Point struct {
 	T   int64  // unix ms
 	V   int    // mg/dL
@@ -93,6 +99,7 @@ type Result struct {
 	Model   *Model    `json:"model,omitempty"` // only when ready
 	Pairs   []Pair    `json:"pairs"`
 	Starts  []int64   `json:"starts"` // sensor starts, oldest first
+	Lag     Lag       `json:"lag"`    // how far the sensor runs behind; the pairs use Lag.Used
 }
 
 type Current struct {
@@ -131,25 +138,27 @@ func Dedup(ms []Point) []Point {
 	return out
 }
 
-// Pairs matches checks with the sensor (sgv oldest first) and numbers each by
-// sensor: 0 before the first known start, then 1, 2, …
-func Pairs(meters, sgv []Point, starts []int64) []Pair {
+// Pairs matches checks with the sensor (sgv oldest first) lag later, when it
+// shows the blood the check measured, and numbers each by sensor: 0 before the
+// first known start, then 1, 2, …
+func Pairs(meters, sgv []Point, starts []int64, lag time.Duration) []Pair {
 	var out []Pair
 	reach := pairReach.Milliseconds()
 	for _, m := range meters {
-		i, _ := slices.BinarySearchFunc(sgv, m.T, func(p Point, t int64) int { return cmp64(p.T, t) })
+		at := m.T + lag.Milliseconds()
+		i, _ := slices.BinarySearchFunc(sgv, at, func(p Point, t int64) int { return cmp64(p.T, t) })
 		var p Pair
 		switch {
-		case i < len(sgv) && sgv[i].T == m.T:
+		case i < len(sgv) && sgv[i].T == at:
 			p = Pair{Sensor: float64(sgv[i].V)}
-			if i > 0 && m.T-sgv[i-1].T <= reach {
+			if i > 0 && at-sgv[i-1].T <= reach {
 				p.Rate = rate(sgv[i-1], sgv[i])
-			} else if i+1 < len(sgv) && sgv[i+1].T-m.T <= reach {
+			} else if i+1 < len(sgv) && sgv[i+1].T-at <= reach {
 				p.Rate = rate(sgv[i], sgv[i+1])
 			}
-		case i > 0 && i < len(sgv) && m.T-sgv[i-1].T <= reach && sgv[i].T-m.T <= reach:
+		case i > 0 && i < len(sgv) && at-sgv[i-1].T <= reach && sgv[i].T-at <= reach:
 			a, b := sgv[i-1], sgv[i]
-			f := float64(m.T-a.T) / float64(b.T-a.T)
+			f := float64(at-a.T) / float64(b.T-a.T)
 			p = Pair{Sensor: float64(a.V) + f*float64(b.V-a.V), Rate: rate(a, b)}
 		default:
 			continue // no sensor around it: a gap, warm-up, a check before the sensor

@@ -30,7 +30,7 @@ func TestPairsInterpolateAndSkipFastChanges(t *testing.T) {
 		{T: ms(27 * time.Minute), V: 140}, // 10/min: kept, not used
 		{T: ms(3 * time.Hour), V: 99},     // no sensor around: dropped
 	}
-	ps := Pairs(meters, sgv, starts)
+	ps := Pairs(meters, sgv, starts, 0)
 	if len(ps) != 2 || ps[0].Sensor != 106 || !ps[0].Used || ps[1].Used || ps[0].SensorNo != 1 {
 		t.Fatalf("%+v", ps)
 	}
@@ -46,7 +46,7 @@ func TestFitFindsGrowingGap(t *testing.T) {
 		sgv = append(sgv, flatAround(at, v)...)
 		meters = append(meters, Point{T: at, V: int(math.Round(float64(v) * 1.1))})
 	}
-	ps := Pairs(meters, sgv, starts)
+	ps := Pairs(meters, sgv, starts, 0)
 	r := Fit(ps, starts, now)
 	if !r.Ready || r.Used != 12 || r.Sensors != 2 || r.Current == nil || r.Current.N != 0 || r.Current.Day != 1 {
 		t.Fatalf("summary %+v", r)
@@ -71,7 +71,7 @@ func TestFitNotReadyWithFewPairs(t *testing.T) {
 		sgv = append(sgv, flatAround(at, 150)...)
 		meters = append(meters, Point{T: at, V: 160})
 	}
-	r := Fit(Pairs(meters, sgv, nil), nil, now)
+	r := Fit(Pairs(meters, sgv, nil, 0), nil, now)
 	if r.Ready || r.Model != nil || r.Used != 5 || r.Need != 8 || r.Current != nil {
 		t.Fatalf("%+v", r)
 	}
@@ -91,7 +91,7 @@ func TestSensorOffsetPulledTowardsCommon(t *testing.T) {
 	}
 	add(4*24*time.Hour, 150, 188)
 	add(3*24*time.Hour, 200, 250)
-	r := Fit(Pairs(meters, sgv, starts), starts, now)
+	r := Fit(Pairs(meters, sgv, starts, 0), starts, now)
 	off := r.Model.Offset
 	if off <= 0.03 || off >= 0.2 { // towards +25%, but not all the way with two pairs
 		t.Fatalf("offset %v", off)

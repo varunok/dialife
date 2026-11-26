@@ -36,7 +36,12 @@ func (h HTTP) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var checks []Point
+	var bounds []int64 // where a stretch of one sensor's behaviour begins: starts and calibrations
 	for _, e := range es {
+		if IsCalibration(e.Device) {
+			bounds = append(bounds, e.Date)
+			continue
+		}
 		if e.MBG != nil && *e.MBG > 0 {
 			checks = append(checks, Point{T: e.Date, V: *e.MBG, Src: Source(e.Device)})
 		}
@@ -60,13 +65,15 @@ func (h HTTP) get(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	slices.Sort(starts)
+	bounds = append(bounds, starts...)
 	checks = trust.Drop(Dedup(checks), func(p Point) int64 { return p.T }, untrusted)
 
-	// the sensor around each check only, not years of readings
+	// the sensor around each check only, not years of readings: up to the
+	// longest delay tried, and a reading beyond it to interpolate from
 	var sgv []Point
 	reach := (15 * time.Minute).Milliseconds()
 	for _, c := range checks {
-		from, to := c.T-reach, c.T+reach
+		from, to := c.T-reach, c.T+(maxLag*time.Minute).Milliseconds()+reach
 		if n := len(sgv); n > 0 && sgv[n-1].T >= from {
 			from = sgv[n-1].T + 1 // overlaps the previous check's window
 		}
@@ -81,7 +88,10 @@ func (h HTTP) get(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	httpx.WriteJSON(w, http.StatusOK, Fit(Pairs(checks, sgv, starts), starts, h.Now()))
+	lag := MeasureLag(checks, sgv, bounds)
+	res := Fit(Pairs(checks, sgv, starts, lag.Duration()), starts, h.Now())
+	res.Lag = lag
+	httpx.WriteJSON(w, http.StatusOK, res)
 }
 
 func fail(w http.ResponseWriter, what string, err error) {

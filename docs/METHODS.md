@@ -23,6 +23,7 @@ All values are in mg/dL; the apps convert for mmol/L.
 - [Predicted low and high](#predicted-alarms)
 - [An alarm being handled](#alarm-episodes)
 - [≈ meter](#meter-estimate)
+- [Sensor delay](#sensor-delay)
 - [After a shower](#shower)
 - [No-sensor mode](#no-sensor)
 - [Statistics](#stats)
@@ -180,9 +181,10 @@ the family's own glucometer checks next to sensor readings.
   about how far off the sensor is.
 
 **Our own**
-- Checks are paired with the sensor value at the same moment (interpolated between the
-  readings around it); a check taken while glucose moved faster than 2 mg/dL per minute
-  is kept on the chart but left out of the model.
+- Each check is paired with the sensor value [the delay](#sensor-delay) later, when the
+  sensor shows the blood the check measured (interpolated between the readings around it);
+  a check taken while glucose moved faster than 2 mg/dL per minute is kept on the chart but
+  left out of the model.
 - The model: meter ≈ sensor × (1 + b) + a, plus a shift of its own for each sensor.
   Errors count in percent above 100 mg/dL and in mg/dL below. Older pairs weigh less (half
   after 90 days). Each sensor's own shift is pulled towards the common model until it has
@@ -193,6 +195,42 @@ the family's own glucometer checks next to sensor readings.
 **Limits**
 - It never changes a reading and never feeds the alarms.
 - Sensors differ from each other; a new sensor starts from the common model.
+
+---
+
+<a id="sensor-delay"></a>
+## Sensor delay
+
+**In short.** How many minutes the sensor runs behind the glucometer, measured on the
+family's own checks, with how sure that number is. Until it is sure enough, Dexcom's
+published 4 minutes are used.
+
+**Based on**
+- The sensor reads glucose in the fluid under the skin, which follows the blood: 5.3–6.2
+  minutes in fasting healthy adults [11], a median of 6.8 (4.8–9.8) minutes in fasting adults
+  with type 1 diabetes [12]. Commercial CGM systems have been reported at 3 to 12 minutes
+  in all [4].
+- Dexcom gives about 4 minutes as the average lag of its CGM [13]; 3.7 ± 3.1 minutes have
+  been reported for the G6 [14].
+- The method: shift the sensor by one minute at a time and keep the shift with the lowest
+  mean absolute difference from the reference [15][16].
+- How sure: a bootstrap percentile interval, the 2.5th and 97.5th percentiles of the
+  shifts found on 1000 resamples of the checks [17].
+
+**Our own**
+- Shifts of 0 to 20 minutes are tried, against glucometer checks.
+- Each sensor reads off by its own amount, and a calibration changes it, so before comparing,
+  each stretch (a sensor, or a sensor since its last calibration) has its own mean difference
+  taken out. Without this, sensors off by different amounts hide the delay. A stretch with a
+  single check is left out.
+- Nothing is measured below 10 checks.
+- The measured delay replaces Dexcom's 4 minutes only once its 95% interval is no wider than
+  4 minutes: an interval wider than the delay itself says too little.
+
+**Limits**
+- Only checks taken while glucose moves tell anything about the delay; on a steady level any
+  shift fits. So it takes hundreds of everyday checks for the interval to narrow.
+- The delay may differ between people [4] and between sensors; one number is kept for all.
 
 ---
 
@@ -460,3 +498,22 @@ Every source below was opened and the statement it backs was found in it.
 10. Nationwide Children's Hospital. Insulin Bolus Calculator (worksheet: carbohydrate bolus,
     correction bolus, total, rounded dose; rounding rules for ½ and whole units).
     <https://www.nationwidechildrens.org/-/media/nch/specialties/diabetes-clinic/insulin-bolus-calculator.pdf>
+11. Basu A, Dube S, Slama M, et al. Time Lag of Glucose From Intravascular to Interstitial
+    Compartment in Humans. *Diabetes* 2013;62(12):4083–4087. <https://pmc.ncbi.nlm.nih.gov/articles/PMC3837059/>
+12. Basu A, Dube S, Veettil S, et al. Time lag of glucose from intravascular to interstitial
+    compartment in type 1 diabetes. *J Diabetes Sci Technol* 2015;9(1):63–68.
+    <https://pubmed.ncbi.nlm.nih.gov/25305282/>
+13. Dexcom. What should I do if my sensor reading and capillary blood glucose value don't match?
+    ("The average lag time for Dexcom CGM is approximately 4 minutes".)
+    <https://www.dexcom.com/en-GB/faqs/sensor-vs-meter-readings>
+14. Welsh JB, Psavko S, et al. Comparisons of Fifth-, Sixth-, and Seventh-Generation Continuous
+    Glucose Monitoring Systems. *J Diabetes Sci Technol* 2024;18(1):143 (online 2022).
+    <https://pmc.ncbi.nlm.nih.gov/articles/PMC10899839/>
+15. Jensen MH, Dethlefsen C, Hejlesen O, et al. Simple Post-Processing of Continuous Glucose
+    Monitoring Measurements Improves Endpoints in Clinical Trials. *J Diabetes Sci Technol*
+    2020;14(6):1074 (online 2019). <https://pmc.ncbi.nlm.nih.gov/articles/PMC7645147/>
+16. CGM Precision and Glycaemic Variability, ClinicalTrials.gov NCT03842683 (the time-shift
+    outcome). <https://clinicaltrials.gov/study/NCT03842683>
+17. Hesterberg TC. What Teachers Should Know about the Bootstrap: Resampling in the
+    Undergraduate Statistics Curriculum. 2014 (the percentile interval, after Efron and
+    Tibshirani, An Introduction to the Bootstrap, 1993). <https://arxiv.org/abs/1411.5279>
